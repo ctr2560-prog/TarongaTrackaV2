@@ -173,16 +173,19 @@ export default function ZooSnoozScreen() {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
         audioCtxRef.current = ctx;
         const src = ctx.createMediaStreamSource(stream);
+        const gain = ctx.createGain();
+        gain.gain.value = 2.5;
         const an = ctx.createAnalyser();
         an.fftSize = 256;
-        src.connect(an);
+        src.connect(gain);
+        gain.connect(an);
         analyserRef.current = an;
         const data = new Uint8Array(an.frequencyBinCount);
         const tick = () => {
           if (stopped) return;
           an.getByteTimeDomainData(data);
           let s = 0; for (let i = 0; i < data.length; i++) s += Math.abs(data[i] - 128);
-          const lv = Math.min(100, Math.round((s / data.length) * 3));
+          const lv = Math.min(100, Math.round((s / data.length) * 8));
           setSoundLevel(lv);
           soundSampRef.current.push(lv);
           soundRafRef.current = requestAnimationFrame(tick);

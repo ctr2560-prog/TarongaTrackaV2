@@ -191,7 +191,11 @@ function AnalyticsTab({ classes }) {
   const conStatements = useMemo(() => {
     return viewStudents
       .filter(st => st.conservationStatement)
-      .map(st => ({ name: st.name || 'Student', classCode: st._classCode, statement: st.conservationStatement }))
+      .map(st => {
+        const ts = st.completedAt?.toDate?.() ?? (st.completedAt ? new Date(st.completedAt) : null);
+        return { name: st.name || 'Student', classCode: st._classCode, statement: st.conservationStatement, ts };
+      })
+      .sort((a, b) => (b.ts ?? 0) - (a.ts ?? 0))
       .slice(0, 25);
   }, [viewStudents]);
 
