@@ -62,6 +62,23 @@ export default function GorillaMission() {
   const hideTimerRef = useRef(null);
   const grabTimerRef = useRef(null);
 
+  const [assetsLoaded, setAssetsLoaded] = useState(false);
+
+  useEffect(() => {
+    const srcs = [
+      'images/gorilla.jpg', 'images/logo.png',
+      'Gorilla Game/server_body_idle.png',
+      ...INGREDIENTS.map(i => i.icon),
+      ...CUSTOMERS.flatMap(c => [c.img.n, c.img.h, c.img.m]),
+    ];
+    let loaded = 0;
+    srcs.forEach(src => {
+      const img = new Image();
+      img.onload = img.onerror = () => { loaded++; if (loaded === srcs.length) setAssetsLoaded(true); };
+      img.src = src;
+    });
+  }, []);
+
   const questions = getStageQuestions(currentAnimal, classStage);
   const mcqQ      = questions[1];
 
@@ -148,6 +165,22 @@ export default function GorillaMission() {
   const topBunBot = 42 + selected.length * 14;
   const grabIng   = grabSide !== 'none' && selected.length > 0
     ? INGREDIENTS.find(x => x.id === selected[selected.length - 1]) : null;
+
+  if (!assetsLoaded) {
+    return (
+      <div style={{ position:'fixed', inset:0, background:'linear-gradient(160deg,#071A0C 0%,#0D3320 50%,#0A2010 100%)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'1.25rem' }}>
+        <img src="images/gorilla.jpg" alt="" style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover', opacity:0.13, pointerEvents:'none' }} />
+        <div style={{ position:'relative', zIndex:1, textAlign:'center' }}>
+          <div style={{ fontSize:'2.8rem', marginBottom:'0.75rem' }}>🦍</div>
+          <h2 style={{ color:'white', fontWeight:700, fontSize:'1.3rem', margin:'0 0 0.35rem', fontFamily:'inherit' }}>Gorilla Feeding Game</h2>
+          <p style={{ color:'rgba(255,255,255,0.55)', fontSize:'0.85rem', margin:'0 0 1.5rem' }}>Loading game assets…</p>
+          <div style={{ width:'180px', height:'5px', background:'rgba(255,255,255,0.12)', borderRadius:'999px', overflow:'hidden', margin:'0 auto' }}>
+            <div style={{ height:'100%', width:'60%', background:'#4CAF50', borderRadius:'999px', animation:'pulse 1.2s ease-in-out infinite' }} />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // INTRO
   if (schlPhase === 'game' && phase === 'intro') {

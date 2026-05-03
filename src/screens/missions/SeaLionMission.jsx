@@ -55,6 +55,24 @@ export default function SeaLionMission() {
     setIsProcessingAnswer, handleQuizAnswer, handleNextQuestion,
   } = useStudent();
 
+  const [assetsLoaded, setAssetsLoaded] = useState(false);
+
+  useEffect(() => {
+    const srcs = [
+      'Seal Game/background.png',
+      'Seal Game/seal.png',
+      'images/sea-lion.jpg',
+      'images/logo.png',
+      ...ITEMS.map(it => it.icon),
+    ];
+    let loaded = 0;
+    srcs.forEach(src => {
+      const img = new Image();
+      img.onload = img.onerror = () => { loaded++; if (loaded === srcs.length) setAssetsLoaded(true); };
+      img.src = src;
+    });
+  }, []);
+
   const [phase,    setPhase]    = useState('intro');
   const [counts,   setCounts]   = useState(() => Object.fromEntries(ITEMS.map(it => [it.id, 0])));
   const [placements, setPlacements] = useState({ pool:[], land:[], rocks:[], toys:[], food:[], sustainability:[] });
@@ -137,6 +155,20 @@ export default function SeaLionMission() {
 
   const allPlacements = Object.values(placements).flat();
   const totalPlaced = allPlacements.length;
+
+  // ── Loading ───────────────────────────────────────────────────────────────
+  if (!assetsLoaded) {
+    return (
+      <div style={{ position:'fixed', inset:0, background:'linear-gradient(160deg,#071A2A 0%,#0b3a5c 50%,#062a40 100%)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'1.5rem' }}>
+        <div style={{ fontSize:'4rem' }}>🦭</div>
+        <p style={{ color:'rgba(100,180,220,0.9)', fontWeight:700, fontSize:'1.1rem', letterSpacing:'0.12em', textTransform:'uppercase', margin:0 }}>Loading Sea Lion Sanctuary…</p>
+        <div style={{ width:'220px', height:'7px', background:'rgba(255,255,255,0.12)', borderRadius:'99px', overflow:'hidden' }}>
+          <div style={{ height:'100%', width:'40%', background:'linear-gradient(to right,#2b9c46,#67D8F7)', borderRadius:'99px', animation:'sls-bar 1.4s ease-in-out infinite' }} />
+        </div>
+        <style>{`@keyframes sls-bar{0%{transform:translateX(-100%)}100%{transform:translateX(600%)}}`}</style>
+      </div>
+    );
+  }
 
   // ── Intro ─────────────────────────────────────────────────────────────────
   if (phase === 'intro') {
