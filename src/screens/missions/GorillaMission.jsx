@@ -62,19 +62,30 @@ export default function GorillaMission() {
   const hideTimerRef = useRef(null);
   const grabTimerRef = useRef(null);
 
-  const [assetsLoaded, setAssetsLoaded] = useState(false);
+  const [assetsLoaded,  setAssetsLoaded]  = useState(false);
+  const [loadProgress,  setLoadProgress]  = useState(0);
 
   useEffect(() => {
     const srcs = [
       'images/gorilla.jpg', 'images/logo.png',
+      '/Gorilla Game/background.png',
       'Gorilla Game/server_body_idle.png',
       ...INGREDIENTS.map(i => i.icon),
       ...CUSTOMERS.flatMap(c => [c.img.n, c.img.h, c.img.m]),
     ];
+    const total = srcs.length;
     let loaded = 0;
+    let allLoaded = false;
+    let minDone   = false;
+    const tryFinish = () => { if (allLoaded && minDone) setAssetsLoaded(true); };
+    setTimeout(() => { minDone = true; tryFinish(); }, 700);
     srcs.forEach(src => {
       const img = new Image();
-      img.onload = img.onerror = () => { loaded++; if (loaded === srcs.length) setAssetsLoaded(true); };
+      img.onload = img.onerror = () => {
+        loaded++;
+        setLoadProgress(Math.round((loaded / total) * 100));
+        if (loaded === total) { allLoaded = true; tryFinish(); }
+      };
       img.src = src;
     });
   }, []);
@@ -173,9 +184,9 @@ export default function GorillaMission() {
         <div style={{ position:'relative', zIndex:1, textAlign:'center' }}>
           <div style={{ fontSize:'2.8rem', marginBottom:'0.75rem' }}>🦍</div>
           <h2 style={{ color:'white', fontWeight:700, fontSize:'1.3rem', margin:'0 0 0.35rem', fontFamily:'inherit' }}>Gorilla Feeding Game</h2>
-          <p style={{ color:'rgba(255,255,255,0.55)', fontSize:'0.85rem', margin:'0 0 1.5rem' }}>Loading game assets…</p>
-          <div style={{ width:'180px', height:'5px', background:'rgba(255,255,255,0.12)', borderRadius:'999px', overflow:'hidden', margin:'0 auto' }}>
-            <div style={{ height:'100%', width:'60%', background:'#4CAF50', borderRadius:'999px', animation:'pulse 1.2s ease-in-out infinite' }} />
+          <p style={{ color:'rgba(255,255,255,0.55)', fontSize:'0.85rem', margin:'0 0 1.5rem' }}>Loading game assets… {loadProgress}%</p>
+          <div style={{ width:'200px', height:'6px', background:'rgba(255,255,255,0.12)', borderRadius:'999px', overflow:'hidden', margin:'0 auto' }}>
+            <div style={{ height:'100%', width:`${loadProgress}%`, background:'linear-gradient(to right,#2b9c46,#4CAF50)', borderRadius:'999px', transition:'width 0.25s ease' }} />
           </div>
         </div>
       </div>

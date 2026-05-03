@@ -55,20 +55,30 @@ export default function SeaLionMission() {
     setIsProcessingAnswer, handleQuizAnswer, handleNextQuestion,
   } = useStudent();
 
-  const [assetsLoaded, setAssetsLoaded] = useState(false);
+  const [assetsLoaded,  setAssetsLoaded]  = useState(false);
+  const [loadProgress,  setLoadProgress]  = useState(0);
 
   useEffect(() => {
     const srcs = [
-      'Seal Game/background.png',
+      '/Seal Game/background.png',
       'Seal Game/seal.png',
       'images/sea-lion.jpg',
       'images/logo.png',
       ...ITEMS.map(it => it.icon),
     ];
+    const total = srcs.length;
     let loaded = 0;
+    let allLoaded = false;
+    let minDone   = false;
+    const tryFinish = () => { if (allLoaded && minDone) setAssetsLoaded(true); };
+    setTimeout(() => { minDone = true; tryFinish(); }, 700);
     srcs.forEach(src => {
       const img = new Image();
-      img.onload = img.onerror = () => { loaded++; if (loaded === srcs.length) setAssetsLoaded(true); };
+      img.onload = img.onerror = () => {
+        loaded++;
+        setLoadProgress(Math.round((loaded / total) * 100));
+        if (loaded === total) { allLoaded = true; tryFinish(); }
+      };
       img.src = src;
     });
   }, []);
@@ -162,10 +172,10 @@ export default function SeaLionMission() {
       <div style={{ position:'fixed', inset:0, background:'linear-gradient(160deg,#071A2A 0%,#0b3a5c 50%,#062a40 100%)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'1.5rem' }}>
         <div style={{ fontSize:'4rem' }}>🦭</div>
         <p style={{ color:'rgba(100,180,220,0.9)', fontWeight:700, fontSize:'1.1rem', letterSpacing:'0.12em', textTransform:'uppercase', margin:0 }}>Loading Sea Lion Sanctuary…</p>
-        <div style={{ width:'220px', height:'7px', background:'rgba(255,255,255,0.12)', borderRadius:'99px', overflow:'hidden' }}>
-          <div style={{ height:'100%', width:'40%', background:'linear-gradient(to right,#2b9c46,#67D8F7)', borderRadius:'99px', animation:'sls-bar 1.4s ease-in-out infinite' }} />
+        <p style={{ color:'rgba(255,255,255,0.45)', fontSize:'0.85rem', margin:'-0.75rem 0 0' }}>{loadProgress}%</p>
+        <div style={{ width:'220px', height:'6px', background:'rgba(255,255,255,0.12)', borderRadius:'99px', overflow:'hidden' }}>
+          <div style={{ height:'100%', width:`${loadProgress}%`, background:'linear-gradient(to right,#2b9c46,#67D8F7)', borderRadius:'99px', transition:'width 0.25s ease' }} />
         </div>
-        <style>{`@keyframes sls-bar{0%{transform:translateX(-100%)}100%{transform:translateX(600%)}}`}</style>
       </div>
     );
   }

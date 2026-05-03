@@ -1671,7 +1671,7 @@
       background:
         linear-gradient(180deg, rgba(255,255,255,.1), rgba(255,255,255,0) 28%),
         linear-gradient(180deg, rgba(18,66,39,.06), rgba(18,66,39,.2)),
-        url('Gorilla Game/background.png') center/cover no-repeat;
+        url('/Gorilla Game/background.png') center/cover no-repeat;
     }
     .gwr-vine { position:absolute; width:90px; height:90px; border:5px solid rgba(41,102,52,.6); border-color:rgba(41,102,52,.7) transparent transparent transparent; border-radius:50%; top:-45px; }
     .gwr-vine.a { left:-8px; transform:rotate(-18deg); }
@@ -1782,7 +1782,7 @@
       position:absolute; inset:14px 14px 156px; border-radius:28px; overflow:hidden;
       border:1px solid rgba(255,255,255,0.42);
       box-shadow:0 24px 40px rgba(56,84,45,0.16),inset 0 2px 0 rgba(255,255,255,0.24),inset 0 -14px 26px rgba(0,0,0,0.06);
-      background:linear-gradient(180deg,rgba(255,255,255,0.1),transparent 16%),url("Seal Game/background.png") center/cover no-repeat;
+      background:linear-gradient(180deg,rgba(255,255,255,0.1),transparent 16%),url("/Seal Game/background.png") center/cover no-repeat;
     }
     .sls-title-banner {
       position:absolute; top:16px; left:50%; z-index:16;
