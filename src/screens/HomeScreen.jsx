@@ -119,49 +119,49 @@ function ExpandableFeatureCard({ feature, isOpen, onToggle }) {
     <div
       onClick={onToggle}
       style={{
-        background: isOpen ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.038)',
-        border: `1px solid ${isOpen ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.07)'}`,
-        borderRadius:'16px',
+        background: isOpen ? 'rgba(78,203,113,0.05)' : 'rgba(255,255,255,0.03)',
+        border: `1px solid ${isOpen ? 'rgba(78,203,113,0.18)' : 'rgba(255,255,255,0.07)'}`,
+        borderLeft: `3px solid ${isOpen ? '#4ecb71' : 'rgba(255,255,255,0.1)'}`,
+        borderRadius:'14px',
         overflow:'hidden',
         cursor:'pointer',
-        transition:'background 0.2s, border-color 0.2s',
+        transition:'background 0.22s, border-color 0.22s',
       }}
     >
-      {/* Card header — always visible */}
-      <div style={{ padding:'1.1rem 1.15rem', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'0.75rem' }}>
+      <div style={{ padding:'1rem 1.15rem', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'0.75rem' }}>
         <div>
-          <div style={{ fontSize:'1.25rem', fontWeight:800, color:'white', lineHeight:1.15, letterSpacing:'-0.01em', marginBottom:'0.2rem' }}>
+          <div style={{ fontSize:'1.05rem', fontWeight:800, color:'white', lineHeight:1.2, letterSpacing:'-0.01em', marginBottom:'0.18rem' }}>
             {feature.label}
           </div>
-          <div style={{ fontSize:'0.78rem', color:'rgba(255,255,255,0.48)', fontStyle:'italic' }}>
+          <div style={{ fontSize:'0.76rem', color:'rgba(255,255,255,0.4)', fontStyle:'italic' }}>
             {feature.tagline}
           </div>
         </div>
         <div style={{
-          flexShrink:0, width:'28px', height:'28px', borderRadius:'50%',
-          background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.12)',
+          flexShrink:0, width:'26px', height:'26px', borderRadius:'50%',
+          background: isOpen ? 'rgba(78,203,113,0.15)' : 'rgba(255,255,255,0.06)',
+          border: `1px solid ${isOpen ? 'rgba(78,203,113,0.35)' : 'rgba(255,255,255,0.1)'}`,
           display:'flex', alignItems:'center', justifyContent:'center',
-          fontSize:'0.75rem', color:'rgba(255,255,255,0.55)',
-          transition:'transform 0.3s ease',
+          fontSize:'0.65rem', color: isOpen ? '#4ecb71' : 'rgba(255,255,255,0.4)',
+          transition:'all 0.3s ease',
           transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
         }}>
           ↓
         </div>
       </div>
 
-      {/* Expanded content */}
       <div style={{
-        maxHeight: isOpen ? '500px' : '0',
+        maxHeight: isOpen ? '600px' : '0',
         overflow:'hidden',
         transition:'max-height 0.4s cubic-bezier(0.4,0,0.2,1)',
       }}>
         {feature.image && (
-          <div style={{ width:'100%', aspectRatio:'16/9', overflow:'hidden', borderTop:'1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ width:'100%', aspectRatio:'16/9', overflow:'hidden', borderTop:'1px solid rgba(255,255,255,0.05)' }}>
             <img src={feature.image} alt={feature.label} style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:'top', display:'block' }} />
           </div>
         )}
-        <div style={{ padding:'1rem 1.15rem 1.2rem', borderTop: feature.image ? 'none' : '1px solid rgba(255,255,255,0.06)' }}>
-          <p style={{ fontSize:'0.82rem', color:'rgba(255,255,255,0.65)', lineHeight:1.75, margin:0 }}>
+        <div style={{ padding:'1rem 1.15rem 1.2rem', borderTop: feature.image ? 'none' : '1px solid rgba(255,255,255,0.05)' }}>
+          <p style={{ fontSize:'0.84rem', color:'rgba(255,255,255,0.62)', lineHeight:1.78, margin:0 }}>
             {feature.desc}
           </p>
         </div>
@@ -246,167 +246,164 @@ export default function HomeScreen() {
         </button>
       </div>
 
-      {/* ── Learn More overlay ────────────────────────────────────────── */}
+      {/* ── Learn More overlay ── */}
       <div style={{ position:'fixed', inset:0, zIndex:500, transform: learnOpen?'translateY(0)':'translateY(100%)', transition:'transform 0.55s cubic-bezier(0.32,0,0.18,1)', pointerEvents: learnOpen?'all':'none' }}>
-        <div style={{ position:'absolute', inset:0, background:'#06100a', zIndex:0 }} />
-        <div style={{ position:'absolute', inset:0, zIndex:1, pointerEvents:'none', background: page===0?'radial-gradient(ellipse at 80% 5%,rgba(15,70,35,0.55) 0%,transparent 50%)':page===1?'radial-gradient(ellipse at 20% 5%,rgba(5,45,75,0.55) 0%,transparent 50%)':'radial-gradient(ellipse at 60% 5%,rgba(8,55,40,0.6) 0%,transparent 50%)', transition:'background 0.9s ease' }} />
-        <div style={{ position:'absolute', top:0, left:0, right:0, height:'2px', zIndex:5, background:['linear-gradient(to right,#2b9c46,#4ecb71)','linear-gradient(to right,#2684c4,#4ecbcb)','linear-gradient(to right,#1a8c6e,#50c8a0)'][page], transition:'background 0.6s ease' }} />
+        <div style={{ position:'absolute', inset:0, background:'#050e08', zIndex:0 }} />
+        <div style={{ position:'absolute', top:0, left:0, right:0, height:'3px', zIndex:5, background:['linear-gradient(to right,#2b9c46,#4ecb71)','linear-gradient(to right,#2684c4,#4ecbcb)','linear-gradient(to right,#1a8c6e,#50c8a0)'][page], transition:'background 0.6s ease' }} />
 
-        {/* Close */}
-        <button onClick={closeLearn} style={{ position:'absolute', top:'1rem', right:'1rem', zIndex:40, background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.14)', color:'rgba(255,255,255,0.8)', width:'36px', height:'36px', borderRadius:'50%', cursor:'pointer', fontSize:'0.95rem', display:'flex', alignItems:'center', justifyContent:'center', backdropFilter:'blur(10px)' }}>✕</button>
+        <button onClick={closeLearn} style={{ position:'absolute', top:'1.1rem', right:'1.1rem', zIndex:40, background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.12)', color:'rgba(255,255,255,0.7)', width:'38px', height:'38px', borderRadius:'50%', cursor:'pointer', fontSize:'1rem', display:'flex', alignItems:'center', justifyContent:'center', backdropFilter:'blur(10px)' }}>✕</button>
 
-        {/* Dots */}
         <div style={{ position:'absolute', right:'0.8rem', top:'50%', transform:'translateY(-50%)', zIndex:40, display:'flex', flexDirection:'column', gap:'0.55rem' }}>
           {[0,1,2].map(i => (
             <div key={i} onClick={() => goToPage(i)} style={{ width:page===i?'8px':'5px', height:page===i?'8px':'5px', borderRadius:'50%', cursor:'pointer', transition:'all 0.25s', background:page===i?'rgba(255,255,255,0.95)':'rgba(255,255,255,0.28)', boxShadow:page===i?'0 0 10px rgba(255,255,255,0.5)':'none' }} />
           ))}
         </div>
 
-        {/* Scroll container */}
         <div ref={scrollRef} onScroll={handleScroll} style={{ position:'relative', zIndex:10, height:'100%', width:'100%', overflowY:'scroll', scrollSnapType:'y proximity', WebkitOverflowScrolling:'touch' }}>
 
-          {/* ══ PAGE 1 · About ══════════════════════════════════════════ */}
-          <div ref={el => pagesRef.current[0] = el} style={{ minHeight:'100vh', height:'auto', scrollSnapAlign:'start', flexShrink:0, display:'flex', flexDirection:'column', alignItems:'center', padding:'0 0 4rem', position:'relative' }}>
+          {/* ══ PAGE 1 · About ══ */}
+          <div ref={el => pagesRef.current[0] = el} style={{ minHeight:'100vh', height:'auto', scrollSnapAlign:'start', display:'flex', flexDirection:'column', alignItems:'center', paddingBottom:'5rem', position:'relative' }}>
 
-            {/* Header */}
-            <div style={{ width:'100%', maxWidth:'580px', padding:'3rem 1.5rem 1.6rem', textAlign:'center' }}>
-              <p style={{ fontSize:'0.6rem', fontWeight:800, color:'rgba(78,203,113,0.85)', textTransform:'uppercase', letterSpacing:'0.28em', margin:'0 0 0.55rem' }}>About</p>
-              <h2 className="taronga-title" style={{ fontSize:'clamp(1.75rem,6vw,2.5rem)', color:'white', margin:'0 0 0.3rem', letterSpacing:'0.03em', lineHeight:1.1 }}>
-                An Immersive Education Platform
+            <div style={{ width:'100%', maxWidth:'580px', padding:'3.5rem 1.5rem 2rem', textAlign:'center' }}>
+              <div style={{ display:'inline-flex', alignItems:'center', gap:'0.4rem', background:'rgba(78,203,113,0.1)', border:'1px solid rgba(78,203,113,0.2)', borderRadius:'99px', padding:'0.28rem 0.8rem', marginBottom:'1.4rem' }}>
+                <div style={{ width:'5px', height:'5px', borderRadius:'50%', background:'#4ecb71', flexShrink:0 }} />
+                <span style={{ fontSize:'0.57rem', fontWeight:800, color:'#4ecb71', textTransform:'uppercase', letterSpacing:'0.2em' }}>Taronga Zoo Education</span>
+              </div>
+              <h2 className="taronga-title" style={{ fontSize:'clamp(2.2rem,8vw,3.2rem)', color:'white', margin:'0 0 1rem', letterSpacing:'-0.02em', lineHeight:1.06, fontWeight:900 }}>
+                Learning that<br/>lives at the zoo.
               </h2>
-              <p style={{ fontSize:'0.72rem', fontWeight:700, color:'rgba(78,203,113,0.7)', textTransform:'uppercase', letterSpacing:'0.14em', margin:'0 0 0.8rem' }}>Built by Taronga Zoo</p>
-              <p style={{ fontSize:'0.86rem', color:'rgba(255,255,255,0.52)', lineHeight:1.72, margin:'0 auto' }}>
-                Three powerful ways to learn about wildlife — at the zoo, overnight, or in your classroom.
+              <p style={{ fontSize:'0.95rem', color:'rgba(255,255,255,0.52)', lineHeight:1.75, margin:'0 auto', maxWidth:'360px' }}>
+                Real animals. Real science. Three powerful ways to bring your students closer to wildlife.
               </p>
             </div>
 
-            {/* ── Three experiences card ── */}
-            <div style={{ padding:'0 1.2rem', width:'100%', maxWidth:'580px', marginBottom:'1.6rem' }}>
-              <div style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.09)', borderRadius:'18px', overflow:'hidden' }}>
-                {/* Tab bar */}
-                <div style={{ display:'flex', borderBottom:'1px solid rgba(255,255,255,0.07)' }}>
-                  {MODES.map(m => (
-                    <button key={m.id} onClick={e => { e.stopPropagation(); setActiveMode(m.id); }}
-                      style={{ flex:1, padding:'0.75rem 0.4rem', border:'none', cursor:'pointer', background:'transparent', borderBottom:`2px solid ${activeMode===m.id ? m.accent : 'transparent'}`, transition:'border-color 0.2s', position:'relative' }}>
-                      <div style={{ fontSize:'0.67rem', fontWeight:800, color: activeMode===m.id ? 'white' : 'rgba(255,255,255,0.38)', letterSpacing:'0.04em', lineHeight:1.3, transition:'color 0.2s' }}>
-                        {m.label}
-                      </div>
-                      {m.comingSoon && (
-                        <div style={{ position:'absolute', top:'4px', right:'4px', fontSize:'0.45rem', fontWeight:900, background:'rgba(78,203,203,0.18)', color:'rgba(78,203,203,0.85)', padding:'0.1rem 0.3rem', borderRadius:'4px', textTransform:'uppercase', letterSpacing:'0.06em' }}>Soon</div>
-                      )}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Tab content */}
-                <div style={{ padding:'1.1rem 1.15rem' }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', marginBottom:'0.5rem' }}>
-                    <div style={{ width:'6px', height:'6px', borderRadius:'50%', background: activeModeData?.accent, flexShrink:0 }} />
-                    <span style={{ fontSize:'0.6rem', fontWeight:800, color: activeModeData?.accent, textTransform:'uppercase', letterSpacing:'0.16em' }}>{activeModeData?.tag}</span>
-                  </div>
-                  <p style={{ fontSize:'0.84rem', color:'rgba(255,255,255,0.7)', lineHeight:1.72, margin:'0 0 0.9rem' }}>
-                    {activeModeData?.detail}
-                  </p>
-                  {activeModeData?.image ? (
-                    <div style={{ borderRadius:'12px', overflow:'hidden', aspectRatio:'16/9', border:'1px solid rgba(255,255,255,0.08)' }}>
-                      <img src={activeModeData.image} alt={activeModeData.label} style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:'top', display:'block' }} />
+            <div style={{ width:'100%', maxWidth:'580px', padding:'0 1.5rem', marginBottom:'0.85rem' }}>
+              <div style={{ display:'flex', gap:'0.5rem' }}>
+                {MODES.map(m => (
+                  <button key={m.id} onClick={e => { e.stopPropagation(); setActiveMode(m.id); }}
+                    style={{ flex:1, padding:'0.7rem 0.3rem', border:`1.5px solid ${activeMode===m.id ? m.accent : 'rgba(255,255,255,0.1)'}`, borderRadius:'10px', cursor:'pointer', background: activeMode===m.id ? `${m.accent}18` : 'rgba(255,255,255,0.025)', transition:'all 0.22s', position:'relative' }}>
+                    <div style={{ fontSize:'0.63rem', fontWeight:800, color: activeMode===m.id ? m.accent : 'rgba(255,255,255,0.35)', letterSpacing:'0.02em', lineHeight:1.3, transition:'color 0.2s' }}>
+                      {m.label}
                     </div>
-                  ) : (
-                    <div style={{ borderRadius:'12px', height:'100px', background:'rgba(78,203,203,0.06)', border:'1px solid rgba(78,203,203,0.12)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'0.35rem' }}>
-                      <div style={{ fontSize:'0.7rem', fontWeight:800, color:'rgba(78,203,203,0.7)', textTransform:'uppercase', letterSpacing:'0.14em' }}>Coming Soon</div>
-                      <div style={{ fontSize:'0.72rem', color:'rgba(255,255,255,0.35)', textAlign:'center', lineHeight:1.5 }}>Virtual zoo classroom experience in development</div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* ── Expandable feature cards ── */}
-            <div style={{ padding:'0 1.2rem', width:'100%', maxWidth:'580px' }}>
-              <div style={{ height:'1px', background:'rgba(255,255,255,0.07)', marginBottom:'1.1rem' }} />
-              <p style={{ fontSize:'0.58rem', fontWeight:800, color:'rgba(255,255,255,0.28)', textTransform:'uppercase', letterSpacing:'0.22em', margin:'0 0 0.85rem' }}>Platform Features</p>
-              <div style={{ display:'flex', flexDirection:'column', gap:'0.65rem' }}>
-                {FEATURES.map(f => (
-                  <ExpandableFeatureCard
-                    key={f.id}
-                    feature={f}
-                    isOpen={expandedFeature === f.id}
-                    onToggle={() => setExpandedFeature(expandedFeature === f.id ? null : f.id)}
-                  />
+                    {m.comingSoon && <div style={{ position:'absolute', top:'-7px', right:'4px', fontSize:'0.42rem', fontWeight:900, background:'rgba(78,203,203,0.9)', color:'#050e08', padding:'0.1rem 0.32rem', borderRadius:'4px', textTransform:'uppercase', letterSpacing:'0.05em' }}>Soon</div>}
+                  </button>
                 ))}
               </div>
             </div>
 
-            <div style={{ position:'absolute', bottom:'1.4rem', left:'50%', transform:'translateX(-50%)', opacity:0.28, animation:'lm-bob 2.6s ease-in-out infinite', pointerEvents:'none' }}>
+            <div style={{ width:'100%', maxWidth:'580px', padding:'0 1.5rem', marginBottom:'2rem' }}>
+              <div style={{ background:'rgba(255,255,255,0.03)', border:`1px solid ${activeModeData?.accent}28`, borderRadius:'16px', overflow:'hidden' }}>
+                {activeModeData?.image ? (
+                  <div style={{ aspectRatio:'16/9', overflow:'hidden' }}>
+                    <img src={activeModeData.image} alt={activeModeData.label} style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:'top', display:'block' }} />
+                  </div>
+                ) : (
+                  <div style={{ aspectRatio:'16/9', background:'rgba(78,203,203,0.04)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'0.5rem' }}>
+                    <div style={{ fontSize:'0.68rem', fontWeight:800, color:'rgba(78,203,203,0.6)', textTransform:'uppercase', letterSpacing:'0.18em' }}>Coming Soon</div>
+                    <div style={{ fontSize:'0.8rem', color:'rgba(255,255,255,0.28)', textAlign:'center', maxWidth:'220px', lineHeight:1.6 }}>Virtual zoo classroom experience in development</div>
+                  </div>
+                )}
+                <div style={{ padding:'1.1rem 1.25rem 1.3rem' }}>
+                  <div style={{ display:'inline-flex', alignItems:'center', gap:'0.35rem', marginBottom:'0.55rem' }}>
+                    <div style={{ width:'5px', height:'5px', borderRadius:'50%', background:activeModeData?.accent, flexShrink:0 }} />
+                    <span style={{ fontSize:'0.57rem', fontWeight:800, color:activeModeData?.accent, textTransform:'uppercase', letterSpacing:'0.2em' }}>{activeModeData?.tag}</span>
+                  </div>
+                  <p style={{ fontSize:'0.88rem', color:'rgba(255,255,255,0.68)', lineHeight:1.74, margin:0 }}>{activeModeData?.detail}</p>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ width:'100%', maxWidth:'580px', padding:'0 1.5rem' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', marginBottom:'1rem' }}>
+                <div style={{ flex:1, height:'1px', background:'rgba(255,255,255,0.07)' }} />
+                <span style={{ fontSize:'0.56rem', fontWeight:900, color:'rgba(255,255,255,0.22)', textTransform:'uppercase', letterSpacing:'0.3em', whiteSpace:'nowrap' }}>Platform Features</span>
+                <div style={{ flex:1, height:'1px', background:'rgba(255,255,255,0.07)' }} />
+              </div>
+              <div style={{ display:'flex', flexDirection:'column', gap:'0.55rem' }}>
+                {FEATURES.map(f => (
+                  <ExpandableFeatureCard key={f.id} feature={f} isOpen={expandedFeature===f.id} onToggle={() => setExpandedFeature(expandedFeature===f.id ? null : f.id)} />
+                ))}
+              </div>
+            </div>
+
+            <div style={{ position:'absolute', bottom:'1.4rem', left:'50%', transform:'translateX(-50%)', opacity:0.25, animation:'lm-bob 2.6s ease-in-out infinite', pointerEvents:'none' }}>
               <svg width="16" height="9" viewBox="0 0 18 10" fill="none"><path d="M1 1L9 9L17 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
             </div>
           </div>
 
-          {/* ══ PAGE 2 · How It Works ═══════════════════════════════════ */}
-          <div ref={el => pagesRef.current[1] = el} style={{ height:'100vh', scrollSnapAlign:'start', flexShrink:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'2rem 1.5rem 3.5rem', position:'relative' }}>
-            <div style={{ width:'100%', maxWidth:'580px', textAlign:'center', marginBottom:'1.8rem', padding:'0 1.5rem' }}>
-              <p style={{ fontSize:'0.6rem', fontWeight:800, color:'rgba(78,180,203,0.85)', textTransform:'uppercase', letterSpacing:'0.28em', margin:'0 0 0.6rem' }}>The Journey</p>
-              <h2 className="taronga-title" style={{ fontSize:'clamp(1.8rem,6.5vw,2.6rem)', color:'white', margin:'0 0 0.5rem', letterSpacing:'0.04em', lineHeight:1.1 }}>How It Works</h2>
-              <p style={{ fontSize:'0.84rem', color:'rgba(255,255,255,0.45)', lineHeight:1.65, margin:0 }}>From first log-in to final badge — a seamless guided experience.</p>
+          {/* ══ PAGE 2 · How It Works ══ */}
+          <div ref={el => pagesRef.current[1] = el} style={{ minHeight:'100vh', scrollSnapAlign:'start', display:'flex', flexDirection:'column', alignItems:'center', paddingBottom:'5rem', position:'relative' }}>
+
+            <div style={{ width:'100%', maxWidth:'580px', padding:'3.5rem 1.5rem 2rem', textAlign:'center' }}>
+              <div style={{ display:'inline-flex', alignItems:'center', gap:'0.4rem', background:'rgba(78,180,203,0.1)', border:'1px solid rgba(78,180,203,0.2)', borderRadius:'99px', padding:'0.28rem 0.8rem', marginBottom:'1.2rem' }}>
+                <div style={{ width:'5px', height:'5px', borderRadius:'50%', background:'#4ecbcb', flexShrink:0 }} />
+                <span style={{ fontSize:'0.57rem', fontWeight:800, color:'#4ecbcb', textTransform:'uppercase', letterSpacing:'0.2em' }}>The Journey</span>
+              </div>
+              <h2 className="taronga-title" style={{ fontSize:'clamp(2.2rem,8vw,3.2rem)', color:'white', margin:'0 0 0.8rem', letterSpacing:'-0.02em', lineHeight:1.06, fontWeight:900 }}>How It Works</h2>
+              <p style={{ fontSize:'0.92rem', color:'rgba(255,255,255,0.42)', lineHeight:1.65, margin:'0 auto', maxWidth:'320px' }}>From first log-in to final badge — a seamless guided experience.</p>
             </div>
 
-            <div style={{ width:'100%', maxWidth:'580px', padding:'0 1.5rem' }}>
+            <div style={{ width:'100%', maxWidth:'580px', padding:'0 1.5rem', display:'flex', flexDirection:'column', gap:'0.6rem' }}>
               {STEPS.map((s, i) => (
-                <div key={s.n} style={{ display:'flex', alignItems:'flex-start', gap:'0.95rem', position:'relative' }}>
-                  {i < STEPS.length - 1 && (
-                    <div style={{ position:'absolute', left:'17px', top:'38px', width:'2px', height:'calc(100% - 2px)', background:'linear-gradient(to bottom,rgba(78,180,203,0.28),rgba(78,180,203,0.04))', zIndex:0 }} />
-                  )}
-                  <div style={{ flexShrink:0, zIndex:1, width:'36px', height:'36px', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', background: i<2?'linear-gradient(135deg,rgba(38,132,196,0.4),rgba(78,180,203,0.22))':'rgba(255,255,255,0.055)', border:`1.5px solid ${i<2?'rgba(78,180,203,0.5)':'rgba(255,255,255,0.1)'}`, fontSize:'0.6rem', fontWeight:800, color:i<2?'rgba(78,200,210,0.95)':'rgba(255,255,255,0.4)', letterSpacing:'0.04em' }}>
+                <div key={s.n} style={{ display:'flex', alignItems:'flex-start', gap:'1rem', background: i<2 ? 'rgba(38,132,196,0.07)' : 'rgba(255,255,255,0.03)', border:`1px solid ${i<2 ? 'rgba(78,180,203,0.18)' : 'rgba(255,255,255,0.06)'}`, borderRadius:'14px', padding:'1rem 1.2rem' }}>
+                  <div style={{ flexShrink:0, fontSize:'1.7rem', fontWeight:900, lineHeight:1, color: i<2 ? 'rgba(78,200,210,0.65)' : 'rgba(255,255,255,0.15)', letterSpacing:'-0.04em', minWidth:'2.2rem' }}>
                     {s.n}
                   </div>
-                  <div style={{ paddingBottom: i < STEPS.length-1 ? '1.25rem' : 0 }}>
-                    <div style={{ display:'flex', alignItems:'center', gap:'0.45rem', paddingTop:'0.45rem' }}>
-                      <span style={{ fontSize:'0.86rem', fontWeight:700, color:'white' }}>{s.label}</span>
-                      {s.tag && <span style={{ fontSize:'0.56rem', background:'rgba(78,180,203,0.12)', border:'1px solid rgba(78,180,203,0.28)', color:'rgba(78,200,210,0.85)', padding:'0.12rem 0.45rem', borderRadius:'99px', fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase' }}>{s.tag}</span>}
+                  <div style={{ flex:1 }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', marginBottom:'0.22rem' }}>
+                      <span style={{ fontSize:'0.91rem', fontWeight:700, color:'white', lineHeight:1.3 }}>{s.label}</span>
+                      {s.tag && <span style={{ fontSize:'0.54rem', background: i<2 ? 'rgba(78,180,203,0.14)' : 'rgba(255,255,255,0.07)', border:`1px solid ${i<2 ? 'rgba(78,180,203,0.28)' : 'rgba(255,255,255,0.12)'}`, color: i<2 ? 'rgba(78,200,210,0.88)' : 'rgba(255,255,255,0.4)', padding:'0.1rem 0.42rem', borderRadius:'99px', fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase' }}>{s.tag}</span>}
                     </div>
-                    <div style={{ fontSize:'0.73rem', color:'rgba(255,255,255,0.45)', lineHeight:1.6 }}>{s.desc}</div>
+                    <div style={{ fontSize:'0.77rem', color:'rgba(255,255,255,0.4)', lineHeight:1.62 }}>{s.desc}</div>
                   </div>
                 </div>
               ))}
             </div>
 
-            <div style={{ position:'absolute', bottom:'1.4rem', left:'50%', transform:'translateX(-50%)', opacity:0.28, animation:'lm-bob 2.6s ease-in-out infinite' }}>
+            <div style={{ position:'absolute', bottom:'1.4rem', left:'50%', transform:'translateX(-50%)', opacity:0.25, animation:'lm-bob 2.6s ease-in-out infinite' }}>
               <svg width="16" height="9" viewBox="0 0 18 10" fill="none"><path d="M1 1L9 9L17 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
             </div>
           </div>
 
-          {/* ══ PAGE 3 · Teacher Portal ═════════════════════════════════ */}
-          <div ref={el => pagesRef.current[2] = el} style={{ minHeight:'100vh', height:'auto', scrollSnapAlign:'start', flexShrink:0, display:'flex', flexDirection:'column', alignItems:'center', padding:'0 0 3rem', position:'relative' }}>
-            <div style={{ width:'100%', maxWidth:'580px', padding:'3rem 1.5rem 1.4rem', textAlign:'center' }}>
-              <p style={{ fontSize:'0.6rem', fontWeight:800, color:'rgba(80,200,160,0.85)', textTransform:'uppercase', letterSpacing:'0.28em', margin:'0 0 0.6rem' }}>For Educators</p>
-              <h2 className="taronga-title" style={{ fontSize:'clamp(1.8rem,6.5vw,2.6rem)', color:'white', margin:'0 0 0.5rem', letterSpacing:'0.04em', lineHeight:1.1 }}>Teacher Portal</h2>
-              <p style={{ fontSize:'0.86rem', color:'rgba(255,255,255,0.5)', lineHeight:1.7, margin:'0 auto' }}>
-                Everything you need to run a seamless excursion and bring the learning back to your classroom.
+          {/* ══ PAGE 3 · Teacher Portal ══ */}
+          <div ref={el => pagesRef.current[2] = el} style={{ minHeight:'100vh', height:'auto', scrollSnapAlign:'start', display:'flex', flexDirection:'column', alignItems:'center', paddingBottom:'4rem', position:'relative' }}>
+
+            <div style={{ width:'100%', maxWidth:'580px', padding:'3.5rem 1.5rem 1.8rem', textAlign:'center' }}>
+              <div style={{ display:'inline-flex', alignItems:'center', gap:'0.4rem', background:'rgba(80,200,160,0.1)', border:'1px solid rgba(80,200,160,0.2)', borderRadius:'99px', padding:'0.28rem 0.8rem', marginBottom:'1.2rem' }}>
+                <div style={{ width:'5px', height:'5px', borderRadius:'50%', background:'#50c8a0', flexShrink:0 }} />
+                <span style={{ fontSize:'0.57rem', fontWeight:800, color:'#50c8a0', textTransform:'uppercase', letterSpacing:'0.2em' }}>For Educators</span>
+              </div>
+              <h2 className="taronga-title" style={{ fontSize:'clamp(2.2rem,8vw,3.2rem)', color:'white', margin:'0 0 0.8rem', letterSpacing:'-0.02em', lineHeight:1.06, fontWeight:900 }}>Teacher Portal</h2>
+              <p style={{ fontSize:'0.92rem', color:'rgba(255,255,255,0.5)', lineHeight:1.72, margin:'0 auto', maxWidth:'360px' }}>
+                Everything you need to run a seamless excursion and bring the learning back into your classroom.
               </p>
             </div>
 
-            <div style={{ padding:'0 1.2rem', width:'100%', maxWidth:'580px', marginBottom:'1.4rem' }}>
+            <div style={{ padding:'0 1.5rem', width:'100%', maxWidth:'580px', marginBottom:'1.6rem' }}>
               <BrowserFrame src="/images/screenshots/app-teacher.png" alt="Teacher portal dashboard" />
             </div>
 
-            <div style={{ padding:'0 1.2rem', width:'100%', maxWidth:'580px' }}>
-              <div style={{ height:'1px', background:'rgba(255,255,255,0.07)', marginBottom:'1.1rem' }} />
-              <p style={{ fontSize:'0.58rem', fontWeight:800, color:'rgba(255,255,255,0.28)', textTransform:'uppercase', letterSpacing:'0.22em', margin:'0 0 0.85rem' }}>Portal Features</p>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.6rem' }}>
+            <div style={{ padding:'0 1.5rem', width:'100%', maxWidth:'580px' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', marginBottom:'1rem' }}>
+                <div style={{ flex:1, height:'1px', background:'rgba(255,255,255,0.07)' }} />
+                <span style={{ fontSize:'0.56rem', fontWeight:900, color:'rgba(255,255,255,0.22)', textTransform:'uppercase', letterSpacing:'0.3em', whiteSpace:'nowrap' }}>Portal Features</span>
+                <div style={{ flex:1, height:'1px', background:'rgba(255,255,255,0.07)' }} />
+              </div>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.65rem' }}>
                 {PORTAL_FEATURES.map((item, i) => (
-                  <div key={i} style={{ background:'rgba(255,255,255,0.032)', border:'1px solid rgba(255,255,255,0.065)', borderTop:'2px solid rgba(80,200,160,0.38)', borderRadius:'10px', padding:'0.75rem 0.85rem' }}>
-                    <div style={{ fontSize:'0.72rem', fontWeight:700, color:'rgba(80,200,160,0.82)', marginBottom:'0.3rem', letterSpacing:'0.01em' }}>{item.label}</div>
+                  <div key={i} style={{ background:'rgba(80,200,160,0.05)', border:'1px solid rgba(80,200,160,0.12)', borderRadius:'12px', padding:'0.85rem 0.9rem' }}>
+                    <div style={{ fontSize:'0.74rem', fontWeight:800, color:'rgba(80,200,160,0.88)', marginBottom:'0.3rem', lineHeight:1.2 }}>{item.label}</div>
                     <div style={{ fontSize:'0.67rem', color:'rgba(255,255,255,0.42)', lineHeight:1.6 }}>{item.desc}</div>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div style={{ marginTop:'1.5rem', textAlign:'center' }}>
+            <div style={{ marginTop:'2rem', textAlign:'center' }}>
               <div onClick={() => { closeLearn(); setCurrentScreen('adminLogin'); }}
-                style={{ display:'inline-block', color:'rgba(255,255,255,0.32)', fontSize:'0.7rem', fontWeight:600, letterSpacing:'0.12em', textTransform:'uppercase', cursor:'pointer', borderBottom:'1px solid rgba(255,255,255,0.14)', paddingBottom:'2px', transition:'color 0.2s' }}
-                onMouseEnter={e => e.currentTarget.style.color='rgba(255,255,255,0.62)'}
-                onMouseLeave={e => e.currentTarget.style.color='rgba(255,255,255,0.32)'}>
+                style={{ display:'inline-block', color:'rgba(255,255,255,0.28)', fontSize:'0.67rem', fontWeight:600, letterSpacing:'0.14em', textTransform:'uppercase', cursor:'pointer', borderBottom:'1px solid rgba(255,255,255,0.12)', paddingBottom:'2px', transition:'color 0.2s' }}
+                onMouseEnter={e => e.currentTarget.style.color='rgba(255,255,255,0.58)'}
+                onMouseLeave={e => e.currentTarget.style.color='rgba(255,255,255,0.28)'}>
                 Taronga Staff Login
               </div>
             </div>
