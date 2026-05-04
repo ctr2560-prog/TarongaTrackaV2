@@ -272,7 +272,7 @@ export default function HomeScreen() {
           {/* ══ PAGE 1 · About ══ */}
           <div ref={el => pagesRef.current[0] = el} style={{ minHeight:'100vh', height:'auto', scrollSnapAlign:'start', display:'flex', flexDirection:'column', alignItems:'center', paddingBottom:'5rem', position:'relative' }}>
 
-            <div style={{ width:'100%', maxWidth:'580px', padding:'3.5rem 1.5rem 2rem', textAlign:'center' }}>
+            <div style={{ width:'100%', maxWidth:'580px', padding:'3.5rem 0.75rem 2rem', textAlign:'center' }}>
               <div style={{ display:'inline-flex', alignItems:'center', gap:'0.4rem', background:'rgba(78,203,113,0.1)', border:'1px solid rgba(78,203,113,0.2)', borderRadius:'99px', padding:'0.28rem 0.8rem', marginBottom:'1.4rem' }}>
                 <div style={{ width:'5px', height:'5px', borderRadius:'50%', background:'#4ecb71', flexShrink:0 }} />
                 <span style={{ fontSize:'0.57rem', fontWeight:800, color:'#4ecb71', textTransform:'uppercase', letterSpacing:'0.2em' }}>Taronga Zoo Education</span>
@@ -280,12 +280,12 @@ export default function HomeScreen() {
               <h2 className="taronga-title" style={{ fontSize:'clamp(2.2rem,8vw,3.2rem)', color:'white', margin:'0 0 1rem', letterSpacing:'-0.02em', lineHeight:1.06 }}>
                 Learning that<br/>lives at the zoo.
               </h2>
-              <p style={{ fontSize:'0.95rem', color:'rgba(255,255,255,0.52)', lineHeight:1.75, margin:'0 auto', maxWidth:'360px' }}>
+              <p style={{ fontSize:'0.95rem', color:'rgba(255,255,255,0.52)', lineHeight:1.75, margin:'0 auto' }}>
                 Real animals. Real science. Three powerful ways to bring your students closer to wildlife.
               </p>
             </div>
 
-            <div style={{ width:'100%', maxWidth:'580px', padding:'0 1.5rem', marginBottom:'0.85rem' }}>
+            <div style={{ width:'100%', maxWidth:'580px', padding:'0 0.75rem', marginBottom:'0.85rem' }}>
               <div style={{ display:'flex', gap:'0.5rem' }}>
                 {MODES.map(m => (
                   <button key={m.id} onClick={e => { e.stopPropagation(); setActiveMode(m.id); }}
@@ -299,7 +299,7 @@ export default function HomeScreen() {
               </div>
             </div>
 
-            <div style={{ width:'100%', maxWidth:'580px', padding:'0 1.5rem', marginBottom:'2rem' }}>
+            <div style={{ width:'100%', maxWidth:'580px', padding:'0 0.75rem', marginBottom:'2rem' }}>
               <div style={{ background:'rgba(255,255,255,0.03)', border:`1px solid ${activeModeData?.accent}28`, borderRadius:'16px', overflow:'hidden' }}>
                 <div style={{ aspectRatio:'16/9', overflow:'hidden' }}>
                   <img src={activeModeData.image} alt={activeModeData.label} style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:'center', display:'block' }} />
@@ -314,7 +314,7 @@ export default function HomeScreen() {
               </div>
             </div>
 
-            <div style={{ width:'100%', maxWidth:'580px', padding:'0 1.5rem' }}>
+            <div style={{ width:'100%', maxWidth:'580px', padding:'0 0.75rem' }}>
               <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', marginBottom:'1rem' }}>
                 <div style={{ flex:1, height:'1px', background:'rgba(255,255,255,0.07)' }} />
                 <span style={{ fontSize:'0.56rem', fontWeight:900, color:'rgba(255,255,255,0.22)', textTransform:'uppercase', letterSpacing:'0.3em', whiteSpace:'nowrap' }}>Platform Features</span>
