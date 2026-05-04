@@ -11,7 +11,7 @@ const MODES = [
     tag: 'Live Experience',
     summary: 'GPS-guided animal tracking and live missions during your Taronga Zoo excursion.',
     detail: 'Students explore Taronga Zoo with real-time GPS guidance, discovering animals in their natural habitats, completing keeper-designed missions and building their badge collection — all across one incredible visit.',
-    image: '/images/screenshots/app-map.png',
+    image: '/images/screenshots/mode-zoo.png',
   },
   {
     id: 'zoosnooz',
@@ -20,7 +20,7 @@ const MODES = [
     tag: 'Overnight Program',
     summary: 'Taronga\'s overnight experience with after-dark keeper missions and documentary making.',
     detail: 'Designed exclusively for Taronga\'s ZooSnooz overnight program. Students complete nocturnal animal observations, interact with keepers and produce a wildlife documentary — all under the stars at the zoo.',
-    image: '/images/screenshots/app-zoosnooz.png',
+    image: '/images/screenshots/mode-zoosnooz.png',
   },
   {
     id: 'school',
@@ -30,7 +30,7 @@ const MODES = [
     comingSoon: true,
     summary: 'A virtual zoo that brings the full Taronga experience into your classroom.',
     detail: 'Can\'t make it to the zoo? Taronga Tracka will recreate the complete zoo experience in your classroom. Students track virtual animals, complete digital missions and earn badges — building their own virtual Taronga from their desks.',
-    image: null,
+    image: '/images/screenshots/mode-school.png',
   },
 ];
 
@@ -293,16 +293,9 @@ export default function HomeScreen() {
 
             <div style={{ width:'100%', maxWidth:'580px', padding:'0 1.5rem', marginBottom:'2rem' }}>
               <div style={{ background:'rgba(255,255,255,0.03)', border:`1px solid ${activeModeData?.accent}28`, borderRadius:'16px', overflow:'hidden' }}>
-                {activeModeData?.image ? (
-                  <div style={{ aspectRatio:'16/9', overflow:'hidden' }}>
-                    <img src={activeModeData.image} alt={activeModeData.label} style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:'top', display:'block' }} />
-                  </div>
-                ) : (
-                  <div style={{ aspectRatio:'16/9', background:'rgba(78,203,203,0.04)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'0.5rem' }}>
-                    <div style={{ fontSize:'0.68rem', fontWeight:800, color:'rgba(78,203,203,0.6)', textTransform:'uppercase', letterSpacing:'0.18em' }}>Coming Soon</div>
-                    <div style={{ fontSize:'0.8rem', color:'rgba(255,255,255,0.28)', textAlign:'center', maxWidth:'220px', lineHeight:1.6 }}>Virtual zoo classroom experience in development</div>
-                  </div>
-                )}
+                <div style={{ aspectRatio:'16/9', overflow:'hidden' }}>
+                  <img src={activeModeData.image} alt={activeModeData.label} style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:'center', display:'block' }} />
+                </div>
                 <div style={{ padding:'1.1rem 1.25rem 1.3rem' }}>
                   <div style={{ display:'inline-flex', alignItems:'center', gap:'0.35rem', marginBottom:'0.55rem' }}>
                     <div style={{ width:'5px', height:'5px', borderRadius:'50%', background:activeModeData?.accent, flexShrink:0 }} />
