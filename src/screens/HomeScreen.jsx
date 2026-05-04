@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 
 // ── Data ──────────────────────────────────────────────────────────────────────
@@ -66,11 +66,12 @@ const FEATURES = [
 ];
 
 const STEPS = [
-  { n: '01', label: 'Create a Class',    desc: 'Set up your class in the teacher portal and receive a unique class code in seconds.', tag: 'Teacher' },
-  { n: '02', label: 'Students Join',     desc: 'Students enter the class code on arrival to connect instantly to your group.', tag: 'Student' },
-  { n: '03', label: 'Explore the Zoo',   desc: 'GPS technology guides students to each animal zone at their own pace.' },
-  { n: '04', label: 'Complete Missions', desc: 'Students engage through games, hands-on activities and documentary making.' },
-  { n: '05', label: 'Earn Badges',       desc: 'Completed missions unlock badges that build each student\'s wildlife collection.' },
+  { n:'01', label:'Create a Class',              role:'teacher', desc:'Set up your class in the teacher portal and receive a unique join code in seconds.' },
+  { n:'02', label:'Students Join',               role:'student', desc:'Students enter the class code on arrival to connect instantly to your group.' },
+  { n:'03', label:'Explore the Zoo',             role:'student', desc:'GPS technology guides students to each animal zone at their own pace.' },
+  { n:'04', label:'Complete Missions',           role:'student', desc:'Students engage through games, hands-on activities and documentary making.' },
+  { n:'05', label:'Earn Badges',                 role:'student', desc:'Completed missions unlock badges that build each student\'s wildlife collection.' },
+  { n:'06', label:'Student Data & Learning Links', role:'teacher', desc:'Review observation scores, mission progress and curriculum-aligned learning reports from your teacher portal.' },
 ];
 
 const PORTAL_FEATURES = [
@@ -178,8 +179,15 @@ export default function HomeScreen() {
   const [page, setPage]           = useState(0);
   const [activeMode, setActiveMode]           = useState('zoo');
   const [expandedFeature, setExpandedFeature] = useState(null);
+  const [p2Key, setP2Key] = useState(0);
   const scrollRef  = useRef(null);
   const pagesRef   = useRef([]);
+  const lastPageRef = useRef(-1);
+
+  useEffect(() => {
+    if (page === 1 && lastPageRef.current !== 1) setP2Key(k => k + 1);
+    lastPageRef.current = page;
+  }, [page]);
 
   const openLearn = () => { setLearnOpen(true); setPage(0); };
   const closeLearn = () => {
@@ -336,21 +344,36 @@ export default function HomeScreen() {
               <p style={{ fontSize:'0.92rem', color:'rgba(255,255,255,0.42)', lineHeight:1.65, margin:'0 auto', maxWidth:'320px' }}>From first log-in to final badge — a seamless guided experience.</p>
             </div>
 
-            <div style={{ width:'100%', maxWidth:'580px', padding:'0 1.5rem', display:'flex', flexDirection:'column', gap:'0.6rem' }}>
-              {STEPS.map((s, i) => (
-                <div key={s.n} style={{ display:'flex', alignItems:'flex-start', gap:'1rem', background: i<2 ? 'rgba(38,132,196,0.07)' : 'rgba(255,255,255,0.03)', border:`1px solid ${i<2 ? 'rgba(78,180,203,0.18)' : 'rgba(255,255,255,0.06)'}`, borderRadius:'14px', padding:'1rem 1.2rem' }}>
-                  <div style={{ flexShrink:0, fontSize:'1.7rem', fontWeight:900, lineHeight:1, color: i<2 ? 'rgba(78,200,210,0.65)' : 'rgba(255,255,255,0.15)', letterSpacing:'-0.04em', minWidth:'2.2rem' }}>
-                    {s.n}
-                  </div>
-                  <div style={{ flex:1 }}>
-                    <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', marginBottom:'0.22rem' }}>
-                      <span style={{ fontSize:'0.91rem', fontWeight:700, color:'white', lineHeight:1.3 }}>{s.label}</span>
-                      {s.tag && <span style={{ fontSize:'0.54rem', background: i<2 ? 'rgba(78,180,203,0.14)' : 'rgba(255,255,255,0.07)', border:`1px solid ${i<2 ? 'rgba(78,180,203,0.28)' : 'rgba(255,255,255,0.12)'}`, color: i<2 ? 'rgba(78,200,210,0.88)' : 'rgba(255,255,255,0.4)', padding:'0.1rem 0.42rem', borderRadius:'99px', fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase' }}>{s.tag}</span>}
+            <div key={p2Key} style={{ width:'100%', maxWidth:'580px', padding:'0 1.5rem' }}>
+              {STEPS.map((s, i) => {
+                const isTeacher = s.role === 'teacher';
+                const accent  = isTeacher ? '#4ecbcb' : '#4ecb71';
+                const bg      = isTeacher ? 'rgba(78,203,203,' : 'rgba(78,203,113,';
+                const nextAccent = i < STEPS.length - 1 ? (STEPS[i+1].role === 'teacher' ? 'rgba(78,203,203,0.25)' : 'rgba(78,203,113,0.25)') : 'transparent';
+                return (
+                  <div key={s.n} style={{ display:'flex', gap:'1rem', animation:'lm-bubble-in 0.45s cubic-bezier(0.34,1.56,0.64,1) both', animationDelay:`${i * 0.13}s` }}>
+                    {/* Bubble + connector column */}
+                    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', width:'46px', flexShrink:0 }}>
+                      <div style={{ width:'46px', height:'46px', borderRadius:'50%', flexShrink:0, background:`${bg}0.1)`, border:`2px solid ${accent}`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'0.7rem', fontWeight:800, color:accent, boxShadow:`0 0 20px ${accent}40`, position:'relative', zIndex:1 }}>
+                        {s.n}
+                      </div>
+                      {i < STEPS.length - 1 && (
+                        <div style={{ width:'2px', flex:1, minHeight:'22px', background:`linear-gradient(to bottom,${accent}55,${nextAccent})`, transformOrigin:'top', animation:'lm-line-in 0.3s ease both', animationDelay:`${i * 0.13 + 0.28}s` }} />
+                      )}
                     </div>
-                    <div style={{ fontSize:'0.77rem', color:'rgba(255,255,255,0.4)', lineHeight:1.62 }}>{s.desc}</div>
+                    {/* Content */}
+                    <div style={{ flex:1, paddingBottom: i < STEPS.length-1 ? '0.7rem' : 0, paddingTop:'0.65rem' }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:'0.45rem', marginBottom:'0.22rem', flexWrap:'wrap' }}>
+                        <span style={{ fontSize:'0.88rem', fontWeight:700, color:'white', lineHeight:1.3 }}>{s.label}</span>
+                        <span style={{ fontSize:'0.52rem', fontWeight:800, color:accent, background:`${bg}0.12)`, border:`1px solid ${bg}0.25)`, padding:'0.1rem 0.42rem', borderRadius:'99px', textTransform:'uppercase', letterSpacing:'0.08em' }}>
+                          {isTeacher ? 'Teacher' : 'Student'}
+                        </span>
+                      </div>
+                      <div style={{ fontSize:'0.76rem', color:'rgba(255,255,255,0.42)', lineHeight:1.62 }}>{s.desc}</div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <div style={{ position:'absolute', bottom:'1.4rem', left:'50%', transform:'translateX(-50%)', opacity:0.25, animation:'lm-bob 2.6s ease-in-out infinite' }}>
@@ -409,6 +432,15 @@ export default function HomeScreen() {
         @keyframes lm-bob {
           0%, 100% { opacity:0.7; transform:translateX(-50%) translateY(0); }
           50%       { opacity:1;  transform:translateX(-50%) translateY(6px); }
+        }
+        @keyframes lm-bubble-in {
+          0%   { opacity:0; transform:scale(0.3) translateY(6px); }
+          65%  { transform:scale(1.08) translateY(0); }
+          100% { opacity:1; transform:scale(1) translateY(0); }
+        }
+        @keyframes lm-line-in {
+          0%   { opacity:0; transform:scaleY(0); }
+          100% { opacity:1; transform:scaleY(1); }
         }
       `}</style>
     </>
