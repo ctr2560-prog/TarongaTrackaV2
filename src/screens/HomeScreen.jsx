@@ -96,6 +96,24 @@ function PhoneMockup({ src, alt = '', style = {} }) {
   );
 }
 
+function BrowserFrame({ src, alt = '' }) {
+  return (
+    <div style={{ borderRadius:'14px', overflow:'hidden', border:'1px solid rgba(255,255,255,0.1)', boxShadow:'0 16px 52px rgba(0,0,0,0.65), inset 0 0 0 1px rgba(255,255,255,0.04)', background:'#060d08' }}>
+      <div style={{ background:'rgba(255,255,255,0.045)', padding:'0.55rem 0.8rem', display:'flex', alignItems:'center', gap:'0.55rem', borderBottom:'1px solid rgba(255,255,255,0.07)' }}>
+        <div style={{ display:'flex', gap:'5px', flexShrink:0 }}>
+          {['#ff5f57','#febc2e','#28c840'].map((c,i) => (
+            <div key={i} style={{ width:'9px', height:'9px', borderRadius:'50%', background:c, opacity:0.72 }} />
+          ))}
+        </div>
+        <div style={{ flex:1, background:'rgba(255,255,255,0.055)', borderRadius:'5px', height:'17px' }} />
+      </div>
+      <div style={{ aspectRatio:'16/9', overflow:'hidden' }}>
+        <img src={src} alt={alt} style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:'top', display:'block' }} />
+      </div>
+    </div>
+  );
+}
+
 function ExpandableFeatureCard({ feature, isOpen, onToggle }) {
   return (
     <div
@@ -138,7 +156,7 @@ function ExpandableFeatureCard({ feature, isOpen, onToggle }) {
         transition:'max-height 0.4s cubic-bezier(0.4,0,0.2,1)',
       }}>
         {feature.image && (
-          <div style={{ width:'100%', height:'180px', overflow:'hidden', borderTop:'1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ width:'100%', aspectRatio:'16/9', overflow:'hidden', borderTop:'1px solid rgba(255,255,255,0.06)' }}>
             <img src={feature.image} alt={feature.label} style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:'top', display:'block' }} />
           </div>
         )}
@@ -251,7 +269,7 @@ export default function HomeScreen() {
           <div ref={el => pagesRef.current[0] = el} style={{ minHeight:'100vh', height:'auto', scrollSnapAlign:'start', flexShrink:0, display:'flex', flexDirection:'column', alignItems:'center', padding:'0 0 4rem', position:'relative' }}>
 
             {/* Header */}
-            <div style={{ width:'100%', padding:'3rem 1.5rem 1.6rem', textAlign:'center' }}>
+            <div style={{ width:'100%', maxWidth:'580px', padding:'3rem 1.5rem 1.6rem', textAlign:'center' }}>
               <p style={{ fontSize:'0.6rem', fontWeight:800, color:'rgba(78,203,113,0.85)', textTransform:'uppercase', letterSpacing:'0.28em', margin:'0 0 0.55rem' }}>About</p>
               <h2 className="taronga-title" style={{ fontSize:'clamp(1.75rem,6vw,2.5rem)', color:'white', margin:'0 0 0.3rem', letterSpacing:'0.03em', lineHeight:1.1 }}>
                 An Immersive Education Platform
@@ -263,7 +281,7 @@ export default function HomeScreen() {
             </div>
 
             {/* ── Three experiences card ── */}
-            <div style={{ padding:'0 1.2rem', width:'100%', marginBottom:'1.6rem' }}>
+            <div style={{ padding:'0 1.2rem', width:'100%', maxWidth:'580px', marginBottom:'1.6rem' }}>
               <div style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.09)', borderRadius:'18px', overflow:'hidden' }}>
                 {/* Tab bar */}
                 <div style={{ display:'flex', borderBottom:'1px solid rgba(255,255,255,0.07)' }}>
@@ -290,7 +308,7 @@ export default function HomeScreen() {
                     {activeModeData?.detail}
                   </p>
                   {activeModeData?.image ? (
-                    <div style={{ borderRadius:'12px', overflow:'hidden', height:'140px', border:'1px solid rgba(255,255,255,0.08)' }}>
+                    <div style={{ borderRadius:'12px', overflow:'hidden', aspectRatio:'16/9', border:'1px solid rgba(255,255,255,0.08)' }}>
                       <img src={activeModeData.image} alt={activeModeData.label} style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:'top', display:'block' }} />
                     </div>
                   ) : (
@@ -304,9 +322,9 @@ export default function HomeScreen() {
             </div>
 
             {/* ── Expandable feature cards ── */}
-            <div style={{ padding:'0 1.2rem', width:'100%' }}>
+            <div style={{ padding:'0 1.2rem', width:'100%', maxWidth:'580px' }}>
               <div style={{ height:'1px', background:'rgba(255,255,255,0.07)', marginBottom:'1.1rem' }} />
-              <p style={{ fontSize:'0.58rem', fontWeight:800, color:'rgba(255,255,255,0.3)', textTransform:'uppercase', letterSpacing:'0.22em', margin:'0 0 0.85rem' }}>Platform Features</p>
+              <p style={{ fontSize:'0.58rem', fontWeight:800, color:'rgba(255,255,255,0.28)', textTransform:'uppercase', letterSpacing:'0.22em', margin:'0 0 0.85rem' }}>Platform Features</p>
               <div style={{ display:'flex', flexDirection:'column', gap:'0.65rem' }}>
                 {FEATURES.map(f => (
                   <ExpandableFeatureCard
@@ -326,13 +344,13 @@ export default function HomeScreen() {
 
           {/* ══ PAGE 2 · How It Works ═══════════════════════════════════ */}
           <div ref={el => pagesRef.current[1] = el} style={{ height:'100vh', scrollSnapAlign:'start', flexShrink:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'2rem 1.5rem 3.5rem', position:'relative' }}>
-            <div style={{ width:'100%', textAlign:'center', marginBottom:'1.8rem', padding:'0 1.5rem' }}>
+            <div style={{ width:'100%', maxWidth:'580px', textAlign:'center', marginBottom:'1.8rem', padding:'0 1.5rem' }}>
               <p style={{ fontSize:'0.6rem', fontWeight:800, color:'rgba(78,180,203,0.85)', textTransform:'uppercase', letterSpacing:'0.28em', margin:'0 0 0.6rem' }}>The Journey</p>
               <h2 className="taronga-title" style={{ fontSize:'clamp(1.8rem,6.5vw,2.6rem)', color:'white', margin:'0 0 0.5rem', letterSpacing:'0.04em', lineHeight:1.1 }}>How It Works</h2>
               <p style={{ fontSize:'0.84rem', color:'rgba(255,255,255,0.45)', lineHeight:1.65, margin:0 }}>From first log-in to final badge — a seamless guided experience.</p>
             </div>
 
-            <div style={{ width:'100%', padding:'0 1.5rem' }}>
+            <div style={{ width:'100%', maxWidth:'580px', padding:'0 1.5rem' }}>
               {STEPS.map((s, i) => (
                 <div key={s.n} style={{ display:'flex', alignItems:'flex-start', gap:'0.95rem', position:'relative' }}>
                   {i < STEPS.length - 1 && (
@@ -359,7 +377,7 @@ export default function HomeScreen() {
 
           {/* ══ PAGE 3 · Teacher Portal ═════════════════════════════════ */}
           <div ref={el => pagesRef.current[2] = el} style={{ minHeight:'100vh', height:'auto', scrollSnapAlign:'start', flexShrink:0, display:'flex', flexDirection:'column', alignItems:'center', padding:'0 0 3rem', position:'relative' }}>
-            <div style={{ width:'100%', padding:'3rem 1.5rem 1.4rem', textAlign:'center' }}>
+            <div style={{ width:'100%', maxWidth:'580px', padding:'3rem 1.5rem 1.4rem', textAlign:'center' }}>
               <p style={{ fontSize:'0.6rem', fontWeight:800, color:'rgba(80,200,160,0.85)', textTransform:'uppercase', letterSpacing:'0.28em', margin:'0 0 0.6rem' }}>For Educators</p>
               <h2 className="taronga-title" style={{ fontSize:'clamp(1.8rem,6.5vw,2.6rem)', color:'white', margin:'0 0 0.5rem', letterSpacing:'0.04em', lineHeight:1.1 }}>Teacher Portal</h2>
               <p style={{ fontSize:'0.86rem', color:'rgba(255,255,255,0.5)', lineHeight:1.7, margin:'0 auto' }}>
@@ -367,28 +385,18 @@ export default function HomeScreen() {
               </p>
             </div>
 
-            <div style={{ display:'flex', alignItems:'flex-start', gap:'1.1rem', padding:'0 1.5rem', width:'100%', marginBottom:'1.3rem' }}>
-              <PhoneMockup src="/images/screenshots/app-teacher.png" alt="Teacher dashboard" />
-              <div style={{ flex:1, display:'flex', flexDirection:'column', gap:'0.6rem', paddingTop:'0.15rem' }}>
-                {[{ t:'Dashboard', d:'Class overview, student progress and live activity feed' },{ t:'Analytics', d:'Observation scoring, badge tracking and class reports' },{ t:'Resources', d:'Pre/post visit materials aligned to your curriculum' }].map(item => (
-                  <div key={item.t} style={{ background:'rgba(80,200,160,0.07)', border:'1px solid rgba(80,200,160,0.16)', borderRadius:'11px', padding:'0.65rem 0.8rem' }}>
-                    <div style={{ fontSize:'0.67rem', fontWeight:800, color:'rgba(80,200,160,0.88)', textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:'0.22rem' }}>{item.t}</div>
-                    <div style={{ fontSize:'0.66rem', color:'rgba(255,255,255,0.46)', lineHeight:1.55 }}>{item.d}</div>
-                  </div>
-                ))}
-              </div>
+            <div style={{ padding:'0 1.2rem', width:'100%', maxWidth:'580px', marginBottom:'1.4rem' }}>
+              <BrowserFrame src="/images/screenshots/app-teacher.png" alt="Teacher portal dashboard" />
             </div>
 
-            <div style={{ padding:'0 1.2rem', width:'100%' }}>
+            <div style={{ padding:'0 1.2rem', width:'100%', maxWidth:'580px' }}>
               <div style={{ height:'1px', background:'rgba(255,255,255,0.07)', marginBottom:'1.1rem' }} />
               <p style={{ fontSize:'0.58rem', fontWeight:800, color:'rgba(255,255,255,0.28)', textTransform:'uppercase', letterSpacing:'0.22em', margin:'0 0 0.85rem' }}>Portal Features</p>
-              <div style={{ display:'flex', flexDirection:'column', gap:'0.55rem' }}>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.6rem' }}>
                 {PORTAL_FEATURES.map((item, i) => (
-                  <div key={i} style={{ display:'flex', alignItems:'flex-start', gap:'0.75rem', background:'rgba(255,255,255,0.032)', border:'1px solid rgba(255,255,255,0.065)', borderLeft:'2.5px solid rgba(80,200,160,0.42)', borderRadius:'10px', padding:'0.7rem 0.85rem' }}>
-                    <div>
-                      <div style={{ fontSize:'0.78rem', fontWeight:700, color:'rgba(255,255,255,0.85)', marginBottom:'0.14rem' }}>{item.label}</div>
-                      <div style={{ fontSize:'0.68rem', color:'rgba(255,255,255,0.4)', lineHeight:1.6 }}>{item.desc}</div>
-                    </div>
+                  <div key={i} style={{ background:'rgba(255,255,255,0.032)', border:'1px solid rgba(255,255,255,0.065)', borderTop:'2px solid rgba(80,200,160,0.38)', borderRadius:'10px', padding:'0.75rem 0.85rem' }}>
+                    <div style={{ fontSize:'0.72rem', fontWeight:700, color:'rgba(80,200,160,0.82)', marginBottom:'0.3rem', letterSpacing:'0.01em' }}>{item.label}</div>
+                    <div style={{ fontSize:'0.67rem', color:'rgba(255,255,255,0.42)', lineHeight:1.6 }}>{item.desc}</div>
                   </div>
                 ))}
               </div>
