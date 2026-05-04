@@ -351,14 +351,14 @@ export default function HomeScreen() {
                 const bg      = isTeacher ? 'rgba(78,203,203,' : 'rgba(78,203,113,';
                 const nextAccent = i < STEPS.length - 1 ? (STEPS[i+1].role === 'teacher' ? 'rgba(78,203,203,0.25)' : 'rgba(78,203,113,0.25)') : 'transparent';
                 return (
-                  <div key={s.n} style={{ display:'flex', gap:'1rem', animation:'lm-bubble-in 0.45s cubic-bezier(0.34,1.56,0.64,1) both', animationDelay:`${i * 0.13}s` }}>
+                  <div key={s.n} style={{ display:'flex', gap:'1rem', animation:'lm-bubble-in 0.5s cubic-bezier(0.34,1.56,0.64,1) both', animationDelay:`${i * 0.55}s` }}>
                     {/* Bubble + connector column */}
                     <div style={{ display:'flex', flexDirection:'column', alignItems:'center', width:'46px', flexShrink:0 }}>
                       <div style={{ width:'46px', height:'46px', borderRadius:'50%', flexShrink:0, background:`${bg}0.1)`, border:`2px solid ${accent}`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'0.7rem', fontWeight:800, color:accent, boxShadow:`0 0 20px ${accent}40`, position:'relative', zIndex:1 }}>
                         {s.n}
                       </div>
                       {i < STEPS.length - 1 && (
-                        <div style={{ width:'2px', flex:1, minHeight:'22px', background:`linear-gradient(to bottom,${accent}55,${nextAccent})`, transformOrigin:'top', animation:'lm-line-in 0.3s ease both', animationDelay:`${i * 0.13 + 0.28}s` }} />
+                        <div style={{ width:'2px', flex:1, minHeight:'22px', background:`linear-gradient(to bottom,${accent}55,${nextAccent})`, transformOrigin:'top', animation:'lm-line-in 0.3s ease both', animationDelay:`${i * 0.55 + 0.38}s` }} />
                       )}
                     </div>
                     {/* Content */}
