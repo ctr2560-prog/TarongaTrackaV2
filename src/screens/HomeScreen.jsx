@@ -269,7 +269,7 @@ export default function HomeScreen() {
                 <div style={{ width:'5px', height:'5px', borderRadius:'50%', background:'#4ecb71', flexShrink:0 }} />
                 <span style={{ fontSize:'0.57rem', fontWeight:800, color:'#4ecb71', textTransform:'uppercase', letterSpacing:'0.2em' }}>Taronga Zoo Education</span>
               </div>
-              <h2 className="taronga-title" style={{ fontSize:'clamp(2.2rem,8vw,3.2rem)', color:'white', margin:'0 0 1rem', letterSpacing:'-0.02em', lineHeight:1.06, fontWeight:900 }}>
+              <h2 className="taronga-title" style={{ fontSize:'clamp(2.2rem,8vw,3.2rem)', color:'white', margin:'0 0 1rem', letterSpacing:'-0.02em', lineHeight:1.06 }}>
                 Learning that<br/>lives at the zoo.
               </h2>
               <p style={{ fontSize:'0.95rem', color:'rgba(255,255,255,0.52)', lineHeight:1.75, margin:'0 auto', maxWidth:'360px' }}>
@@ -339,7 +339,7 @@ export default function HomeScreen() {
                 <div style={{ width:'5px', height:'5px', borderRadius:'50%', background:'#4ecbcb', flexShrink:0 }} />
                 <span style={{ fontSize:'0.57rem', fontWeight:800, color:'#4ecbcb', textTransform:'uppercase', letterSpacing:'0.2em' }}>The Journey</span>
               </div>
-              <h2 className="taronga-title" style={{ fontSize:'clamp(2.2rem,8vw,3.2rem)', color:'white', margin:'0 0 0.8rem', letterSpacing:'-0.02em', lineHeight:1.06, fontWeight:900 }}>How It Works</h2>
+              <h2 className="taronga-title" style={{ fontSize:'clamp(2.2rem,8vw,3.2rem)', color:'white', margin:'0 0 0.8rem', letterSpacing:'-0.02em', lineHeight:1.06 }}>How It Works</h2>
               <p style={{ fontSize:'0.92rem', color:'rgba(255,255,255,0.42)', lineHeight:1.65, margin:'0 auto', maxWidth:'320px' }}>From first log-in to final badge — a seamless guided experience.</p>
             </div>
 
@@ -373,7 +373,7 @@ export default function HomeScreen() {
                 <div style={{ width:'5px', height:'5px', borderRadius:'50%', background:'#50c8a0', flexShrink:0 }} />
                 <span style={{ fontSize:'0.57rem', fontWeight:800, color:'#50c8a0', textTransform:'uppercase', letterSpacing:'0.2em' }}>For Educators</span>
               </div>
-              <h2 className="taronga-title" style={{ fontSize:'clamp(2.2rem,8vw,3.2rem)', color:'white', margin:'0 0 0.8rem', letterSpacing:'-0.02em', lineHeight:1.06, fontWeight:900 }}>Teacher Portal</h2>
+              <h2 className="taronga-title" style={{ fontSize:'clamp(2.2rem,8vw,3.2rem)', color:'white', margin:'0 0 0.8rem', letterSpacing:'-0.02em', lineHeight:1.06 }}>Teacher Portal</h2>
               <p style={{ fontSize:'0.92rem', color:'rgba(255,255,255,0.5)', lineHeight:1.72, margin:'0 auto', maxWidth:'360px' }}>
                 Everything you need to run a seamless excursion and bring the learning back into your classroom.
               </p>
