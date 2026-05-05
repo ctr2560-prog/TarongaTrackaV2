@@ -35,7 +35,12 @@ function generateClassCode() {
 }
 
 export default function TeacherDashboardScreen() {
-  const { setCurrentScreen, teacherEmail, setTeacherEmail, setSelectedClass } = useApp();
+  const { setCurrentScreen, teacherEmail, setTeacherEmail, setSelectedClass, teacher, authLoading, signOutTeacher } = useApp();
+
+  // Auth guard — redirect if not signed in once Firebase has resolved
+  useEffect(() => {
+    if (!authLoading && !teacher) setCurrentScreen('teacherLogin');
+  }, [teacher, authLoading]);
 
   // Classes + student counts
   const [teacherClasses,  setTeacherClasses]  = useState([]);
@@ -189,7 +194,7 @@ export default function TeacherDashboardScreen() {
             <p style={{ fontSize:'0.7rem', color:'var(--t-slate)', fontWeight:500, marginTop:'0.1rem' }}>Teacher Portal · {teacherEmail}</p>
           </div>
         </div>
-        <button className="lms-signout-btn" onClick={() => { setTeacherEmail(''); setCurrentScreen('home'); }}>Sign Out</button>
+        <button className="lms-signout-btn" onClick={signOutTeacher}>Sign Out</button>
       </div>
 
       {/* Two-col layout */}

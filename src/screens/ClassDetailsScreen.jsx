@@ -61,7 +61,12 @@ function resolveZzData(s) {
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 export default function ClassDetailsScreen() {
-  const { setCurrentScreen, teacherEmail, setTeacherEmail, selectedClass } = useApp();
+  const { setCurrentScreen, teacherEmail, setTeacherEmail, selectedClass, teacher, authLoading, signOutTeacher } = useApp();
+
+  // Auth guard
+  useEffect(() => {
+    if (!authLoading && !teacher) setCurrentScreen('teacherLogin');
+  }, [teacher, authLoading]);
 
   // Class metadata
   const [cls,            setCls]            = useState(null);
@@ -310,7 +315,7 @@ export default function ClassDetailsScreen() {
             <p style={{ fontSize:'0.7rem', color: isZZ ? 'rgba(184,212,192,0.65)' : 'var(--t-slate)', fontWeight:500, marginTop:'0.1rem' }}>Teacher Portal · {cls.className}</p>
           </div>
         </div>
-        <button className="lms-signout-btn" onClick={() => { setTeacherEmail(''); setCurrentScreen('home'); }} style={ isZZ ? { background:'rgba(46,125,85,0.25)', borderColor:'rgba(168,196,178,0.4)', color:'#A8C4B2' } : {}}>Sign Out</button>
+        <button className="lms-signout-btn" onClick={signOutTeacher} style={ isZZ ? { background:'rgba(46,125,85,0.25)', borderColor:'rgba(168,196,178,0.4)', color:'#A8C4B2' } : {}}>Sign Out</button>
       </div>
 
       <div className="lms-two-col">
