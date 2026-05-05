@@ -29,7 +29,7 @@ const ITEMS = [
   { id:'native-garden',name:'Native Garden',  cost:18,  cat:'Sustainability', E:5,  W:2,  S:8,  max:3, icon:'Seal Game/native garden.png',  desc:'Habitat-friendly planting.' },
 ];
 
-// Slot positions (% of world width/height) per zone — used to place items in the scene
+// Slot positions (% of world) per zone — used as default drop positions
 const SLOTS = {
   pool:           [{ x:27, y:52, w:22 },{ x:22, y:56, w:28 },{ x:30, y:48, w:34 }],
   land:           [{ x:62, y:44, w:11 },{ x:68, y:48, w:10 },{ x:58, y:52, w:11 }],
@@ -39,7 +39,13 @@ const SLOTS = {
   sustainability: [{ x:70, y:16, w:9  },{ x:79, y:16, w:9  },{ x:86, y:20, w:9  }],
 };
 
-const ZONE_OF = { Environment:'pool', Wellbeing:'toys', Sustainability:'sustainability' };
+function getZone(item) {
+  if (item.id.startsWith('pool')) return 'pool';
+  if (item.id === 'stone') return 'rocks';
+  if (item.id === 'stone-wall' || item.id === 'pier') return 'land';
+  if (item.cat === 'Wellbeing') return (item.id === 'fish-box' || item.id === 'feed-bucket') ? 'food' : 'toys';
+  return 'sustainability';
+}
 
 function calcScore(counts) {
   return ITEMS.reduce((a, it) => {
@@ -83,21 +89,23 @@ export default function SeaLionMission() {
     });
   }, []);
 
-  const [phase,    setPhase]    = useState('intro');
-  const [counts,   setCounts]   = useState(() => Object.fromEntries(ITEMS.map(it => [it.id, 0])));
-  const [placements, setPlacements] = useState({ pool:[], land:[], rocks:[], toys:[], food:[], sustainability:[] });
-  const [cat,      setCat]      = useState('Environment');
-  const [carousel, setCarousel] = useState(0);
-  const [budget,   setBudget]   = useState(BUDGET);
-  const [scoreOpen, setScoreOpen] = useState(false);
-  const [slsScore, setSlsScore] = useState(0);
+  const [phase,      setPhase]      = useState('intro');
+  const [counts,     setCounts]     = useState(() => Object.fromEntries(ITEMS.map(it => [it.id, 0])));
+  // placements: flat array of { key, itemId, zone, x, y, w, rotation }
+  const [placements, setPlacements] = useState([]);
+  const [selectedKey, setSelectedKey] = useState(null);
+  const [cat,        setCat]        = useState('Environment');
+  const [carousel,   setCarousel]   = useState(0);
+  const [budget,     setBudget]     = useState(BUDGET);
+  const [scoreOpen,  setScoreOpen]  = useState(false);
+  const [slsScore,   setSlsScore]   = useState(0);
 
   const q = getStageQuestions(currentAnimal, classStage)[0];
   const correctAnswerIndex = q?.correct ?? 0;
   const fact = q?.stageFacts?.[classStage] || q?.fact;
 
-  // Seal animation (direct DOM to avoid re-renders)
-  const sealRef    = useRef(null);
+  // Seal animation
+  const sealRef     = useRef(null);
   const swimTickRef = useRef(0);
   useEffect(() => {
     if (phase !== 'building') return;
@@ -116,46 +124,89 @@ export default function SeaLionMission() {
     return () => clearInterval(id);
   }, [phase]);
 
-  const catItems = ITEMS.filter(it => it.cat === cat);
-  const pageSize = 5;
+  // Drag state (ref to avoid re-renders during drag)
+  const worldRef = useRef(null);
+  const dragRef  = useRef({ activeKey: null, offsetX: 0, offsetY: 0, hasMoved: false });
+
+  const catItems  = ITEMS.filter(it => it.cat === cat);
+  const pageSize  = 5;
   const pageCount = Math.ceil(catItems.length / pageSize);
-  const visible  = catItems.slice(carousel * pageSize, carousel * pageSize + pageSize);
+  const visible   = catItems.slice(carousel * pageSize, carousel * pageSize + pageSize);
 
   const useItem = useCallback((item) => {
     if (budget < item.cost) return;
     if ((counts[item.id] || 0) >= item.max) return;
-    // determine zone from item category or item id
-    const zone = item.id.startsWith('pool') ? 'pool'
-               : item.id === 'stone' || item.id === 'stone-wall' || item.id === 'pier' ? (item.id === 'stone' ? 'rocks' : 'land')
-               : item.cat === 'Wellbeing' ? (item.id === 'fish-box' || item.id === 'feed-bucket' ? 'food' : 'toys')
-               : 'sustainability';
+    const zone = getZone(item);
     const slotList = SLOTS[zone];
-    const placedInZone = placements[zone] || [];
-    const slotIdx = placedInZone.length;
-    if (slotIdx >= slotList.length) return; // zone full
-    const slot = slotList[slotIdx];
+    const placedInZone = placements.filter(p => p.zone === zone);
+    if (placedInZone.length >= slotList.length) return;
+    const slot = slotList[placedInZone.length];
+    const key = `${item.id}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     setCounts(c => ({ ...c, [item.id]: (c[item.id] || 0) + 1 }));
     setBudget(b => b - item.cost);
-    setPlacements(p => ({ ...p, [zone]: [...(p[zone] || []), { itemId: item.id, slot }] }));
+    setPlacements(ps => [...ps, { key, itemId: item.id, zone, x: slot.x, y: slot.y, w: slot.w, rotation: 0 }]);
   }, [budget, counts, placements]);
 
   const removeItem = useCallback((item) => {
     const n = counts[item.id] || 0;
     if (n === 0) return;
-    const zone = item.id.startsWith('pool') ? 'pool'
-               : item.id === 'stone' || item.id === 'stone-wall' || item.id === 'pier' ? (item.id === 'stone' ? 'rocks' : 'land')
-               : item.cat === 'Wellbeing' ? (item.id === 'fish-box' || item.id === 'feed-bucket' ? 'food' : 'toys')
-               : 'sustainability';
-    setCounts(c => ({ ...c, [item.id]: (c[item.id] || 0) - 1 }));
+    setCounts(c => ({ ...c, [item.id]: c[item.id] - 1 }));
     setBudget(b => b + item.cost);
-    setPlacements(p => {
-      const arr = [...(p[zone] || [])];
-      // remove last placed of this item
-      const idx = [...arr].reverse().findIndex(pl => pl.itemId === item.id);
+    setPlacements(ps => {
+      const arr = [...ps];
+      const idx = [...arr].reverse().findIndex(p => p.itemId === item.id);
       if (idx !== -1) arr.splice(arr.length - 1 - idx, 1);
-      return { ...p, [zone]: arr };
+      return arr;
     });
   }, [counts]);
+
+  const rotatePlacement = useCallback((key, delta) => {
+    setPlacements(ps => ps.map(p => p.key === key
+      ? { ...p, rotation: (p.rotation + delta + 360) % 360 }
+      : p
+    ));
+  }, []);
+
+  const deletePlacement = useCallback((key) => {
+    const pl = placements.find(p => p.key === key);
+    if (!pl) return;
+    const item = ITEMS.find(it => it.id === pl.itemId);
+    if (item) {
+      setCounts(c => ({ ...c, [pl.itemId]: Math.max(0, (c[pl.itemId] || 0) - 1) }));
+      setBudget(b => b + item.cost);
+    }
+    setPlacements(ps => ps.filter(p => p.key !== key));
+    setSelectedKey(sk => sk === key ? null : sk);
+  }, [placements]);
+
+  const handlePlacementPointerDown = useCallback((e, key) => {
+    if (!worldRef.current) return;
+    const rect = worldRef.current.getBoundingClientRect();
+    const px = ((e.clientX - rect.left) / rect.width) * 100;
+    const py = ((e.clientY - rect.top) / rect.height) * 100;
+    const pl = placements.find(p => p.key === key);
+    if (!pl) return;
+    dragRef.current = { activeKey: key, offsetX: pl.x - px, offsetY: pl.y - py, hasMoved: false };
+    setSelectedKey(key);
+    e.preventDefault();
+    e.stopPropagation();
+  }, [placements]);
+
+  const handleWorldPointerMove = useCallback((e) => {
+    if (!dragRef.current.activeKey || !worldRef.current) return;
+    const rect = worldRef.current.getBoundingClientRect();
+    const x = Math.max(2, Math.min(98, ((e.clientX - rect.left) / rect.width) * 100 + dragRef.current.offsetX));
+    const y = Math.max(2, Math.min(98, ((e.clientY - rect.top) / rect.height) * 100 + dragRef.current.offsetY));
+    dragRef.current.hasMoved = true;
+    const ak = dragRef.current.activeKey;
+    setPlacements(ps => ps.map(p => p.key === ak ? { ...p, x, y } : p));
+  }, []);
+
+  const handleWorldPointerUp = useCallback(() => {
+    dragRef.current.activeKey = null;
+    // delay reset so the click handler can still read hasMoved
+    setTimeout(() => { dragRef.current.hasMoved = false; }, 0);
+  }, []);
 
   const finishBuilding = () => {
     const sc = calcScore(counts);
@@ -163,8 +214,7 @@ export default function SeaLionMission() {
     setPhase('done');
   };
 
-  const allPlacements = Object.values(placements).flat();
-  const totalPlaced = allPlacements.length;
+  const totalPlaced = placements.length;
 
   // ── Loading ───────────────────────────────────────────────────────────────
   if (!assetsLoaded) {
@@ -201,7 +251,7 @@ export default function SeaLionMission() {
           </div>
           <div style={{ width:'100%', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.11)', borderRadius:'14px', padding:'1.1rem 1.2rem', marginBottom:'1.1rem' }}>
             <p style={{ fontSize:'0.65rem', fontWeight:800, color:'rgba(100,180,220,0.85)', textTransform:'uppercase', letterSpacing:'0.12em', margin:'0 0 0.55rem' }}>How to Play</p>
-            {[['🌊','Choose features from the tray at the bottom'],['💛','Stay within your $320 budget'],['♻️','Balance environment, wellbeing & sustainability'],['✓','Hit Finish Building when your sanctuary is ready']].map(([em,txt]) => (
+            {[['🌊','Choose features from the tray at the bottom'],['💛','Stay within your $320 budget'],['♻️','Balance environment, wellbeing & sustainability'],['↔️','Drag placed items to reposition them'],['↻','Tap an item then rotate it 90° as needed'],['✓','Hit Finish Building when your sanctuary is ready']].map(([em,txt]) => (
               <div key={em} style={{ display:'flex', alignItems:'flex-start', gap:'0.55rem', marginBottom:'0.38rem' }}>
                 <span style={{ fontSize:'1rem', lineHeight:1.3, flexShrink:0 }}>{em}</span>
                 <span style={{ fontSize:'0.85rem', color:'rgba(255,255,255,0.8)', lineHeight:1.45 }}>{txt}</span>
@@ -221,6 +271,9 @@ export default function SeaLionMission() {
   if (phase === 'building') {
     const sc = calcScore(counts);
     const weighted = Math.round(sc.E + sc.W + sc.S * 1.5);
+    const selectedPlacement = selectedKey ? placements.find(p => p.key === selectedKey) : null;
+    const selectedItem = selectedPlacement ? ITEMS.find(it => it.id === selectedPlacement.itemId) : null;
+
     return (
       <div style={{ position:'fixed', inset:0, display:'flex', flexDirection:'column', background:'linear-gradient(180deg,#82d1f2 0%,#c8effb 18%,#e7efc1 18%,#dac47d 100%)', overflow:'hidden' }}>
 
@@ -259,7 +312,14 @@ export default function SeaLionMission() {
         </div>
 
         {/* World scene */}
-        <div style={{ position:'absolute', top:12, left:12, right:12, bottom:158, borderRadius:24, overflow:'hidden', border:'1px solid rgba(255,255,255,0.42)', boxShadow:'0 24px 40px rgba(56,84,45,0.16)', backgroundImage:'url("Seal Game/background.png")', backgroundSize:'cover', backgroundPosition:'center' }}>
+        <div
+          ref={worldRef}
+          onPointerMove={handleWorldPointerMove}
+          onPointerUp={handleWorldPointerUp}
+          onPointerLeave={handleWorldPointerUp}
+          onClick={(e) => { if (e.target === worldRef.current) setSelectedKey(null); }}
+          style={{ position:'absolute', top:12, left:12, right:12, bottom:158, borderRadius:24, overflow:'hidden', border:'1px solid rgba(255,255,255,0.42)', boxShadow:'0 24px 40px rgba(56,84,45,0.16)', backgroundImage:'url("Seal Game/background.png")', backgroundSize:'cover', backgroundPosition:'center', touchAction:'none' }}
+        >
           {/* Title banner */}
           <div style={{ position:'absolute', top:14, left:'50%', transform:'translateX(-50%)', textAlign:'center', zIndex:16, pointerEvents:'none' }}>
             <div style={{ position:'relative', padding:'10px 24px 8px' }}>
@@ -269,21 +329,97 @@ export default function SeaLionMission() {
             </div>
           </div>
 
-          {/* Placed items */}
-          {allPlacements.map((pl, i) => {
+          {/* Placed items — draggable + rotatable */}
+          {placements.map((pl) => {
             const item = ITEMS.find(it => it.id === pl.itemId);
+            const isSelected = selectedKey === pl.key;
             return (
-              <img key={`${pl.itemId}-${i}`}
-                alt={item?.name}
-                src={item?.icon}
-                style={{ position:'absolute', left:`${pl.slot.x}%`, top:`${pl.slot.y}%`, width:`${pl.slot.w}%`, transform:'translate(-50%,-50%)', objectFit:'contain', filter:'drop-shadow(0 6px 10px rgba(0,0,0,0.18))', zIndex:3, pointerEvents:'none' }} />
+              <div
+                key={pl.key}
+                onPointerDown={(e) => handlePlacementPointerDown(e, pl.key)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!dragRef.current.hasMoved) {
+                    setSelectedKey(k => k === pl.key ? null : pl.key);
+                  }
+                }}
+                style={{
+                  position: 'absolute',
+                  left: `${pl.x}%`,
+                  top: `${pl.y}%`,
+                  width: `${pl.w}%`,
+                  transform: `translate(-50%,-50%) rotate(${pl.rotation}deg)`,
+                  cursor: 'grab',
+                  zIndex: isSelected ? 8 : 3,
+                  touchAction: 'none',
+                  userSelect: 'none',
+                }}
+              >
+                <img
+                  alt={item?.name}
+                  src={item?.icon}
+                  draggable={false}
+                  style={{
+                    width: '100%',
+                    objectFit: 'contain',
+                    display: 'block',
+                    filter: 'drop-shadow(0 6px 10px rgba(0,0,0,0.18))',
+                    outline: isSelected ? '2px solid rgba(255,211,77,0.95)' : 'none',
+                    outlineOffset: '3px',
+                    borderRadius: 6,
+                    pointerEvents: 'none',
+                  }}
+                />
+              </div>
             );
           })}
 
           {/* Sea lion — above placed items */}
           <img ref={sealRef} src="Seal Game/seal.png" alt="Sea lion"
             style={{ position:'absolute', width:110, left:'37%', top:'44%', transform:'translate(-50%,-50%)', filter:'drop-shadow(0 10px 12px rgba(0,0,0,0.2))', pointerEvents:'none', zIndex:5 }} />
+
         </div>
+
+        {/* Selected item action panel — floats above the build tray */}
+        {selectedPlacement && selectedItem && (
+          <div
+            style={{
+              position: 'absolute', left: 26, bottom: 270, zIndex: 36,
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '8px 12px',
+              borderRadius: 14,
+              background: 'linear-gradient(180deg,rgba(255,255,255,0.1) 0%,transparent 18%), linear-gradient(180deg,#0c5b8e,#083d62)',
+              border: '1px solid rgba(255,255,255,0.22)',
+              boxShadow: '0 10px 24px rgba(0,0,0,0.3)',
+              color: 'white',
+            }}
+          >
+            <span style={{ fontSize:'0.8rem', fontWeight:900, maxWidth:110, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+              {selectedItem.name}
+            </span>
+            <button
+              onPointerDown={e => e.stopPropagation()}
+              onClick={(e) => { e.stopPropagation(); rotatePlacement(selectedKey, -90); }}
+              title="Rotate left 90°"
+              style={{ width:36, height:36, borderRadius:'50%', border:'none', background:'rgba(255,255,255,0.16)', color:'white', fontSize:'1.25rem', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', lineHeight:1 }}>
+              ↺
+            </button>
+            <button
+              onPointerDown={e => e.stopPropagation()}
+              onClick={(e) => { e.stopPropagation(); rotatePlacement(selectedKey, 90); }}
+              title="Rotate right 90°"
+              style={{ width:36, height:36, borderRadius:'50%', border:'none', background:'rgba(255,255,255,0.16)', color:'white', fontSize:'1.25rem', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', lineHeight:1 }}>
+              ↻
+            </button>
+            <button
+              onPointerDown={e => e.stopPropagation()}
+              onClick={(e) => { e.stopPropagation(); deletePlacement(selectedKey); }}
+              title="Remove item"
+              style={{ width:36, height:36, borderRadius:'50%', border:'none', background:'rgba(200,40,30,0.85)', color:'white', fontSize:'1.3rem', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', lineHeight:1 }}>
+              ×
+            </button>
+          </div>
+        )}
 
         {/* Build tray */}
         <div style={{ position:'absolute', left:'50%', bottom:12, width:'calc(100% - 24px)', transform:'translateX(-50%)', zIndex:35 }}>
@@ -308,6 +444,8 @@ export default function SeaLionMission() {
                     const afford = budget >= item.cost;
                     const full   = count >= item.max;
                     const active = count > 0;
+                    const zone   = getZone(item);
+                    const zoneFull = placements.filter(p => p.zone === zone).length >= SLOTS[zone].length;
                     return (
                       <div key={item.id} style={{ padding:'6px 6px 7px', borderRadius:13, border:`2px solid ${active ? '#4dd96f' : 'rgba(184,217,234,0.92)'}`, background:'linear-gradient(180deg,rgba(255,255,255,0.34),transparent 22%), linear-gradient(180deg,#fff6d8,#f4de9a)', color:'#19353d', boxShadow:active ? 'inset 0 4px 0 rgba(255,255,255,0.42), 0 0 0 3px rgba(77,217,111,0.22)' : 'inset 0 4px 0 rgba(255,255,255,0.42)', opacity:(!afford && !active) ? 0.55 : 1 }}>
                         <div style={{ display:'flex', justifyContent:'space-between', marginBottom:4, fontSize:'0.67rem', fontWeight:900 }}>
@@ -322,8 +460,8 @@ export default function SeaLionMission() {
                         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:4 }}>
                           <span style={{ padding:'2px 7px', borderRadius:999, background:'#0f4d77', color:'white', fontSize:'0.63rem', fontWeight:900 }}>{count}/{item.max}</span>
                           <div style={{ display:'flex', gap:4 }}>
-                            <button onClick={() => useItem(item)} disabled={!afford || full}
-                              style={{ padding:'4px 7px', borderRadius:7, border:'none', background:'linear-gradient(180deg,#ffe178,#edae25)', color:'#173845', fontWeight:900, fontSize:'0.62rem', cursor:'pointer', opacity:(!afford||full)?0.4:1 }}>Use</button>
+                            <button onClick={() => useItem(item)} disabled={!afford || full || zoneFull}
+                              style={{ padding:'4px 7px', borderRadius:7, border:'none', background:'linear-gradient(180deg,#ffe178,#edae25)', color:'#173845', fontWeight:900, fontSize:'0.62rem', cursor:'pointer', opacity:(!afford||full||zoneFull)?0.4:1 }}>Use</button>
                             <button onClick={() => removeItem(item)} disabled={count === 0}
                               style={{ padding:'4px 6px', borderRadius:7, border:'none', background:'linear-gradient(180deg,#ffd8a3,#f2ae58)', color:'#173845', fontWeight:900, fontSize:'0.62rem', cursor:'pointer', opacity:count===0?0.4:1 }}>−</button>
                           </div>

@@ -3,6 +3,30 @@ import { collection, doc, onSnapshot, getDocs, getDoc, runTransaction, serverTim
 import { db } from '../firebase';
 import { useApp } from '../context/AppContext';
 
+const WILDLY_PHRASES = ['Wildly by Taronga', 'Continue the learning', 'Resources', 'Programs', 'Assessments'];
+
+function WildlyLabel() {
+  const [idx, setIdx] = useState(0);
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setVisible(false);
+      setTimeout(() => {
+        setIdx(i => (i + 1) % WILDLY_PHRASES.length);
+        setVisible(true);
+      }, 380);
+    }, 2200);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <span style={{ transition:'opacity 0.35s ease', opacity: visible ? 1 : 0, display:'inline-block' }}>
+      {WILDLY_PHRASES[idx]}
+    </span>
+  );
+}
+
 function generateClassCode() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   let code = '';
@@ -184,8 +208,8 @@ export default function TeacherDashboardScreen() {
             <button className="lms-nav-item" onClick={() => { const el = document.getElementById('lms-classes-section'); el && el.scrollIntoView({ behavior:'smooth' }); }}>
               <span className="lms-nav-icon">&#9675;</span> My Classes
             </button>
-            <button className="lms-nav-item" onClick={() => setCurrentScreen('resourceHub')}>
-              <span className="lms-nav-icon">&#9654;</span> Resource Hub
+            <button className="lms-nav-item" onClick={() => window.open('https://www.wildlybytaronga.com.au', '_blank')}>
+              <span className="lms-nav-icon">&#127807;</span> <WildlyLabel />
             </button>
           </nav>
           <p className="lms-nav-group-label" style={{ marginTop:'1rem' }}>Account</p>
@@ -270,9 +294,6 @@ export default function TeacherDashboardScreen() {
                   My Classes
                   <span style={{ fontFamily:'DM Sans, sans-serif', fontWeight:600, fontSize:'0.75rem', color:'var(--t-sage)', letterSpacing:0, marginLeft:'0.5rem' }}>({activeClasses.length})</span>
                 </h3>
-                <button onClick={() => setCurrentScreen('resourceHub')} style={{ fontSize:'0.75rem', fontWeight:700, color:'var(--t-mid)', background:'var(--t-foam)', border:'1px solid var(--t-mist)', borderRadius:'var(--t-r-pill)', padding:'0.3rem 0.75rem', cursor:'pointer' }}>
-                  Resource Hub →
-                </button>
               </div>
 
               {activeClasses.length === 0 ? (

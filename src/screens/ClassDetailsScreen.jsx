@@ -325,7 +325,7 @@ export default function ClassDetailsScreen() {
           <p className="lms-nav-group-label">Navigation</p>
           <nav className="lms-nav">
             <button className="lms-nav-item" onClick={() => setCurrentScreen('teacherDashboard')}><span className="lms-nav-icon">&#8592;</span> All Classes</button>
-            <button className="lms-nav-item" onClick={() => setCurrentScreen('resourceHub')}><span className="lms-nav-icon">&#9654;</span> Resource Hub</button>
+            <button className="lms-nav-item" onClick={() => window.open('https://www.wildlybytaronga.com.au', '_blank')}><span className="lms-nav-icon">&#127807;</span> Wildly by Taronga</button>
           </nav>
 
           <p className="lms-nav-group-label" style={{ marginTop:'1rem' }}>Class Info</p>
