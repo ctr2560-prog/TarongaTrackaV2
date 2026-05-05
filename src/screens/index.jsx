@@ -20,6 +20,7 @@ export { default as AdminClassViewScreen }    from './AdminClassViewScreen';
 export { default as ResourceHubScreen }       from './ResourceHubScreen';
 export { default as ZooSnoozScreen }          from './ZooSnoozScreen';
 export { default as DocumentaryViewer }       from './DocumentaryViewer';
+export { default as ComingSoonScreen }        from './ComingSoonScreen';
 export { default as PublicEntryScreen }       from './PublicEntryScreen';
 export { default as PublicAnimalScreen }      from './PublicAnimalScreen';
 export { default as PublicMissionScreen }     from './PublicMissionScreen';

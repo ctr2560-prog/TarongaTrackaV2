@@ -8,7 +8,7 @@ import {
   AdminLoginScreen, AdminDashboardScreen, AdminClassViewScreen,
   PublicHomeScreen, PublicHomeExtScreen, PublicEntryScreen,
   PublicAnimalScreen, PublicMissionScreen, PublicLeaderboardScreen,
-  ZooSnoozScreen, DocumentaryViewer,
+  ZooSnoozScreen, DocumentaryViewer, ComingSoonScreen,
 } from './screens';
 
 function Router() {
@@ -40,6 +40,7 @@ function Router() {
     case 'adminClassView':       return <AdminClassViewScreen />;
     case 'publicHome':           return <PublicHomeScreen />;
     case 'publicHomeExtension':  return <PublicHomeExtScreen />;
+    case 'comingSoon':           return <ComingSoonScreen />;
     case 'publicEntry':          return <PublicEntryScreen />;
     case 'publicAnimal':         return <PublicAnimalScreen />;
     case 'publicMission':        return <PublicMissionScreen />;

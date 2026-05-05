@@ -10,7 +10,7 @@ const MODES = [
     accent: '#4ecb71',
     tag: 'Live Experience',
     summary: 'GPS-guided animal tracking and live missions during your Taronga Zoo excursion.',
-    detail: 'Students explore Taronga Zoo with real-time GPS guidance, discovering animals in their natural habitats, completing keeper-designed missions and building their badge collection — all across one incredible visit.',
+    detail: 'Explore Taronga Zoo Sydney (Dubbo coming soon). Students discover animals with real-time GPS guidance, completing keeper-designed missions and building their badge collection — all across one incredible visit.',
     image: '/images/screenshots/mode-zoo.png',
   },
   {
@@ -47,7 +47,12 @@ const FEATURES = [
     label: 'Missions & Games',
     tagline: 'Learning through play.',
     desc: 'Students engage through interactive games, hands-on keeper activities and documentary making — all built around each animal\'s real habitat and behaviour. Every mission is different, every visit stays fresh.',
-    image: '/images/screenshots/app-zoosnooz.png',
+    images: [
+      '/images/screenshots/mission-1.png',
+      '/images/screenshots/mission-2.png',
+      '/images/screenshots/mission-3.png',
+      '/images/screenshots/mission-4.png',
+    ],
   },
   {
     id: 'badges',
@@ -58,10 +63,10 @@ const FEATURES = [
   },
   {
     id: 'conservation',
-    label: 'Conservation Science',
-    tagline: 'Connecting visits to outcomes.',
-    desc: 'Evidence-based content connects every zoo encounter to real-world conservation outcomes. Stage-appropriate curriculum links turn a school excursion into a science lesson that extends far beyond the visit.',
-    image: '/images/screenshots/app-map.png',
+    label: 'Learning through Conservation',
+    tagline: 'Extending the impact beyond the visit.',
+    desc: 'Taronga Tracka connects directly to the Wildly Online Learning platform — giving teachers access to curriculum-aligned resources, assessments and learning pathways that extend the zoo experience and create lasting conservation impact.',
+    image: '/images/screenshots/app-wildly.png',
   },
 ];
 
@@ -72,13 +77,6 @@ const STEPS = [
   { n:'04', label:'Complete Missions',           role:'student', desc:'Students engage through games, hands-on activities and documentary making.' },
   { n:'05', label:'Earn Badges',                 role:'student', desc:'Completed missions unlock badges that build each student\'s wildlife collection.' },
   { n:'06', label:'Student Data & Learning Links', role:'teacher', desc:'Review observation scores, mission progress and curriculum-aligned learning reports from your teacher portal.' },
-];
-
-const PORTAL_FEATURES = [
-  { label: 'Live Analytics',          desc: 'Track mission completion, observation quality and student progress across your class in real time.' },
-  { label: 'Learning Suggestions',    desc: 'Tailored follow-up recommendations help you extend the zoo visit back in the classroom.' },
-  { label: 'Observation Review',      desc: 'Read student wildlife observations and watch documentary submissions from a single dashboard.' },
-  { label: 'Built for Busy Teachers', desc: 'Automated reporting and class tools designed to save time and lift the quality of your practice.' },
 ];
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -129,12 +127,12 @@ function ExpandableFeatureCard({ feature, isOpen, onToggle }) {
         transition:'background 0.22s, border-color 0.22s',
       }}
     >
-      <div style={{ padding:'1rem 1.15rem', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'0.75rem' }}>
+      <div style={{ padding:'1.1rem 1.4rem', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'0.75rem' }}>
         <div>
-          <div style={{ fontSize:'1.05rem', fontWeight:800, color:'white', lineHeight:1.2, letterSpacing:'-0.01em', marginBottom:'0.18rem' }}>
+          <div style={{ fontSize:'clamp(1rem,1.5vw,1.2rem)', fontWeight:800, color:'white', lineHeight:1.2, letterSpacing:'-0.01em', marginBottom:'0.2rem' }}>
             {feature.label}
           </div>
-          <div style={{ fontSize:'0.76rem', color:'rgba(255,255,255,0.4)', fontStyle:'italic' }}>
+          <div style={{ fontSize:'clamp(0.75rem,1vw,0.88rem)', color:'rgba(255,255,255,0.4)', fontStyle:'italic' }}>
             {feature.tagline}
           </div>
         </div>
@@ -152,19 +150,140 @@ function ExpandableFeatureCard({ feature, isOpen, onToggle }) {
       </div>
 
       <div style={{
-        maxHeight: isOpen ? '600px' : '0',
+        maxHeight: isOpen ? '900px' : '0',
         overflow:'hidden',
-        transition:'max-height 0.4s cubic-bezier(0.4,0,0.2,1)',
+        transition:'max-height 0.45s cubic-bezier(0.4,0,0.2,1)',
       }}>
+        {feature.renderCard && feature.renderCard()}
+        {feature.images && (
+          <div style={{ borderTop:'1px solid rgba(255,255,255,0.05)', position:'relative' }}>
+            <div className="mission-scroll" style={{
+              display:'flex', gap:'0.5rem', overflowX:'auto', padding:'0.75rem 0.75rem',
+              scrollSnapType:'x mandatory', WebkitOverflowScrolling:'touch',
+              scrollbarWidth:'none', msOverflowStyle:'none',
+            }}>
+              {feature.images.map((src, i) => (
+                <div key={i} style={{ flexShrink:0, height:'240px', borderRadius:'10px', overflow:'hidden', scrollSnapAlign:'start', boxShadow:'0 4px 16px rgba(0,0,0,0.4)' }}>
+                  <img src={src} alt={`${feature.label} ${i+1}`} style={{ height:'100%', width:'auto', display:'block', objectFit:'cover' }} />
+                </div>
+              ))}
+            </div>
+            <div style={{ position:'absolute', right:'0.75rem', bottom:'1.1rem', display:'flex', gap:'3px' }}>
+              {feature.images.map((_,i) => (
+                <div key={i} style={{ width:'4px', height:'4px', borderRadius:'50%', background:'rgba(255,255,255,0.25)' }} />
+              ))}
+            </div>
+          </div>
+        )}
         {feature.image && (
           <div style={{ width:'100%', aspectRatio:'16/9', overflow:'hidden', borderTop:'1px solid rgba(255,255,255,0.05)' }}>
             <img src={feature.image} alt={feature.label} style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:'top', display:'block' }} />
           </div>
         )}
-        <div style={{ padding:'1rem 1.15rem 1.2rem', borderTop: feature.image ? 'none' : '1px solid rgba(255,255,255,0.05)' }}>
-          <p style={{ fontSize:'0.84rem', color:'rgba(255,255,255,0.62)', lineHeight:1.78, margin:0 }}>
+        <div style={{ padding:'1.1rem 1.4rem 1.3rem', borderTop:'1px solid rgba(255,255,255,0.05)' }}>
+          <p style={{ fontSize:'clamp(0.84rem,1.2vw,1rem)', color:'rgba(255,255,255,0.62)', lineHeight:1.78, margin:0 }}>
             {feature.desc}
           </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const DEMO_SLIDES = [
+  {
+    id: 'overview',
+    label: 'Class Overview',
+    accent: '#4ecb71',
+    src: '/images/screenshots/portal-slide-4.png',
+    caption: 'At a glance: students, average points, badges earned, missions completed and quiz scores — plus most-visited animals and quiz distribution across your class.',
+  },
+  {
+    id: 'writing',
+    label: 'Writing Analytics',
+    accent: '#50c8a0',
+    src: '/images/screenshots/portal-slide-1.png',
+    caption: 'Automated writing analysis scores every observation across Behaviour, Detail and Writing — with strength and focus area callouts for your whole class.',
+  },
+  {
+    id: 'observations',
+    label: 'Student Observations',
+    accent: '#4ecbcb',
+    src: '/images/screenshots/portal-slide-2.png',
+    caption: 'View every student\'s field observations side-by-side, track completion, and drill into individual responses with a single tap.',
+  },
+  {
+    id: 'zoosnooz',
+    label: 'ZooSnooz Portal',
+    accent: '#a482e8',
+    src: '/images/screenshots/portal-slide-3.png',
+    caption: 'Student-made wildlife documentaries are automatically collected and playable from your portal — ready to screen back in class.',
+  },
+];
+
+function TeacherPortalDemo() {
+  const [slide, setSlide] = useState(0);
+  const [cardVisible, setCardVisible] = useState(false);
+  const [imgKey, setImgKey] = useState(0);
+
+  useEffect(() => {
+    setCardVisible(false);
+    const t1 = setTimeout(() => setCardVisible(true), 1200);
+    const t2 = setTimeout(() => {
+      setSlide(s => (s + 1) % DEMO_SLIDES.length);
+      setImgKey(k => k + 1);
+    }, 5200);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [slide]);
+
+  const current = DEMO_SLIDES[slide];
+  const accent  = current.accent;
+
+  return (
+    <div style={{ borderRadius:'14px', overflow:'hidden', border:'1px solid rgba(255,255,255,0.1)', boxShadow:'0 20px 60px rgba(0,0,0,0.7), inset 0 0 0 1px rgba(255,255,255,0.04)', background:'#060d08' }}>
+      {/* macOS chrome */}
+      <div style={{ background:'rgba(255,255,255,0.045)', padding:'0.55rem 0.8rem', display:'flex', alignItems:'center', gap:'0.55rem', borderBottom:'1px solid rgba(255,255,255,0.07)' }}>
+        <div style={{ display:'flex', gap:'5px', flexShrink:0 }}>
+          {['#ff5f57','#febc2e','#28c840'].map((c,i) => (
+            <div key={i} style={{ width:'9px', height:'9px', borderRadius:'50%', background:c, opacity:0.72 }} />
+          ))}
+        </div>
+        <div style={{ flex:1, background:'rgba(255,255,255,0.055)', borderRadius:'5px', height:'17px' }} />
+        {/* Progress dots */}
+        <div style={{ display:'flex', gap:'4px', flexShrink:0 }}>
+          {DEMO_SLIDES.map((_,i) => (
+            <div key={i} style={{ height:'4px', width: i===slide ? '16px' : '4px', borderRadius:'99px', background: i===slide ? accent : 'rgba(255,255,255,0.2)', transition:'all 0.4s ease' }} />
+          ))}
+        </div>
+      </div>
+
+      {/* Screenshot area — no fixed aspect ratio, let image dictate height */}
+      <div style={{ position:'relative', overflow:'hidden', background:'#f0f0ee' }}>
+        <img
+          key={imgKey}
+          src={current.src}
+          alt={current.label}
+          style={{ width:'100%', display:'block', animation:'portal-slide-in 0.5s cubic-bezier(0.32,0,0.18,1) both' }}
+        />
+
+        {/* Slide label badge — top left overlay */}
+        <div style={{ position:'absolute', top:'0.6rem', left:'0.7rem', zIndex:3, display:'flex', alignItems:'center', gap:'0.38rem', background:'rgba(0,0,0,0.55)', backdropFilter:'blur(8px)', borderRadius:'99px', padding:'0.22rem 0.6rem' }}>
+          <div style={{ width:'5px', height:'5px', borderRadius:'50%', background:accent, flexShrink:0 }} />
+          <span style={{ fontSize:'0.56rem', fontWeight:800, color:accent, textTransform:'uppercase', letterSpacing:'0.14em' }}>{current.label}</span>
+        </div>
+
+        {/* Explanation card slides up from bottom */}
+        <div style={{
+          position:'absolute', bottom:0, left:0, right:0, zIndex:5,
+          transform: cardVisible ? 'translateY(0)' : 'translateY(100%)',
+          transition:'transform 0.5s cubic-bezier(0.32,0,0.18,1)',
+          background:'rgba(5,14,8,0.88)',
+          backdropFilter:'blur(12px)',
+          WebkitBackdropFilter:'blur(12px)',
+          borderTop:`1px solid ${accent}33`,
+          padding:'0.85rem 1rem 0.8rem',
+        }}>
+          <p style={{ margin:0, fontSize:'0.8rem', color:'rgba(255,255,255,0.85)', lineHeight:1.6, textAlign:'center' }}>{current.caption}</p>
         </div>
       </div>
     </div>
@@ -235,7 +354,7 @@ export default function HomeScreen() {
               ))}
             </ul>
           </div>
-          <button onClick={() => { setAppMode('public'); setCurrentScreen('publicEntry'); }} className="animate-scale-in"
+          <button onClick={() => setCurrentScreen('comingSoon')} className="animate-scale-in"
             style={{ background:'linear-gradient(135deg,var(--sunset-orange) 0%,var(--earth-clay) 100%)', color:'white', border:'none', padding:'clamp(0.85rem,2vh,1.05rem) clamp(2.5rem,6vw,3rem)', fontSize:'clamp(1rem,2.2vw,1.15rem)', fontWeight:700, borderRadius:'var(--t-r-pill)', cursor:'pointer', boxShadow:'0 8px 28px rgba(180,90,40,0.45)', animationDelay:'0.55s', textTransform:'uppercase', letterSpacing:'0.12em', width:'min(88vw,380px)', marginBottom:'0.85rem', transition:'all 0.2s' }}
             onMouseEnter={e => { e.currentTarget.style.transform='translateY(-2px)'; e.currentTarget.style.boxShadow='0 12px 36px rgba(180,90,40,0.55)'; }}
             onMouseLeave={e => { e.currentTarget.style.transform='translateY(0)'; e.currentTarget.style.boxShadow='0 8px 28px rgba(180,90,40,0.45)'; }}>
@@ -272,25 +391,25 @@ export default function HomeScreen() {
           {/* ══ PAGE 1 · About ══ */}
           <div ref={el => pagesRef.current[0] = el} style={{ minHeight:'100vh', height:'auto', scrollSnapAlign:'start', display:'flex', flexDirection:'column', alignItems:'center', paddingBottom:'5rem', position:'relative' }}>
 
-            <div style={{ width:'100%', maxWidth:'580px', padding:'3.5rem 0.75rem 2rem', textAlign:'center' }}>
+            <div style={{ width:'100%', maxWidth:'min(92vw, 960px)', padding:'3.5rem 1.5rem 2rem', textAlign:'center' }}>
               <div style={{ display:'inline-flex', alignItems:'center', gap:'0.4rem', background:'rgba(78,203,113,0.1)', border:'1px solid rgba(78,203,113,0.2)', borderRadius:'99px', padding:'0.28rem 0.8rem', marginBottom:'1.4rem' }}>
                 <div style={{ width:'5px', height:'5px', borderRadius:'50%', background:'#4ecb71', flexShrink:0 }} />
-                <span style={{ fontSize:'0.57rem', fontWeight:800, color:'#4ecb71', textTransform:'uppercase', letterSpacing:'0.2em' }}>Taronga Zoo Education</span>
+                <span style={{ fontSize:'0.62rem', fontWeight:800, color:'#4ecb71', textTransform:'uppercase', letterSpacing:'0.2em' }}>Taronga Zoo Education</span>
               </div>
-              <h2 className="taronga-title" style={{ fontSize:'clamp(2.2rem,8vw,3.2rem)', color:'white', margin:'0 0 1rem', letterSpacing:'-0.02em', lineHeight:1.06 }}>
-                Learning that<br/>lives at the zoo.
+              <h2 className="taronga-title" style={{ fontSize:'clamp(2.6rem,7vw,4.2rem)', color:'white', margin:'0 0 1.1rem', letterSpacing:'-0.02em', lineHeight:1.05 }}>
+                Learning Through<br/>Nature with Taronga Zoo.
               </h2>
-              <p style={{ fontSize:'0.95rem', color:'rgba(255,255,255,0.52)', lineHeight:1.75, margin:'0 auto' }}>
+              <p style={{ fontSize:'clamp(0.95rem,1.4vw,1.15rem)', color:'rgba(255,255,255,0.52)', lineHeight:1.75, margin:'0 auto', maxWidth:'520px' }}>
                 Real animals. Real science. Three powerful ways to bring your students closer to wildlife.
               </p>
             </div>
 
-            <div style={{ width:'100%', maxWidth:'580px', padding:'0 0.75rem', marginBottom:'0.85rem' }}>
-              <div style={{ display:'flex', gap:'0.5rem' }}>
+            <div style={{ width:'100%', maxWidth:'min(92vw, 960px)', padding:'0 1.5rem', marginBottom:'0.85rem' }}>
+              <div style={{ display:'flex', gap:'0.65rem' }}>
                 {MODES.map(m => (
                   <button key={m.id} onClick={e => { e.stopPropagation(); setActiveMode(m.id); }}
-                    style={{ flex:1, padding:'0.7rem 0.3rem', border:`1.5px solid ${activeMode===m.id ? m.accent : 'rgba(255,255,255,0.1)'}`, borderRadius:'10px', cursor:'pointer', background: activeMode===m.id ? `${m.accent}18` : 'rgba(255,255,255,0.025)', transition:'all 0.22s', position:'relative' }}>
-                    <div style={{ fontSize:'0.63rem', fontWeight:800, color: activeMode===m.id ? m.accent : 'rgba(255,255,255,0.35)', letterSpacing:'0.02em', lineHeight:1.3, transition:'color 0.2s' }}>
+                    style={{ flex:1, padding:'0.85rem 0.5rem', border:`1.5px solid ${activeMode===m.id ? m.accent : 'rgba(255,255,255,0.1)'}`, borderRadius:'12px', cursor:'pointer', background: activeMode===m.id ? `${m.accent}18` : 'rgba(255,255,255,0.025)', transition:'all 0.22s', position:'relative' }}>
+                    <div style={{ fontSize:'clamp(0.63rem,1.1vw,0.85rem)', fontWeight:800, color: activeMode===m.id ? m.accent : 'rgba(255,255,255,0.35)', letterSpacing:'0.02em', lineHeight:1.3, transition:'color 0.2s' }}>
                       {m.label}
                     </div>
                     {m.comingSoon && <div style={{ position:'absolute', top:'-7px', right:'4px', fontSize:'0.42rem', fontWeight:900, background:'rgba(78,203,203,0.9)', color:'#050e08', padding:'0.1rem 0.32rem', borderRadius:'4px', textTransform:'uppercase', letterSpacing:'0.05em' }}>Soon</div>}
@@ -299,28 +418,28 @@ export default function HomeScreen() {
               </div>
             </div>
 
-            <div style={{ width:'100%', maxWidth:'580px', padding:'0 0.75rem', marginBottom:'2rem' }}>
-              <div style={{ background:'rgba(255,255,255,0.03)', border:`1px solid ${activeModeData?.accent}28`, borderRadius:'16px', overflow:'hidden' }}>
+            <div style={{ width:'100%', maxWidth:'min(92vw, 960px)', padding:'0 1.5rem', marginBottom:'2rem' }}>
+              <div style={{ background:'rgba(255,255,255,0.03)', border:`1px solid ${activeModeData?.accent}28`, borderRadius:'18px', overflow:'hidden' }}>
                 <div style={{ aspectRatio:'16/9', overflow:'hidden' }}>
                   <img src={activeModeData.image} alt={activeModeData.label} style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:'center', display:'block' }} />
                 </div>
-                <div style={{ padding:'1.1rem 1.25rem 1.3rem' }}>
-                  <div style={{ display:'inline-flex', alignItems:'center', gap:'0.35rem', marginBottom:'0.55rem' }}>
-                    <div style={{ width:'5px', height:'5px', borderRadius:'50%', background:activeModeData?.accent, flexShrink:0 }} />
-                    <span style={{ fontSize:'0.57rem', fontWeight:800, color:activeModeData?.accent, textTransform:'uppercase', letterSpacing:'0.2em' }}>{activeModeData?.tag}</span>
+                <div style={{ padding:'1.4rem 1.6rem 1.6rem' }}>
+                  <div style={{ display:'inline-flex', alignItems:'center', gap:'0.35rem', marginBottom:'0.6rem' }}>
+                    <div style={{ width:'6px', height:'6px', borderRadius:'50%', background:activeModeData?.accent, flexShrink:0 }} />
+                    <span style={{ fontSize:'0.62rem', fontWeight:800, color:activeModeData?.accent, textTransform:'uppercase', letterSpacing:'0.2em' }}>{activeModeData?.tag}</span>
                   </div>
-                  <p style={{ fontSize:'0.88rem', color:'rgba(255,255,255,0.68)', lineHeight:1.74, margin:0 }}>{activeModeData?.detail}</p>
+                  <p style={{ fontSize:'clamp(0.88rem,1.3vw,1.05rem)', color:'rgba(255,255,255,0.68)', lineHeight:1.74, margin:0 }}>{activeModeData?.detail}</p>
                 </div>
               </div>
             </div>
 
-            <div style={{ width:'100%', maxWidth:'580px', padding:'0 0.75rem' }}>
+            <div style={{ width:'100%', maxWidth:'min(92vw, 960px)', padding:'0 1.5rem' }}>
               <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', marginBottom:'1rem' }}>
                 <div style={{ flex:1, height:'1px', background:'rgba(255,255,255,0.07)' }} />
                 <span style={{ fontSize:'0.56rem', fontWeight:900, color:'rgba(255,255,255,0.22)', textTransform:'uppercase', letterSpacing:'0.3em', whiteSpace:'nowrap' }}>Platform Features</span>
                 <div style={{ flex:1, height:'1px', background:'rgba(255,255,255,0.07)' }} />
               </div>
-              <div style={{ display:'flex', flexDirection:'column', gap:'0.55rem' }}>
+              <div style={{ display:'flex', flexDirection:'column', gap:'0.65rem' }}>
                 {FEATURES.map(f => (
                   <ExpandableFeatureCard key={f.id} feature={f} isOpen={expandedFeature===f.id} onToggle={() => setExpandedFeature(expandedFeature===f.id ? null : f.id)} />
                 ))}
@@ -335,26 +454,26 @@ export default function HomeScreen() {
           {/* ══ PAGE 2 · How It Works ══ */}
           <div ref={el => pagesRef.current[1] = el} style={{ minHeight:'100vh', scrollSnapAlign:'start', display:'flex', flexDirection:'column', alignItems:'center', paddingBottom:'5rem', position:'relative' }}>
 
-            <div style={{ width:'100%', maxWidth:'580px', padding:'3.5rem 1.5rem 2rem', textAlign:'center' }}>
+            <div style={{ width:'100%', maxWidth:'min(92vw, 960px)', padding:'3.5rem 1.5rem 2rem', textAlign:'center' }}>
               <div style={{ display:'inline-flex', alignItems:'center', gap:'0.4rem', background:'rgba(78,180,203,0.1)', border:'1px solid rgba(78,180,203,0.2)', borderRadius:'99px', padding:'0.28rem 0.8rem', marginBottom:'1.2rem' }}>
                 <div style={{ width:'5px', height:'5px', borderRadius:'50%', background:'#4ecbcb', flexShrink:0 }} />
-                <span style={{ fontSize:'0.57rem', fontWeight:800, color:'#4ecbcb', textTransform:'uppercase', letterSpacing:'0.2em' }}>The Journey</span>
+                <span style={{ fontSize:'0.62rem', fontWeight:800, color:'#4ecbcb', textTransform:'uppercase', letterSpacing:'0.2em' }}>The Journey</span>
               </div>
-              <h2 className="taronga-title" style={{ fontSize:'clamp(2.2rem,8vw,3.2rem)', color:'white', margin:'0 0 0.8rem', letterSpacing:'-0.02em', lineHeight:1.06 }}>How It Works</h2>
-              <p style={{ fontSize:'0.92rem', color:'rgba(255,255,255,0.42)', lineHeight:1.65, margin:'0 auto', maxWidth:'320px' }}>From first log-in to final badge — a seamless guided experience.</p>
+              <h2 className="taronga-title" style={{ fontSize:'clamp(2.6rem,7vw,4.2rem)', color:'white', margin:'0 0 0.8rem', letterSpacing:'-0.02em', lineHeight:1.05 }}>How It Works</h2>
+              <p style={{ fontSize:'clamp(0.92rem,1.4vw,1.15rem)', color:'rgba(255,255,255,0.42)', lineHeight:1.65, margin:'0 auto', maxWidth:'460px' }}>From first log-in to final badge — a seamless guided experience.</p>
             </div>
 
-            <div key={p2Key} style={{ width:'100%', maxWidth:'580px', padding:'0 1.5rem' }}>
+            <div key={p2Key} style={{ width:'100%', maxWidth:'min(92vw, 960px)', padding:'0 1.5rem' }}>
               {STEPS.map((s, i) => {
                 const isTeacher = s.role === 'teacher';
                 const accent  = isTeacher ? '#4ecbcb' : '#4ecb71';
                 const bg      = isTeacher ? 'rgba(78,203,203,' : 'rgba(78,203,113,';
                 const nextAccent = i < STEPS.length - 1 ? (STEPS[i+1].role === 'teacher' ? 'rgba(78,203,203,0.25)' : 'rgba(78,203,113,0.25)') : 'transparent';
                 return (
-                  <div key={s.n} style={{ display:'flex', gap:'1rem', animation:'lm-bubble-in 0.5s cubic-bezier(0.34,1.56,0.64,1) both', animationDelay:`${i * 0.55}s` }}>
+                  <div key={s.n} style={{ display:'flex', gap:'1.25rem', animation:'lm-bubble-in 0.5s cubic-bezier(0.34,1.56,0.64,1) both', animationDelay:`${i * 0.55}s` }}>
                     {/* Bubble + connector column */}
-                    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', width:'46px', flexShrink:0 }}>
-                      <div style={{ width:'46px', height:'46px', borderRadius:'50%', flexShrink:0, background:`${bg}0.1)`, border:`2px solid ${accent}`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'0.7rem', fontWeight:800, color:accent, boxShadow:`0 0 20px ${accent}40`, position:'relative', zIndex:1 }}>
+                    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', width:'52px', flexShrink:0 }}>
+                      <div style={{ width:'52px', height:'52px', borderRadius:'50%', flexShrink:0, background:`${bg}0.1)`, border:`2px solid ${accent}`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'0.8rem', fontWeight:800, color:accent, boxShadow:`0 0 20px ${accent}40`, position:'relative', zIndex:1 }}>
                         {s.n}
                       </div>
                       {i < STEPS.length - 1 && (
@@ -362,14 +481,14 @@ export default function HomeScreen() {
                       )}
                     </div>
                     {/* Content */}
-                    <div style={{ flex:1, paddingBottom: i < STEPS.length-1 ? '0.7rem' : 0, paddingTop:'0.65rem' }}>
-                      <div style={{ display:'flex', alignItems:'center', gap:'0.45rem', marginBottom:'0.22rem', flexWrap:'wrap' }}>
-                        <span style={{ fontSize:'0.88rem', fontWeight:700, color:'white', lineHeight:1.3 }}>{s.label}</span>
-                        <span style={{ fontSize:'0.52rem', fontWeight:800, color:accent, background:`${bg}0.12)`, border:`1px solid ${bg}0.25)`, padding:'0.1rem 0.42rem', borderRadius:'99px', textTransform:'uppercase', letterSpacing:'0.08em' }}>
+                    <div style={{ flex:1, paddingBottom: i < STEPS.length-1 ? '0.85rem' : 0, paddingTop:'0.7rem' }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', marginBottom:'0.28rem', flexWrap:'wrap' }}>
+                        <span style={{ fontSize:'clamp(0.9rem,1.3vw,1.1rem)', fontWeight:700, color:'white', lineHeight:1.3 }}>{s.label}</span>
+                        <span style={{ fontSize:'0.58rem', fontWeight:800, color:accent, background:`${bg}0.12)`, border:`1px solid ${bg}0.25)`, padding:'0.12rem 0.48rem', borderRadius:'99px', textTransform:'uppercase', letterSpacing:'0.08em' }}>
                           {isTeacher ? 'Teacher' : 'Student'}
                         </span>
                       </div>
-                      <div style={{ fontSize:'0.76rem', color:'rgba(255,255,255,0.42)', lineHeight:1.62 }}>{s.desc}</div>
+                      <div style={{ fontSize:'clamp(0.76rem,1.1vw,0.92rem)', color:'rgba(255,255,255,0.42)', lineHeight:1.65 }}>{s.desc}</div>
                     </div>
                   </div>
                 );
@@ -384,38 +503,22 @@ export default function HomeScreen() {
           {/* ══ PAGE 3 · Teacher Portal ══ */}
           <div ref={el => pagesRef.current[2] = el} style={{ minHeight:'100vh', height:'auto', scrollSnapAlign:'start', display:'flex', flexDirection:'column', alignItems:'center', paddingBottom:'4rem', position:'relative' }}>
 
-            <div style={{ width:'100%', maxWidth:'580px', padding:'3.5rem 1.5rem 1.8rem', textAlign:'center' }}>
+            <div style={{ width:'100%', maxWidth:'min(92vw, 960px)', padding:'3.5rem 1.5rem 1.6rem', textAlign:'center' }}>
               <div style={{ display:'inline-flex', alignItems:'center', gap:'0.4rem', background:'rgba(80,200,160,0.1)', border:'1px solid rgba(80,200,160,0.2)', borderRadius:'99px', padding:'0.28rem 0.8rem', marginBottom:'1.2rem' }}>
                 <div style={{ width:'5px', height:'5px', borderRadius:'50%', background:'#50c8a0', flexShrink:0 }} />
-                <span style={{ fontSize:'0.57rem', fontWeight:800, color:'#50c8a0', textTransform:'uppercase', letterSpacing:'0.2em' }}>For Educators</span>
+                <span style={{ fontSize:'0.62rem', fontWeight:800, color:'#50c8a0', textTransform:'uppercase', letterSpacing:'0.2em' }}>For Educators</span>
               </div>
-              <h2 className="taronga-title" style={{ fontSize:'clamp(2.2rem,8vw,3.2rem)', color:'white', margin:'0 0 0.8rem', letterSpacing:'-0.02em', lineHeight:1.06 }}>Teacher Portal</h2>
-              <p style={{ fontSize:'0.92rem', color:'rgba(255,255,255,0.5)', lineHeight:1.72, margin:'0 auto', maxWidth:'360px' }}>
-                Everything you need to run a seamless excursion and bring the learning back into your classroom.
+              <h2 className="taronga-title" style={{ fontSize:'clamp(2.6rem,7vw,4.2rem)', color:'white', margin:'0 0 1rem', letterSpacing:'-0.02em', lineHeight:1.04 }}>Teacher Portal</h2>
+              <p style={{ fontSize:'clamp(0.95rem,1.4vw,1.15rem)', color:'rgba(255,255,255,0.52)', lineHeight:1.7, margin:'0 auto', maxWidth:'520px' }}>
+                Live analytics, student observations, and wildlife documentaries — all in one place.
               </p>
             </div>
 
-            <div style={{ padding:'0 1.5rem', width:'100%', maxWidth:'580px', marginBottom:'1.6rem' }}>
-              <BrowserFrame src="/images/screenshots/app-teacher.png" alt="Teacher portal dashboard" />
+            <div style={{ padding:'0 1.5rem', width:'100%', maxWidth:'min(92vw, 960px)', marginBottom:'2rem' }}>
+              <TeacherPortalDemo />
             </div>
 
-            <div style={{ padding:'0 1.5rem', width:'100%', maxWidth:'580px' }}>
-              <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', marginBottom:'1rem' }}>
-                <div style={{ flex:1, height:'1px', background:'rgba(255,255,255,0.07)' }} />
-                <span style={{ fontSize:'0.56rem', fontWeight:900, color:'rgba(255,255,255,0.22)', textTransform:'uppercase', letterSpacing:'0.3em', whiteSpace:'nowrap' }}>Portal Features</span>
-                <div style={{ flex:1, height:'1px', background:'rgba(255,255,255,0.07)' }} />
-              </div>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.65rem' }}>
-                {PORTAL_FEATURES.map((item, i) => (
-                  <div key={i} style={{ background:'rgba(80,200,160,0.05)', border:'1px solid rgba(80,200,160,0.12)', borderRadius:'12px', padding:'0.85rem 0.9rem' }}>
-                    <div style={{ fontSize:'0.74rem', fontWeight:800, color:'rgba(80,200,160,0.88)', marginBottom:'0.3rem', lineHeight:1.2 }}>{item.label}</div>
-                    <div style={{ fontSize:'0.67rem', color:'rgba(255,255,255,0.42)', lineHeight:1.6 }}>{item.desc}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div style={{ marginTop:'2rem', textAlign:'center' }}>
+            <div style={{ textAlign:'center' }}>
               <div onClick={() => { closeLearn(); setCurrentScreen('adminLogin'); }}
                 style={{ display:'inline-block', color:'rgba(255,255,255,0.28)', fontSize:'0.67rem', fontWeight:600, letterSpacing:'0.14em', textTransform:'uppercase', cursor:'pointer', borderBottom:'1px solid rgba(255,255,255,0.12)', paddingBottom:'2px', transition:'color 0.2s' }}
                 onMouseEnter={e => e.currentTarget.style.color='rgba(255,255,255,0.58)'}
@@ -442,6 +545,15 @@ export default function HomeScreen() {
           0%   { opacity:0; transform:scaleY(0); }
           100% { opacity:1; transform:scaleY(1); }
         }
+        @keyframes portal-slide-in {
+          0%   { opacity:0; transform:translateY(10px); }
+          100% { opacity:1; transform:translateY(0); }
+        }
+        @keyframes portal-pulse {
+          0%, 100% { opacity:0.6; transform:scale(1); }
+          50%       { opacity:1;  transform:scale(1.35); }
+        }
+        .mission-scroll::-webkit-scrollbar { display:none; }
       `}</style>
     </>
   );
