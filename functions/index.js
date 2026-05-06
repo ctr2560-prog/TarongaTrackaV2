@@ -1,12 +1,11 @@
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { defineSecret }       = require('firebase-functions/params');
 const admin                  = require('firebase-admin');
-const nodemailer             = require('nodemailer');
+const { Resend }             = require('resend');
 
 admin.initializeApp();
 
-const EMAIL_USER = defineSecret('EMAIL_USER'); // Gmail address used to send
-const EMAIL_PASS = defineSecret('EMAIL_PASS'); // Gmail App Password
+const RESEND_API_KEY = defineSecret('RESEND_API_KEY');
 
 function buildEmailHtml(link) {
   return `<!DOCTYPE html>
@@ -99,7 +98,7 @@ function buildEmailHtml(link) {
 }
 
 exports.sendMagicLink = onCall(
-  { secrets: [EMAIL_USER, EMAIL_PASS], region: 'australia-southeast1' },
+  { secrets: [RESEND_API_KEY], region: 'australia-southeast1' },
   async (request) => {
     const { email, redirectUrl } = request.data;
 
@@ -112,7 +111,7 @@ exports.sendMagicLink = onCall(
       handleCodeInApp: true,
     };
 
-    // Generate the sign-in link server-side
+    // Generate the sign-in link server-side via Admin SDK
     let link;
     try {
       link = await admin.auth().generateSignInWithEmailLink(email, actionCodeSettings);
@@ -121,20 +120,11 @@ exports.sendMagicLink = onCall(
       throw new HttpsError('internal', 'Failed to generate sign-in link.');
     }
 
-    // Send branded email
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 587,
-      secure: false,
-      auth: {
-        user: EMAIL_USER.value(),
-        pass: EMAIL_PASS.value(),
-      },
-    });
-
+    // Send branded email via Resend
+    const resend = new Resend(RESEND_API_KEY.value());
     try {
-      await transporter.sendMail({
-        from: `"Taronga Tracka" <${EMAIL_USER.value()}>`,
+      await resend.emails.send({
+        from: 'Taronga Tracka <noreply@tarongatracka.com.au>',
         to: email,
         subject: 'Your Taronga Tracka sign-in link',
         html: buildEmailHtml(link),
