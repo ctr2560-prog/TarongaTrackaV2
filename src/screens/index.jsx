@@ -1,0 +1,31 @@
+import { useApp } from '../context/AppContext';
+import { useEffect } from 'react';
+
+export { default as HomeScreen }              from './HomeScreen';
+export { default as MapScreen }               from './MapScreen';
+export { default as AnimalScreen }            from './AnimalScreen';
+export { default as ObservationScreen }       from './ObservationScreen';
+export { default as BadgeScreen }             from './BadgeScreen';
+export { default as CollectionScreen }        from './CollectionScreen';
+export { default as SubmissionCompleteScreen } from './SubmissionCompleteScreen';
+export { default as SchoolEntryScreen }       from './SchoolEntryScreen';
+export { default as StudentJoinScreen }       from './StudentJoinScreen';
+export { default as StudentLoadingScreen }    from './StudentLoadingScreen';
+export { default as TeacherLoginScreen }      from './TeacherLoginScreen';
+export { default as TeacherDashboardScreen }  from './TeacherDashboardScreen';
+export { default as ClassDetailsScreen }      from './ClassDetailsScreen';
+export { default as AdminLoginScreen }        from './AdminLoginScreen';
+export { default as AdminDashboardScreen }    from './AdminDashboardScreen';
+export { default as AdminClassViewScreen }    from './AdminClassViewScreen';
+export { default as ResourceHubScreen }       from './ResourceHubScreen';
+export { default as ZooSnoozScreen }          from './ZooSnoozScreen';
+export { default as DocumentaryViewer }       from './DocumentaryViewer';
+export { default as ComingSoonScreen }        from './ComingSoonScreen';
+export { default as PublicEntryScreen }       from './PublicEntryScreen';
+export { default as PublicAnimalScreen }      from './PublicAnimalScreen';
+export { default as PublicMissionScreen }     from './PublicMissionScreen';
+export { default as PublicLeaderboardScreen } from './PublicLeaderboardScreen';
+
+// Orphaned routes — redirect to publicEntry until navigation is wired
+export const PublicHomeScreen    = () => { const { setCurrentScreen } = useApp(); useEffect(() => setCurrentScreen('publicEntry'), []); return null; };
+export const PublicHomeExtScreen = () => { const { setCurrentScreen } = useApp(); useEffect(() => setCurrentScreen('publicEntry'), []); return null; };
