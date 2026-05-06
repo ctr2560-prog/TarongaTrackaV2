@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useApp } from '../context/AppContext';
 
-const SEND_MAGIC_LINK_URL = 'https://australia-southeast1-tarongatracka.cloudfunctions.net/sendMagicLink';
+const SEND_MAGIC_LINK_URL = 'https://sendmagiclink-oy2a6fdxha-ts.a.run.app';
 
 export default function TeacherLoginScreen() {
   const { setCurrentScreen, teacherEmail, setTeacherEmail } = useApp();

@@ -1,11 +1,8 @@
 const { onRequest } = require('firebase-functions/v2/https');
-const { defineSecret }       = require('firebase-functions/params');
-const admin                  = require('firebase-admin');
-const { Resend }             = require('resend');
+const admin         = require('firebase-admin');
+const { Resend }    = require('resend');
 
 admin.initializeApp();
-
-const RESEND_API_KEY = defineSecret('RESEND_API_KEY');
 
 function buildEmailHtml(link) {
   return `<!DOCTYPE html>
@@ -98,8 +95,17 @@ function buildEmailHtml(link) {
 }
 
 exports.sendMagicLink = onRequest(
-  { secrets: [RESEND_API_KEY], region: 'australia-southeast1', cors: true, invoker: 'public' },
+  { region: 'australia-southeast1', invoker: 'public' },
   async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type');
+
+    if (req.method === 'OPTIONS') {
+      res.status(204).send('');
+      return;
+    }
+
     if (req.method !== 'POST') {
       res.status(405).json({ error: 'Method not allowed' });
       return;
@@ -128,7 +134,7 @@ exports.sendMagicLink = onRequest(
     }
 
     // Send branded email via Resend
-    const resend = new Resend(RESEND_API_KEY.value());
+    const resend = new Resend(process.env.RESEND_API_KEY);
     try {
       await resend.emails.send({
         from: 'Taronga Tracka <noreply@tarongatracka.com.au>',
