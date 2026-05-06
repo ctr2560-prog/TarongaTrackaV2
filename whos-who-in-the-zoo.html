@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Who's Who in the Zoo — Taronga Tracka</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
+
+    @font-face {
+      font-family: 'TarongaHeadline';
+      src: url('/images/TarongaHeadline-Regular.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', Arial, sans-serif;
+      background: #f4f8f5;
+      color: #222;
+      padding: 2rem;
+      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact;
+    }
+
+    .page {
+      max-width: 740px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    }
+
+    /* ── Header ── */
+    .header {
+      background: #0A2F1F;
+      padding: 28px 40px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .header-brand .label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.45);
+      margin-bottom: 4px;
+    }
+    .header-brand .title {
+      font-family: 'TarongaHeadline', 'DM Sans', sans-serif;
+      font-size: 26px;
+      font-weight: normal;
+      color: #fff;
+      letter-spacing: 0.04em;
+    }
+    .header-badge {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 40px;
+      padding: 6px 16px;
+      font-size: 11px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.8);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    /* ── Intro banner ── */
+    .intro-banner {
+      background: #1B6B3A;
+      padding: 14px 40px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .intro-banner .icon { font-size: 15px; margin-top: 2px; flex-shrink: 0; }
+    .intro-banner p {
+      font-size: 12px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.9);
+      line-height: 1.6;
+      margin: 0;
+    }
+    .intro-banner strong { color: #fff; }
+
+    /* ── Fill-in fields ── */
+    .fields-section {
+      background: #f4f8f5;
+      border-bottom: 1px solid #ddeae0;
+      padding: 18px 40px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px 24px;
+    }
+    .field { display: flex; flex-direction: column; gap: 4px; }
+    .field label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #1B6B3A;
+    }
+    .field .line {
+      border-bottom: 1.5px solid #0A2F1F;
+      height: 22px;
+      width: 100%;
+    }
+
+    /* ── Body ── */
+    .body { padding: 28px 40px 32px; }
+
+    .doc-title {
+      font-family: 'TarongaHeadline', 'DM Sans', sans-serif;
+      font-size: 22px;
+      font-weight: normal;
+      color: #0A2F1F;
+      letter-spacing: 0.06em;
+      margin-bottom: 6px;
+    }
+    .doc-subtitle {
+      font-size: 13px;
+      color: #555;
+      line-height: 1.6;
+      margin-bottom: 22px;
+    }
+
+    /* ── Privacy note ── */
+    .privacy-box {
+      background: #f4f8f5;
+      border-left: 3px solid #1B6B3A;
+      border-radius: 0 8px 8px 0;
+      padding: 10px 14px;
+      margin-bottom: 22px;
+    }
+    .privacy-box p {
+      font-size: 12px;
+      color: #444;
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    /* ── Table ── */
+    .alias-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .alias-table thead th {
+      background: #0A2F1F;
+      color: #fff;
+      padding: 10px 14px;
+      text-align: left;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .alias-table thead th:first-child { border-radius: 6px 0 0 0; width: 38%; }
+    .alias-table thead th:last-child  { border-radius: 0 6px 0 0; }
+
+    .alias-table tbody tr:nth-child(even) { background: #f4f8f5; }
+    .alias-table tbody tr:nth-child(odd)  { background: #fff; }
+
+    .alias-table tbody td {
+      padding: 9px 14px;
+      vertical-align: middle;
+      border-bottom: 1px solid #e8f0eb;
+    }
+    .alias-table tbody td.animal-cell {
+      font-weight: 700;
+      color: #0A2F1F;
+      font-size: 12.5px;
+    }
+    .alias-table tbody td.name-cell {
+      border-bottom: 1.5px solid #0A2F1F;
+      color: transparent; /* blank fill-in line */
+    }
+
+    /* ── Two-column layout for the table ── */
+    .table-cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0 24px;
+    }
+
+    /* ── Section divider heading ── */
+    .region-label {
+      font-size: 9px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: #1B6B3A;
+      background: #e8f5ed;
+      border-radius: 4px;
+      padding: 3px 8px;
+      display: inline-block;
+      margin: 10px 0 4px;
+    }
+
+    /* ── Footer ── */
+    .footer {
+      background: #f4f8f5;
+      border-top: 1px solid #ddeae0;
+      padding: 14px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .footer p { font-size: 11px; color: #888; margin: 0; line-height: 1.5; }
+    .footer a { color: #1B6B3A; text-decoration: none; font-weight: 600; }
+
+    /* ── Print ── */
+    @media print {
+      body { background: #fff; padding: 0; }
+      .page { box-shadow: none; border-radius: 0; }
+      .no-print { display: none; }
+    }
+
+    /* ── Print button ── */
+    .print-bar {
+      max-width: 740px;
+      margin: 0 auto 1.5rem;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    .print-btn {
+      background: #1B6B3A;
+      color: #fff;
+      border: none;
+      border-radius: 40px;
+      padding: 10px 24px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      letter-spacing: 0.05em;
+    }
+    .print-btn:hover { background: #0A2F1F; }
+  </style>
+</head>
+<body>
+
+  <div class="print-bar no-print">
+    <button class="print-btn" onclick="window.print()">Save as PDF / Print</button>
+  </div>
+
+  <div class="page">
+
+    <!-- Header -->
+    <div class="header">
+      <div style="display:flex; align-items:center; gap:16px;">
+        <img src="/images/logo.png" alt="Taronga Tracka" style="height:48px; width:auto; flex-shrink:0;">
+        <div class="header-brand">
+          <div class="label">Taronga Zoo Sydney</div>
+          <div class="title">Taronga Tracka</div>
+        </div>
+      </div>
+      <div class="header-badge">Who's Who in the Zoo</div>
+    </div>
+
+    <!-- Intro banner -->
+    <div class="intro-banner">
+      <span class="icon">&#128274;</span>
+      <p><strong>For teachers — </strong>Students select an animal alias instead of their real name to protect their privacy. Use this sheet to record which student chose which alias. Keep it secure and do not share it publicly.</p>
+    </div>
+
+    <!-- Fill-in fields -->
+    <div class="fields-section">
+      <div class="field">
+        <label>School Name</label>
+        <div class="line"></div>
+      </div>
+      <div class="field">
+        <label>Teacher Name</label>
+        <div class="line"></div>
+      </div>
+      <div class="field">
+        <label>Class / Year Group</label>
+        <div class="line"></div>
+      </div>
+      <div class="field">
+        <label>Excursion Date</label>
+        <div class="line"></div>
+      </div>
+      <div class="field" style="grid-column: span 2">
+        <label>Class Code</label>
+        <div class="line"></div>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="body">
+
+      <div class="doc-title">Who's Who in the Zoo?</div>
+      <p class="doc-subtitle">
+        Taronga Tracka de-identifies students by having them choose an animal alias — their real name is never stored in the app. Use the table below to note which student selected which alias during your visit.
+      </p>
+
+      <div class="privacy-box">
+        <p>&#128274; &nbsp;This document contains identifiable student information. Print, complete, and store securely in accordance with your school's record-keeping policies. Shred when no longer needed. Do not photograph or upload this sheet.</p>
+      </div>
+
+      <!-- Two-column alias table -->
+      <div class="table-cols">
+
+        <!-- Left column -->
+        <div>
+          <div class="region-label">Australian Animals</div>
+          <table class="alias-table">
+            <thead>
+              <tr>
+                <th>Animal Alias</th>
+                <th>Student Name</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td class="animal-cell">Quokka</td><td class="name-cell">&nbsp;</td></tr>
+              <tr><td class="animal-cell">Wombat</td><td class="name-cell">&nbsp;</td></tr>
+              <tr><td class="animal-cell">Echidna</td><td class="name-cell">&nbsp;</td></tr>
+              <tr><td class="animal-cell">Platypus</td><td class="name-cell">&nbsp;</td></tr>
+              <tr><td class="animal-cell">Koala</td><td class="name-cell">&nbsp;</td></tr>
+              <tr><td class="animal-cell">Tasmanian Devil</td><td class="name-cell">&nbsp;</td></tr>
+              <tr><td class="animal-cell">Eastern Grey Kangaroo</td><td class="name-cell">&nbsp;</td></tr>
+              <tr><td class="animal-cell">Red Kangaroo</td><td class="name-cell">&nbsp;</td></tr>
+              <tr><td class="animal-cell">Bilby</td><td class="name-cell">&nbsp;</td></tr>
+              <tr><td class="animal-cell">Numbat</td><td class="name-cell">&nbsp;</td></tr>
+              <tr><td class="animal-cell">Quoll</td><td class="name-cell">&nbsp;</td></tr>
+              <tr><td class="animal-cell">Wallaby</td><td class="name-cell">&nbsp;</td></tr>
+            </tbody>
+          </table>
+
+          <div class="region-label" style="margin-top:14px">African &amp; Asian Animals</div>
+          <table class="alias-table">
+            <thead>
+              <tr>
+                <th>Animal Alias</th>
+                <th>Student Name</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td class="animal-cell">Giraffe</td><td class="name-cell">&nbsp;</td></tr>
+              <tr><td class="animal-cell">Zebra</td><td class="name-cell">&nbsp;</td></tr>
+              <tr><td class="animal-cell">Cheetah</td><td class="name-cell">&nbsp;</td></tr>
+              <tr><td class="animal-cell">Lion</td><td class="name-cell">&nbsp;</td></tr>
+              <tr><td class="animal-cell">Meerkat</td><td class="name-cell">&nbsp;</td></tr>
+              <tr><td class="animal-cell">African Wild Dog</td><td class="name-cell">&nbsp;</td></tr>
+              <tr><td class="animal-cell">Asian Elephant</td><td class="name-cell">&nbsp;</td></tr>
+              <tr><td class="animal-cell">Sumatran Tiger</td><td class="name-cell">&nbsp;</td></tr>
+              <tr><td class="animal-cell">Snow Leopard</td><td class="name-cell">&nbsp;</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Right column -->
+        <div>
+          <div class="region-label">Asian &amp; Island Species</div>
+          <table class="alias-table">
+            <thead>
+              <tr>
+                <th>Animal Alias</th>
+                <th>Student Name</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td class="animal-cell">Red Panda</td><td class="name-cell">&nbsp;</td></tr>
+              <tr><td class="animal-cell">Orangutan</td><td class="name-cell">&nbsp;</td></tr>
+              <tr><td class="animal-cell">Sun Bear</td><td class="name-cell">&nbsp;</td></tr>
+              <tr><td class="animal-cell">Komodo Dragon</td><td class="name-cell">&nbsp;</td></tr>
+            </tbody>
+          </table>
+
+          <div class="region-label" style="margin-top:14px">Aquatic &amp; Avian Species</div>
+          <table class="alias-table">
+            <thead>
+              <tr>
+                <th>Animal Alias</th>
+                <th>Student Name</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td class="animal-cell">Saltwater Crocodile</td><td class="name-cell">&nbsp;</td></tr>
+              <tr><td class="animal-cell">Wedge-tailed Eagle</td><td class="name-cell">&nbsp;</td></tr>
+              <tr><td class="animal-cell">Little Penguin</td><td class="name-cell">&nbsp;</td></tr>
+              <tr><td class="animal-cell">Leafy Sea Dragon</td><td class="name-cell">&nbsp;</td></tr>
+              <tr><td class="animal-cell">Fur Seal</td><td class="name-cell">&nbsp;</td></tr>
+            </tbody>
+          </table>
+
+          <div class="region-label" style="margin-top:14px">Notes</div>
+          <table class="alias-table">
+            <thead>
+              <tr>
+                <th colspan="2">Additional Notes / Opt-outs</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td colspan="2" style="height:32px; border-bottom:1px solid #dde;">&nbsp;</td></tr>
+              <tr><td colspan="2" style="height:32px; border-bottom:1px solid #dde;">&nbsp;</td></tr>
+              <tr><td colspan="2" style="height:32px; border-bottom:1px solid #dde;">&nbsp;</td></tr>
+              <tr><td colspan="2" style="height:32px;">&nbsp;</td></tr>
+            </tbody>
+          </table>
+
+          <div style="margin-top:18px; padding:10px 12px; background:#f4f8f5; border-radius:8px; border:1px solid #ddeae0;">
+            <p style="font-size:11px; color:#555; line-height:1.6; margin:0;">
+              &#8505; &nbsp;This document is also available in the class navigation panel within Taronga Tracka. For on-site assistance identifying students, see a Taronga Zoo staff member.
+            </p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <p>Taronga Tracka — An education program by Taronga Zoo Sydney</p>
+      <p><a href="mailto:cameron.rodgers3@det.nsw.edu.au">cameron.rodgers3@det.nsw.edu.au</a> &nbsp;|&nbsp; <a href="https://tarongatracka.com.au">tarongatracka.com.au</a></p>
+    </div>
+
+  </div>
+
+</body>
+</html>
