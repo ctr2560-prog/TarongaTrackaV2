@@ -40,24 +40,38 @@ export default function TeacherLoginScreen() {
   // ── Sent confirmation ──────────────────────────────────────────────────────
   if (status === 'sent') {
     return (
-      <div style={{ position:'fixed', inset:0, background:'linear-gradient(135deg, var(--t-deep) 0%, var(--t-mid) 100%)', display:'flex', alignItems:'center', justifyContent:'center', padding:'clamp(1rem, 5vw, 2rem)' }}>
+      <div style={{ position:'fixed', inset:0, background:'linear-gradient(135deg, var(--t-deep) 0%, var(--t-mid) 100%)', display:'flex', alignItems:'center', justifyContent:'center', padding:'clamp(1rem, 5vw, 2rem)', overflowY:'auto' }}>
         <div className="animate-scale-in" style={{ background:'white', borderRadius:'24px', padding:'clamp(1.5rem, 4vh, 2.5rem)', maxWidth:'420px', width:'100%', boxShadow:'0 20px 60px rgba(0,0,0,0.3)', textAlign:'center' }}>
-          <div style={{ width:'64px', height:'64px', borderRadius:'50%', background:'linear-gradient(135deg,#10b981,#059669)', margin:'0 auto 1rem', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 4px 14px rgba(5,150,105,0.35)' }}>
+
+          {/* Icon */}
+          <div style={{ width:'64px', height:'64px', borderRadius:'50%', background:'linear-gradient(135deg,#1B6B3A,#0A2F1F)', margin:'0 auto 1rem', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 4px 14px rgba(10,47,31,0.3)' }}>
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
               <polyline points="22,6 12,13 2,6"/>
             </svg>
           </div>
-          <h2 className="taronga-title" style={{ fontSize:'1.7rem', color:'var(--t-deep)', marginBottom:'0.4rem' }}>Check your email</h2>
-          <p style={{ color:'#555', fontSize:'0.95rem', lineHeight:1.55, marginBottom:'0.5rem' }}>
+
+          <h2 className="taronga-title" style={{ fontSize:'1.7rem', color:'var(--t-deep)', marginBottom:'0.3rem' }}>Check your inbox</h2>
+          <p style={{ color:'#666', fontSize:'0.88rem', marginBottom:'1rem', lineHeight:1.5 }}>
             We sent a sign-in link to
           </p>
-          <p style={{ color:'var(--t-deep)', fontWeight:700, fontSize:'0.95rem', marginBottom:'1.4rem', wordBreak:'break-all' }}>
+          <p style={{ color:'var(--t-deep)', fontWeight:700, fontSize:'1rem', marginBottom:'1.4rem', wordBreak:'break-all', padding:'0.6rem 1rem', background:'#f5f9f6', borderRadius:'10px' }}>
             {teacherEmail}
           </p>
-          <p style={{ color:'#888', fontSize:'0.82rem', lineHeight:1.5, marginBottom:'1.5rem' }}>
-            Click the link in that email to access your dashboard. The link expires after 1 hour and can only be used once.
+          <p style={{ color:'#555', fontSize:'0.85rem', lineHeight:1.6, marginBottom:'1.2rem' }}>
+            Click the link in the email to access your dashboard. It expires in <strong>1 hour</strong> and can only be used once.
           </p>
+
+          {/* Spam callout */}
+          <div style={{ background:'#fff8e6', border:'1px solid #f5d97a', borderRadius:'12px', padding:'0.85rem 1rem', marginBottom:'1.4rem', textAlign:'left' }}>
+            <p style={{ margin:'0 0 0.3rem', fontSize:'0.78rem', fontWeight:700, color:'#7a5500', textTransform:'uppercase', letterSpacing:'0.08em' }}>
+              📬 Can't find it?
+            </p>
+            <p style={{ margin:0, fontSize:'0.82rem', color:'#7a5500', lineHeight:1.55 }}>
+              Check your <strong>Junk</strong> or <strong>Spam</strong> folder — NSW DET mail filters sometimes catch it. Mark it as <strong>"Not Junk"</strong> once and future links will arrive in your inbox.
+            </p>
+          </div>
+
           <button
             onClick={() => setStatus('idle')}
             style={{ background:'none', border:'1px solid #DDD', color:'#666', fontSize:'0.85rem', padding:'0.55rem 1.2rem', borderRadius:'40px', cursor:'pointer', fontWeight:600 }}>
