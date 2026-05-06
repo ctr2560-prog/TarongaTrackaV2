@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { auth } from '../firebase';
-import { sendSignInLinkToEmail } from 'firebase/auth';
+import { functions } from '../firebase';
+import { httpsCallable } from 'firebase/functions';
 
 export default function TeacherLoginScreen() {
   const { setCurrentScreen, teacherEmail, setTeacherEmail } = useApp();
@@ -16,21 +16,18 @@ export default function TeacherLoginScreen() {
     setStatus('sending');
     setErrorMsg('');
 
-    const actionCodeSettings = {
-      // After clicking the link, Firebase redirects here — works for both dev and prod
-      url: window.location.origin + window.location.pathname,
-      handleCodeInApp: true,
-    };
-
     try {
-      await sendSignInLinkToEmail(auth, teacherEmail.trim(), actionCodeSettings);
+      const sendMagicLink = httpsCallable(functions, 'sendMagicLink');
+      await sendMagicLink({
+        email: teacherEmail.trim(),
+        redirectUrl: window.location.origin + window.location.pathname,
+      });
       localStorage.setItem('taronga_magic_email', teacherEmail.trim());
       setStatus('sent');
     } catch (err) {
       console.error('Send magic link error:', err);
       setErrorMsg(
-        err.code === 'auth/invalid-email'         ? 'Please enter a valid email address.' :
-        err.code === 'auth/unauthorized-continue-uri' ? 'This URL isn\'t authorised in Firebase — add it to allowed domains.' :
+        err.code === 'functions/invalid-argument' ? 'Please enter a valid email address.' :
         'Something went wrong. Please try again.'
       );
       setStatus('error');
