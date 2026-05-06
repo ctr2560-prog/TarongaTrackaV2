@@ -1,4 +1,4 @@
-const { onCall, HttpsError } = require('firebase-functions/v2/https');
+const { onRequest } = require('firebase-functions/v2/https');
 const { defineSecret }       = require('firebase-functions/params');
 const admin                  = require('firebase-admin');
 const { Resend }             = require('resend');
@@ -97,13 +97,19 @@ function buildEmailHtml(link) {
 </html>`;
 }
 
-exports.sendMagicLink = onCall(
-  { secrets: [RESEND_API_KEY], region: 'australia-southeast1' },
-  async (request) => {
-    const { email, redirectUrl } = request.data;
+exports.sendMagicLink = onRequest(
+  { secrets: [RESEND_API_KEY], region: 'australia-southeast1', cors: true, invoker: 'public' },
+  async (req, res) => {
+    if (req.method !== 'POST') {
+      res.status(405).json({ error: 'Method not allowed' });
+      return;
+    }
+
+    const { email, redirectUrl } = req.body;
 
     if (!email || typeof email !== 'string' || !email.includes('@')) {
-      throw new HttpsError('invalid-argument', 'A valid email address is required.');
+      res.status(400).json({ error: 'A valid email address is required.' });
+      return;
     }
 
     const actionCodeSettings = {
@@ -117,7 +123,8 @@ exports.sendMagicLink = onCall(
       link = await admin.auth().generateSignInWithEmailLink(email, actionCodeSettings);
     } catch (err) {
       console.error('generateSignInWithEmailLink error:', err);
-      throw new HttpsError('internal', 'Failed to generate sign-in link.');
+      res.status(500).json({ error: 'Failed to generate sign-in link.' });
+      return;
     }
 
     // Send branded email via Resend
@@ -131,9 +138,10 @@ exports.sendMagicLink = onCall(
       });
     } catch (err) {
       console.error('Email send error:', err);
-      throw new HttpsError('internal', 'Failed to send email. Please try again.');
+      res.status(500).json({ error: 'Failed to send email. Please try again.' });
+      return;
     }
 
-    return { success: true };
+    res.json({ success: true });
   }
 );

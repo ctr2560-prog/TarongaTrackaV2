@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { functions } from '../firebase';
-import { httpsCallable } from 'firebase/functions';
+
+const SEND_MAGIC_LINK_URL = 'https://australia-southeast1-tarongatracka.cloudfunctions.net/sendMagicLink';
 
 export default function TeacherLoginScreen() {
   const { setCurrentScreen, teacherEmail, setTeacherEmail } = useApp();
@@ -17,19 +17,20 @@ export default function TeacherLoginScreen() {
     setErrorMsg('');
 
     try {
-      const sendMagicLink = httpsCallable(functions, 'sendMagicLink');
-      await sendMagicLink({
-        email: teacherEmail.trim(),
-        redirectUrl: window.location.origin + window.location.pathname,
+      const res = await fetch(SEND_MAGIC_LINK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: teacherEmail.trim(),
+          redirectUrl: window.location.origin + window.location.pathname,
+        }),
       });
+      if (!res.ok) throw new Error((await res.json()).error || 'Failed');
       localStorage.setItem('taronga_magic_email', teacherEmail.trim());
       setStatus('sent');
     } catch (err) {
       console.error('Send magic link error:', err);
-      setErrorMsg(
-        err.code === 'functions/invalid-argument' ? 'Please enter a valid email address.' :
-        'Something went wrong. Please try again.'
-      );
+      setErrorMsg('Something went wrong. Please try again.');
       setStatus('error');
     }
   };
