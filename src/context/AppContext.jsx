@@ -1,9 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { auth } from '../firebase';
-import {
-  onAuthStateChanged, signOut,
-  isSignInWithEmailLink, signInWithEmailLink,
-} from 'firebase/auth';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 
 const AppContext = createContext(null);
 
@@ -28,8 +25,8 @@ export function AppProvider({ children }) {
   // ── Firebase Auth ─────────────────────────────────────────────────────────
   const [teacher,     setTeacher]     = useState(null);   // Firebase User | null
   const [authLoading, setAuthLoading] = useState(true);   // true until first auth state known
+  const [demoMode,    setDemoMode]    = useState(false);
 
-  // Track auth state
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setTeacher(user);
@@ -39,32 +36,8 @@ export function AppProvider({ children }) {
     return unsubscribe;
   }, []);
 
-  // Complete magic-link sign-in when the user lands back on the app
-  useEffect(() => {
-    if (!isSignInWithEmailLink(auth, window.location.href)) return;
-    let email = localStorage.getItem('taronga_magic_email');
-    if (!email) {
-      // Fallback: user opened the link on a different device
-      email = window.prompt('Please confirm your email address to sign in:');
-    }
-    if (!email) return;
-    signInWithEmailLink(auth, email, window.location.href)
-      .then((result) => {
-        localStorage.removeItem('taronga_magic_email');
-        setTeacher(result.user);
-        setTeacherEmail(result.user.email || '');
-        setCurrentScreen('teacherDashboard');
-        // Strip the oobCode params from the URL so refreshing doesn't re-trigger
-        window.history.replaceState({}, document.title, window.location.pathname);
-      })
-      .catch((err) => {
-        console.error('Magic link sign-in failed:', err);
-        setCurrentScreen('teacherLogin');
-        window.history.replaceState({}, document.title, window.location.pathname);
-      });
-  }, []);
-
   const signOutTeacher = () => {
+    setDemoMode(false);
     signOut(auth).then(() => {
       setTeacher(null);
       setTeacherEmail('');
@@ -91,7 +64,7 @@ export function AppProvider({ children }) {
       adminAccessCode,   setAdminAccessCode,
       selectedClass,     setSelectedClass,
       selectedAdminClass, setSelectedAdminClass,
-      teacher,       signOutTeacher, authLoading,
+      teacher,       signOutTeacher, authLoading, demoMode, setDemoMode,
       docViewCode,   setDocViewCode,
     }}>
       {children}

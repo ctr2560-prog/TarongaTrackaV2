@@ -1,9 +1,17 @@
+import { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { useStudent } from '../context/StudentContext';
+import StudentFeedbackModal from '../components/StudentFeedbackModal';
 
 export default function SubmissionCompleteScreen() {
   const { setCurrentScreen, classCode } = useApp();
   const { badges, foundAnimals, animalsToRender, totalPoints, studentName, setCompletionCardDismissed } = useStudent();
+
+  const [showFeedback, setShowFeedback] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setShowFeedback(true), 1400);
+    return () => clearTimeout(t);
+  }, []);
 
   return (
     <div className="fade-in" style={{ position:'fixed', inset:0, background:'linear-gradient(135deg,var(--jungle-deep) 0%,var(--jungle-mid) 50%,var(--jungle-light) 100%)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'clamp(1rem,5vw,2rem)', overflow:'hidden' }}>
@@ -56,6 +64,15 @@ export default function SubmissionCompleteScreen() {
           Done
         </button>
       </div>
+
+      {showFeedback && (
+        <StudentFeedbackModal
+          classCode={classCode}
+          studentName={studentName}
+          sessionType="standard"
+          onDone={() => { setCompletionCardDismissed(true); setCurrentScreen('map'); }}
+        />
+      )}
     </div>
   );
 }

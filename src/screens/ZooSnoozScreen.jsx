@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
 import { useStudent } from '../context/StudentContext';
 import { ZOOSNOOZ_ANIMALS } from '../data/zoosnoozAnimals';
+import StudentFeedbackModal from '../components/StudentFeedbackModal';
 import { doc, setDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
 import { ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
@@ -9,6 +10,35 @@ import { normaliseCode, safeStudentId, getMinWords } from '../utils/helpers';
 import { buildObservationScore } from '../utils/scoring';
 
 const INTER_DURATION = { tiger: 30, lion: 30, rhino: 0, binturong: 0, 'sun-bear': 0 };
+
+function ZzDoneScreen({ classCode, studentName, onDone }) {
+  const [showFeedback, setShowFeedback] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setShowFeedback(true), 1400);
+    return () => clearTimeout(t);
+  }, []);
+  return (
+    <div style={{ position:'fixed', inset:0, background:'linear-gradient(160deg,#020D06,#071E14)', display:'flex', alignItems:'center', justifyContent:'center', padding:'1.5rem' }}>
+      <div className="animate-scale-in" style={{ textAlign:'center', maxWidth:'400px', width:'100%' }}>
+        <div style={{ fontSize:'4rem', marginBottom:'1rem' }}>🌙</div>
+        <h2 className="taronga-title" style={{ fontSize:'2rem', color:'white', marginBottom:'0.5rem', letterSpacing:'0.06em' }}>Documentary Submitted!</h2>
+        <p style={{ color:'#4A9E6B', marginBottom:'2rem', fontSize:'0.9rem', lineHeight:1.6 }}>Your night documentary has been sent to the Taronga team. Tap the NFC tag to watch it anytime.</p>
+        <button onClick={onDone}
+          style={{ width:'100%', padding:'0.9rem', background:'linear-gradient(135deg,#2E7D55,#4C1D95)', border:'none', borderRadius:'var(--t-r-pill)', color:'white', fontSize:'1rem', fontWeight:800, cursor:'pointer', letterSpacing:'0.06em', textTransform:'uppercase', boxShadow:'0 6px 20px rgba(46,125,85,0.5)' }}>
+          Back to Home
+        </button>
+      </div>
+      {showFeedback && (
+        <StudentFeedbackModal
+          classCode={classCode}
+          studentName={studentName}
+          sessionType="zoosnooz"
+          onDone={onDone}
+        />
+      )}
+    </div>
+  );
+}
 
 export default function ZooSnoozScreen() {
   const { zzScreen, setZzScreen, setSessionType, setCurrentScreen, studentName, classCode, classStage } = useApp();
@@ -996,17 +1026,11 @@ export default function ZooSnoozScreen() {
 
     if (zzStitchPhase === 'done') {
       return (
-        <div style={{ position:'fixed', inset:0, background:'linear-gradient(160deg,#020D06,#071E14)', display:'flex', alignItems:'center', justifyContent:'center', padding:'1.5rem' }}>
-          <div className="animate-scale-in" style={{ textAlign:'center', maxWidth:'400px', width:'100%' }}>
-            <div style={{ fontSize:'4rem', marginBottom:'1rem' }}>🌙</div>
-            <h2 className="taronga-title" style={{ fontSize:'2rem', color:'white', marginBottom:'0.5rem', letterSpacing:'0.06em' }}>Documentary Submitted!</h2>
-            <p style={{ color:'#4A9E6B', marginBottom:'2rem', fontSize:'0.9rem', lineHeight:1.6 }}>Your night documentary has been sent to the Taronga team. Tap the NFC tag to watch it anytime.</p>
-            <button onClick={() => { setCompletionCardDismissed(true); setCurrentScreen('home'); setSessionType('standard'); }}
-              style={{ width:'100%', padding:'0.9rem', background:'linear-gradient(135deg,#2E7D55,#4C1D95)', border:'none', borderRadius:'var(--t-r-pill)', color:'white', fontSize:'1rem', fontWeight:800, cursor:'pointer', letterSpacing:'0.06em', textTransform:'uppercase', boxShadow:'0 6px 20px rgba(46,125,85,0.5)' }}>
-              Back to Home
-            </button>
-          </div>
-        </div>
+        <ZzDoneScreen
+          classCode={classCode}
+          studentName={studentName}
+          onDone={() => { setCompletionCardDismissed(true); setCurrentScreen('home'); setSessionType('standard'); }}
+        />
       );
     }
 

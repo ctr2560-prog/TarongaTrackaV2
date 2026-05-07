@@ -19,9 +19,13 @@ function generateCode() {
 const GREEN = '#2E7D55';
 const AXES_DEG = [270, 30, 150];
 
+const LOCATION_LABELS = { 'taronga-sydney':'Taronga Sydney', 'zoosnooz-sydney':'ZooSnooz · Sydney', 'dubbo':'Taronga Dubbo', 'school':'Your School' };
+const SUBJECT_LABELS  = { science:'Science', maths:'Mathematics', english:'English', geography:'Geography' };
+
 function AnalyticsTab({ classes }) {
-  const [view,           setView]           = useState('total');   // total | daily | zoosnooz
+  const [view,           setView]           = useState('total');   // total | daily | zoosnooz | dubbo | school
   const [timeFilter,     setTimeFilter]     = useState('all');     // all | today | week | month
+  const [subjectFilter,  setSubjectFilter]  = useState('all');     // all | science | maths | english | geography
   const [students,       setStudents]       = useState(null);
   const [fetching,       setFetching]       = useState(false);
   const [schoolExpanded, setSchoolExpanded] = useState(false);
@@ -40,6 +44,7 @@ function AnalyticsTab({ classes }) {
             ...d.data(),
             _classCode: cls.classCode, _className: cls.className,
             _schoolName: cls.schoolName, _sessionType: cls.sessionType,
+            _location: cls.location || null, _subject: cls.subject || null,
           }));
         } catch {}
       }
@@ -49,16 +54,23 @@ function AnalyticsTab({ classes }) {
   }, [classes]);
 
   const viewClasses = useMemo(() => {
-    if (view === 'daily')    return classes.filter(c => c.sessionType !== 'zoosnooz');
-    if (view === 'zoosnooz') return classes.filter(c => c.sessionType === 'zoosnooz');
-    return classes;
-  }, [classes, view]);
+    let c = classes;
+    if (view === 'daily')    c = c.filter(x => x.sessionType !== 'zoosnooz' && x.location !== 'dubbo' && x.location !== 'school');
+    else if (view === 'zoosnooz') c = c.filter(x => x.sessionType === 'zoosnooz' || x.location === 'zoosnooz-sydney');
+    else if (view === 'dubbo')   c = c.filter(x => x.location === 'dubbo');
+    else if (view === 'school')  c = c.filter(x => x.location === 'school');
+    if (subjectFilter !== 'all') c = c.filter(x => x.subject === subjectFilter);
+    return c;
+  }, [classes, view, subjectFilter]);
 
   const viewStudents = useMemo(() => {
     if (!students) return [];
     let s = students;
-    if (view === 'daily')    s = s.filter(st => st._sessionType !== 'zoosnooz');
-    if (view === 'zoosnooz') s = s.filter(st => st._sessionType === 'zoosnooz');
+    if (view === 'daily')    s = s.filter(st => st._sessionType !== 'zoosnooz' && st._location !== 'dubbo' && st._location !== 'school');
+    else if (view === 'zoosnooz') s = s.filter(st => st._sessionType === 'zoosnooz' || st._location === 'zoosnooz-sydney');
+    else if (view === 'dubbo')   s = s.filter(st => st._location === 'dubbo');
+    else if (view === 'school')  s = s.filter(st => st._location === 'school');
+    if (subjectFilter !== 'all') s = s.filter(st => st._subject === subjectFilter);
     if (timeFilter !== 'all') {
       const cutoff = new Date();
       if (timeFilter === 'today')  cutoff.setHours(0, 0, 0, 0);
@@ -70,7 +82,7 @@ function AnalyticsTab({ classes }) {
       });
     }
     return s;
-  }, [students, view, timeFilter]);
+  }, [students, view, subjectFilter, timeFilter]);
 
   const kpi = useMemo(() => {
     const total     = viewClasses.length;
@@ -234,7 +246,7 @@ function AnalyticsTab({ classes }) {
   const totalStudentsAll = viewClasses.reduce((s, c) => s + c.studentCount, 0);
   const maxVisit  = animalVisits[0]?.[1] || 1;
   const maxBucket = Math.max(...quizBuckets, 1);
-  const viewLabel = view === 'daily' ? 'Daily' : view === 'zoosnooz' ? 'ZooSnooz' : 'Total';
+  const viewLabel = { total:'Total', daily:'Daily', zoosnooz:'ZooSnooz', dubbo:'Taronga Dubbo', school:'Your School' }[view] || 'Total';
 
   return (
     <div style={{ display:'flex', gap:'1.5rem', alignItems:'flex-start' }}>
@@ -242,9 +254,9 @@ function AnalyticsTab({ classes }) {
       {/* VIEW sidebar */}
       <div style={{ width:155, flexShrink:0, background:'var(--t-chalk)', borderRadius:'var(--t-r-md)', padding:'1rem', border:'1px solid var(--t-stone)' }}>
         <div style={{ fontSize:'0.62rem', fontWeight:700, color:'var(--t-ash)', textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:'0.6rem' }}>VIEW</div>
-        {[['total','Total'],['daily','Daily'],['zoosnooz','🌙 ZooSnooz']].map(([val,label]) => (
+        {[['total','Total'],['daily','Daily'],['zoosnooz','🌙 ZooSnooz'],['dubbo','Taronga Dubbo'],['school','Your School']].map(([val,label]) => (
           <button key={val} onClick={() => setView(val)}
-            style={{ display:'block', width:'100%', textAlign:'left', padding:'0.5rem 0.75rem', marginBottom:'0.2rem', borderRadius:'var(--t-r-sm)', border:'none', background: view===val ? GREEN : 'transparent', color: view===val ? 'white' : 'var(--t-slate)', fontWeight: view===val ? 700 : 500, cursor:'pointer', fontSize:'0.85rem', fontFamily:'inherit' }}>
+            style={{ display:'block', width:'100%', textAlign:'left', padding:'0.5rem 0.75rem', marginBottom:'0.2rem', borderRadius:'var(--t-r-sm)', border:'none', background: view===val ? GREEN : 'transparent', color: view===val ? 'white' : 'var(--t-slate)', fontWeight: view===val ? 700 : 500, cursor:'pointer', fontSize:'0.82rem', fontFamily:'inherit' }}>
             {label}
           </button>
         ))}
@@ -258,10 +270,18 @@ function AnalyticsTab({ classes }) {
           <h2 style={{ fontSize:'1.15rem', fontWeight:700, margin:0, color:'var(--t-deep)' }}>
             {viewLabel} Analytics
             <span style={{ background:'var(--t-foam)', border:'1px solid var(--t-mist)', borderRadius:999, fontSize:'0.65rem', fontWeight:600, padding:'0.15rem 0.6rem', marginLeft:'0.6rem', color:'var(--t-slate)', verticalAlign:'middle' }}>
-              {view==='daily'?'Standard Sessions':view==='zoosnooz'?'Night Sessions':'All Sessions'}
+              {{ total:'All Sessions', daily:'Standard Sessions', zoosnooz:'Night Sessions', dubbo:'Dubbo (Coming Soon)', school:'School (Coming Soon)' }[view] || 'All Sessions'}
             </span>
           </h2>
           <div style={{ flex:1 }} />
+          <select value={subjectFilter} onChange={e => setSubjectFilter(e.target.value)}
+            style={{ padding:'0.45rem 0.75rem', borderRadius:'var(--t-r-sm)', border:'1.5px solid var(--t-stone)', fontSize:'0.82rem', fontFamily:'inherit', background:'white', color:'var(--t-deep)', cursor:'pointer' }}>
+            <option value="all">All Subjects</option>
+            <option value="science">Science</option>
+            <option value="maths">Mathematics</option>
+            <option value="english">English</option>
+            <option value="geography">Geography</option>
+          </select>
           <select value={timeFilter} onChange={e => setTimeFilter(e.target.value)}
             style={{ padding:'0.45rem 0.75rem', borderRadius:'var(--t-r-sm)', border:'1.5px solid var(--t-stone)', fontSize:'0.82rem', fontFamily:'inherit', background:'white', color:'var(--t-deep)', cursor:'pointer' }}>
             <option value="all">All Time</option>
@@ -560,12 +580,13 @@ function AdminResourcesTab() {
 
 // ─── Tab: Review ──────────────────────────────────────────────────────────────
 function ReviewTab({ classes }) {
-  const [flagged,      setFlagged]      = useState([]);
-  const [feedback,     setFeedback]     = useState([]);
-  const [loading,      setLoading]      = useState(true);
-  const [expanded,     setExpanded]     = useState({});
-  const [overrideOpen, setOverrideOpen] = useState(null);
-  const [overrideVals, setOverrideVals] = useState({ b: 0, d: 0, w: 0 });
+  const [flagged,         setFlagged]         = useState([]);
+  const [feedback,        setFeedback]        = useState([]);
+  const [studentFeedback, setStudentFeedback] = useState([]);
+  const [loading,         setLoading]         = useState(true);
+  const [expanded,        setExpanded]        = useState({});
+  const [overrideOpen,    setOverrideOpen]    = useState(null);
+  const [overrideVals,    setOverrideVals]    = useState({ b: 0, d: 0, w: 0 });
 
   useEffect(() => {
     if (!classes.length) { setLoading(false); return; }
@@ -587,7 +608,7 @@ function ReviewTab({ classes }) {
           });
         } catch {}
       }
-      // Feedback stored in 'teacherFeedback' collection with ISO timestamp field
+      // Teacher feedback
       let fbItems = [];
       try {
         const fbSnap = await getDocs(collection(db, 'teacherFeedback'));
@@ -595,7 +616,15 @@ function ReviewTab({ classes }) {
           .map(d => ({ id: d.id, ...d.data() }))
           .sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''));
       } catch {}
-      if (!cancelled) { setFlagged(flaggedItems); setFeedback(fbItems); setLoading(false); }
+      // Student feedback
+      let sfItems = [];
+      try {
+        const sfSnap = await getDocs(collection(db, 'studentFeedback'));
+        sfItems = sfSnap.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          .sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''));
+      } catch {}
+      if (!cancelled) { setFlagged(flaggedItems); setFeedback(fbItems); setStudentFeedback(sfItems); setLoading(false); }
     })();
     return () => { cancelled = true; };
   }, [classes]);
@@ -817,6 +846,81 @@ function ReviewTab({ classes }) {
                   {fb.teacherName || ''}
                   {dateStr && <span style={{ marginLeft:'0.75rem' }}>{dateStr}</span>}
                 </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── Student Feedback ── */}
+      <div>
+        <h2 style={{ fontSize:'1.3rem', fontWeight:800, color:'var(--t-deep)', margin:'0 0 0.35rem' }}>Student Feedback</h2>
+        <p style={{ color:'var(--t-slate)', fontSize:'0.85rem', margin:'0 0 1.25rem' }}>Ratings and comments submitted by students at the end of their session.</p>
+
+        {studentFeedback.length > 0 && (() => {
+          const avg = (studentFeedback.reduce((s, f) => s + (f.rating || 0), 0) / studentFeedback.length).toFixed(1);
+          const dist = [5,4,3,2,1].map(s => ({ star: s, count: studentFeedback.filter(f => f.rating === s).length }));
+          return (
+            <div style={{ background:'white', borderRadius:'var(--t-r-md)', border:'1px solid var(--t-mist)', borderLeft:`4px solid #F59E0B`, padding:'1.1rem 1.25rem', marginBottom:'1rem' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:'1rem', flexWrap:'wrap' }}>
+                <div style={{ textAlign:'center' }}>
+                  <div style={{ fontSize:'2.2rem', fontWeight:800, color:'var(--t-deep)', lineHeight:1 }}>{avg}</div>
+                  <div style={{ fontSize:'1rem', letterSpacing:'0.05em', margin:'0.2rem 0 0.15rem' }}>{'⭐'.repeat(Math.round(avg))}</div>
+                  <div style={{ fontSize:'0.7rem', color:'var(--t-ash)', fontWeight:600 }}>{studentFeedback.length} response{studentFeedback.length !== 1 ? 's' : ''}</div>
+                </div>
+                <div style={{ flex:1, minWidth:'160px', display:'flex', flexDirection:'column', gap:'0.3rem' }}>
+                  {dist.map(({ star, count }) => (
+                    <div key={star} style={{ display:'flex', alignItems:'center', gap:'0.5rem' }}>
+                      <span style={{ fontSize:'0.72rem', color:'var(--t-slate)', width:'28px', textAlign:'right', fontWeight:600 }}>{star}★</span>
+                      <div style={{ flex:1, background:'var(--t-foam)', borderRadius:999, height:'7px', overflow:'hidden' }}>
+                        <div style={{ height:'100%', width:`${studentFeedback.length ? (count/studentFeedback.length)*100 : 0}%`, background:'#F59E0B', borderRadius:999, transition:'width 0.4s' }} />
+                      </div>
+                      <span style={{ fontSize:'0.72rem', color:'var(--t-ash)', width:'20px', fontWeight:600 }}>{count}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {studentFeedback.length === 0 && (
+          <div style={{ background:'var(--t-chalk)', borderRadius:'var(--t-r-md)', border:'1px solid var(--t-mist)', padding:'1.5rem', textAlign:'center', color:'var(--t-ash)', fontSize:'0.88rem' }}>
+            No student feedback submitted yet.
+          </div>
+        )}
+
+        <div style={{ display:'flex', flexDirection:'column', gap:'0.75rem' }}>
+          {studentFeedback.map(fb => {
+            const rating  = Math.min(5, Math.max(0, fb.rating || 0));
+            const dateStr = fb.timestamp
+              ? new Date(fb.timestamp).toLocaleDateString('en-AU', { day:'numeric', month:'short', year:'numeric' })
+              : '';
+            return (
+              <div key={fb.id} style={{ background:'white', borderRadius:'var(--t-r-md)', border:'1px solid var(--t-mist)', borderLeft:'4px solid #F59E0B', padding:'1rem 1.25rem' }}>
+                <div style={{ display:'flex', alignItems:'center', gap:'0.65rem', marginBottom:'0.45rem', flexWrap:'wrap' }}>
+                  <span style={{ fontSize:'0.95rem', letterSpacing:'0.04em', lineHeight:1 }}>
+                    {'⭐'.repeat(rating)}{'☆'.repeat(5 - rating)}
+                  </span>
+                  <span style={{ fontWeight:700, color:'var(--t-deep)', fontSize:'0.88rem' }}>{rating}/5</span>
+                  {fb.sessionType && (
+                    <span style={{ background: fb.sessionType === 'zoosnooz' ? '#1e1040' : 'var(--t-foam)', color: fb.sessionType === 'zoosnooz' ? '#a78bfa' : 'var(--t-mid)', border:`1px solid ${fb.sessionType === 'zoosnooz' ? '#4c1d95' : 'var(--t-mist)'}`, borderRadius:999, padding:'0.15rem 0.6rem', fontSize:'0.68rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em' }}>
+                      {fb.sessionType === 'zoosnooz' ? 'ZooSnooz' : 'Daily'}
+                    </span>
+                  )}
+                  {fb.classCode && (
+                    <span style={{ background:'var(--t-foam)', border:'1px solid var(--t-mist)', borderRadius:999, padding:'0.15rem 0.6rem', fontSize:'0.68rem', fontWeight:600, color:'var(--t-slate)' }}>
+                      {fb.classCode}
+                    </span>
+                  )}
+                  {fb.studentName && (
+                    <span style={{ fontSize:'0.68rem', color:'var(--t-ash)', fontStyle:'italic' }}>{fb.studentName}</span>
+                  )}
+                </div>
+                {fb.comment && (
+                  <p style={{ margin:'0 0 0.35rem', color:'var(--t-deep)', fontSize:'0.85rem', lineHeight:1.65 }}>"{fb.comment}"</p>
+                )}
+                {dateStr && <div style={{ fontSize:'0.7rem', color:'var(--t-ash)' }}>{dateStr}</div>}
               </div>
             );
           })}
@@ -1073,9 +1177,11 @@ function ZooSnoozAdminTab({ classes }) {
 
 // ─── Tab: Overview ────────────────────────────────────────────────────────────
 function OverviewTab({ classes, loading, onClassClick }) {
-  const [dateFilter, setDateFilter] = useState('all');
+  const [dateFilter,    setDateFilter]    = useState('all');
+  const [subjectFilter, setSubjectFilter] = useState('all');
 
   const filtered = classes.filter(cls => {
+    if (subjectFilter !== 'all' && cls.subject !== subjectFilter) return false;
     if (dateFilter === 'all') return true;
     if (!cls.createdAt) return false;
     const d = cls.createdAt.toDate?.() || new Date(cls.createdAt);
@@ -1122,13 +1228,23 @@ function OverviewTab({ classes, loading, onClassClick }) {
       <div className="animate-fade-in-up" style={{ marginTop:'1.5rem', animationDelay:'0.4s' }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'1rem', flexWrap:'wrap', gap:'1rem' }}>
           <h2 style={{ fontSize:'1.3rem', fontWeight:700, color:'var(--t-deep)', margin:0 }}>All Classes</h2>
-          <select value={dateFilter} onChange={e=>setDateFilter(e.target.value)}
-            style={{ padding:'0.5rem 0.75rem', borderRadius:'var(--t-r-sm)', border:'2px solid #E5E5E5', fontSize:'0.85rem', fontFamily:'DM Sans, sans-serif', background:'white', color:'var(--t-deep)', cursor:'pointer', fontWeight:600 }}>
-            <option value="all">All Time</option>
-            <option value="today">Today</option>
-            <option value="7days">Last 7 Days</option>
-            <option value="30days">Last 30 Days</option>
-          </select>
+          <div style={{ display:'flex', gap:'0.5rem', flexWrap:'wrap' }}>
+            <select value={subjectFilter} onChange={e=>setSubjectFilter(e.target.value)}
+              style={{ padding:'0.5rem 0.75rem', borderRadius:'var(--t-r-sm)', border:'2px solid #E5E5E5', fontSize:'0.85rem', fontFamily:'DM Sans, sans-serif', background:'white', color:'var(--t-deep)', cursor:'pointer', fontWeight:600 }}>
+              <option value="all">All Subjects</option>
+              <option value="science">Science</option>
+              <option value="maths">Mathematics</option>
+              <option value="english">English</option>
+              <option value="geography">Geography</option>
+            </select>
+            <select value={dateFilter} onChange={e=>setDateFilter(e.target.value)}
+              style={{ padding:'0.5rem 0.75rem', borderRadius:'var(--t-r-sm)', border:'2px solid #E5E5E5', fontSize:'0.85rem', fontFamily:'DM Sans, sans-serif', background:'white', color:'var(--t-deep)', cursor:'pointer', fontWeight:600 }}>
+              <option value="all">All Time</option>
+              <option value="today">Today</option>
+              <option value="7days">Last 7 Days</option>
+              <option value="30days">Last 30 Days</option>
+            </select>
+          </div>
         </div>
         <div style={{ marginBottom:'0.75rem', color:'#666', fontSize:'0.85rem' }}>Showing {filtered.length} of {classes.length} classes</div>
 
@@ -1149,7 +1265,14 @@ function OverviewTab({ classes, loading, onClassClick }) {
                   <div>
                     <h3 style={{ fontSize:'1.1rem', fontWeight:700, color:'var(--t-deep)', marginBottom:'0.2rem' }}>{cls.className}</h3>
                     <p style={{ fontSize:'0.8rem', color:'#999', fontWeight:600, letterSpacing:'0.05em', marginBottom:'0.1rem' }}>{cls.classCode}</p>
-                    {cls.schoolName && <p style={{ fontSize:'0.75rem', color:'var(--t-mid)', fontWeight:600 }}>{cls.schoolName}</p>}
+                    {cls.schoolName && <p style={{ fontSize:'0.75rem', color:'var(--t-mid)', fontWeight:600, margin:'0 0 0.1rem' }}>{cls.schoolName}</p>}
+                    {(cls.location || cls.subject) && (
+                      <p style={{ fontSize:'0.72rem', color:'var(--t-sage)', fontWeight:600, margin:0 }}>
+                        {LOCATION_LABELS[cls.location] || cls.location || ''}
+                        {cls.location && cls.subject && <span style={{ color:'var(--t-ash)' }}> · </span>}
+                        {cls.subject && <span style={{ textTransform:'capitalize', color:'var(--t-slate)' }}>{cls.subject}</span>}
+                      </p>
+                    )}
                   </div>
                   <div style={{ background: cls.completionPercent===100 ? 'var(--t-success-bg)' : 'var(--t-warning-bg)', color: cls.completionPercent===100 ? 'var(--t-success)' : 'var(--t-warning)', border:`1px solid ${cls.completionPercent===100?'#BBF7D0':'#FED7AA'}`, padding:'0.2rem 0.55rem', borderRadius:'var(--t-r-pill)', fontSize:'0.7rem', fontWeight:700 }}>
                     {cls.completionPercent}%
@@ -1368,6 +1491,112 @@ function ControlRoomTab({ adminAccessCode }) {
   );
 }
 
+// ─── Tab: Users ──────────────────────────────────────────────────────────────
+function UsersTab({ classes }) {
+  const [copied,   setCopied]   = useState(false);
+  const [profiles, setProfiles] = useState({});
+  const [profLoading, setProfLoading] = useState(true);
+
+  const teachers = useMemo(() => {
+    const map = {};
+    classes.forEach(cls => {
+      if (!cls.teacherEmail) return;
+      if (!map[cls.teacherEmail]) map[cls.teacherEmail] = { email: cls.teacherEmail, schools: new Set(), classCount: 0 };
+      if (cls.schoolName) map[cls.teacherEmail].schools.add(cls.schoolName);
+      map[cls.teacherEmail].classCount++;
+    });
+    return Object.values(map)
+      .map(t => ({ ...t, schools: [...t.schools] }))
+      .sort((a, b) => a.email.localeCompare(b.email));
+  }, [classes]);
+
+  useEffect(() => {
+    if (!teachers.length) { setProfLoading(false); return; }
+    let cancelled = false;
+    (async () => {
+      setProfLoading(true);
+      const profs = {};
+      await Promise.all(teachers.map(async t => {
+        try {
+          const snap = await getDoc(doc(db, 'teachers', t.email));
+          profs[t.email] = { commsOptIn: snap.exists() ? (snap.data().commsOptIn ?? null) : null };
+        } catch { profs[t.email] = { commsOptIn: null }; }
+      }));
+      if (!cancelled) { setProfiles(profs); setProfLoading(false); }
+    })();
+    return () => { cancelled = true; };
+  }, [teachers]);
+
+  const optInEmails = teachers.filter(t => profiles[t.email]?.commsOptIn === true).map(t => t.email);
+
+  const copyEmails = () => {
+    if (!optInEmails.length) return;
+    navigator.clipboard?.writeText(optInEmails.join(', ')).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2200); });
+  };
+
+  return (
+    <div style={{ display:'flex', flexDirection:'column', gap:'1.25rem' }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', flexWrap:'wrap', gap:'0.75rem' }}>
+        <div>
+          <h2 style={{ fontSize:'1.3rem', fontWeight:800, color:'var(--t-deep)', margin:'0 0 0.25rem' }}>Users</h2>
+          <p style={{ color:'var(--t-slate)', fontSize:'0.85rem', margin:0 }}>
+            {teachers.length} registered teacher{teachers.length !== 1 ? 's' : ''} across {classes.length} class{classes.length !== 1 ? 'es' : ''}.
+          </p>
+        </div>
+        <button onClick={copyEmails} disabled={!optInEmails.length}
+          style={{ padding:'0.5rem 1.1rem', borderRadius:'var(--t-r-pill)', border:'none', background: copied ? '#22C55E' : optInEmails.length ? GREEN : '#CCC', color:'white', fontWeight:700, fontSize:'0.82rem', cursor: optInEmails.length ? 'pointer' : 'not-allowed', transition:'background 0.2s', whiteSpace:'nowrap' }}>
+          {copied ? `✓ Copied ${optInEmails.length} email${optInEmails.length !== 1 ? 's' : ''}!` : `Copy Opted-In Emails (${optInEmails.length})`}
+        </button>
+      </div>
+
+      <div style={{ background:'var(--t-foam)', border:'1px solid var(--t-mist)', borderRadius:'var(--t-r-md)', padding:'0.75rem 1rem', fontSize:'0.8rem', color:'var(--t-slate)', lineHeight:1.6 }}>
+        <strong style={{ color:'var(--t-deep)' }}>Communication consent</strong> is collected at sign-up. The "Copy Opted-In Emails" button only includes teachers who have explicitly opted in. Teachers marked <strong>No Contact</strong> or with no preference on record are excluded.
+      </div>
+
+      {teachers.length === 0 ? (
+        <div style={{ background:'var(--t-chalk)', borderRadius:'var(--t-r-md)', border:'1px solid var(--t-mist)', padding:'2rem', textAlign:'center', color:'var(--t-ash)', fontSize:'0.88rem' }}>
+          No registered users yet.
+        </div>
+      ) : (
+        <div style={{ background:'white', borderRadius:'var(--t-r-md)', border:'1px solid var(--t-mist)', overflow:'hidden' }}>
+          <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'0.85rem' }}>
+            <thead>
+              <tr style={{ background:'var(--t-chalk)', borderBottom:'2px solid var(--t-mist)' }}>
+                {['Email', 'School(s)', 'Classes', 'Comms'].map(h => (
+                  <th key={h} style={{ padding:'0.65rem 1rem', textAlign: h==='Classes'||h==='Comms' ? 'center' : 'left', fontSize:'0.62rem', fontWeight:700, color:'var(--t-ash)', textTransform:'uppercase', letterSpacing:'0.08em' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {teachers.map((t, i) => {
+                const optIn = profLoading ? null : (profiles[t.email]?.commsOptIn ?? null);
+                return (
+                  <tr key={t.email} style={{ borderBottom:'1px solid var(--t-mist)', background: i%2===0 ? 'transparent' : 'var(--t-chalk)' }}>
+                    <td style={{ padding:'0.75rem 1rem', fontWeight:600, color:'var(--t-deep)' }}>{t.email}</td>
+                    <td style={{ padding:'0.75rem 1rem', color:'var(--t-slate)', fontSize:'0.82rem' }}>
+                      {t.schools.length > 0 ? t.schools.join(', ') : <span style={{ color:'var(--t-ash)' }}>—</span>}
+                    </td>
+                    <td style={{ padding:'0.75rem 1rem', color:'var(--t-mid)', fontWeight:700, textAlign:'center' }}>{t.classCount}</td>
+                    <td style={{ padding:'0.75rem 1rem', textAlign:'center' }}>
+                      {profLoading ? (
+                        <span style={{ color:'var(--t-ash)', fontSize:'0.75rem' }}>…</span>
+                      ) : optIn === true ? (
+                        <span style={{ background:'#F0FDF4', color:'#16A34A', border:'1px solid #BBF7D0', borderRadius:999, padding:'0.15rem 0.6rem', fontSize:'0.68rem', fontWeight:700 }}>Opted In</span>
+                      ) : (
+                        <span style={{ background:'#FEF2F2', color:'#DC2626', border:'1px solid #FECACA', borderRadius:999, padding:'0.15rem 0.6rem', fontSize:'0.68rem', fontWeight:700 }}>No Contact</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function AdminDashboardScreen() {
   const { setCurrentScreen, adminAccessCode, setAdminAccessCode, setSelectedAdminClass } = useApp();
@@ -1423,6 +1652,7 @@ export default function AdminDashboardScreen() {
               schoolName: d.schoolName || '', teacherEmail: d.teacherEmail || '',
               stage: d.stage ?? null, yearGroup: d.yearGroup || '',
               sessionType: d.sessionType || (hasZzStudents ? 'zoosnooz' : 'standard'),
+              location: d.location || null, subject: d.subject || null,
               studentCount: studentsSnap.size, completedCount,
               completionPercent: studentsSnap.size > 0 ? Math.round((completedCount/studentsSnap.size)*100) : 0,
               quizAverage: quizCount > 0 ? Math.round(quizSum/quizCount) : null,
@@ -1439,11 +1669,16 @@ export default function AdminDashboardScreen() {
     return () => { cancelled = true; };
   }, []);
 
-  // Load current daily code
+  // Load current daily code — only pick it up if it hasn't expired yet
   useEffect(() => {
+    const now = new Date();
     getDocs(query(collection(db, 'accessCodes'), where('active', '==', true)))
       .then(snap => {
-        const daily = snap.docs.find(d => d.id.startsWith('ROAR-'));
+        const daily = snap.docs.find(d => {
+          if (!d.id.startsWith('ROAR-')) return false;
+          const exp = d.data().expiresAt?.toDate?.() ?? (d.data().expiresAt ? new Date(d.data().expiresAt) : null);
+          return exp && exp > now;
+        });
         if (daily) setDailyCode({ id: daily.id, ...daily.data() });
       }).catch(() => {});
   }, []);
@@ -1486,8 +1721,8 @@ export default function AdminDashboardScreen() {
     finally { setCreatingNight(false); }
   };
 
-  const tabs = ['overview', 'analytics', 'resources', 'review', 'controlRoom', 'zoosnooz'];
-  const tabLabels = { overview:'Overview', analytics:'Analytics', resources:'Resources', review:'Review', controlRoom:'🔒 Control Room', zoosnooz:'🌙 ZooSnooz' };
+  const tabs = ['overview', 'analytics', 'zoosnooz', 'review', 'users', 'controlRoom'];
+  const tabLabels = { overview:'Overview', analytics:'Analytics', zoosnooz:'🌙 ZooSnooz', review:'Review', users:'Users', controlRoom:'🔒 Control Room' };
 
   return (
     <div style={{ position:'fixed', inset:0, background:'var(--t-canvas)', display:'flex', flexDirection:'column' }}>
@@ -1504,24 +1739,30 @@ export default function AdminDashboardScreen() {
 
         <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', flexWrap:'wrap' }}>
           {/* Daily code */}
-          <div style={{ background:'rgba(255,255,255,0.10)', border:'1px solid rgba(255,255,255,0.18)', padding:'0.4rem 0.85rem', borderRadius:'var(--t-r-pill)', color:'white', display:'flex', alignItems:'center', gap:'0.6rem', fontSize:'0.78rem', fontWeight:600 }}>
-            🔑 Daily Code: {dailyCode ? (
-              <>
-                <strong style={{ letterSpacing:'0.05em' }}>{dailyCode.id}</strong>
-                <span style={{ opacity:0.8 }}>(Exp. 11:59pm)</span>
-                <button onClick={generateDailyCode} disabled={generatingDaily} style={{ padding:'2px 8px', borderRadius:'10px', border:'none', cursor:'pointer', background:'rgba(255,255,255,0.25)', color:'white', fontWeight:700, fontSize:'0.72rem' }}>
-                  {generatingDaily ? '…' : 'Regenerate'}
-                </button>
-              </>
-            ) : (
-              <>
-                <span style={{ opacity:0.7 }}>No active code</span>
-                <button onClick={generateDailyCode} disabled={generatingDaily} style={{ padding:'2px 8px', borderRadius:'10px', border:'none', cursor:'pointer', background:'white', color:'#1A5238', fontWeight:700, fontSize:'0.72rem' }}>
-                  {generatingDaily ? '…' : 'Generate'}
-                </button>
-              </>
-            )}
-          </div>
+          {(() => {
+            const exp = dailyCode?.expiresAt?.toDate?.() ?? (dailyCode?.expiresAt ? new Date(dailyCode.expiresAt) : null);
+            const isLive = dailyCode && exp && exp > new Date();
+            return (
+              <div style={{ background:'rgba(255,255,255,0.10)', border:'1px solid rgba(255,255,255,0.18)', padding:'0.4rem 0.85rem', borderRadius:'var(--t-r-pill)', color:'white', display:'flex', alignItems:'center', gap:'0.6rem', fontSize:'0.78rem', fontWeight:600 }}>
+                🔑 Daily Code: {isLive ? (
+                  <>
+                    <strong style={{ letterSpacing:'0.05em' }}>{dailyCode.id}</strong>
+                    <span style={{ opacity:0.8 }}>(Exp. 11:59pm)</span>
+                    <button onClick={generateDailyCode} disabled={generatingDaily} style={{ padding:'2px 8px', borderRadius:'10px', border:'none', cursor:'pointer', background:'rgba(255,255,255,0.25)', color:'white', fontWeight:700, fontSize:'0.72rem' }}>
+                      {generatingDaily ? '…' : 'Regenerate'}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <span style={{ opacity:0.7 }}>{dailyCode ? 'Expired' : 'No active code'}</span>
+                    <button onClick={generateDailyCode} disabled={generatingDaily} style={{ padding:'2px 8px', borderRadius:'10px', border:'none', cursor:'pointer', background:'white', color:'#1A5238', fontWeight:700, fontSize:'0.72rem' }}>
+                      {generatingDaily ? '…' : 'Generate'}
+                    </button>
+                  </>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Night code */}
           <div style={{ background:'rgba(0,0,0,0.85)', border:'1px solid rgba(46,125,85,0.45)', padding:'0.4rem 0.85rem', borderRadius:'var(--t-r-pill)', color:'white', display:'flex', alignItems:'center', gap:'0.6rem', fontSize:'0.78rem', fontWeight:600 }}>
@@ -1556,8 +1797,8 @@ export default function AdminDashboardScreen() {
           {tabs.map(t => (
             <button key={t} onClick={()=>setTab(t)}
               style={{ padding:'0.85rem 1.1rem', background:'none', border:'none',
-                borderBottom: tab===t ? `2.5px solid ${t==='review'?'var(--t-danger)':t==='controlRoom'?'#2E7D55':'var(--t-mid)'}` : '2.5px solid transparent',
-                color: tab===t ? (t==='review'?'var(--t-danger)':t==='controlRoom'?'#2E7D55':'var(--t-deep)') : 'var(--t-slate)',
+                borderBottom: tab===t ? `2.5px solid ${t==='controlRoom'?'#2E7D55':'var(--t-mid)'}` : '2.5px solid transparent',
+                color: tab===t ? (t==='controlRoom'?'#2E7D55':'var(--t-deep)') : 'var(--t-slate)',
                 fontSize:'0.85rem', fontWeight: tab===t ? 700 : 500, cursor:'pointer',
                 transition:'color 0.18s, border-color 0.18s', fontFamily:'DM Sans, sans-serif',
                 whiteSpace:'nowrap', letterSpacing:'0.01em' }}>
@@ -1570,12 +1811,12 @@ export default function AdminDashboardScreen() {
       {/* Content */}
       <div style={{ flex:1, overflowY:'auto', padding:'1.25rem 1.5rem' }}>
         <div style={{ maxWidth:'960px', margin:'0 auto' }}>
-          {tab === 'overview'     && <OverviewTab classes={classes} loading={loading} onClassClick={code=>{setSelectedAdminClass(code);setCurrentScreen('adminClassView');}} />}
-          {tab === 'analytics'    && <AnalyticsTab classes={classes} />}
-          {tab === 'resources'    && <AdminResourcesTab />}
-          {tab === 'review'       && <ReviewTab classes={classes} />}
-          {tab === 'controlRoom'  && <ControlRoomTab adminAccessCode={adminAccessCode} />}
-          {tab === 'zoosnooz'     && <ZooSnoozAdminTab classes={classes} />}
+          {tab === 'overview'    && <OverviewTab classes={classes} loading={loading} onClassClick={code=>{setSelectedAdminClass(code);setCurrentScreen('adminClassView');}} />}
+          {tab === 'analytics'   && <AnalyticsTab classes={classes} />}
+          {tab === 'zoosnooz'    && <ZooSnoozAdminTab classes={classes} />}
+          {tab === 'review'      && <ReviewTab classes={classes} />}
+          {tab === 'users'       && <UsersTab classes={classes} />}
+          {tab === 'controlRoom' && <ControlRoomTab adminAccessCode={adminAccessCode} />}
         </div>
       </div>
     </div>

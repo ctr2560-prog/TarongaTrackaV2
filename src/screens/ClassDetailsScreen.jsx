@@ -61,12 +61,12 @@ function resolveZzData(s) {
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 export default function ClassDetailsScreen() {
-  const { setCurrentScreen, teacherEmail, setTeacherEmail, selectedClass, teacher, authLoading, signOutTeacher } = useApp();
+  const { setCurrentScreen, teacherEmail, setTeacherEmail, selectedClass, teacher, authLoading, signOutTeacher, demoMode } = useApp();
 
   // Auth guard
   useEffect(() => {
-    if (!authLoading && !teacher) setCurrentScreen('teacherLogin');
-  }, [teacher, authLoading]);
+    if (!authLoading && !teacher && !demoMode) setCurrentScreen('teacherLogin');
+  }, [teacher, authLoading, demoMode]);
 
   // Class metadata
   const [cls,            setCls]            = useState(null);
@@ -122,7 +122,7 @@ export default function ClassDetailsScreen() {
       .then(snap => {
         if (snap.exists()) {
           const d = snap.data();
-          setCls({ classCode: d.classCode || selectedClass, className: d.className || '', schoolName: d.schoolName || '', stage: d.stage || 4, yearGroup: d.yearGroup || '', sessionType: d.sessionType || 'standard', sessionClosed: d.sessionClosed || false });
+          setCls({ classCode: d.classCode || selectedClass, className: d.className || '', schoolName: d.schoolName || '', stage: d.stage || 4, yearGroup: d.yearGroup || '', sessionType: d.sessionType || 'standard', sessionClosed: d.sessionClosed || false, location: d.location || null, subject: d.subject || null });
         } else {
           setCurrentScreen('teacherDashboard');
         }
@@ -330,7 +330,11 @@ export default function ClassDetailsScreen() {
           <p className="lms-nav-group-label">Navigation</p>
           <nav className="lms-nav">
             <button className="lms-nav-item" onClick={() => setCurrentScreen('teacherDashboard')}><span className="lms-nav-icon">&#8592;</span> All Classes</button>
+            <button className="lms-nav-item" onClick={() => window.open('/whos-who-in-the-zoo.pdf', '_blank')}><span className="lms-nav-icon">&#128274;</span> Who's Who in the Zoo</button>
             <button className="lms-nav-item" onClick={() => window.open('https://www.wildlybytaronga.com.au', '_blank')}><span className="lms-nav-icon">&#127807;</span> Wildly by Taronga</button>
+            {isZZ && (
+              <button className="lms-nav-item" onClick={() => window.open('/zoosnooz-notification.html', '_blank')}><span className="lms-nav-icon">&#9999;</span> Notification Template</button>
+            )}
           </nav>
 
           <p className="lms-nav-group-label" style={{ marginTop:'1rem' }}>Class Info</p>
@@ -343,6 +347,20 @@ export default function ClassDetailsScreen() {
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                 <span style={{ fontSize:'0.68rem', color:'rgba(255,255,255,0.4)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em' }}>Stage</span>
                 <span style={{ fontSize:'0.8rem', color:'rgba(255,255,255,0.8)', fontWeight:600 }}>Stage {cls.stage}</span>
+              </div>
+            )}
+            {cls.location && (
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                <span style={{ fontSize:'0.68rem', color:'rgba(255,255,255,0.4)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em' }}>Location</span>
+                <span style={{ fontSize:'0.75rem', color:'rgba(255,255,255,0.8)', fontWeight:600, textAlign:'right', maxWidth:'120px' }}>
+                  {{ 'taronga-sydney':'Taronga Sydney', 'zoosnooz-sydney':'ZooSnooz · Sydney', 'dubbo':'Taronga Dubbo', 'school':'Your School' }[cls.location] || cls.location}
+                </span>
+              </div>
+            )}
+            {cls.subject && (
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                <span style={{ fontSize:'0.68rem', color:'rgba(255,255,255,0.4)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em' }}>Subject</span>
+                <span style={{ fontSize:'0.75rem', color:'rgba(255,255,255,0.8)', fontWeight:600, textTransform:'capitalize' }}>{cls.subject}</span>
               </div>
             )}
             {!loading && (

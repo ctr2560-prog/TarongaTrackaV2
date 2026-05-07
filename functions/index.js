@@ -12,83 +12,35 @@ function buildEmailHtml(link) {
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>Your Taronga Tracka sign-in link</title>
 </head>
-<body style="margin:0;padding:0;background:#eef3ee;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#eef3ee;padding:32px 16px;">
-    <tr><td align="center">
-
-      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.09);">
-
-        <!-- Header -->
-        <tr>
-          <td style="background:#0A2F1F;padding:32px 40px;text-align:center;">
-            <p style="margin:0 0 6px;color:rgba(255,255,255,0.5);font-size:11px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;">Taronga Zoo Sydney</p>
-            <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:800;letter-spacing:0.03em;">Taronga Tracka</h1>
-            <p style="margin:10px 0 0;color:rgba(255,255,255,0.45);font-size:11px;letter-spacing:0.14em;text-transform:uppercase;">Teacher Portal</p>
-          </td>
-        </tr>
-
-        <!-- Body -->
-        <tr>
-          <td style="padding:36px 40px 28px;">
-            <h2 style="margin:0 0 12px;color:#0A2F1F;font-size:20px;font-weight:700;">Your sign-in link is ready</h2>
-            <p style="margin:0 0 8px;color:#444;font-size:15px;line-height:1.65;">
-              We received a request to sign in to <strong style="color:#0A2F1F;">Taronga Tracka</strong> using this email address.
-            </p>
-            <p style="margin:0 0 28px;color:#444;font-size:15px;line-height:1.65;">
-              Click the button below to access your teacher dashboard — no password needed.
-            </p>
-
-            <!-- CTA button -->
-            <table cellpadding="0" cellspacing="0" width="100%" style="margin:0 0 28px;">
-              <tr>
-                <td align="center">
-                  <a href="${link}"
-                    style="display:inline-block;padding:15px 40px;background:#1B6B3A;color:#ffffff;font-size:15px;font-weight:700;text-decoration:none;border-radius:40px;letter-spacing:0.07em;text-transform:uppercase;">
-                    Sign In to Taronga Tracka &rarr;
-                  </a>
-                </td>
-              </tr>
-            </table>
-
-            <!-- Security notice -->
-            <table cellpadding="0" cellspacing="0" width="100%" style="margin:0 0 24px;">
-              <tr>
-                <td style="background:#f4f8f5;border-left:3px solid #1B6B3A;border-radius:0 8px 8px 0;padding:14px 18px;">
-                  <p style="margin:0 0 4px;color:#0A2F1F;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;">Security notice</p>
-                  <p style="margin:0;color:#555;font-size:13px;line-height:1.6;">
-                    This link expires in <strong>1 hour</strong> and can only be used <strong>once</strong>.
-                    If you didn't request this, you can safely ignore this email — your account remains secure.
-                  </p>
-                </td>
-              </tr>
-            </table>
-
-            <!-- Fallback link -->
-            <p style="margin:0;color:#aaa;font-size:12px;line-height:1.6;">
-              Button not working? Copy and paste this into your browser:<br>
-              <a href="${link}" style="color:#1B6B3A;font-size:11px;word-break:break-all;">${link}</a>
-            </p>
-          </td>
-        </tr>
-
-        <!-- Footer -->
-        <tr>
-          <td style="background:#f4f8f5;border-top:1px solid #ddeae0;padding:20px 40px;text-align:center;">
-            <p style="margin:0 0 3px;color:#0A2F1F;font-size:13px;font-weight:700;">Taronga Tracka</p>
-            <p style="margin:0;color:#aaa;font-size:11px;line-height:1.6;">
-              An education program by Taronga Zoo Sydney<br>
-              This mailbox is not monitored &mdash; please do not reply.
-            </p>
-          </td>
-        </tr>
-
-      </table>
-
-      <p style="color:#bbb;font-size:11px;margin-top:20px;text-align:center;">
-        &copy; Taronga Zoo Sydney &middot; Taronga Tracka Education Program
-      </p>
-
-    </td></tr>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background:#ffffff;">
+  <table width="100%" cellpadding="0" cellspacing="0">
+    <tr>
+      <td style="background:#0A2F1F;padding:24px 32px;">
+        <p style="margin:0;color:#ffffff;font-size:20px;font-weight:bold;">Taronga Tracka</p>
+        <p style="margin:4px 0 0;color:#a8c8b0;font-size:13px;">Taronga Zoo Sydney</p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:32px;color:#222222;">
+        <h2 style="margin:0 0 16px;font-size:22px;color:#0A2F1F;">Sign in to your account</h2>
+        <p style="margin:0 0 16px;font-size:15px;line-height:1.6;">
+          You requested a sign-in link for Taronga Tracka. Click the button below to access your teacher dashboard. This link will expire in 1 hour.
+        </p>
+        <p style="margin:0 0 24px;">
+          <a href="${link}" style="display:inline-block;padding:12px 28px;background:#1B6B3A;color:#ffffff;font-size:15px;font-weight:bold;text-decoration:none;border-radius:6px;">Sign in to Taronga Tracka</a>
+        </p>
+        <p style="margin:0 0 8px;font-size:14px;line-height:1.6;">
+          If the button does not work, copy and paste this link into your browser:
+        </p>
+        <p style="margin:0 0 24px;font-size:13px;word-break:break-all;">
+          <a href="${link}" style="color:#1B6B3A;">${link}</a>
+        </p>
+        <hr style="border:none;border-top:1px solid #dddddd;margin:0 0 24px;">
+        <p style="margin:0;font-size:13px;color:#666666;">
+          If you did not request this email, you can safely ignore it. No action is needed on your part.
+        </p>
+      </td>
+    </tr>
   </table>
 </body>
 </html>`;

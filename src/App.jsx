@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { StudentProvider } from './context/StudentContext';
 import {
@@ -10,6 +11,42 @@ import {
   PublicAnimalScreen, PublicMissionScreen, PublicLeaderboardScreen,
   ZooSnoozScreen, DocumentaryViewer, ComingSoonScreen,
 } from './screens';
+
+function SplashDismisser() {
+  const { authLoading } = useApp();
+  const [videoReady,  setVideoReady]  = useState(false);
+  const [minTimeDone, setMinTimeDone] = useState(false);
+
+  // Minimum hold — prevents instant flash-and-dismiss when assets are cached
+  useEffect(() => {
+    const t = setTimeout(() => setMinTimeDone(true), 2200);
+    return () => clearTimeout(t);
+  }, []);
+
+  // Wait for background video to have enough data to play smoothly
+  useEffect(() => {
+    const video = document.querySelector('video');
+    if (!video) { setVideoReady(true); return; }
+    // Already buffered (e.g. cached)
+    if (video.readyState >= 3) { setVideoReady(true); return; }
+    const onReady = () => setVideoReady(true);
+    video.addEventListener('canplay', onReady);
+    // Hard fallback — don't hold splash forever on very slow connections
+    const fallback = setTimeout(() => setVideoReady(true), 6000);
+    return () => { video.removeEventListener('canplay', onReady); clearTimeout(fallback); };
+  }, []);
+
+  useEffect(() => {
+    if (authLoading || !videoReady || !minTimeDone) return;
+    const el = document.getElementById('splash');
+    if (!el) return;
+    el.classList.add('splash-hide');
+    const t = setTimeout(() => { el.style.display = 'none'; }, 600);
+    return () => clearTimeout(t);
+  }, [authLoading, videoReady, minTimeDone]);
+
+  return null;
+}
 
 function Router() {
   const { currentScreen, sessionType, docViewCode } = useApp();
@@ -53,6 +90,7 @@ export default function App() {
   return (
     <AppProvider>
       <StudentProvider>
+        <SplashDismisser />
         <Router />
       </StudentProvider>
     </AppProvider>

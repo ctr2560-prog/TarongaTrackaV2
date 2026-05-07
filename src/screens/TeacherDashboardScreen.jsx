@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { collection, doc, onSnapshot, getDocs, getDoc, runTransaction, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useApp } from '../context/AppContext';
+import LegalModal from '../components/LegalModal';
 
 const WILDLY_PHRASES = ['Wildly by Taronga', 'Continue the learning', 'Resources', 'Programs', 'Assessments'];
 
@@ -35,25 +36,31 @@ function generateClassCode() {
 }
 
 export default function TeacherDashboardScreen() {
-  const { setCurrentScreen, teacherEmail, setTeacherEmail, setSelectedClass, teacher, authLoading, signOutTeacher } = useApp();
+  const { setCurrentScreen, teacherEmail, setTeacherEmail, setSelectedClass, teacher, authLoading, signOutTeacher, demoMode } = useApp();
 
   // Auth guard — redirect if not signed in once Firebase has resolved
   useEffect(() => {
-    if (!authLoading && !teacher) setCurrentScreen('teacherLogin');
-  }, [teacher, authLoading]);
+    if (!authLoading && !teacher && !demoMode) setCurrentScreen('teacherLogin');
+  }, [teacher, authLoading, demoMode]);
 
   // Classes + student counts
   const [teacherClasses,  setTeacherClasses]  = useState([]);
   const [studentCounts,   setStudentCounts]   = useState({});
+  const [classesLoading,  setClassesLoading]  = useState(true);
 
   // Create class form
   const [newClassName,    setNewClassName]    = useState('');
   const [newSchoolName,   setNewSchoolName]   = useState('');
   const [newClassStage,   setNewClassStage]   = useState(4);
+  const [newLocation,     setNewLocation]     = useState('taronga-sydney');
+  const [newSubject,      setNewSubject]      = useState('science');
   const [accessCodeInput, setAccessCodeInput] = useState('');
+  const [zzConsentChecked, setZzConsentChecked] = useState(false);
+  const [codeSessionType,  setCodeSessionType]  = useState(null); // null | 'standard' | 'zoosnooz'
   const [creatingClass,   setCreatingClass]   = useState(false);
   const [classCreated,    setClassCreated]    = useState(false);
   const [createError,     setCreateError]     = useState('');
+  const [showWwzModal,    setShowWwzModal]    = useState(false);
 
   // Class code modal
   const [classCodeModal,      setClassCodeModal]      = useState(null);
@@ -64,6 +71,7 @@ export default function TeacherDashboardScreen() {
   const [feedbackRating,     setFeedbackRating]     = useState(0);
   const [feedbackComment,    setFeedbackComment]    = useState('');
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
+  const [legalDoc,           setLegalDoc]           = useState(null); // 'privacy' | 'terms' | null
 
   // Real-time classes listener
   useEffect(() => {
@@ -79,8 +87,11 @@ export default function TeacherDashboardScreen() {
         teacherEmail: d.data().teacherEmail || teacherEmail,
         archived:     d.data().archived || false,
         sessionType:  d.data().sessionType || 'standard',
+        location:     d.data().location || null,
+        subject:      d.data().subject || null,
       })));
-    }, err => { console.error('Classes listener error:', err); setTeacherClasses([]); });
+      setClassesLoading(false);
+    }, err => { console.error('Classes listener error:', err); setTeacherClasses([]); setClassesLoading(false); });
     return () => unsub();
   }, [teacherEmail]);
 
@@ -104,6 +115,20 @@ export default function TeacherDashboardScreen() {
     return () => { cancelled = true; };
   }, [teacherClasses]);
 
+  // Look up session type of the entered access code so we only show the ZooSnooz consent box when needed
+  useEffect(() => {
+    if (!accessCodeInput.trim()) { setCodeSessionType(null); return; }
+    let cancelled = false;
+    setZzConsentChecked(false);
+    getDoc(doc(db, 'accessCodes', accessCodeInput.trim()))
+      .then(snap => {
+        if (cancelled) return;
+        setCodeSessionType(snap.exists() ? (snap.data().sessionType || 'standard') : null);
+      })
+      .catch(() => { if (!cancelled) setCodeSessionType(null); });
+    return () => { cancelled = true; };
+  }, [accessCodeInput]);
+
   const activeClasses    = teacherClasses.filter(c => !c.archived);
   const totalStudentsAll = activeClasses.reduce((sum, c) => sum + (studentCounts[c.classCode]?.total || 0), 0);
 
@@ -122,6 +147,7 @@ export default function TeacherDashboardScreen() {
       if (!codeData.active)                          { setCreateError('This access code is no longer active.'); setCreatingClass(false); return; }
       if (codeData.expiresAt.toDate() < now)         { setCreateError('This access code has expired.'); setCreatingClass(false); return; }
       if (codeData.uses >= codeData.maxUses)         { setCreateError('This access code has reached its usage limit.'); setCreatingClass(false); return; }
+      if ((codeData.sessionType || 'standard') === 'zoosnooz' && !zzConsentChecked) { setCreateError('Please confirm student filming consent before creating a ZooSnooz class.'); setCreatingClass(false); return; }
 
       let code = generateClassCode();
       while (teacherClasses.some(c => c.classCode === code)) code = generateClassCode();
@@ -140,16 +166,20 @@ export default function TeacherDashboardScreen() {
           stage: newClassStage, accessCodeUsed: accessCodeInput.trim(),
           venue, createdAt: serverTimestamp(), archived: false,
           sessionClosed: false, sessionDate, sessionType,
+          location: newLocation, subject: newLocation === 'zoosnooz-sydney' ? null : newSubject,
         });
         tx.set(doc(db, 'classes', code), {
           classCode: code, className: newClassName.trim(), schoolName: newSchoolName.trim(),
           stage: newClassStage, teacherEmail, accessCodeUsed: accessCodeInput.trim(),
           venue, createdAt: serverTimestamp(), sessionClosed: false, sessionDate, sessionType,
+          location: newLocation, subject: newLocation === 'zoosnooz-sydney' ? null : newSubject,
         });
       });
 
-      setNewClassName(''); setNewSchoolName(''); setAccessCodeInput('');
+      setNewClassName(''); setNewSchoolName(''); setAccessCodeInput(''); setZzConsentChecked(false);
+      setNewLocation('taronga-sydney'); setNewSubject('science');
       setClassCreated(true);
+      setShowWwzModal(true);
       setTimeout(() => setClassCreated(false), 2500);
     } catch (err) {
       console.error('Create class error:', err);
@@ -181,7 +211,28 @@ export default function TeacherDashboardScreen() {
 
   const inputStyle = { width:'100%', padding:'0.65rem 0.9rem', borderRadius:'var(--t-r-sm)', border:'1.5px solid var(--t-stone)', fontSize:'0.88rem', fontFamily:'DM Sans, sans-serif', marginBottom:'0.85rem', boxSizing:'border-box', background:'var(--t-parchment)', color:'var(--t-ink)', outline:'none', transition:'border-color 0.2s' };
 
+  if (authLoading || classesLoading) return (
+    <div style={{ position:'fixed', inset:0, background:'linear-gradient(135deg, var(--t-deep) 0%, var(--t-mid) 60%, var(--t-eucalyptus) 100%)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'1.5rem' }}>
+      <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'1rem' }}>
+        <div style={{ width:'72px', height:'72px', borderRadius:'50%', background:'rgba(255,255,255,0.12)', border:'1px solid rgba(255,255,255,0.2)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 8px 32px rgba(0,0,0,0.2)' }}>
+          <img src="/images/logo.png" alt="Taronga" style={{ width:'48px', height:'48px', objectFit:'contain' }} onError={e => e.target.style.display='none'} />
+        </div>
+        <h1 className="taronga-title" style={{ color:'white', fontSize:'1.5rem', letterSpacing:'0.06em', fontWeight:400, margin:0 }}>TARONGA TRACKA</h1>
+        <p style={{ color:'rgba(255,255,255,0.6)', fontSize:'0.8rem', margin:0 }}>Teacher Portal</p>
+      </div>
+      <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'0.75rem' }}>
+        <div style={{ width:'36px', height:'36px', border:'3px solid rgba(255,255,255,0.2)', borderTop:'3px solid white', borderRadius:'50%', animation:'spin 0.8s linear infinite' }} />
+        <p style={{ color:'rgba(255,255,255,0.75)', fontSize:'0.85rem', margin:0, fontWeight:500 }}>Loading your classes…</p>
+      </div>
+      {teacherEmail && (
+        <p style={{ color:'rgba(255,255,255,0.35)', fontSize:'0.72rem', margin:0 }}>{teacherEmail}</p>
+      )}
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+
   return (
+    <>
     <div className="lms-page">
       {/* Top bar */}
       <div className="lms-topbar">
@@ -214,7 +265,10 @@ export default function TeacherDashboardScreen() {
               <span className="lms-nav-icon">&#9675;</span> My Classes
             </button>
             <button className="lms-nav-item" onClick={() => window.open('https://www.wildlybytaronga.com.au', '_blank')}>
-              <span className="lms-nav-icon">&#127807;</span> <WildlyLabel />
+              <span className="lms-nav-icon">&#10022;</span> <WildlyLabel />
+            </button>
+            <button className="lms-nav-item" onClick={() => window.open('https://www.taronga.org.au/learn', '_blank')}>
+              <span className="lms-nav-icon">&#9678;</span> Taronga Programs
             </button>
           </nav>
           <p className="lms-nav-group-label" style={{ marginTop:'1rem' }}>Account</p>
@@ -226,6 +280,11 @@ export default function TeacherDashboardScreen() {
               <span className="lms-nav-icon">&#8592;</span> Back to Home
             </button>
           </nav>
+
+          <div style={{ marginTop:'auto', paddingTop:'1.5rem', borderTop:'1px solid rgba(255,255,255,0.08)', padding:'1.5rem 1.25rem 0' }}>
+            <button onClick={() => setLegalDoc('privacy')} style={{ display:'block', background:'none', border:'none', color:'rgba(255,255,255,0.35)', fontSize:'0.72rem', cursor:'pointer', padding:'0.2rem 0', textAlign:'left', width:'100%', transition:'color 0.15s' }} onMouseEnter={e => e.currentTarget.style.color='rgba(255,255,255,0.7)'} onMouseLeave={e => e.currentTarget.style.color='rgba(255,255,255,0.35)'}>Privacy Policy</button>
+            <button onClick={() => setLegalDoc('terms')} style={{ display:'block', background:'none', border:'none', color:'rgba(255,255,255,0.35)', fontSize:'0.72rem', cursor:'pointer', padding:'0.2rem 0', textAlign:'left', width:'100%', transition:'color 0.15s' }} onMouseEnter={e => e.currentTarget.style.color='rgba(255,255,255,0.7)'} onMouseLeave={e => e.currentTarget.style.color='rgba(255,255,255,0.35)'}>Terms of Use</button>
+          </div>
         </div>
 
         {/* Main */}
@@ -256,6 +315,32 @@ export default function TeacherDashboardScreen() {
               <h3 className="lms-section-heading">Create a New Class</h3>
               <p style={{ color:'var(--t-slate)', fontSize:'0.8rem', marginBottom:'1.1rem', marginTop:'-0.5rem' }}>Students join using the generated class code.</p>
 
+              {/* Location */}
+              <label style={{ display:'block', fontSize:'0.78rem', fontWeight:700, color:'var(--t-deep)', marginBottom:'0.3rem', textTransform:'uppercase', letterSpacing:'0.05em' }}>Location</label>
+              <select value={newLocation} onChange={e => setNewLocation(e.target.value)}
+                style={{ ...inputStyle, appearance:'auto', cursor:'pointer' }}
+                onFocus={e => e.target.style.borderColor='var(--t-mid)'} onBlur={e => e.target.style.borderColor='var(--t-stone)'}>
+                <option value="taronga-sydney">Taronga Sydney — Zoo Visit</option>
+                <option value="zoosnooz-sydney">ZooSnooz — Taronga Sydney</option>
+                <option value="dubbo" disabled>Taronga Dubbo (Coming Soon)</option>
+                <option value="school" disabled>Your School (Coming Soon)</option>
+              </select>
+
+              {/* Subject — hidden for ZooSnooz */}
+              {newLocation !== 'zoosnooz-sydney' && (
+                <>
+                  <label style={{ display:'block', fontSize:'0.78rem', fontWeight:700, color:'var(--t-deep)', marginBottom:'0.3rem', textTransform:'uppercase', letterSpacing:'0.05em' }}>Subject</label>
+                  <select value={newSubject} onChange={e => setNewSubject(e.target.value)}
+                    style={{ ...inputStyle, appearance:'auto', cursor:'pointer' }}
+                    onFocus={e => e.target.style.borderColor='var(--t-mid)'} onBlur={e => e.target.style.borderColor='var(--t-stone)'}>
+                    <option value="science">Science</option>
+                    <option value="maths" disabled>Mathematics (Coming Soon)</option>
+                    <option value="english" disabled>English (Coming Soon)</option>
+                    <option value="geography" disabled>Geography (Coming Soon)</option>
+                  </select>
+                </>
+              )}
+
               <label style={{ display:'block', fontSize:'0.78rem', fontWeight:700, color:'var(--t-deep)', marginBottom:'0.3rem', textTransform:'uppercase', letterSpacing:'0.05em' }}>School Name</label>
               <input type="text" value={newSchoolName} onChange={e => setNewSchoolName(e.target.value)} placeholder="e.g. Campbelltown Public School"
                 style={inputStyle} onFocus={e => e.target.style.borderColor='var(--t-mid)'} onBlur={e => e.target.style.borderColor='var(--t-stone)'} />
@@ -277,7 +362,29 @@ export default function TeacherDashboardScreen() {
 
               <label style={{ display:'block', fontSize:'0.78rem', fontWeight:700, color:'var(--t-deep)', marginBottom:'0.3rem', textTransform:'uppercase', letterSpacing:'0.05em' }}>Taronga Access Code</label>
               <input type="password" value={accessCodeInput} onChange={e => setAccessCodeInput(e.target.value)} placeholder="Enter access code" autoComplete="off"
-                style={inputStyle} onFocus={e => e.target.style.borderColor='var(--t-mid)'} onBlur={e => e.target.style.borderColor='var(--t-stone)'} />
+                style={{ ...inputStyle, marginBottom:'1rem' }} onFocus={e => e.target.style.borderColor='var(--t-mid)'} onBlur={e => e.target.style.borderColor='var(--t-stone)'} />
+
+              {(codeSessionType === 'zoosnooz' || newLocation === 'zoosnooz-sydney') && (
+                <div style={{ background:'#f0f7f2', border:'1px solid #b6d9c3', borderRadius:'10px', padding:'0.9rem 1rem', marginBottom:'1rem' }}>
+                  <label style={{ display:'flex', gap:'0.65rem', alignItems:'flex-start', cursor:'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={zzConsentChecked}
+                      onChange={e => setZzConsentChecked(e.target.checked)}
+                      style={{ marginTop:'3px', accentColor:'#1B6B3A', width:'15px', height:'15px', flexShrink:0 }}
+                    />
+                    <span style={{ fontSize:'0.8rem', color:'#1a4a2a', lineHeight:1.6 }}>
+                      I confirm that appropriate consent for video filming has been obtained for all participating students in accordance with my school's policies.
+                      <br/>
+                      <span style={{ color:'#555', fontSize:'0.76rem' }}>
+                        If your school requires a specific form, please use your school's version. A Taronga Tracka ZooSnooz notification template is available{' '}
+                        <a href="/zoosnooz-notification.html" target="_blank" rel="noopener noreferrer" style={{ color:'#1B6B3A', fontWeight:700, textDecoration:'underline' }}>here</a>
+                        {' '}if your school does not have one. Sample documentation can also be found within the class once created.
+                      </span>
+                    </span>
+                  </label>
+                </div>
+              )}
 
               {createError && (
                 <p style={{ color:'var(--t-danger)', fontSize:'0.82rem', fontWeight:600, marginBottom:'0.75rem' }}>⚠ {createError}</p>
@@ -320,6 +427,13 @@ export default function TeacherDashboardScreen() {
                           {studentCounts[cls.classCode]?.total || 0} student{(studentCounts[cls.classCode]?.total || 0) !== 1 ? 's' : ''}
                           {cls.stage ? <span style={{ marginLeft:'0.4rem', background:'var(--t-foam)', color:'var(--t-mid)', fontWeight:700, borderRadius:'var(--t-r-xs)', padding:'0 0.35rem', fontSize:'0.6875rem' }}>Stage {cls.stage}</span> : null}
                         </p>
+                        {(cls.location || cls.subject) && (
+                          <p className="lms-class-meta" style={{ marginTop:'0.15rem', color:'var(--t-sage)' }}>
+                            {cls.location && <span style={{ fontWeight:600 }}>{{ 'taronga-sydney':'Taronga Sydney', 'zoosnooz-sydney':'ZooSnooz · Sydney', 'dubbo':'Taronga Dubbo', 'school':'Your School' }[cls.location] || cls.location}</span>}
+                            {cls.location && cls.subject && <span style={{ color:'var(--t-ash)' }}> · </span>}
+                            {cls.subject && <span style={{ textTransform:'capitalize', color:'var(--t-slate)' }}>{cls.subject}</span>}
+                          </p>
+                        )}
                       </div>
                       <div onClick={e => { e.stopPropagation(); setClassCodeModal(cls.classCode); }}
                         style={{ textAlign:'right', cursor:'pointer', padding:'0.25rem 0.4rem', borderRadius:'var(--t-r-xs)', transition:'background 0.16s' }}
@@ -403,5 +517,50 @@ export default function TeacherDashboardScreen() {
         </div>
       )}
     </div>
+      {legalDoc && <LegalModal doc={legalDoc} onClose={() => setLegalDoc(null)} />}
+
+      {/* Who's Who in the Zoo modal */}
+      {showWwzModal && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.55)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center', padding:'1.5rem' }} onClick={() => setShowWwzModal(false)}>
+          <div onClick={e => e.stopPropagation()} style={{ background:'white', borderRadius:'20px', maxWidth:'480px', width:'100%', boxShadow:'0 20px 60px rgba(0,0,0,0.3)', overflow:'hidden' }}>
+            {/* Modal header */}
+            <div style={{ background:'#0A2F1F', padding:'22px 28px 18px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+              <div>
+                <p style={{ fontSize:'10px', fontWeight:700, letterSpacing:'0.16em', textTransform:'uppercase', color:'rgba(255,255,255,0.45)', marginBottom:'4px' }}>Class Created</p>
+                <h3 style={{ fontFamily:'TarongaHeadline, DM Sans, sans-serif', fontSize:'1.3rem', fontWeight:'normal', color:'white', letterSpacing:'0.04em', margin:0 }}>Who's Who in the Zoo?</h3>
+              </div>
+              <button onClick={() => setShowWwzModal(false)} style={{ background:'rgba(255,255,255,0.12)', border:'1px solid rgba(255,255,255,0.2)', borderRadius:'50%', width:'32px', height:'32px', color:'white', fontSize:'1rem', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>✕</button>
+            </div>
+            {/* Modal body */}
+            <div style={{ padding:'24px 28px' }}>
+              <div style={{ background:'#e8f5ed', border:'1px solid #b6d9c3', borderRadius:'10px', padding:'12px 14px', marginBottom:'16px', display:'flex', gap:'10px', alignItems:'flex-start' }}>
+                <span style={{ fontSize:'18px', flexShrink:0, marginTop:'1px' }}>&#128274;</span>
+                <p style={{ fontSize:'0.83rem', color:'#1a4a2a', lineHeight:1.65, margin:0 }}>
+                  <strong>Students are de-identified for privacy.</strong> Instead of entering their real name, each student picks an animal alias — their name is never stored in the app.
+                </p>
+              </div>
+              <p style={{ fontSize:'0.83rem', color:'#444', lineHeight:1.7, marginBottom:'14px' }}>
+                To record which student chose which alias, print the <strong>Who's Who in the Zoo</strong> document and fill it in during the excursion. Keep it secure and do not share it publicly.
+              </p>
+              <p style={{ fontSize:'0.83rem', color:'#444', lineHeight:1.7, marginBottom:'20px' }}>
+                The document is also accessible in the <strong>class navigation panel</strong> once you open any class. On-site at Taronga, staff can also assist — just see a team member for details.
+              </p>
+              <a
+                href="/whos-who-in-the-zoo.pdf"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ display:'block', width:'100%', padding:'0.8rem', borderRadius:'40px', background:'linear-gradient(135deg, #1B6B3A, #0A2F1F)', color:'white', fontSize:'0.9rem', fontWeight:700, textDecoration:'none', textAlign:'center', letterSpacing:'0.05em', textTransform:'uppercase', marginBottom:'0.7rem', boxSizing:'border-box' }}>
+                &#9112; Open Who's Who Document
+              </a>
+              <button
+                onClick={() => setShowWwzModal(false)}
+                style={{ width:'100%', padding:'0.7rem', borderRadius:'40px', border:'none', background:'#F5F3EE', color:'#555', fontSize:'0.85rem', fontWeight:600, cursor:'pointer' }}>
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
