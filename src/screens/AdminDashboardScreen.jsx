@@ -20,7 +20,7 @@ const GREEN = '#2E7D55';
 const AXES_DEG = [270, 30, 150];
 
 const LOCATION_LABELS = { 'taronga-sydney':'Taronga Sydney', 'zoosnooz-sydney':'ZooSnooz · Sydney', 'dubbo':'Taronga Dubbo', 'school':'Your School' };
-const SUBJECT_LABELS  = { science:'Science', maths:'Mathematics', english:'English', geography:'Geography' };
+const SUBJECT_LABELS  = { science:'Science', maths:'Mathematics', english:'English', geography:'Geography', pdhpe:'PDHPE' };
 
 function AnalyticsTab({ classes }) {
   const [view,           setView]           = useState('total');   // total | daily | zoosnooz | dubbo | school
@@ -281,6 +281,7 @@ function AnalyticsTab({ classes }) {
             <option value="maths">Mathematics</option>
             <option value="english">English</option>
             <option value="geography">Geography</option>
+            <option value="pdhpe">PDHPE</option>
           </select>
           <select value={timeFilter} onChange={e => setTimeFilter(e.target.value)}
             style={{ padding:'0.45rem 0.75rem', borderRadius:'var(--t-r-sm)', border:'1.5px solid var(--t-stone)', fontSize:'0.82rem', fontFamily:'inherit', background:'white', color:'var(--t-deep)', cursor:'pointer' }}>
@@ -1236,6 +1237,7 @@ function OverviewTab({ classes, loading, onClassClick }) {
               <option value="maths">Mathematics</option>
               <option value="english">English</option>
               <option value="geography">Geography</option>
+            <option value="pdhpe">PDHPE</option>
             </select>
             <select value={dateFilter} onChange={e=>setDateFilter(e.target.value)}
               style={{ padding:'0.5rem 0.75rem', borderRadius:'var(--t-r-sm)', border:'2px solid #E5E5E5', fontSize:'0.85rem', fontFamily:'DM Sans, sans-serif', background:'white', color:'var(--t-deep)', cursor:'pointer', fontWeight:600 }}>
