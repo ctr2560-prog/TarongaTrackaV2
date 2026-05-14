@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { doc, collection, getDoc, getDocs, query, where, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useApp } from '../context/AppContext';
+import { useStudent } from '../context/StudentContext';
 import { normaliseCode, safeStudentId } from '../utils/helpers';
 import { ANIMAL_ALIASES } from '../constants/animals';
 
@@ -11,9 +12,12 @@ export default function StudentJoinScreen() {
     studentName, setStudentName,
     classCode, setClassCode,
     setClassStage,
+    setClassSubject,
     setSessionType,
     setZzScreen,
   } = useApp();
+
+  const { resetProgress } = useStudent();
 
   const [step,         setStep]         = useState('code');   // 'code' | 'animal'
   const [joinError,    setJoinError]    = useState('');
@@ -77,13 +81,16 @@ export default function StudentJoinScreen() {
       }
 
       const classData    = classSnap.data();
-      const joinedStage  = classData.stage || 4;
+      const joinedStage   = classData.stage || 4;
       const joinedSession = classData.sessionType || 'standard';
+      const joinedSubject = classData.subject || 'science';
 
       setClassStage(joinedStage);
+      setClassSubject(joinedSubject);
       setSessionType(joinedSession);
       setZzScreen('map');
-      localStorage.setItem('tarongaClassStage', JSON.stringify(joinedStage));
+      localStorage.setItem('tarongaClassStage',   JSON.stringify(joinedStage));
+      localStorage.setItem('tarongaClassSubject', JSON.stringify(joinedSubject));
 
       // Check again whether animal is still available (race condition guard)
       const studentsRef  = collection(db, 'classes', code, 'students');
@@ -119,6 +126,7 @@ export default function StudentJoinScreen() {
           studentName:  selectedAnimal,
           classCode:    code,
           classStage:   joinedStage,
+          classSubject: joinedSubject,
           badges:       [],
           foundAnimals: [],
           cachedAt:     Date.now(),
@@ -127,6 +135,7 @@ export default function StudentJoinScreen() {
 
       setJoinError('');
       localStorage.removeItem('tarongaTrackaProgress');
+      resetProgress();
       setCurrentScreen(joinedSession === 'zoosnooz' ? 'zoosnooz' : 'studentLoading');
 
     } catch (err) {

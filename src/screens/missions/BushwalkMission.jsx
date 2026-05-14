@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useStudent } from '../../context/StudentContext';
 import { getStageQuestions } from '../../utils/helpers';
+import MathsCalculator from '../../components/MathsCalculator';
 
 export default function BushwalkMission() {
-  const { setCurrentScreen, classStage } = useApp();
+  const { setCurrentScreen, classStage, classSubject } = useApp();
   const {
     currentAnimal,
     showResult, setShowResult,
@@ -18,29 +19,31 @@ export default function BushwalkMission() {
   const [selected,     setSelected]     = useState(null);
   const [showFeedback, setShowFeedback] = useState(false);
   const [results,      setResults]      = useState([]); // boolean per clue
+  const [miniKeyOpen,  setMiniKeyOpen]  = useState(false);
 
   const CLUES = [
     {
-      label: classStage <= 2 ? 'Clue 1' : 'Clue 1 — Riddle',
-      clue: classStage <= 2
-        ? 'Which animal loves waterfalls and streams?'
-        : 'I swim beneath the waterfall\'s spray,\nWith a bill like a duck but I\'m not — no way.\nI lay eggs but I\'m not a bird,\nA mammal swimming — how absurd!',
+      label: 'Clue 1 — Cipher',
+      clue: 'I am a mammal, but I lay eggs.\nI swim and hide near moving water.\n\nUse the mini key to solve where to find me.\n\nSecret location code:\n23 – 1 – 20 – 5 – 18 – 6 – 1 – 12 – 12',
     },
     {
-      label: classStage <= 2 ? 'Clue 2' : 'Clue 2 — Riddle',
-      clue: classStage <= 2
-        ? 'What big animal is basking on the stone in the walkway?'
-        : 'I am large and I love the sun,\nOn the warm stone path I bask when day\'s begun.\nScaled and still, I stretch out wide —\nWhat cold-blooded creature rests here with pride?',
+      label: 'Clue 2 — Ratio',
+      clue: 'Find the 4:1 Animal\n\nNow find the cold-blooded animal that is about 4 times larger than the real thing.',
     },
-    {
-      label: classStage <= 2 ? 'Clue 3' : 'Clue 3 — Riddle',
-      clue: classStage <= 2
-        ? 'Which bird copies sounds?'
-        : 'I live in the forest, hidden from sight,\nMy voice can copy sounds day and night.\nChainsaws, cameras, even a call,\nI can mimic almost them all…',
-    },
+    classSubject === 'maths'
+      ? {
+          label: 'Clue 3 — Sequence',
+          clue: 'Find the Mimic Bird\n\nA bird starts with 20 sounds.\nIt learns 4 new sounds each month.\n\nAfter 5 months, how many sounds does it know?\n\n20 + (4 × 5) = ___\n\nNow find the forest bird famous for copying sounds.',
+        }
+      : {
+          label: classStage <= 2 ? 'Clue 3' : 'Clue 3 — Riddle',
+          clue: classStage <= 2
+            ? 'Which bird copies sounds?'
+            : 'I live in the forest, hidden from sight,\nMy voice can copy sounds day and night.\nChainsaws, cameras, even a call,\nI can mimic almost them all…',
+        },
   ];
 
-  const questions      = getStageQuestions(currentAnimal, classStage);
+  const questions      = getStageQuestions(currentAnimal, classStage, classSubject);
   const clue           = CLUES[clueIdx];
   const q              = questions[clueIdx];
   const isClueCorrect  = selected !== null && selected === q?.correct;
@@ -125,8 +128,28 @@ export default function BushwalkMission() {
             <p style={{ fontSize:'0.72rem', fontWeight:700, color:'#5B8C5A', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:'0.6rem' }}>{clue?.label}</p>
             <div style={{ background:'#F4F8F4', borderRadius:'var(--t-r-sm)', padding:'1rem', marginBottom:'1rem', borderLeft:'3px solid #5B8C5A' }}>
               {clue?.clue.split('\n').map((line, i) => (
-                <p key={i} style={{ fontSize: clue.label.includes('Riddle') ? '0.95rem' : '1rem', color:'#333', margin: i === 0 ? 0 : '0.3rem 0 0', lineHeight:1.7, fontStyle: clue.label.includes('Riddle') ? 'italic' : 'normal' }}>{line}</p>
+                <p key={i} style={{ fontSize: clue.label.includes('Riddle') ? '0.95rem' : '1rem', color:'#333', margin: i === 0 ? 0 : '0.3rem 0 0', lineHeight:1.7, fontStyle: clue.label.includes('Riddle') ? 'italic' : 'normal', fontWeight: line.startsWith('Secret location') ? 700 : 'normal' }}>{line}</p>
               ))}
+              {clueIdx === 0 && (
+                <div style={{ marginTop:'0.85rem' }}>
+                  <button onClick={() => setMiniKeyOpen(o => !o)} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', width:'100%', background:'#E3EEE3', border:'1px solid #5B8C5A', borderRadius:miniKeyOpen ? 'var(--t-r-xs) var(--t-r-xs) 0 0' : 'var(--t-r-xs)', padding:'0.38rem 0.8rem', cursor:'pointer', fontSize:'0.78rem', fontWeight:700, color:'#3d5c3c' }}>
+                    <span>Mini Key (A → Z)</span>
+                    <span style={{ fontSize:'0.7rem' }}>{miniKeyOpen ? '▴' : '▾'}</span>
+                  </button>
+                  {miniKeyOpen && (
+                    <div style={{ background:'white', border:'1px solid #5B8C5A', borderTop:'none', borderRadius:'0 0 var(--t-r-xs) var(--t-r-xs)', padding:'0.5rem 0.75rem' }}>
+                      <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:'0.25rem', textAlign:'center' }}>
+                        {[['A','1'],['E','5'],['F','6'],['L','12'],['R','18'],['T','20'],['W','23']].map(([letter, num]) => (
+                          <div key={letter} style={{ background:'#F4F8F4', borderRadius:'4px', padding:'0.3rem 0.1rem' }}>
+                            <div style={{ fontSize:'0.82rem', fontWeight:800, color:'#3d5c3c' }}>{letter}</div>
+                            <div style={{ fontSize:'0.75rem', color:'#555' }}>{num}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             <p style={{ fontSize:'0.9rem', fontWeight:600, color:'var(--jungle-deep)', margin:'0 0 0.75rem', textAlign:'center' }}>{q?.q}</p>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.6rem' }}>
@@ -146,6 +169,8 @@ export default function BushwalkMission() {
               </p>
             </div>
           )}
+
+          <MathsCalculator />
 
           {!showFeedback ? (
             <button onClick={handleSubmit} disabled={selected === null}

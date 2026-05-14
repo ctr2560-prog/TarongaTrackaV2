@@ -1,3 +1,15 @@
+import { MATHS_ANIMALS } from '../data/animalsMaths';
+
+function checkExpectedAnswers(text, answers) {
+  if (!answers || answers.length === 0) return false;
+  const lower = text.toLowerCase().replace(/,/g, '');
+  return answers.some(a => {
+    const ans = String(a).toLowerCase().replace(/,/g, '');
+    const escaped = ans.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp(`(?<![0-9.])${escaped}(?![0-9.])`).test(lower);
+  });
+}
+
 export function isLowQualityResponse(text) {
   const t = text.trim().toLowerCase();
   if (!t) return true;
@@ -427,7 +439,279 @@ export function scoreObservation(text, animalId, classStage) {
   };
 }
 
-export function buildObservationScore(text, animalId, classStage) {
+function scoreConcertLawnMathsObservation(text, classStage) {
+  const lower = text.toLowerCase();
+  const wc = text.trim().split(/\s+/).filter(Boolean).length;
+
+  // Six categories from the prompt
+  const categories = [
+    /estimat|approximat|about|roughly|around|maybe|perhaps|guess/,
+    /\b\d+(\.\d+)?\s*(m|cm|km|steps?|metres?|meters?|seconds?|minutes?)\b|measure|length|width|stride|distance|area|pace/,
+    /compar|than|bigger|smaller|softer|harder|warmer|cooler|more|less|different|unlike|versus|\bvs\b/,
+    /pattern|repeat|regular|even|uneven|uniform|grid|row|symmetr/,
+    /\b\d+\b/,
+    /flat|sloped|slope|soft|hard|rough|smooth|spongy|firm|texture|surface|circle|rectangle|square|triangle|curve|angle|oval|shape|edge|corner/,
+  ];
+  const categoriesFound = categories.filter(re => re.test(lower)).length;
+
+  const hasMathVocab = /estimat|measure|calculat|approximat|equal|fraction|decimal|percent|proportion|average|area|perimeter|gradient|surface|unit|dimension/.test(lower);
+  const hasSpecifics = /grass|lawn|ground|soil|concrete|path|foot|feet|step|stride|slope|temperature|texture|tree|bench|edge|border/.test(lower);
+
+  // Method: category diversity
+  let method = categoriesFound >= 5 ? 5 : categoriesFound >= 4 ? 4 : categoriesFound >= 3 ? 3 : categoriesFound >= 2 ? 2 : 1;
+
+  // Accuracy: quality of mathematical description
+  let accuracy;
+  if (categoriesFound >= 3 && hasMathVocab && hasSpecifics) accuracy = 5;
+  else if (categoriesFound >= 2 && (hasMathVocab || hasSpecifics)) accuracy = 4;
+  else if (categoriesFound >= 2) accuracy = 3;
+  else if (categoriesFound >= 1 && hasSpecifics) accuracy = 3;
+  else if (categoriesFound >= 1) accuracy = 2;
+  else accuracy = 1;
+
+  // Communication: structure and length
+  const hasCapital = /^[A-Z]/.test(text.trim());
+  const hasFullStop = /[.!?]/.test(text);
+  const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 5).length;
+  let comms = 1;
+  if (wc >= 10) comms = 2;
+  if (wc >= 20 && (hasCapital || hasFullStop)) comms = 3;
+  if (wc >= 35 && hasCapital && hasFullStop && sentences >= 2) comms = 4;
+  if (wc >= 55 && hasCapital && hasFullStop && sentences >= 3) comms = 5;
+
+  if (classStage <= 2) {
+    method   = Math.min(5, method + 1);
+    accuracy = Math.min(5, accuracy + 1);
+    comms    = Math.min(5, comms + 1);
+  } else if (classStage === 3) {
+    method = Math.min(5, method + 1);
+    comms  = Math.min(5, comms + 1);
+  }
+
+  return {
+    behaviourBonus: Math.max(1, Math.min(5, method)),
+    detailBonus:    Math.max(1, Math.min(5, accuracy)),
+    literacyBonus:  Math.max(1, Math.min(5, comms)),
+    answerCorrect:  false,
+  };
+}
+
+function scoreTigerMathsObservation(text, classStage) {
+  const lower = text.toLowerCase();
+  const wc = text.trim().split(/\s+/).filter(Boolean).length;
+
+  // Six categories from the prompt
+  const categories = [
+    /pattern|stripe|symmetr|repeat|tessell|parallel|alternati|regular|sequence/,
+    /circle|rectangle|square|triangle|curve|angle|oval|round|arch|cylinder|cone|straight|diagonal|polygon|line|edge/,
+    /\b\d+\b|count|number|many|how many|total|tally/,
+    /far|close|near|distant| metre| meter| cm |kilomet|distance|apart|space|gap|length|wide|tall|height|depth/,
+    /speed|fast|slow|quick|mov|walk|run|pace|direction|turn|step|stride|frequenc|rhythm|times per|rate|path|arc/,
+    /bigger|smaller|larger|more|less|heavier|lighter|taller|shorter|wider|narrower|than|compar|ratio|times as|twice|double/,
+  ];
+  const categoriesFound = categories.filter(re => re.test(lower)).length;
+
+  const hasMathVocab = /estimate|measure|calculat|approximat|equal|fraction|decimal|percent|proportion|average|symmetr|scale|unit|dimension|perpendicular/.test(lower);
+  const hasSpecifics = /tiger|stripe|fence|tree|rock|water|path|bench|sign|pool|shadow|glass|wall|floor|ground|visitor|keeper/.test(lower);
+
+  // Method: category diversity
+  let method = categoriesFound >= 5 ? 5 : categoriesFound >= 4 ? 4 : categoriesFound >= 3 ? 3 : categoriesFound >= 2 ? 2 : 1;
+
+  // Accuracy: quality of mathematical description
+  let accuracy;
+  if (categoriesFound >= 3 && hasMathVocab && hasSpecifics) accuracy = 5;
+  else if (categoriesFound >= 2 && (hasMathVocab || hasSpecifics)) accuracy = 4;
+  else if (categoriesFound >= 2) accuracy = 3;
+  else if (categoriesFound >= 1 && hasSpecifics) accuracy = 3;
+  else if (categoriesFound >= 1) accuracy = 2;
+  else accuracy = 1;
+
+  // Communication: structure and length
+  const hasCapital = /^[A-Z]/.test(text.trim());
+  const hasFullStop = /[.!?]/.test(text);
+  const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 5).length;
+  let comms = 1;
+  if (wc >= 10) comms = 2;
+  if (wc >= 20 && (hasCapital || hasFullStop)) comms = 3;
+  if (wc >= 35 && hasCapital && hasFullStop && sentences >= 2) comms = 4;
+  if (wc >= 55 && hasCapital && hasFullStop && sentences >= 3) comms = 5;
+
+  if (classStage <= 2) {
+    method   = Math.min(5, method + 1);
+    accuracy = Math.min(5, accuracy + 1);
+    comms    = Math.min(5, comms + 1);
+  } else if (classStage === 3) {
+    method = Math.min(5, method + 1);
+    comms  = Math.min(5, comms + 1);
+  }
+
+  return {
+    behaviourBonus: Math.max(1, Math.min(5, method)),
+    detailBonus:    Math.max(1, Math.min(5, accuracy)),
+    literacyBonus:  Math.max(1, Math.min(5, comms)),
+    answerCorrect:  false,
+  };
+}
+
+function scoreMathsObservation(text, classStage, expectedAnswers) {
+  const lower = text.toLowerCase();
+  const wc = text.trim().split(/\s+/).filter(Boolean).length;
+
+  // Numbers: count distinct numeric tokens (integers, decimals, fractions like 3/5)
+  const numberCount = (text.match(/\d+(\.\d+)?(\/\d+)?/g) || []).length;
+
+  // Mathematical working signals
+  const equalsCount = (text.match(/=/g) || []).length;
+  const hasTimes    = /[×✕]/.test(text) || lower.includes('×');
+  const hasDivide   = /[÷]/.test(text) || /\d+\/\d+/.test(text) || lower.includes('divided') || lower.includes('÷');
+  const hasPercent  = /%/.test(text) || lower.includes('percent');
+  const hasAddSub   = /[+]/.test(text) || /\s[-]\s/.test(text);
+  const operatorCount = [equalsCount >= 2, hasTimes, hasDivide, hasPercent, hasAddSub].filter(Boolean).length;
+  const hasWorkingChain = equalsCount >= 3; // e.g. = 30/100 × 24 = 0.30 × 24 = 7.2
+
+  // Labels or organised structure (e.g. "Resting:", "Answer:", "Step 1:")
+  const hasLabels = /[A-Za-z][a-z ]+:/.test(text);
+
+  // Units present alongside numbers
+  const hasUnits = /\d+\s*(m|cm|km|kg|g|%|hours?|minutes?|seconds?|steps?|\$|kJ|km²|m²)/i.test(text)
+    || ['hours', 'minutes', 'metres', 'kilograms', 'dollars', 'percent', 'steps', 'kilojoules'].some(u => lower.includes(u));
+
+  // Written maths vocabulary (beyond symbols)
+  const mathVocab = ['fraction', 'decimal', 'percentage', 'ratio', 'rate', 'area', 'perimeter',
+    'mean', 'median', 'mode', 'probability', 'formula', 'proportion', 'average', 'total',
+    'simplified', 'simplify', 'estimate', 'range', 'frequency', 'difference', 'quotient'];
+  const vocabHits = mathVocab.filter(w => lower.includes(w)).length;
+
+  // Interpretation or conclusion sentence
+  const hasInterpretation = ['this means','therefore','because','which means','so the','showing',
+    'suggests','tells us','most common','compared','is greater','is less','is higher','is lower',
+    'this shows','as a result'].some(p => lower.includes(p));
+
+  // ── Method (showing working / approach) ──────────────────────────────────────
+  let method = 1;
+  if (numberCount >= 1) method = 2;
+  if (numberCount >= 2 && (equalsCount >= 1 || operatorCount >= 1)) method = 3;
+  if (numberCount >= 3 && (hasWorkingChain || operatorCount >= 2)) method = 4;
+  if (numberCount >= 4 && hasWorkingChain && (hasLabels || hasInterpretation || vocabHits >= 1)) method = 5;
+
+  // ── Accuracy (numbers, units, notation) ─────────────────────────────────────
+  let accuracy = 1;
+  if (numberCount >= 1) accuracy = 2;
+  if (numberCount >= 2) accuracy = 3;
+  if (numberCount >= 2 && hasUnits) accuracy = 4;
+  if (numberCount >= 3 && hasUnits && operatorCount >= 2) accuracy = 5;
+
+  // ── Communication (structure + vocabulary) ───────────────────────────────────
+  const hasCapital  = /^[A-Z]/.test(text);
+  const hasStructure = hasLabels || hasWorkingChain || (hasCapital && wc >= 8);
+  let comms = 1;
+  if (numberCount >= 1 || wc >= 3) comms = 2;
+  if (hasStructure && numberCount >= 2) comms = 3;
+  if (hasStructure && numberCount >= 3 && (hasUnits || vocabHits >= 1)) comms = 4;
+  if (hasStructure && numberCount >= 4 && hasUnits && (vocabHits >= 1 || hasInterpretation)) comms = 5;
+
+  // Answer check — boost accuracy if a key expected answer is found in the response
+  const answerCorrect = checkExpectedAnswers(text, expectedAnswers);
+  if (answerCorrect) {
+    accuracy = Math.min(5, accuracy + 1);
+  }
+
+  // Stage adjustments — lower stages need fewer signals to reach a good score
+  if (classStage <= 2) {
+    method   = Math.min(5, method + 1);
+    accuracy = Math.min(5, accuracy + 1);
+    comms    = Math.min(5, comms + 1);
+  } else if (classStage === 3) {
+    method = Math.min(5, method + 1);
+  }
+
+  return {
+    behaviourBonus: Math.max(1, Math.min(5, method)),
+    detailBonus:    Math.max(1, Math.min(5, accuracy)),
+    literacyBonus:  Math.max(1, Math.min(5, comms)),
+    answerCorrect,
+  };
+}
+
+function buildMathsObservationScore(text, animalId, classStage) {
+  const isTiger = animalId === 'tiger';
+  const isConcertLawn = animalId === 'concert-lawn';
+  const isOpenEnded = isTiger || isConcertLawn;
+  const { behaviourBonus, detailBonus, literacyBonus, answerCorrect } =
+    isTiger      ? scoreTigerMathsObservation(text, classStage) :
+    isConcertLawn ? scoreConcertLawnMathsObservation(text, classStage) :
+    scoreMathsObservation(text, classStage, MATHS_ANIMALS?.[animalId]?.expectedAnswers?.[classStage] || []);
+  const wc = text.trim().split(/\s+/).filter(Boolean).length;
+
+  const methodRationale = isOpenEnded
+    ? (behaviourBonus >= 5 ? 'Outstanding — covered 5+ distinct categories of maths.' :
+       behaviourBonus >= 4 ? 'Strong variety — covered 4 categories of maths.' :
+       behaviourBonus >= 3 ? 'Good range — covered 3 categories (e.g. estimate, number, comparison).' :
+       behaviourBonus >= 2 ? 'Covered 1–2 categories. Try including more types.' :
+                             'Response does not yet identify mathematical categories.')
+    : (behaviourBonus >= 5 ? 'Working shown step-by-step with clear method.' :
+       behaviourBonus >= 4 ? 'Working mostly shown. Clear approach evident.' :
+       behaviourBonus >= 3 ? 'Some working shown. Approach is recognisable.' :
+       behaviourBonus >= 2 ? 'Limited working shown. Method is not clear.' :
+                             'No working shown.');
+
+  const accuracyRationale = isOpenEnded
+    ? (detailBonus >= 5 ? 'Precise mathematical language used. Observations are specific and well-named.' :
+       detailBonus >= 4 ? 'Good mathematical vocabulary. Observations are mostly specific.' :
+       detailBonus >= 3 ? 'Some maths vocabulary used. Try naming exactly what you noticed.' :
+       detailBonus >= 2 ? 'General observations made. Use more precise mathematical terms.' :
+                          'No mathematical description found.')
+    : (answerCorrect
+        ? (detailBonus >= 5 ? 'Correct answer found. Numbers, units, and notation all present.' :
+           detailBonus >= 4 ? 'Correct answer found. Numbers and units present.' :
+           detailBonus >= 3 ? 'Correct answer identified in response.' :
+                              'Correct answer present. More working or units needed.')
+        : (detailBonus >= 5 ? 'Numbers, units, and mathematical notation all present.' :
+           detailBonus >= 4 ? 'Numbers and units present. Working is legible.' :
+           detailBonus >= 3 ? 'Numbers present. Units or notation partially shown.' :
+           detailBonus >= 2 ? 'Some numbers present.' :
+                              'No numbers or calculations visible.'));
+
+  const communicationRationale = isOpenEnded
+    ? (literacyBonus >= 5 ? `Well-structured observations (${wc} words). Multiple clear sentences.` :
+       literacyBonus >= 4 ? `Clear observations (${wc} words). Good sentence structure.` :
+       literacyBonus >= 3 ? `Readable response (${wc} words). Try writing in full sentences.` :
+       literacyBonus >= 2 ? `Short response (${wc} words). Write more to show what you noticed.` :
+                            'Very limited response.')
+    : (literacyBonus >= 5 ? `Well-structured response (${wc} words). Labels and vocabulary used effectively.` :
+       literacyBonus >= 4 ? `Clearly organised (${wc} words). Structure supports understanding.` :
+       literacyBonus >= 3 ? `Readable response (${wc} words). Some structure evident.` :
+       literacyBonus >= 2 ? `Short or partial response (${wc} words).` :
+                            'Very limited communication.');
+
+  const total = behaviourBonus + detailBonus + literacyBonus;
+  const overallFeedback = isOpenEnded
+    ? (total >= 13 ? 'Excellent! You noticed maths across many categories and described them precisely.' :
+       total >= 10 ? 'Great observations. Try to identify more categories or use more specific mathematical language.' :
+       total >= 7  ? 'Good start. Try to include more types — estimates, measurements, comparisons, patterns.' :
+                     'Keep looking! Try to write down at least 2 or 3 mathematical things you noticed.')
+    : (total >= 13 ? 'Excellent mathematical response. Clear working, accurate numbers, well communicated.' :
+       total >= 10 ? 'Strong response. Show more steps or include units to improve further.' :
+       total >= 7  ? 'Good attempt. Aim to show all working clearly with appropriate units.' :
+                     'Include more working and numbers in your response.');
+
+  return {
+    behaviour: Math.max(1, Math.min(5, behaviourBonus)),
+    detail:    Math.max(1, Math.min(5, detailBonus)),
+    writing:   Math.max(1, Math.min(5, literacyBonus)),
+    rationale: { behaviour: methodRationale, detail: accuracyRationale, writing: communicationRationale },
+    improvementTips: {},
+    extractedEvidence: { wordCount: wc, hasExplanation: false, hasPunctuation: /[.!?]/.test(text), behaviourSignals: [], explanationSignals: [] },
+    overallFeedback,
+    confidence: total >= 7 ? 'high' : 'medium',
+    reviewRecommended: total < 7,
+  };
+}
+
+export function buildObservationScore(text, animalId, classStage, classSubject) {
+  if (classSubject === 'maths') {
+    return buildMathsObservationScore(text, animalId, classStage);
+  }
   const { behaviourBonus, detailBonus, literacyBonus } = scoreObservation(text, animalId, classStage);
   const scoreRationale = generateScoreRationale(text, behaviourBonus, detailBonus, literacyBonus, animalId, classStage);
   const normalisedScores = normaliseScores({

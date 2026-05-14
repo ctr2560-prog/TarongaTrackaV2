@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useStudent } from '../../context/StudentContext';
 import { getStageQuestions } from '../../utils/helpers';
+import MathsCalculator from '../../components/MathsCalculator';
 
 const INGREDIENTS = [
   { id:'leaves',   emoji:'🍃', label:'Leaves',   icon:'Gorilla Game/icon-leaves.png' },
@@ -34,7 +35,7 @@ function genOrder(round) {
 }
 
 export default function GorillaMission() {
-  const { setCurrentScreen, classStage } = useApp();
+  const { setCurrentScreen, classStage, classSubject } = useApp();
   const { currentAnimal, showResult, setShowResult, isCorrect, isProcessingAnswer,
           setIsProcessingAnswer, handleQuizAnswer, handleNextQuestion } = useStudent();
 
@@ -90,7 +91,7 @@ export default function GorillaMission() {
     });
   }, []);
 
-  const questions = getStageQuestions(currentAnimal, classStage);
+  const questions = getStageQuestions(currentAnimal, classStage, classSubject);
   const mcqQ      = questions[1];
 
   useEffect(() => {
@@ -376,12 +377,12 @@ export default function GorillaMission() {
         {!showResult && mcqQ && (
           <div style={{ flex:'1 1 auto', overflowY:'auto', padding:'1rem', maxWidth:'600px', margin:'0 auto', width:'100%', position:'relative', zIndex:1 }}>
             <div style={{ background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.15)', borderRadius:'var(--t-r-md)', padding:'1.2rem', marginBottom:'1rem', backdropFilter:'blur(8px)' }}>
-              <p style={{ fontSize:'0.65rem', fontWeight:800, color:'rgba(100,220,140,0.85)', textTransform:'uppercase', letterSpacing:'0.12em', margin:'0 0 0.35rem' }}>Gorilla Diet Challenge</p>
-              <h2 style={{ fontSize:'1.15rem', fontWeight:700, color:'white', marginBottom:'0.25rem' }}>What do gorillas mainly eat?</h2>
-              <p style={{ fontSize:'0.82rem', color:'rgba(255,255,255,0.6)', margin:0 }}>Use what you learned in the game to answer.</p>
+              <p style={{ fontSize:'0.65rem', fontWeight:800, color:'rgba(100,220,140,0.85)', textTransform:'uppercase', letterSpacing:'0.12em', margin:'0 0 0.35rem' }}>{classSubject === 'maths' ? 'Gorilla Maths Challenge' : 'Gorilla Diet Challenge'}</p>
+              <h2 style={{ fontSize:'1.15rem', fontWeight:700, color:'white', marginBottom:'0.25rem' }}>{classSubject === 'maths' ? mcqQ?.q : 'What do gorillas mainly eat?'}</h2>
+              <p style={{ fontSize:'0.82rem', color:'rgba(255,255,255,0.6)', margin:0 }}>{classSubject === 'maths' ? 'Use what you recorded in the game to answer.' : 'Use what you learned in the game to answer.'}</p>
             </div>
             <div style={{ background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.15)', borderRadius:'var(--t-r-md)', padding:'1.2rem', backdropFilter:'blur(8px)' }}>
-              <p style={{ fontSize:'clamp(0.9rem,2vh,1.05rem)', fontWeight:600, color:'white', marginBottom:'1rem', lineHeight:1.4 }}>{mcqQ.q}</p>
+              <p style={{ fontSize:'clamp(0.9rem,2vh,1.05rem)', fontWeight:600, color:'white', marginBottom:'1rem', lineHeight:1.4 }}>{classSubject === 'maths' ? 'Choose the correct answer:' : mcqQ.q}</p>
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.75rem' }}>
                 {mcqQ.options?.map((opt, i) => (
                   <button key={i} onClick={() => !isProcessingAnswer && handleQuizAnswer(1, i, mcqQ.correct)}
@@ -390,6 +391,7 @@ export default function GorillaMission() {
                   </button>
                 ))}
               </div>
+              <div style={{ marginTop:'0.5rem' }}><MathsCalculator /></div>
             </div>
           </div>
         )}

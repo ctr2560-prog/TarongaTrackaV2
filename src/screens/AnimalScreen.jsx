@@ -1,6 +1,7 @@
 import { useApp } from '../context/AppContext';
 import { useStudent } from '../context/StudentContext';
 import { getStageQuestions } from '../utils/helpers';
+import MathsCalculator from '../components/MathsCalculator';
 
 // Special mission dispatch — each returns a screen component if it applies
 import ChimpMission    from './missions/ChimpMission';
@@ -15,7 +16,7 @@ import BushwalkMission from './missions/BushwalkMission';
 import BuffaloMission  from './missions/BuffaloMission';
 
 export default function AnimalScreen() {
-  const { setCurrentScreen, classStage } = useApp();
+  const { setCurrentScreen, classStage, classSubject } = useApp();
   const {
     currentAnimal,
     currentQuestionIndex,
@@ -41,8 +42,8 @@ export default function AnimalScreen() {
   if (currentAnimal.id === 'blue-mountains-bushwalk') return <BushwalkMission />;
   if (currentAnimal.id === 'asian-water-buffalo')     return <BuffaloMission />;
 
-  // Standard multi-question quiz (all other animals)
-  const questions = getStageQuestions(currentAnimal, classStage);
+  // Standard quiz path (koala + concert-lawn)
+  const questions = getStageQuestions(currentAnimal, classStage, classSubject);
   const currentQuestion = questions[currentQuestionIndex];
 
   const handleQuizAnswer = (questionIndex, answerIndex) => {
@@ -144,6 +145,7 @@ export default function AnimalScreen() {
                 </button>
               ))}
             </div>
+            <MathsCalculator />
           </div>
         )}
       </div>

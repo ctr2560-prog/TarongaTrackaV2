@@ -20,7 +20,8 @@ export function AppProvider({ children }) {
   const [adminAccessCode, setAdminAccessCode] = useState('');
   const [selectedClass,  setSelectedClass]  = useState(null);
   const [selectedAdminClass, setSelectedAdminClass] = useState(null);
-  const [classStage,  setClassStage]  = useState(4);
+  const [classStage,   setClassStage]   = useState(4);
+  const [classSubject, setClassSubject] = useState('science');
 
   // ── Firebase Auth ─────────────────────────────────────────────────────────
   const [teacher,     setTeacher]     = useState(null);   // Firebase User | null
@@ -60,6 +61,7 @@ export function AppProvider({ children }) {
       studentName,   setStudentName,
       classCode,     setClassCode,
       classStage,    setClassStage,
+      classSubject,  setClassSubject,
       teacherEmail,      setTeacherEmail,
       adminAccessCode,   setAdminAccessCode,
       selectedClass,     setSelectedClass,

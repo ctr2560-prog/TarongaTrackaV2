@@ -17,7 +17,7 @@ function loadProgress() {
 }
 
 export function StudentProvider({ children }) {
-  const { currentScreen, setCurrentScreen, studentName, classCode, classStage, appMode } = useApp();
+  const { currentScreen, setCurrentScreen, studentName, classCode, classStage, classSubject, appMode } = useApp();
 
   const savedProgress = useMemo(() => loadProgress(), []);
 
@@ -46,6 +46,9 @@ export function StudentProvider({ children }) {
 
   // ── Completion card dismissed (persists across navigation) ─────────────────
   const [completionCardDismissed, setCompletionCardDismissed] = useState(false);
+
+  // ── Mission context (data from mission to carry into observation) ──────────
+  const [missionContext, setMissionContext] = useState(null);
 
   // ── GPS override setting ───────────────────────────────────────────────────
   const [gpsRequired, setGpsRequired] = useState(true); // false = admin has turned GPS off
@@ -165,9 +168,31 @@ export function StudentProvider({ children }) {
     setIsCorrect(false);
     setObservation('');
     setIsProcessingAnswer(false);
+    setMissionContext(null);
     setCurrentScreen('animal');
     setTimeout(() => window.scrollTo({ top: 0, behavior: 'instant' }), 0);
   }, [activityCompleted, foundAnimals, checkAnimalProximity, setCurrentScreen]);
+
+  // ── Reset in-memory progress for a new student session ────────────────────
+  const resetProgress = useCallback(() => {
+    setFoundAnimals(new Set());
+    setBadges([]);
+    setActivityCompleted(false);
+    setStudentStatus('incomplete');
+    setStatusLoaded(false);
+    setCurrentAnimal(null);
+    setCurrentQuestionIndex(0);
+    setQuizAnswers({});
+    setFirstAttemptResults({});
+    setShowResult(false);
+    setIsCorrect(false);
+    setIsProcessingAnswer(false);
+    setObservation('');
+    setConservationStatement('');
+    setShowConservationScreen(false);
+    setCompletionCardDismissed(false);
+    setMissionContext(null);
+  }, []);
 
   // ── Add badge ──────────────────────────────────────────────────────────────
   const addBadge = useCallback((badgeData) => {
@@ -219,14 +244,14 @@ export function StudentProvider({ children }) {
     const wc = observation.trim().match(/\b\w+\b/g)?.length || 0;
     if (wc < minW) { alert(`Your response needs at least ${minW} words. You have ${wc}.`); return; }
 
-    const stageQs = getStageQuestions(currentAnimal, classStage);
+    const stageQs = getStageQuestions(currentAnimal, classStage, classSubject);
     const quizResults = stageQs.map((q, i) => ({
       question: q.q || q.question || 'Question unavailable',
       correctOnFirstAttempt: firstAttemptResults[i] === true,
       missionType: 'knowledge',
     }));
 
-    const observationScore = buildObservationScore(observation.trim(), currentAnimal.id, classStage);
+    const observationScore = buildObservationScore(observation.trim(), currentAnimal.id, classStage, classSubject);
 
     addBadge({
       animalId: currentAnimal.id,
@@ -330,6 +355,8 @@ export function StudentProvider({ children }) {
       showConservationScreen, setShowConservationScreen,
       // Completion card
       completionCardDismissed, setCompletionCardDismissed,
+      // Mission context (data carried into observation screen)
+      missionContext, setMissionContext,
       // Geolocation
       userLocation,
       locationEnabled,
@@ -339,6 +366,7 @@ export function StudentProvider({ children }) {
       // Zoo map
       showZooMap, setShowZooMap,
       // Actions
+      resetProgress,
       discoverAnimal,
       addBadge,
       handleQuizAnswer,

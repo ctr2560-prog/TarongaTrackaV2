@@ -2,12 +2,13 @@ import { useState, useRef, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useStudent } from '../../context/StudentContext';
 import { getStageQuestions } from '../../utils/helpers';
+import MathsCalculator from '../../components/MathsCalculator';
 
 const ZOOM_OPTIONS = ['2×', '5×', '10×', '20×'];
 const ZOOM_SCALE   = { '2×': 1, '5×': 2, '10×': 3, '20×': 4 };
 
 export default function LionMission() {
-  const { setCurrentScreen, classStage } = useApp();
+  const { setCurrentScreen, classStage, classSubject } = useApp();
   const {
     currentAnimal, showResult, setShowResult, isCorrect,
     setIsProcessingAnswer, handleQuizAnswer, handleNextQuestion,
@@ -19,7 +20,7 @@ export default function LionMission() {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
 
-  const currentQuestion   = getStageQuestions(currentAnimal, classStage)[0];
+  const currentQuestion   = getStageQuestions(currentAnimal, classStage, classSubject)[0];
   const correctAnswerIndex = currentQuestion?.correct ?? 1;
 
   const infoPanelContent = classStage <= 2
@@ -179,6 +180,7 @@ export default function LionMission() {
                 </button>
               ))}
             </div>
+            <MathsCalculator />
           </div>
 
         </div>

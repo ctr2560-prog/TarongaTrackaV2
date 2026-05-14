@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useStudent } from '../../context/StudentContext';
 import { getStageQuestions } from '../../utils/helpers';
+import MathsCalculator from '../../components/MathsCalculator';
 
 const CORRECT_SEQUENCE = [
   { id:'sun',        label:'☀️ Sun',       desc:'Energy source' },
@@ -21,7 +22,7 @@ function shuffle(arr) {
 }
 
 export default function DingoMission() {
-  const { setCurrentScreen, classStage } = useApp();
+  const { setCurrentScreen, classStage, classSubject } = useApp();
   const {
     currentAnimal, showResult, setShowResult, isCorrect,
     setIsProcessingAnswer, handleQuizAnswer, handleNextQuestion,
@@ -30,7 +31,7 @@ export default function DingoMission() {
   const [chainItems, setChainItems] = useState([]);
   const [wrongTap,   setWrongTap]   = useState(null);
   const shuffled = useMemo(() => shuffle(CORRECT_SEQUENCE), []);
-  const currentQuestion = getStageQuestions(currentAnimal, classStage)[0];
+  const currentQuestion = getStageQuestions(currentAnimal, classStage, classSubject)[0];
   const correctAnswerIndex = currentQuestion?.correct ?? 0;
   const fact = currentQuestion?.stageFacts?.[classStage] || currentQuestion?.fact;
 
@@ -96,6 +97,7 @@ export default function DingoMission() {
                 </button>
               ))}
             </div>
+            <MathsCalculator />
           </div>
         )}
       </div>
@@ -180,6 +182,7 @@ export default function DingoMission() {
                   </button>
                 ))}
               </div>
+              <MathsCalculator />
             </div>
           )}
 

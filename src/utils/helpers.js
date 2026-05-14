@@ -1,3 +1,5 @@
+import { MATHS_ANIMALS } from '../data/animalsMaths';
+
 export const normaliseCode = (code) =>
   code.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 6);
 
@@ -52,16 +54,33 @@ export function getDistance(lat1, lon1, lat2, lon2) {
   return Math.round(6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
 }
 
-export function getStageQuestions(animal, classStage) {
+export function getStageQuestions(animal, classStage, classSubject) {
   const stage = classStage || 4;
-  const baseQuestions = (animal && animal.questions) ? animal.questions : [];
+  let questions;
+  if (classSubject === 'maths' && animal) {
+    const mathsData = MATHS_ANIMALS[animal.id];
+    questions = mathsData ? mathsData.questions : animal.questions;
+  } else {
+    questions = (animal && animal.questions) ? animal.questions : [];
+  }
+  const baseQuestions = questions || [];
   return baseQuestions.map(q => {
     if (!q.stageVariants && !q.stageOptions && !q.stageCorrect) return q;
     const stageText = q.stageVariants ? (q.stageVariants[stage] || q.stageVariants[4] || q.q) : q.q;
     const stageOpts = q.stageOptions ? (q.stageOptions[stage] || q.stageOptions[4] || q.options) : q.options;
     const stageCor  = q.stageCorrect ? (q.stageCorrect[stage] !== undefined ? q.stageCorrect[stage] : (q.stageCorrect[4] !== undefined ? q.stageCorrect[4] : q.correct)) : q.correct;
-    return { ...q, q: stageText, options: stageOpts, correct: stageCor };
+    const stageFact = q.stageFacts ? (q.stageFacts[stage] || q.fact) : q.fact;
+    return { ...q, q: stageText, options: stageOpts, correct: stageCor, fact: stageFact };
   });
+}
+
+export function getMathsObservationData(animalId, classStage) {
+  const data = MATHS_ANIMALS[animalId];
+  if (!data) return null;
+  return {
+    prompt:          data.writingPromptByStage?.[classStage] || data.observationPrompt || '',
+    observationPrompt: data.observationPrompt || '',
+  };
 }
 
 export function getStagePrompt(basePrompt, stage) {

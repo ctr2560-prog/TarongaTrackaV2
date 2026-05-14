@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useStudent } from '../../context/StudentContext';
 import { getStageQuestions } from '../../utils/helpers';
+import MathsCalculator from '../../components/MathsCalculator';
 
 const GATE_SEQUENCE = [
   // 1–10: warmup, centre
@@ -31,7 +32,7 @@ const GATE_SEQUENCE = [
 const ptsForScore = (s) => s >= 100 ? 200 : s >= 14 ? 100 : s >= 9 ? 80 : s >= 5 ? 60 : s >= 2 ? 40 : 20;
 
 export default function BuffaloMission() {
-  const { setCurrentScreen, classStage } = useApp();
+  const { setCurrentScreen, classStage, classSubject } = useApp();
   const {
     currentAnimal, showResult, setShowResult, isCorrect, setIsCorrect,
     setIsProcessingAnswer, handleQuizAnswer, handleNextQuestion,
@@ -52,7 +53,7 @@ export default function BuffaloMission() {
   const bflPipesRef   = useRef(null);
   const bflScoreRef   = useRef(null);
 
-  const currentQuestion    = getStageQuestions(currentAnimal, classStage)[0];
+  const currentQuestion    = getStageQuestions(currentAnimal, classStage, classSubject)[0];
   const correctAnswerIndex = currentQuestion?.correct ?? 0;
   const fact = currentQuestion?.stageFacts?.[classStage] || currentQuestion?.fact;
 
@@ -317,6 +318,7 @@ export default function BuffaloMission() {
                   </button>
                 ))}
               </div>
+              <MathsCalculator />
             </div>
           </div>
         )}

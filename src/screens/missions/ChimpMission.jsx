@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useStudent } from '../../context/StudentContext';
+import { getStageQuestions } from '../../utils/helpers';
+import MathsCalculator from '../../components/MathsCalculator';
 
 const BAR_DATA = [
   { key:'resting', label:'Resting', emoji:'😴', colour:'#2E7D55' },
@@ -9,10 +11,11 @@ const BAR_DATA = [
 ];
 
 export default function ChimpMission() {
-  const { setCurrentScreen, classStage } = useApp();
+  const { setCurrentScreen, classStage, classSubject } = useApp();
   const {
     currentAnimal, showResult, setShowResult, isCorrect,
     setIsProcessingAnswer, handleQuizAnswer, handleNextQuestion,
+    setMissionContext,
   } = useStudent();
 
   const [graph, setGraph] = useState({ resting: 30, feeding: 30, moving: 40 });
@@ -38,7 +41,8 @@ export default function ChimpMission() {
     handleQuizAnswer(0, answerIndex, correctIndex);
   };
 
-  const fact = currentAnimal?.questions?.[0]?.stageFacts?.[classStage] || currentAnimal?.questions?.[0]?.fact;
+  const stageQ = getStageQuestions(currentAnimal, classStage, classSubject)[0];
+  const fact = stageQ?.stageFacts?.[classStage] || stageQ?.fact;
 
   return (
     <div style={{ position:'fixed', inset:0, background: showResult ? (isCorrect ? 'linear-gradient(135deg,#10b981 0%,#059669 100%)' : 'linear-gradient(135deg,#ef4444 0%,#dc2626 100%)') : 'linear-gradient(160deg,#071A0C 0%,#0D3320 55%,#0A1F0E 100%)', transition:'background 0.5s ease', display:'flex', flexDirection:'column' }}>
@@ -58,12 +62,12 @@ export default function ChimpMission() {
           <div style={{ fontSize:'clamp(3rem,8vh,4.5rem)', marginBottom:'0.5rem' }}>{isCorrect ? '✓' : '✗'}</div>
           <h2 className="heading-display" style={{ fontSize:'clamp(2rem,5vh,3rem)', color: isCorrect ? '#10b981' : '#ef4444', marginBottom:'0.4rem', lineHeight:1.1 }}>{isCorrect ? 'Correct!' : 'Try Again'}</h2>
           {isCorrect && <p style={{ fontSize:'clamp(0.95rem,2.2vh,1.1rem)', color:'#555', marginBottom:'0.8rem', fontStyle:'italic' }}>Great data interpretation!</p>}
-          {isCorrect && fact && (
+          {isCorrect && fact && classSubject !== 'maths' && (
             <div style={{ background:'linear-gradient(135deg,#FFF9E6 0%,#FFE6B3 100%)', borderRadius:'var(--t-r-md)', padding:'clamp(1rem,2vh,1.5rem)', marginTop:'0.8rem', marginBottom:'1rem' }}>
               <p style={{ color:'#333', fontSize:'clamp(0.9rem,2vh,1.1rem)', lineHeight:1.5, fontWeight:500 }}>💡 {fact}</p>
             </div>
           )}
-          <button onClick={() => { if (isCorrect) { handleNextQuestion(1); } else { setIsProcessingAnswer(false); setShowResult(false); } }}
+          <button onClick={() => { if (isCorrect) { if (classSubject === 'maths') setMissionContext({ type: 'chimp-behaviour', resting: graph.resting, feeding: graph.feeding, moving: graph.moving }); handleNextQuestion(1); } else { setIsProcessingAnswer(false); setShowResult(false); } }}
             style={{ background: isCorrect ? 'linear-gradient(135deg,var(--t-eucalyptus),var(--t-mid))' : 'linear-gradient(135deg,#DC2626,#991B1B)', color:'white', border:'none', padding:'clamp(0.8rem,2vh,1.2rem) clamp(2rem,5vw,3rem)', fontSize:'clamp(1rem,2.5vh,1.3rem)', fontWeight:700, borderRadius:'var(--t-r-pill)', cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.05em', marginTop:'0.5rem' }}>
             {isCorrect ? 'Continue to Observation →' : 'Try Again'}
           </button>

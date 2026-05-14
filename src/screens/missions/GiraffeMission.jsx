@@ -2,9 +2,10 @@ import { useState, useRef, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useStudent } from '../../context/StudentContext';
 import { getStageQuestions } from '../../utils/helpers';
+import MathsCalculator from '../../components/MathsCalculator';
 
 export default function GiraffeMission() {
-  const { setCurrentScreen, classStage } = useApp();
+  const { setCurrentScreen, classStage, classSubject } = useApp();
   const {
     currentAnimal, showResult, setShowResult, isCorrect,
     setIsProcessingAnswer, handleQuizAnswer, handleNextQuestion,
@@ -18,7 +19,7 @@ export default function GiraffeMission() {
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
 
-  const currentQuestion   = getStageQuestions(currentAnimal, classStage)[0];
+  const currentQuestion   = getStageQuestions(currentAnimal, classStage, classSubject)[0];
   const correctAnswerIndex = currentQuestion?.correct ?? 0;
   const fact = currentQuestion?.stageFacts?.[classStage] || currentQuestion?.fact;
 
@@ -179,6 +180,7 @@ export default function GiraffeMission() {
                 </button>
               ))}
             </div>
+            <MathsCalculator />
           </div>
         </div>
       )}

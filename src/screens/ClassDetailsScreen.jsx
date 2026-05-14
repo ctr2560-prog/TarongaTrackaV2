@@ -11,12 +11,13 @@ import { ZOOSNOOZ_ANIMALS } from '../data/zoosnoozAnimals';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-function RadarSVG({ avgB, avgD, avgW, dark }) {
+function RadarSVG({ avgB, avgD, avgW, dark, labels }) {
+  const [labelB, labelD, labelW] = labels || ['Behaviour', 'Detail', 'Writing'];
   const cx = 80, cy = 80, r = 58;
   const axes = [
-    { label:'Behaviour', val: avgB/5, angle: -90 },
-    { label:'Detail',    val: avgD/5, angle: 30  },
-    { label:'Writing',   val: avgW/5, angle: 150 },
+    { label: labelB, val: avgB/5, angle: -90 },
+    { label: labelD, val: avgD/5, angle: 30  },
+    { label: labelW, val: avgW/5, angle: 150 },
   ];
   const pt = (ratio, angle) => {
     const a = (angle * Math.PI) / 180;
@@ -290,6 +291,7 @@ export default function ClassDetailsScreen() {
 
   const { avgB, avgD, avgW, cnt: obsCnt } = computeObsAverages(students);
   const stage = cls.stage || 4;
+  const isMaths = cls.subject === 'maths';
 
   // ─────────────────────────────────────────────────────────────────────────────
   // Sidebar state helpers
@@ -627,7 +629,11 @@ export default function ClassDetailsScreen() {
                 const quizBuckets = {'0–25':0,'26–50':0,'51–75':0,'76–100':0};
                 students.forEach(s => { const q=s.quizPercentage||0; if(q<=25) quizBuckets['0–25']++; else if(q<=50) quizBuckets['26–50']++; else if(q<=75) quizBuckets['51–75']++; else quizBuckets['76–100']++; });
                 const maxBucket = Math.max(...Object.values(quizBuckets),1);
-                const domainList = [
+                const domainList = isMaths ? [
+                  { key:'behaviour', label:'Method',        icon:'M', avg:avgB, color:'#059669' },
+                  { key:'detail',    label:'Accuracy',      icon:'A', avg:avgD, color:'#0284C7' },
+                  { key:'writing',   label:'Communication', icon:'C', avg:avgW, color:'#2E7D55' },
+                ] : [
                   { key:'behaviour', label:'Behaviour', icon:'B', avg:avgB, color:'#059669' },
                   { key:'detail',    label:'Detail',    icon:'D', avg:avgD, color:'#0284C7' },
                   { key:'writing',   label:'Writing',   icon:'W', avg:avgW, color:'#2E7D55' },
@@ -648,8 +654,14 @@ export default function ClassDetailsScreen() {
                 const lowBPct = obsTotal > 0 ? Math.round(lowB/obsTotal*100) : 0;
                 const lowDPct = obsTotal > 0 ? Math.round(lowD/obsTotal*100) : 0;
                 const lowWPct = obsTotal > 0 ? Math.round(lowW/obsTotal*100) : 0;
-                const stagePrefix = stage<=2 ? 'Students are building observation skills.' : stage===3 ? 'Students are developing observation and explanation skills.' : stage===5 ? 'Students should explain their observations using clear reasoning.' : 'Students should describe observations and begin to explain them.';
-                const actions = {
+                const stagePrefix = isMaths
+                  ? (stage<=2 ? 'Students are building number sense and early maths reasoning.' : stage===3 ? 'Students are developing written maths communication skills.' : stage===5 ? 'Students should construct and explain mathematical arguments clearly.' : 'Students should show their working and explain their mathematical thinking.')
+                  : (stage<=2 ? 'Students are building observation skills.' : stage===3 ? 'Students are developing observation and explanation skills.' : stage===5 ? 'Students should explain their observations using clear reasoning.' : 'Students should describe observations and begin to explain them.');
+                const actions = isMaths ? {
+                  behaviour: stage<=2 ? 'Encourage students to write at least one number or calculation they found.' : stage===5 ? 'Help students present working in a clear, logical sequence using correct notation.' : 'Encourage students to show each step of their working clearly.',
+                  detail:    stage<=2 ? 'Ask students to include a number with a unit (e.g. 3 steps, 2 kg).' : stage===5 ? 'Prompt students to verify their answer and include appropriate units or notation.' : 'Encourage students to check numbers match the question and include units in all answers.',
+                  writing:   stage<=2 ? 'Support students to label their working (e.g. "My answer is…").' : stage===5 ? 'Model structured maths communication: method → calculation → conclusion.' : 'Encourage students to use mathematical vocabulary and write in complete sentences.',
+                } : {
                   behaviour: stage<=2 ? 'Encourage students to say what the animal is doing.' : stage===5 ? 'Help students link observations to scientific concepts.' : 'Help students identify and name specific behaviours at each exhibit.',
                   detail:    stage<=2 ? 'Ask students to add one more thing they noticed.' : stage===5 ? 'Prompt students to include specific evidence and explain significance.' : 'Encourage students to include specific features, sounds, or environmental details.',
                   writing:   stage<=2 ? 'Support students to write a full sentence.' : stage===5 ? 'Model extended response structure: observation → explanation → ecosystem link.' : 'Encourage full sentences with capital letters, punctuation, and at least one clear idea.',
@@ -682,11 +694,11 @@ export default function ClassDetailsScreen() {
                         ))}
                       </div>
                     </div>
-                    {/* Writing Radar */}
+                    {/* Observation/Maths Radar */}
                     {obsCnt > 0 && (
                       <div style={{ ...nightStyle(), display:'flex', flexDirection:'column', alignItems:'center' }}>
-                        <p style={{ fontSize:'0.72rem', fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'0.5rem', alignSelf:'flex-start' }}>Writing Scores</p>
-                        <RadarSVG avgB={avgB} avgD={avgD} avgW={avgW} dark={false} />
+                        <p style={{ fontSize:'0.72rem', fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'0.5rem', alignSelf:'flex-start' }}>{isMaths ? 'Maths Scores' : 'Writing Scores'}</p>
+                        <RadarSVG avgB={avgB} avgD={avgD} avgW={avgW} dark={false} labels={isMaths ? ['Method','Accuracy','Comms'] : undefined} />
                       </div>
                     )}
                     {/* Teaching Takeaways */}
@@ -701,12 +713,12 @@ export default function ClassDetailsScreen() {
                           <div style={{ background:'var(--t-success-bg)', border:'1px solid #BBF7D0', borderRadius:'var(--t-r-md)', padding:'0.9rem 1rem' }}>
                             <p style={{ fontSize:'0.65rem', fontWeight:700, color:'#15803D', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:'0.3rem' }}>Strength</p>
                             <p style={{ fontSize:'0.8rem', fontWeight:700, color:'#14532D', margin:'0 0 0.2rem' }}>{strongest.icon} {strongest.label} ({strongest.avg}/5)</p>
-                            <p style={{ fontSize:'0.72rem', color:'#166534', margin:0, lineHeight:1.4 }}>Students perform well at {strongest.key === 'behaviour' ? 'identifying what animals do' : strongest.key === 'detail' ? 'using supporting ideas and evidence' : 'constructing clear sentences'}.</p>
+                            <p style={{ fontSize:'0.72rem', color:'#166534', margin:0, lineHeight:1.4 }}>Students perform well at {isMaths ? (strongest.key === 'behaviour' ? 'showing clear working steps' : strongest.key === 'detail' ? 'including correct numbers and units' : 'structuring responses with maths vocabulary') : (strongest.key === 'behaviour' ? 'identifying what animals do' : strongest.key === 'detail' ? 'using supporting ideas and evidence' : 'constructing clear sentences')}.</p>
                           </div>
                           <div style={{ background:'var(--t-warning-bg)', border:'1px solid #FED7AA', borderRadius:'var(--t-r-md)', padding:'0.9rem 1rem' }}>
                             <p style={{ fontSize:'0.65rem', fontWeight:700, color:'#C2410C', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:'0.3rem' }}>Focus Area</p>
                             <p style={{ fontSize:'0.8rem', fontWeight:700, color:'#7C2D12', margin:'0 0 0.2rem' }}>{weakest.icon} {weakest.label} ({weakest.avg}/5)</p>
-                            <p style={{ fontSize:'0.72rem', color:'#9A3412', margin:0, lineHeight:1.4 }}>Students need to improve {weakest.key === 'behaviour' ? 'identifying what animals do' : weakest.key === 'detail' ? 'using supporting ideas and evidence' : 'constructing clear sentences'}.</p>
+                            <p style={{ fontSize:'0.72rem', color:'#9A3412', margin:0, lineHeight:1.4 }}>Students need to improve {isMaths ? (weakest.key === 'behaviour' ? 'showing clear working steps' : weakest.key === 'detail' ? 'including correct numbers and units' : 'structuring responses with maths vocabulary') : (weakest.key === 'behaviour' ? 'identifying what animals do' : weakest.key === 'detail' ? 'using supporting ideas and evidence' : 'constructing clear sentences')}.</p>
                           </div>
                         </div>
                         <div style={{ background:'var(--t-info-bg)', border:'1px solid #BFDBFE', borderRadius:'var(--t-r-md)', padding:'0.95rem 1.15rem', marginBottom:'0.75rem' }}>
@@ -734,11 +746,15 @@ export default function ClassDetailsScreen() {
                         {/* Common Issues */}
                         <div style={{ background:'var(--t-chalk)', borderRadius:'var(--t-r-md)', padding:'1rem 1.15rem', boxShadow:'var(--t-shadow-xs)', marginBottom:'0.7rem', border:'1px solid var(--t-stone)' }}>
                           <p style={{ fontSize:'0.68rem', fontWeight:700, color:'var(--t-slate)', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:'0.65rem' }}>Common Issues</p>
-                          {[
+                          {(isMaths ? [
+                            [lowBPct, 'of responses showed insufficient working or method'],
+                            [lowDPct, 'of responses showed low accuracy (numbers, units or answer)'],
+                            [lowWPct, 'of responses lacked clear mathematical communication'],
+                          ] : [
                             [lowBPct, 'of responses showed low behaviour identification'],
                             [lowDPct, 'of responses showed low supporting detail'],
                             [lowWPct, 'of responses contained no explanation language'],
-                          ].map(([pct, label]) => (
+                          ]).map(([pct, label]) => (
                             <div key={label} style={{ display:'flex', alignItems:'baseline', gap:'0.65rem', marginBottom:'0.45rem' }}>
                               <span style={{ fontSize:'0.88rem', fontWeight:700, color:'#DC2626', minWidth:'2.8rem' }}>{pct}%</span>
                               <span style={{ fontSize:'0.78rem', color:'#555', lineHeight:1.4 }}>{label}</span>
@@ -765,9 +781,9 @@ export default function ClassDetailsScreen() {
                 const developing = studentStats.filter(s=>s.avg>=2.5&&s.avg<=3.5);
                 const proficient = studentStats.filter(s=>s.avg>3.5);
                 const groups = [
-                  { key:'support',    label:'Support',    students:support,    bg:'#FEF2F2', border:'#FECACA', labelColor:'#991B1B', tip:'Work with these students on identifying behaviour and adding simple detail.' },
-                  { key:'developing', label:'Developing', students:developing, bg:'#FFFBEB', border:'#FDE68A', labelColor:'#92400E', tip:'Encourage adding more specific detail and clearer explanations.' },
-                  { key:'proficient', label:'Proficient', students:proficient, bg:'#F0FDF4', border:'#BBF7D0', labelColor:'#14532D', tip:'Extend by asking students to explain significance and use scientific reasoning.' },
+                  { key:'support',    label:'Support',    students:support,    bg:'#FEF2F2', border:'#FECACA', labelColor:'#991B1B', tip: isMaths ? 'Work with these students on writing numbers and showing at least one step of working.' : 'Work with these students on identifying behaviour and adding simple detail.' },
+                  { key:'developing', label:'Developing', students:developing, bg:'#FFFBEB', border:'#FDE68A', labelColor:'#92400E', tip: isMaths ? 'Encourage more complete working, correct units, and mathematical vocabulary.' : 'Encourage adding more specific detail and clearer explanations.' },
+                  { key:'proficient', label:'Proficient', students:proficient, bg:'#F0FDF4', border:'#BBF7D0', labelColor:'#14532D', tip: isMaths ? 'Extend by asking students to verify answers, explain their method, and apply maths to new contexts.' : 'Extend by asking students to explain significance and use scientific reasoning.' },
                 ];
                 return (
                   <div style={{ marginBottom:'1rem' }}>
@@ -807,7 +823,15 @@ export default function ClassDetailsScreen() {
                   </button>
                   {markingCardOpen && (
                     <div style={{ padding:'1rem', display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))', gap:'0.75rem' }}>
-                      {[{title:'Behaviour',color:'#34A85A',bg:'#F4FBF7',desc:'Assesses what students observe at the exhibit.',items:['Identifying what the animal is doing','Recognising behaviours (feeding, resting, interacting)'],note:'Higher: clear, accurate observations'},{title:'Detail',color:'#4A90D9',bg:'#F4F7FB',desc:'Assesses level of understanding shown.',items:['A clear observation or relevant concept','A simple explanation or link to behaviour'],note:'Students do NOT need all elements for marks'},{title:'Writing',color:'#E8894A',bg:'#FDF8F4',desc:'Assesses clarity of communication.',items:['Full sentences, appropriate terminology','Clear expression of ideas'],note:'Higher: well-structured, scientific language'}].map(d => (
+                      {(isMaths ? [
+                        {title:'Method',color:'#34A85A',bg:'#F4FBF7',desc:'Assesses whether students show their mathematical working.',items:['Numbers, operators, and equations used','Step-by-step working visible in response'],note:'Higher: clear, logical working chain'},
+                        {title:'Accuracy',color:'#4A90D9',bg:'#F4F7FB',desc:'Assesses correctness of numbers, units, and answers.',items:['Numbers and measurements present','Correct answer included with appropriate units'],note:'Correct key answer detected = score boost'},
+                        {title:'Communication',color:'#E8894A',bg:'#FDF8F4',desc:'Assesses clarity of mathematical expression.',items:['Structured response with labels or steps','Mathematical vocabulary used appropriately'],note:'Higher: well-structured, precise maths language'},
+                      ] : [
+                        {title:'Behaviour',color:'#34A85A',bg:'#F4FBF7',desc:'Assesses what students observe at the exhibit.',items:['Identifying what the animal is doing','Recognising behaviours (feeding, resting, interacting)'],note:'Higher: clear, accurate observations'},
+                        {title:'Detail',color:'#4A90D9',bg:'#F4F7FB',desc:'Assesses level of understanding shown.',items:['A clear observation or relevant concept','A simple explanation or link to behaviour'],note:'Students do NOT need all elements for marks'},
+                        {title:'Writing',color:'#E8894A',bg:'#FDF8F4',desc:'Assesses clarity of communication.',items:['Full sentences, appropriate terminology','Clear expression of ideas'],note:'Higher: well-structured, scientific language'},
+                      ]).map(d => (
                         <div key={d.title} style={{ background:d.bg, borderRadius:'var(--t-r-sm)', padding:'0.85rem 1rem', borderLeft:`4px solid ${d.color}` }}>
                           <p style={{ fontWeight:700, fontSize:'0.88rem', color:'var(--t-deep)', marginBottom:'0.4rem' }}>{d.title}</p>
                           <p style={{ fontSize:'0.78rem', color:'#555', marginBottom:'0.4rem', lineHeight:1.6 }}>{d.desc}</p>
@@ -1045,7 +1069,10 @@ export default function ClassDetailsScreen() {
                         {obs && (
                           <div>
                             <div style={{ display:'flex', gap:'0.75rem', flexWrap:'wrap', alignItems:'center', marginBottom:'0.3rem' }}>
-                              {[{l:'Behaviour',v:activeScores.bv,c:'#059669'},{l:'Detail',v:activeScores.dv,c:'#0284C7'},{l:'Writing',v:activeScores.wv,c:'#2E7D55'}].map(d => (
+                              {(isMaths
+                                ? [{l:'Method',v:activeScores.bv,c:'#059669'},{l:'Accuracy',v:activeScores.dv,c:'#0284C7'},{l:'Comms',v:activeScores.wv,c:'#2E7D55'}]
+                                : [{l:'Behaviour',v:activeScores.bv,c:'#059669'},{l:'Detail',v:activeScores.dv,c:'#0284C7'},{l:'Writing',v:activeScores.wv,c:'#2E7D55'}]
+                              ).map(d => (
                                 <span key={d.l} style={{ fontSize:'0.7rem', color:'#666' }}>{d.l}: <strong style={{ color:d.c }}>{d.v}/5</strong></span>
                               ))}
                               {obs.reviewRecommended && <span style={{ fontSize:'0.65rem', background:'#FEF3C7', color:'#92400E', padding:'0.1rem 0.4rem', borderRadius:'4px', fontWeight:700 }}>⚠ Review</span>}
@@ -1053,7 +1080,10 @@ export default function ClassDetailsScreen() {
                             </div>
                             {isExpanded && (
                               <div style={{ marginTop:'0.5rem', background:'white', borderRadius:'var(--t-r-xs)', padding:'0.7rem 0.85rem', border:'1px solid #E8EDF0' }}>
-                                {[{l:'Behaviour',v:activeScores.bv,c:'#059669',rat:obs.rationale?.behaviour,tip:obs.improvementTips?.behaviour},{l:'Detail',v:activeScores.dv,c:'#0284C7',rat:obs.rationale?.detail,tip:obs.improvementTips?.detail},{l:'Writing',v:activeScores.wv,c:'#2E7D55',rat:obs.rationale?.writing,tip:obs.improvementTips?.writing}].map(d => (
+                                {(isMaths
+                                  ? [{l:'Method',v:activeScores.bv,c:'#059669',rat:obs.rationale?.behaviour,tip:obs.improvementTips?.behaviour},{l:'Accuracy',v:activeScores.dv,c:'#0284C7',rat:obs.rationale?.detail,tip:obs.improvementTips?.detail},{l:'Communication',v:activeScores.wv,c:'#2E7D55',rat:obs.rationale?.writing,tip:obs.improvementTips?.writing}]
+                                  : [{l:'Behaviour',v:activeScores.bv,c:'#059669',rat:obs.rationale?.behaviour,tip:obs.improvementTips?.behaviour},{l:'Detail',v:activeScores.dv,c:'#0284C7',rat:obs.rationale?.detail,tip:obs.improvementTips?.detail},{l:'Writing',v:activeScores.wv,c:'#2E7D55',rat:obs.rationale?.writing,tip:obs.improvementTips?.writing}]
+                                ).map(d => (
                                   <div key={d.l} style={{ marginBottom:'0.5rem', paddingBottom:'0.5rem', borderBottom:'1px solid #F0F0F0' }}>
                                     <div style={{ display:'flex', alignItems:'center', gap:'0.4rem', marginBottom:'0.15rem' }}>
                                       <span style={{ fontSize:'0.72rem', fontWeight:700, color:d.c }}>{d.l}: {d.v}/5</span>
@@ -1073,7 +1103,7 @@ export default function ClassDetailsScreen() {
                                     <div style={{ background:'#F9FAFB', borderRadius:'var(--t-r-xs)', padding:'0.65rem 0.75rem', border:'1px solid #E5E7EB' }}>
                                       <p style={{ fontSize:'0.7rem', fontWeight:700, color:'#374151', margin:'0 0 0.4rem' }}>Override Scores</p>
                                       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'0.4rem', marginBottom:'0.4rem' }}>
-                                        {[['b','Beh'],['d','Det'],['w','Wri']].map(([key,lbl]) => (
+                                        {(isMaths ? [['b','Met'],['d','Acc'],['w','Com']] : [['b','Beh'],['d','Det'],['w','Wri']]).map(([key,lbl]) => (
                                           <div key={key}>
                                             <label style={{ fontSize:'0.62rem', color:'#6B7280', display:'block', marginBottom:'0.1rem' }}>{lbl}</label>
                                             <select value={form[key]??''} onChange={e=>setOverrideForms(p=>({...p,[bKey]:{...p[bKey],[key]:e.target.value}}))} style={{ width:'100%', padding:'0.22rem 0.3rem', borderRadius:'4px', border:'1px solid #D1D5DB', fontSize:'0.75rem', background:'white' }}>

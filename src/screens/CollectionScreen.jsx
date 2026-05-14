@@ -3,7 +3,7 @@ import { useStudent } from '../context/StudentContext';
 import { calculateAnimalPoints } from '../utils/helpers';
 
 export default function CollectionScreen() {
-  const { setCurrentScreen } = useApp();
+  const { setCurrentScreen, classSubject } = useApp();
   const {
     animalsToRender, foundAnimals, badges, totalPoints,
     activityCompleted, isSubmittingActivity, completeActivity,
@@ -46,7 +46,10 @@ export default function CollectionScreen() {
               {earned && badge ? (
                 <>
                   <p className="bt-pts">{pts} pts</p>
-                  <p className="bt-scores">Behaviour +{b} · Detail +{d} · Writing +{w}</p>
+                  <p className="bt-scores">{classSubject === 'maths'
+                    ? `Method +${b} · Accuracy +${d} · Communication +${w}`
+                    : `Behaviour +${b} · Detail +${d} · Writing +${w}`
+                  }</p>
                 </>
               ) : (
                 <p style={{ fontSize:'0.8125rem', color:'rgba(255,255,255,0.42)', fontStyle:'italic' }}>Not yet discovered</p>

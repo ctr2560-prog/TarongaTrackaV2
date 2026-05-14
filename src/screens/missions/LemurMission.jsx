@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useStudent } from '../../context/StudentContext';
 import { getStageQuestions } from '../../utils/helpers';
+import MathsCalculator from '../../components/MathsCalculator';
 
 const BEHAVIOURS = [
   { key:'feeding', label:'Feeding', index:0, color:'#6EE7A0' },
@@ -112,7 +113,7 @@ function buildNoteQueue() {
 }
 
 export default function LemurMission() {
-  const { setCurrentScreen, classStage } = useApp();
+  const { setCurrentScreen, classStage, classSubject } = useApp();
   const {
     currentAnimal, showResult, setShowResult, isCorrect,
     setIsProcessingAnswer, handleQuizAnswer, handleNextQuestion,
@@ -141,7 +142,7 @@ export default function LemurMission() {
   const gameRef    = useRef(null);
   const intervalRef = useRef(null);
 
-  const q = getStageQuestions(currentAnimal, classStage)[0];
+  const q = getStageQuestions(currentAnimal, classStage, classSubject)[0];
   const maxCount = Math.max(...BEHAVIOURS.map(b => counts[b.key]));
   const computedCorrect = BEHAVIOURS.findIndex(b => counts[b.key] === maxCount);
 
@@ -525,6 +526,7 @@ export default function LemurMission() {
                 </button>
               ))}
             </div>
+            <MathsCalculator />
           </div>
         </div>
       )}

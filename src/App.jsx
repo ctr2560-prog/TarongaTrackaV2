@@ -12,10 +12,20 @@ import {
   ZooSnoozScreen, DocumentaryViewer, ComingSoonScreen,
 } from './screens';
 
+const PRELOAD_IMAGES = [
+  '/images/screenshots/mode-zoosnooz.jpg',
+  '/images/screenshots/mode-school.jpg',
+];
+
 function SplashDismisser() {
   const { authLoading } = useApp();
   const [videoReady,  setVideoReady]  = useState(false);
   const [minTimeDone, setMinTimeDone] = useState(false);
+
+  // Kick off background preloads for the about-page mode images while splash is showing
+  useEffect(() => {
+    PRELOAD_IMAGES.forEach(src => { const img = new Image(); img.src = src; });
+  }, []);
 
   // Minimum hold — prevents instant flash-and-dismiss when assets are cached
   useEffect(() => {
@@ -31,8 +41,8 @@ function SplashDismisser() {
     if (video.readyState >= 3) { setVideoReady(true); return; }
     const onReady = () => setVideoReady(true);
     video.addEventListener('canplay', onReady);
-    // Hard fallback — don't hold splash forever on very slow connections
-    const fallback = setTimeout(() => setVideoReady(true), 6000);
+    // Hard fallback — faststart means canplay fires quickly; this only kicks in on very slow connections
+    const fallback = setTimeout(() => setVideoReady(true), 3500);
     return () => { video.removeEventListener('canplay', onReady); clearTimeout(fallback); };
   }, []);
 

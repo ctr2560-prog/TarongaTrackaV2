@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useStudent } from '../../context/StudentContext';
 import { getStageQuestions } from '../../utils/helpers';
+import MathsCalculator from '../../components/MathsCalculator';
 
 // ── Game data ──────────────────────────────────────────────────────────────
 const BUDGET = 320;
@@ -55,7 +56,7 @@ function calcScore(counts) {
 }
 
 export default function SeaLionMission() {
-  const { setCurrentScreen, classStage } = useApp();
+  const { setCurrentScreen, classStage, classSubject } = useApp();
   const {
     currentAnimal, showResult, setShowResult, isCorrect,
     setIsProcessingAnswer, handleQuizAnswer, handleNextQuestion,
@@ -100,7 +101,7 @@ export default function SeaLionMission() {
   const [scoreOpen,  setScoreOpen]  = useState(false);
   const [slsScore,   setSlsScore]   = useState(0);
 
-  const q = getStageQuestions(currentAnimal, classStage)[0];
+  const q = getStageQuestions(currentAnimal, classStage, classSubject)[0];
   const correctAnswerIndex = q?.correct ?? 0;
   const fact = q?.stageFacts?.[classStage] || q?.fact;
 
@@ -553,6 +554,7 @@ export default function SeaLionMission() {
                 </button>
               ))}
             </div>
+            <MathsCalculator />
           </div>
         </div>
       )}
