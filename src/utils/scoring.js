@@ -228,12 +228,12 @@ export function normaliseScores({ behaviourScore, detailScore, writingScore, evi
   if (s === 3) {
     if (behaviourDetected && !isLowQuality) b = Math.max(b, 3); else b = Math.min(b, 2);
     if (detailCount >= 1 && !isLowQuality) d = Math.max(d, 3); else d = Math.min(d, 2);
-    if (wordCount >= 5 && !isLowQuality) w = Math.max(w, 3);
+    if (wordCount >= 5 && !isLowQuality && evidence?.hasPunctuation) w = Math.max(w, 3);
   }
   if (s === 4) {
     if (behaviourDetected && !isLowQuality) b = Math.max(b, 3); else b = Math.min(b, 2);
     if (detailCount >= 1 && !isLowQuality) d = Math.max(d, 3);
-    if (wordCount >= 8 && !isLowQuality) w = Math.max(w, 3);
+    if (wordCount >= 8 && !isLowQuality && evidence?.hasPunctuation) w = Math.max(w, 3);
   }
   if (isLowQuality) { b = Math.min(b, 2); d = Math.min(d, 1); w = Math.min(w, 2); }
   return {
@@ -909,7 +909,8 @@ export function calculateWritingScore(studentResponse, stage) {
   }
 
   if (isAllCaps) score = Math.max(score - 1, 1);
-  if (stg > 2 && (!hasCapital || !hasFullStop)) score = Math.min(score, 3);
+  if (stg > 2 && !hasCapital && !hasFullStop) score = Math.min(score, 2);
+  else if (stg > 2 && (!hasCapital || !hasFullStop)) score = Math.min(score, 3);
 
   if (wc >= 3) {
     const uniqueRatio = uCount / wc;
