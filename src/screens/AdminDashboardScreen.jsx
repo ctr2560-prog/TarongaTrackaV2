@@ -363,48 +363,69 @@ function AnalyticsTab({ classes }) {
           </div>
 
           {/* Observation Skill Breakdown */}
-          {obsAvgs && (
-            <div style={{ background:'white', borderRadius:'var(--t-r-md)', border:'1px solid var(--t-mist)', padding:'1.25rem' }}>
-              <h3 style={{ fontSize:'1rem', fontWeight:700, color:'var(--t-deep)', margin:'0 0 0.75rem' }}>Observation Skill Breakdown</h3>
-              <svg viewBox="0 0 400 280" style={{ width:'100%', maxWidth:420, display:'block', margin:'0 auto' }}>
-                {[0.2,0.4,0.6,0.8,1].map(lv => (
-                  <polygon key={lv} points={gridPts(lv)} fill="none" stroke="#E5E7EB" strokeWidth={1} />
-                ))}
-                {[20,40,60,80].map(lv => (
-                  <text key={lv} x={CX+2} y={CY - R*(lv/100) - 3} fontSize="9" fill="#9CA3AF" textAnchor="middle">{lv}</text>
-                ))}
-                {AXES_DEG.map(deg => { const rad=deg*Math.PI/180; return <line key={deg} x1={CX} y1={CY} x2={CX+R*Math.cos(rad)} y2={CY+R*Math.sin(rad)} stroke="#E5E7EB" strokeWidth={1} />; })}
-                {radarPts && (
-                  <>
-                    <polygon points={radarPts.map(p=>p.join(',')).join(' ')} fill={`${GREEN}22`} stroke={GREEN} strokeWidth={2} />
-                    {radarPts.map((p,i) => <circle key={i} cx={p[0]} cy={p[1]} r={4} fill={GREEN} />)}
-                  </>
-                )}
-                <text x={CX} y={CY-R-14} fontSize="12" fill="#374151" textAnchor="middle" fontWeight="600">Behaviour (%)</text>
-                <text x={CX+R*Math.cos(30*Math.PI/180)+14} y={CY+R*Math.sin(30*Math.PI/180)+14} fontSize="12" fill="#374151" textAnchor="start" fontWeight="600">Detail (%)</text>
-                <text x={CX+R*Math.cos(150*Math.PI/180)-14} y={CY+R*Math.sin(150*Math.PI/180)+14} fontSize="12" fill="#374151" textAnchor="end" fontWeight="600">Writing (%)</text>
-                {[obsAvgs.behaviour, obsAvgs.detail, obsAvgs.writing].map((v, i) => {
-                  const rad=AXES_DEG[i]*Math.PI/180; const sc=0.6;
-                  return <text key={i} x={CX+R*sc*Math.cos(rad)} y={CY+R*sc*Math.sin(rad)+4} fontSize="11" fill={GREEN} textAnchor="middle" fontWeight="700">{v}</text>;
-                })}
-              </svg>
-              <div style={{ background:'var(--t-foam)', border:'1px solid var(--t-mist)', borderRadius:'var(--t-r-sm)', padding:'0.9rem 1rem', marginTop:'0.5rem' }}>
-                <div style={{ fontSize:'0.65rem', fontWeight:800, color:'var(--t-deep)', textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:'0.5rem' }}>HOW WRITING IS SCORED</div>
-                {[
-                  ['Behaviour (%)', 'Did the student identify real animal behaviour (pacing, grooming, feeding)? For reflections: did the student describe environmental activity or sensory experience (birds calling, wind, movement)?'],
-                  ['Detail (%)', 'Did the student include specific evidence? Examples: colour, texture, sound, movement, enclosure features, habitat elements. Applies equally to observation and reflection tasks.'],
-                  ['Writing (%)', 'Measures sentence clarity, descriptive language, structure, and grammar. The same standard applies to all writing tasks — observation and reflection alike.'],
-                ].map(([term, def]) => (
-                  <p key={term} style={{ margin:'0 0 0.4rem', fontSize:'0.78rem', color:'var(--t-slate)', lineHeight:1.55 }}>
-                    <strong style={{ color:'var(--t-deep)' }}>{term}</strong> {def}
-                  </p>
-                ))}
+          {obsAvgs && (() => {
+            const radarLabels =
+              subjectFilter === 'maths'   ? ['Method (%)',     'Accuracy (%)',      'Communication (%)'] :
+              subjectFilter === 'pdhpe'   ? ['Comparison (%)', 'Understanding (%)', 'Communication (%)'] :
+              subjectFilter === 'science' ? ['Behaviour (%)',  'Detail (%)',         'Writing (%)']       :
+                                           ['Vocabulary (%)', 'Explanation (%)',    'Mechanics (%)'];
+            const radarDefs =
+              subjectFilter === 'maths' ? [
+                ['Method (%)',         'Did the student show their working and approach clearly?'],
+                ['Accuracy (%)',       'Did the student include correct numbers, units, and notation?'],
+                ['Communication (%)', 'How clearly did the student structure and express their mathematical thinking?'],
+              ] : subjectFilter === 'pdhpe' ? [
+                ['Comparison (%)',    'Did the student compare what they observed to their own lifestyle or health?'],
+                ['Understanding (%)', 'Did the student demonstrate understanding of a health or PDHPE concept?'],
+                ['Communication (%)', 'How clearly did the student write using correct sentences and punctuation?'],
+              ] : subjectFilter === 'science' ? [
+                ['Behaviour (%)',  'Did the student identify real animal behaviour (pacing, grooming, feeding)?'],
+                ['Detail (%)',     'Did the student include specific evidence — colour, sound, movement, habitat features?'],
+                ['Writing (%)',    'Measures sentence clarity, descriptive language, structure, and grammar.'],
+              ] : [
+                ['Vocabulary (%)',   'How well did the student use subject-specific and descriptive vocabulary across all KLA areas?'],
+                ['Explanation (%)',  'How well did the student develop, elaborate, and explain their ideas with supporting detail?'],
+                ['Mechanics (%)',    'How clearly did the student structure sentences, use capitals, and apply punctuation?'],
+              ];
+            return (
+              <div style={{ background:'white', borderRadius:'var(--t-r-md)', border:'1px solid var(--t-mist)', padding:'1.25rem' }}>
+                <h3 style={{ fontSize:'1rem', fontWeight:700, color:'var(--t-deep)', margin:'0 0 0.75rem' }}>Writing Skill Breakdown</h3>
+                <svg viewBox="0 0 400 280" style={{ width:'100%', maxWidth:420, display:'block', margin:'0 auto' }}>
+                  {[0.2,0.4,0.6,0.8,1].map(lv => (
+                    <polygon key={lv} points={gridPts(lv)} fill="none" stroke="#E5E7EB" strokeWidth={1} />
+                  ))}
+                  {[20,40,60,80].map(lv => (
+                    <text key={lv} x={CX+2} y={CY - R*(lv/100) - 3} fontSize="9" fill="#9CA3AF" textAnchor="middle">{lv}</text>
+                  ))}
+                  {AXES_DEG.map(deg => { const rad=deg*Math.PI/180; return <line key={deg} x1={CX} y1={CY} x2={CX+R*Math.cos(rad)} y2={CY+R*Math.sin(rad)} stroke="#E5E7EB" strokeWidth={1} />; })}
+                  {radarPts && (
+                    <>
+                      <polygon points={radarPts.map(p=>p.join(',')).join(' ')} fill={`${GREEN}22`} stroke={GREEN} strokeWidth={2} />
+                      {radarPts.map((p,i) => <circle key={i} cx={p[0]} cy={p[1]} r={4} fill={GREEN} />)}
+                    </>
+                  )}
+                  <text x={CX} y={CY-R-14} fontSize="12" fill="#374151" textAnchor="middle" fontWeight="600">{radarLabels[0]}</text>
+                  <text x={CX+R*Math.cos(30*Math.PI/180)+14} y={CY+R*Math.sin(30*Math.PI/180)+14} fontSize="12" fill="#374151" textAnchor="start" fontWeight="600">{radarLabels[1]}</text>
+                  <text x={CX+R*Math.cos(150*Math.PI/180)-14} y={CY+R*Math.sin(150*Math.PI/180)+14} fontSize="12" fill="#374151" textAnchor="end" fontWeight="600">{radarLabels[2]}</text>
+                  {[obsAvgs.behaviour, obsAvgs.detail, obsAvgs.writing].map((v, i) => {
+                    const rad=AXES_DEG[i]*Math.PI/180; const sc=0.6;
+                    return <text key={i} x={CX+R*sc*Math.cos(rad)} y={CY+R*sc*Math.sin(rad)+4} fontSize="11" fill={GREEN} textAnchor="middle" fontWeight="700">{v}</text>;
+                  })}
+                </svg>
+                <div style={{ background:'var(--t-foam)', border:'1px solid var(--t-mist)', borderRadius:'var(--t-r-sm)', padding:'0.9rem 1rem', marginTop:'0.5rem' }}>
+                  <div style={{ fontSize:'0.65rem', fontWeight:800, color:'var(--t-deep)', textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:'0.5rem' }}>HOW SCORES ARE CALCULATED</div>
+                  {radarDefs.map(([term, def]) => (
+                    <p key={term} style={{ margin:'0 0 0.4rem', fontSize:'0.78rem', color:'var(--t-slate)', lineHeight:1.55 }}>
+                      <strong style={{ color:'var(--t-deep)' }}>{term}</strong> {def}
+                    </p>
+                  ))}
+                </div>
+                <p style={{ color:'var(--t-ash)', fontSize:'0.72rem', margin:'0.5rem 0 0', textAlign:'center', fontStyle:'italic' }}>
+                  Average scores across all completed student writing. Scores range from 0–100.
+                </p>
               </div>
-              <p style={{ color:'var(--t-ash)', fontSize:'0.72rem', margin:'0.5rem 0 0', textAlign:'center', fontStyle:'italic' }}>
-                Average scores across all completed student writing. Scores range from 0–100.
-              </p>
-            </div>
-          )}
+            );
+          })()}
 
           {/* Hardest Questions */}
           {hardestQuestions.length > 0 && (
