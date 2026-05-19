@@ -94,6 +94,7 @@ export default function ClassDetailsScreen() {
   const [overrideForms,     setOverrideForms]     = useState({});
   const [overrideSaving,    setOverrideSaving]    = useState(null);
   const [zzModalClipUrls,   setZzModalClipUrls]   = useState({});
+  const [radarTab,          setRadarTab]          = useState('all');
 
   // Fetch per-animal clip URLs when a ZooSnooz modal opens
   useEffect(() => {
@@ -748,11 +749,33 @@ export default function ClassDetailsScreen() {
                         ))}
                       </div>
                     </div>
-                    {/* Observation/Maths Radar */}
+                    {/* Observation Radar */}
                     {obsCnt > 0 && (
                       <div style={{ ...nightStyle(), display:'flex', flexDirection:'column', alignItems:'center' }}>
-                        <p style={{ fontSize:'0.72rem', fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'0.5rem', alignSelf:'flex-start' }}>{isMaths ? 'Maths Scores' : isPdhpe ? 'PDHPE Scores' : 'Writing Scores'}</p>
-                        <RadarSVG avgB={avgB} avgD={avgD} avgW={avgW} dark={false} labels={isMaths ? ['Method','Accuracy','Comms'] : isPdhpe ? ['Compare','Understand','Comms'] : undefined} />
+                        {/* Radar tabs */}
+                        <div style={{ display:'flex', gap:'3px', marginBottom:'0.65rem', alignSelf:'stretch', background:'#F0F0F0', borderRadius:'8px', padding:'3px' }}>
+                          {[
+                            { key:'all',     label:'All Subjects' },
+                            { key:'subject', label: isMaths ? 'Mathematics' : isPdhpe ? 'PDHPE' : 'Science' },
+                          ].map(t => (
+                            <button key={t.key} onClick={() => setRadarTab(t.key)}
+                              style={{ flex:1, padding:'0.28rem 0.4rem', borderRadius:'6px', border:'none', fontSize:'0.68rem', fontWeight:700, cursor:'pointer', transition:'all 0.15s', background: radarTab === t.key ? 'white' : 'transparent', color: radarTab === t.key ? 'var(--t-deep)' : '#999', boxShadow: radarTab === t.key ? '0 1px 3px rgba(0,0,0,0.12)' : 'none', letterSpacing:'0.02em' }}>
+                              {t.label}
+                            </button>
+                          ))}
+                        </div>
+                        <p style={{ fontSize:'0.72rem', fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'0.5rem', alignSelf:'flex-start' }}>
+                          {radarTab === 'all' ? 'Writing Overview' : isMaths ? 'Maths Scores' : isPdhpe ? 'PDHPE Scores' : 'Writing Scores'}
+                        </p>
+                        <RadarSVG avgB={avgB} avgD={avgD} avgW={avgW} dark={false}
+                          labels={radarTab === 'all'
+                            ? ['Vocabulary', 'Explanation', 'Mechanics']
+                            : isMaths ? ['Method','Accuracy','Comms']
+                            : isPdhpe ? ['Compare','Understand','Comms']
+                            : undefined} />
+                        {radarTab === 'all' && (
+                          <p style={{ fontSize:'0.66rem', color:'#BBB', textAlign:'center', marginTop:'0.4rem', lineHeight:1.4, maxWidth:'190px' }}>Universal writing dimensions across all KLA areas</p>
+                        )}
                       </div>
                     )}
                     {/* Teaching Takeaways */}
