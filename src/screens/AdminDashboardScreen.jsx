@@ -282,6 +282,7 @@ function AnalyticsTab({ classes }) {
             <option value="english">English</option>
             <option value="geography">Geography</option>
             <option value="pdhpe">PDHPE</option>
+            <option value="ngara-nura">Ngara Nura</option>
           </select>
           <select value={timeFilter} onChange={e => setTimeFilter(e.target.value)}
             style={{ padding:'0.45rem 0.75rem', borderRadius:'var(--t-r-sm)', border:'1.5px solid var(--t-stone)', fontSize:'0.82rem', fontFamily:'inherit', background:'white', color:'var(--t-deep)', cursor:'pointer' }}>
