@@ -435,7 +435,7 @@ export default function TeacherDashboardScreen() {
                     style={{ ...inputStyle, appearance:'auto', cursor:'pointer' }}
                     onFocus={e => e.target.style.borderColor='var(--t-mid)'} onBlur={e => e.target.style.borderColor='var(--t-stone)'}>
                     <option value="science">Science</option>
-                    <option value="maths" disabled={import.meta.env.PROD}>Mathematics{import.meta.env.PROD ? ' (Coming Soon)' : ''}</option>
+                    <option value="maths">Mathematics</option>
                     <option value="english" disabled>English (Coming Soon)</option>
                     <option value="geography" disabled>Geography (Coming Soon)</option>
                     <option value="pdhpe">PDHPE</option>
