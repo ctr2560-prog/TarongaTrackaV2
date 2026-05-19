@@ -28,6 +28,16 @@ export function isLowQualityResponse(text) {
     return c.length >= 2 && hasVowel.test(c) && hasConsonant.test(c);
   }).length;
   if (realWordCount / words.length < 0.4) return true;
+  // Detect keyboard mashing: multiple words with no vowels, double-j, or q without u
+  const gibberishWordSet = new Set();
+  words.forEach(w => {
+    const c = w.replace(/[^a-z]/g, '');
+    if (c.length < 2) return;
+    if (!/[aeiouy]/.test(c)) gibberishWordSet.add(w);
+    if ((c.match(/j/g) || []).length >= 2) gibberishWordSet.add(w);
+    if (c.length <= 5 && /q(?!u)/.test(c)) gibberishWordSet.add(w);
+  });
+  if (words.length >= 5 && gibberishWordSet.size >= 2) return true;
   return false;
 }
 
