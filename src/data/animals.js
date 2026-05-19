@@ -39,17 +39,6 @@ export const animals =
             5: 'Explain how gorilla behaviour shows signs of intelligence or social structure and what you observed to support this.',
           },
           questions: [
-            { q: 'Gorilla Habitat',
-              stageVariants: {
-                1: 'Do gorillas live in Australia?',
-                2: 'Where do gorillas come from?',
-                3: 'Which part of Africa do western lowland gorillas live in?',
-                4: 'Gorilla Habitat',
-                5: 'Why is the gorilla\'s rainforest habitat important for its survival?',
-              },
-              options: ['A', 'B', 'C', 'D'],
-              correct: 0,
-              fact: 'Western Lowland Gorillas live in Central-West Africa, in dense tropical rainforests.' },
             { q: 'What do western lowland gorillas mainly eat?',
               stageVariants: {
                 1: 'Do gorillas eat meat?',

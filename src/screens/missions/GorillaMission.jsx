@@ -92,7 +92,7 @@ export default function GorillaMission() {
   }, []);
 
   const questions = getStageQuestions(currentAnimal, classStage, classSubject);
-  const mcqQ      = questions[1];
+  const mcqQ      = questions[0];
 
   useEffect(() => {
     if (phase !== 'playing') return;
@@ -385,7 +385,7 @@ export default function GorillaMission() {
               <p style={{ fontSize:'clamp(0.9rem,2vh,1.05rem)', fontWeight:600, color:'white', marginBottom:'1rem', lineHeight:1.4 }}>{classSubject === 'maths' ? 'Choose the correct answer:' : mcqQ.q}</p>
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.75rem' }}>
                 {mcqQ.options?.map((opt, i) => (
-                  <button key={i} onClick={() => !isProcessingAnswer && handleQuizAnswer(1, i, mcqQ.correct)}
+                  <button key={i} onClick={() => !isProcessingAnswer && handleQuizAnswer(0, i, mcqQ.correct)}
                     style={{ textAlign:'center', padding:'clamp(1rem,2.5vh,1.5rem) clamp(0.5rem,1vh,0.8rem)', borderRadius:'var(--t-r-md)', border:'2px solid rgba(100,220,140,0.35)', background:'rgba(255,255,255,0.07)', cursor:'pointer', fontSize:'clamp(0.85rem,1.8vh,1rem)', fontWeight:600, color:'white', lineHeight:1.2, minHeight:'clamp(70px,12vh,90px)', display:'flex', alignItems:'center', justifyContent:'center' }}>
                     {opt}
                   </button>
