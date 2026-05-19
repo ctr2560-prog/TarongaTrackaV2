@@ -708,9 +708,140 @@ function buildMathsObservationScore(text, animalId, classStage) {
   };
 }
 
+function buildPdhpeObservationScore(text, animalId, classStage) {
+  const lower = text.toLowerCase();
+  const wc    = text.trim().split(/\s+/).filter(Boolean).length;
+
+  // Lifestyle / comparison vocabulary (core for chimpanzee task, counts for all PDHPE)
+  const lifestyleVocab = ['similar', 'similarity', 'different', 'difference', 'same', 'compare', 'comparison',
+    'habit', 'lifestyle', 'healthy', 'health', 'unhealthy', 'more than', 'less than', 'more active',
+    'outside', 'outdoors', 'sleep', 'sleeping', 'rest', 'resting', 'move', 'moving', 'active',
+    'activity', 'eating', 'food', 'diet', 'social', 'together', 'group', 'adopt', 'improve',
+    'benefit', 'could', 'should', 'try', 'change'];
+  const lifestyleHits = lifestyleVocab.filter(w => lower.includes(w)).length;
+
+  // Physical/movement vocabulary
+  const physVocab = ['heart rate', 'pulse', 'heart', 'muscle', 'breathe', 'breathing', 'exercise', 'fitness',
+    'cardiovascular', 'aerobic', 'anaerobic', 'endurance', 'strength', 'flexibility', 'energy',
+    'atp', 'oxygen', 'blood', 'lungs', 'sprint', 'recovery', 'bone', 'skeletal',
+    'fibre', 'fiber', 'twitch', 'vo2', 'cardio', 'body', 'movement'];
+  const physHits = physVocab.filter(w => lower.includes(w)).length;
+
+  // Mental health / wellbeing vocabulary
+  const wellVocab = ['wellbeing', 'well-being', 'mental health', 'stress', 'cortisol', 'oxytocin', 'hormone',
+    'mood', 'emotion', 'belong', 'belonging', 'identity', 'connect', 'connection',
+    'anxiety', 'depression', 'happy', 'happiness', 'mindful', 'nature', 'calm', 'resilience',
+    'self-esteem', 'community', 'support', 'relationship', 'hpa', 'serotonin', 'dopamine',
+    'biopsychosocial', 'psychological', 'motivation', 'determinant'];
+  const wellHits = wellVocab.filter(w => lower.includes(w)).length;
+
+  const totalVocabHits = lifestyleHits + physHits + wellHits;
+
+  // Explanation / analysis language
+  const hasExplanation = ['because', 'therefore', 'which means', 'this shows', 'this helps',
+    'this causes', 'as a result', 'in order to', 'due to', 'so that', 'would help',
+    'increases', 'decreases', 'affects', 'supports', 'links to', 'related to'].some(p => lower.includes(p));
+
+  // Personal observation or connection to the animal
+  const hasPersonal = ['i noticed', 'i observed', 'i saw', 'i felt', 'i could see', 'i think', 'i could',
+    'my ', 'the chimp', 'the gorilla', 'the lion', 'the giraffe', 'the tiger',
+    'the koala', 'the dingo', 'the lemur', 'the sea lion', 'the buffalo',
+    'chimpanzee', 'chimps'].some(p => lower.includes(p));
+
+  const hasNumbers    = /\d+/.test(text);
+  const hasCap        = /^[A-Z]/.test(text);
+  const hasStop       = /[.!?]/.test(text);
+  const sentences     = text.split(/[.!?]+/).filter(s => s.trim().length > 2);
+  const multiSentence = sentences.length >= 2;
+  const words         = text.trim().split(/\s+/).filter(Boolean);
+  const uniqueWords   = new Set(words.map(w => w.toLowerCase().replace(/[^a-z]/g, '')).filter(Boolean));
+  const isAllCaps     = text.length > 4 && text === text.toUpperCase();
+
+  // Comparison (behaviour slot) — did they engage with the topic?
+  let comparison = 1;
+  if (wc >= 3)                                                    comparison = 2;
+  if (wc >= 5 && (lifestyleHits >= 1 || hasPersonal))            comparison = 3;
+  if (wc >= 8 && (lifestyleHits >= 2 || (lifestyleHits >= 1 && hasPersonal))) comparison = Math.max(comparison, 3);
+  if (totalVocabHits >= 2 && (hasExplanation || hasPersonal))    comparison = Math.max(comparison, 4);
+  if (totalVocabHits >= 4 && hasExplanation && multiSentence)    comparison = 5;
+
+  // Understanding (detail slot) — did they show any health understanding?
+  let understanding = 1;
+  if (wc >= 4)                                                    understanding = 2;
+  if (lifestyleHits >= 1 || physHits >= 1 || wellHits >= 1)      understanding = Math.max(understanding, 3);
+  if (totalVocabHits >= 2 && hasExplanation)                      understanding = Math.max(understanding, 4);
+  if (totalVocabHits >= 4 && hasExplanation && multiSentence)     understanding = 5;
+
+  // Communication (writing slot) — based on spelling, grammar, capitals and sentence structure only
+  let comms = 1;
+  if (wc >= 3)                                              comms = 2;
+  if (wc >= 5 && hasCap)                                    comms = Math.max(comms, 2);
+  if (wc >= 6 && hasCap && hasStop)                         comms = 3;
+  if (multiSentence && hasCap && hasStop)                   comms = Math.max(comms, 3);
+  if (multiSentence && hasCap && hasStop && uniqueWords.size >= 8)  comms = 4;
+  if (multiSentence && hasCap && hasStop && uniqueWords.size >= 12 && !isAllCaps) comms = 5;
+  if (isAllCaps) comms = Math.max(1, comms - 1);
+
+  comparison    = Math.max(1, Math.min(5, comparison));
+  understanding = Math.max(1, Math.min(5, understanding));
+  comms         = Math.max(1, Math.min(5, comms));
+
+  const rationale = {
+    behaviour: comparison >= 4
+      ? 'Student clearly engaged with the topic and made a specific, well-developed response.'
+      : comparison >= 3
+      ? 'Student identified a relevant idea or connection related to the topic.'
+      : comparison >= 2
+      ? 'Student made a basic attempt but the response needs more detail.'
+      : 'Student response did not clearly engage with the topic.',
+    detail: understanding >= 4
+      ? 'Student demonstrated good understanding of a health or lifestyle concept with explanation.'
+      : understanding >= 3
+      ? 'Student showed some understanding of how the topic relates to health.'
+      : understanding >= 2
+      ? 'Student showed basic awareness but needs more depth.'
+      : 'Student response did not demonstrate understanding of a health concept.',
+    writing: comms >= 4
+      ? 'Student wrote in clear, correctly punctuated sentences with a capital letter and varied vocabulary.'
+      : comms >= 3
+      ? 'Student used capital letters and full stops with reasonable sentence structure.'
+      : comms >= 2
+      ? 'Student attempted to write sentences but is missing capital letters or punctuation.'
+      : 'Response needs capital letters, full stops and complete sentences.',
+  };
+
+  const avg = (comparison + understanding + comms) / 3;
+  const overallFeedback = avg >= 4
+    ? 'Strong response — student engaged with the topic, showed health understanding and wrote clearly.'
+    : avg >= 3
+    ? 'Good response — student addressed the topic. Encourage more explanation and check punctuation.'
+    : avg >= 2
+    ? 'Developing response — encourage the student to write in full sentences with a capital letter and full stop.'
+    : 'Response needs development — prompt the student to write at least one full sentence about what they observed.';
+
+  return {
+    behaviour: comparison,
+    detail:    understanding,
+    writing:   comms,
+    rationale,
+    improvementTips: [
+      comparison < 3    ? 'Write at least one idea about what you observed or learned.' : null,
+      understanding < 3 ? 'Explain how your idea connects to health (e.g. "this is good for your body because…").' : null,
+      comms < 3         ? 'Start with a capital letter, use full stops at the end of sentences, and check your spelling.' : null,
+    ].filter(Boolean),
+    extractedEvidence: [],
+    confidence: avg >= 3 ? 'high' : avg >= 2 ? 'medium' : 'low',
+    reviewRecommended: false,
+    overallFeedback,
+  };
+}
+
 export function buildObservationScore(text, animalId, classStage, classSubject) {
   if (classSubject === 'maths') {
     return buildMathsObservationScore(text, animalId, classStage);
+  }
+  if (classSubject === 'pdhpe') {
+    return buildPdhpeObservationScore(text, animalId, classStage);
   }
   const { behaviourBonus, detailBonus, literacyBonus } = scoreObservation(text, animalId, classStage);
   const scoreRationale = generateScoreRationale(text, behaviourBonus, detailBonus, literacyBonus, animalId, classStage);

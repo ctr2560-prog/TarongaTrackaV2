@@ -8,6 +8,7 @@ import { ref as storageRef, getDownloadURL } from 'firebase/storage';
 import { normaliseCode, safeStudentId } from '../utils/helpers';
 import { useApp } from '../context/AppContext';
 import { ZOOSNOOZ_ANIMALS } from '../data/zoosnoozAnimals';
+import { openTeacherInfoSheet } from '../utils/teacherInfoSheet';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -143,7 +144,36 @@ export default function ClassDetailsScreen() {
     return () => unsub();
   }, [selectedClass]);
 
-  if (!cls) return null;
+  if (!cls) return (
+    <div style={{
+      position:'fixed', inset:0,
+      background:'#0A2F1F',
+      display:'flex', flexDirection:'column',
+      alignItems:'center', justifyContent:'center',
+      gap:'1.5rem', zIndex:10,
+    }}>
+      <img src="/images/logo.png" alt="Taronga" style={{ height:64, width:'auto', opacity:0.9 }} />
+      <div style={{ display:'flex', gap:'8px', alignItems:'center' }}>
+        {[0,1,2].map(i => (
+          <div key={i} style={{
+            width:8, height:8, borderRadius:'50%',
+            background:'rgba(168,196,178,0.7)',
+            animation:'tpulse 1.2s ease-in-out infinite',
+            animationDelay:`${i * 0.2}s`,
+          }} />
+        ))}
+      </div>
+      <p style={{ color:'rgba(168,196,178,0.5)', fontSize:'0.75rem', letterSpacing:'0.12em', textTransform:'uppercase', fontWeight:600, margin:0 }}>
+        Loading class
+      </p>
+      <style>{`
+        @keyframes tpulse {
+          0%, 80%, 100% { opacity: 0.3; transform: scale(0.85); }
+          40%            { opacity: 1;   transform: scale(1.15); }
+        }
+      `}</style>
+    </div>
+  );
 
   const isZZ = cls.sessionType === 'zoosnooz';
   const totalStudents  = students.length;
@@ -292,6 +322,7 @@ export default function ClassDetailsScreen() {
   const { avgB, avgD, avgW, cnt: obsCnt } = computeObsAverages(students);
   const stage = cls.stage || 4;
   const isMaths = cls.subject === 'maths';
+  const isPdhpe = cls.subject === 'pdhpe';
 
   // ─────────────────────────────────────────────────────────────────────────────
   // Sidebar state helpers
@@ -331,11 +362,24 @@ export default function ClassDetailsScreen() {
 
           <p className="lms-nav-group-label">Navigation</p>
           <nav className="lms-nav">
-            <button className="lms-nav-item" onClick={() => setCurrentScreen('teacherDashboard')}><span className="lms-nav-icon">&#8592;</span> All Classes</button>
-            <button className="lms-nav-item" onClick={() => window.open('/whos-who-in-the-zoo.pdf', '_blank')}><span className="lms-nav-icon">&#128274;</span> Who's Who in the Zoo</button>
-            <button className="lms-nav-item" onClick={() => window.open('https://www.wildlybytaronga.com.au', '_blank')}><span className="lms-nav-icon">&#127807;</span> Wildly by Taronga</button>
+            <button className="lms-nav-item" onClick={() => setCurrentScreen('teacherDashboard')}>
+              <span className="lms-nav-icon"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M10 13L5 8l5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg></span> All Classes
+            </button>
+            <button className="lms-nav-item" onClick={() => window.open('/whos-who-in-the-zoo.pdf', '_blank')}>
+              <span className="lms-nav-icon"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5.5" r="2.2" stroke="currentColor" strokeWidth="1.5"/><path d="M3 14c0-2.76 2.24-5 5-5s5 2.24 5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg></span> Who's Who in the Zoo
+            </button>
+            <button className="lms-nav-item" onClick={() => window.open('https://www.wildlybytaronga.com.au', '_blank')}>
+              <span className="lms-nav-icon"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M6 3H3a1 1 0 00-1 1v9a1 1 0 001 1h9a1 1 0 001-1v-3M10 2h4m0 0v4m0-4L7 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></span> Wildly by Taronga
+            </button>
+            {(cls.subject === 'science' || cls.subject === 'maths') && (
+              <button className="lms-nav-item" onClick={() => openTeacherInfoSheet(cls.subject, cls.stage)}>
+                <span className="lms-nav-icon"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><rect x="3" y="1" width="10" height="14" rx="1.5" stroke="currentColor" strokeWidth="1.5"/><path d="M6 5h4M6 8h4M6 11h2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg></span> Teacher Info Sheet
+              </button>
+            )}
             {isZZ && (
-              <button className="lms-nav-item" onClick={() => window.open('/zoosnooz-notification.html', '_blank')}><span className="lms-nav-icon">&#9999;</span> Notification Template</button>
+              <button className="lms-nav-item" onClick={() => window.open('/zoosnooz-notification.html', '_blank')}>
+                <span className="lms-nav-icon"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M11.5 2.5l2 2-7.5 7.5H4v-2l7.5-7.5z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/></svg></span> Notification Template
+              </button>
             )}
           </nav>
 
@@ -633,6 +677,10 @@ export default function ClassDetailsScreen() {
                   { key:'behaviour', label:'Method',        icon:'M', avg:avgB, color:'#059669' },
                   { key:'detail',    label:'Accuracy',      icon:'A', avg:avgD, color:'#0284C7' },
                   { key:'writing',   label:'Communication', icon:'C', avg:avgW, color:'#2E7D55' },
+                ] : isPdhpe ? [
+                  { key:'behaviour', label:'Comparison',    icon:'C', avg:avgB, color:'#DC2626' },
+                  { key:'detail',    label:'Understanding', icon:'U', avg:avgD, color:'#7C3AED' },
+                  { key:'writing',   label:'Communication', icon:'W', avg:avgW, color:'#059669' },
                 ] : [
                   { key:'behaviour', label:'Behaviour', icon:'B', avg:avgB, color:'#059669' },
                   { key:'detail',    label:'Detail',    icon:'D', avg:avgD, color:'#0284C7' },
@@ -656,11 +704,17 @@ export default function ClassDetailsScreen() {
                 const lowWPct = obsTotal > 0 ? Math.round(lowW/obsTotal*100) : 0;
                 const stagePrefix = isMaths
                   ? (stage<=2 ? 'Students are building number sense and early maths reasoning.' : stage===3 ? 'Students are developing written maths communication skills.' : stage===5 ? 'Students should construct and explain mathematical arguments clearly.' : 'Students should show their working and explain their mathematical thinking.')
+                  : isPdhpe
+                  ? (stage<=2 ? 'Students are building awareness of their own body and physical activity.' : stage===3 ? 'Students are developing PDHPE vocabulary to describe physiological and wellbeing concepts.' : stage===5 ? 'Students should evaluate physiological responses and wellbeing frameworks using evidence.' : 'Students should apply PDHPE concepts to explain what they observe.')
                   : (stage<=2 ? 'Students are building observation skills.' : stage===3 ? 'Students are developing observation and explanation skills.' : stage===5 ? 'Students should explain their observations using clear reasoning.' : 'Students should describe observations and begin to explain them.');
                 const actions = isMaths ? {
                   behaviour: stage<=2 ? 'Encourage students to write at least one number or calculation they found.' : stage===5 ? 'Help students present working in a clear, logical sequence using correct notation.' : 'Encourage students to show each step of their working clearly.',
                   detail:    stage<=2 ? 'Ask students to include a number with a unit (e.g. 3 steps, 2 kg).' : stage===5 ? 'Prompt students to verify their answer and include appropriate units or notation.' : 'Encourage students to check numbers match the question and include units in all answers.',
                   writing:   stage<=2 ? 'Support students to label their working (e.g. "My answer is…").' : stage===5 ? 'Model structured maths communication: method → calculation → conclusion.' : 'Encourage students to use mathematical vocabulary and write in complete sentences.',
+                } : isPdhpe ? {
+                  behaviour: stage<=2 ? 'Ask students to describe one physical or social behaviour they noticed in the animal.' : stage===5 ? 'Prompt students to connect observations to specific physiological systems (cardiovascular, musculoskeletal, endocrine).' : 'Help students name and describe specific physical or health-related behaviours they observed.',
+                  detail:    stage<=2 ? 'Ask students to name one body part or feeling connected to their observation.' : stage===5 ? 'Encourage students to apply PDHPE frameworks (biopsychosocial model, energy systems, SDT) with evidence.' : 'Prompt students to link observations to a named PDHPE concept (heart rate, cortisol, muscle fibre type).',
+                  writing:   stage<=2 ? 'Help students write a full sentence starting with "I noticed…".' : stage===5 ? 'Model extended PDHPE response: observation → physiological explanation → health implication.' : 'Encourage full sentences with PDHPE vocabulary and an explanatory connector (because, therefore, which means).',
                 } : {
                   behaviour: stage<=2 ? 'Encourage students to say what the animal is doing.' : stage===5 ? 'Help students link observations to scientific concepts.' : 'Help students identify and name specific behaviours at each exhibit.',
                   detail:    stage<=2 ? 'Ask students to add one more thing they noticed.' : stage===5 ? 'Prompt students to include specific evidence and explain significance.' : 'Encourage students to include specific features, sounds, or environmental details.',
@@ -697,8 +751,8 @@ export default function ClassDetailsScreen() {
                     {/* Observation/Maths Radar */}
                     {obsCnt > 0 && (
                       <div style={{ ...nightStyle(), display:'flex', flexDirection:'column', alignItems:'center' }}>
-                        <p style={{ fontSize:'0.72rem', fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'0.5rem', alignSelf:'flex-start' }}>{isMaths ? 'Maths Scores' : 'Writing Scores'}</p>
-                        <RadarSVG avgB={avgB} avgD={avgD} avgW={avgW} dark={false} labels={isMaths ? ['Method','Accuracy','Comms'] : undefined} />
+                        <p style={{ fontSize:'0.72rem', fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'0.5rem', alignSelf:'flex-start' }}>{isMaths ? 'Maths Scores' : isPdhpe ? 'PDHPE Scores' : 'Writing Scores'}</p>
+                        <RadarSVG avgB={avgB} avgD={avgD} avgW={avgW} dark={false} labels={isMaths ? ['Method','Accuracy','Comms'] : isPdhpe ? ['Compare','Understand','Comms'] : undefined} />
                       </div>
                     )}
                     {/* Teaching Takeaways */}
@@ -713,12 +767,12 @@ export default function ClassDetailsScreen() {
                           <div style={{ background:'var(--t-success-bg)', border:'1px solid #BBF7D0', borderRadius:'var(--t-r-md)', padding:'0.9rem 1rem' }}>
                             <p style={{ fontSize:'0.65rem', fontWeight:700, color:'#15803D', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:'0.3rem' }}>Strength</p>
                             <p style={{ fontSize:'0.8rem', fontWeight:700, color:'#14532D', margin:'0 0 0.2rem' }}>{strongest.icon} {strongest.label} ({strongest.avg}/5)</p>
-                            <p style={{ fontSize:'0.72rem', color:'#166534', margin:0, lineHeight:1.4 }}>Students perform well at {isMaths ? (strongest.key === 'behaviour' ? 'showing clear working steps' : strongest.key === 'detail' ? 'including correct numbers and units' : 'structuring responses with maths vocabulary') : (strongest.key === 'behaviour' ? 'identifying what animals do' : strongest.key === 'detail' ? 'using supporting ideas and evidence' : 'constructing clear sentences')}.</p>
+                            <p style={{ fontSize:'0.72rem', color:'#166534', margin:0, lineHeight:1.4 }}>Students perform well at {isMaths ? (strongest.key === 'behaviour' ? 'showing clear working steps' : strongest.key === 'detail' ? 'including correct numbers and units' : 'structuring responses with maths vocabulary') : isPdhpe ? (strongest.key === 'behaviour' ? 'identifying physical and health-related behaviours' : strongest.key === 'detail' ? 'applying PDHPE concepts and terminology' : 'communicating ideas clearly using PDHPE language') : (strongest.key === 'behaviour' ? 'identifying what animals do' : strongest.key === 'detail' ? 'using supporting ideas and evidence' : 'constructing clear sentences')}.</p>
                           </div>
                           <div style={{ background:'var(--t-warning-bg)', border:'1px solid #FED7AA', borderRadius:'var(--t-r-md)', padding:'0.9rem 1rem' }}>
                             <p style={{ fontSize:'0.65rem', fontWeight:700, color:'#C2410C', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:'0.3rem' }}>Focus Area</p>
                             <p style={{ fontSize:'0.8rem', fontWeight:700, color:'#7C2D12', margin:'0 0 0.2rem' }}>{weakest.icon} {weakest.label} ({weakest.avg}/5)</p>
-                            <p style={{ fontSize:'0.72rem', color:'#9A3412', margin:0, lineHeight:1.4 }}>Students need to improve {isMaths ? (weakest.key === 'behaviour' ? 'showing clear working steps' : weakest.key === 'detail' ? 'including correct numbers and units' : 'structuring responses with maths vocabulary') : (weakest.key === 'behaviour' ? 'identifying what animals do' : weakest.key === 'detail' ? 'using supporting ideas and evidence' : 'constructing clear sentences')}.</p>
+                            <p style={{ fontSize:'0.72rem', color:'#9A3412', margin:0, lineHeight:1.4 }}>Students need to improve {isMaths ? (weakest.key === 'behaviour' ? 'showing clear working steps' : weakest.key === 'detail' ? 'including correct numbers and units' : 'structuring responses with maths vocabulary') : isPdhpe ? (weakest.key === 'behaviour' ? 'identifying physical and health-related behaviours' : weakest.key === 'detail' ? 'applying PDHPE concepts and terminology' : 'communicating ideas using PDHPE language') : (weakest.key === 'behaviour' ? 'identifying what animals do' : weakest.key === 'detail' ? 'using supporting ideas and evidence' : 'constructing clear sentences')}.</p>
                           </div>
                         </div>
                         <div style={{ background:'var(--t-info-bg)', border:'1px solid #BFDBFE', borderRadius:'var(--t-r-md)', padding:'0.95rem 1.15rem', marginBottom:'0.75rem' }}>
@@ -750,6 +804,10 @@ export default function ClassDetailsScreen() {
                             [lowBPct, 'of responses showed insufficient working or method'],
                             [lowDPct, 'of responses showed low accuracy (numbers, units or answer)'],
                             [lowWPct, 'of responses lacked clear mathematical communication'],
+                          ] : isPdhpe ? [
+                            [lowBPct, 'of responses lacked specific physical or health-related observation'],
+                            [lowDPct, 'of responses did not apply PDHPE concepts or terminology'],
+                            [lowWPct, 'of responses lacked structured PDHPE communication'],
                           ] : [
                             [lowBPct, 'of responses showed low behaviour identification'],
                             [lowDPct, 'of responses showed low supporting detail'],
@@ -781,9 +839,9 @@ export default function ClassDetailsScreen() {
                 const developing = studentStats.filter(s=>s.avg>=2.5&&s.avg<=3.5);
                 const proficient = studentStats.filter(s=>s.avg>3.5);
                 const groups = [
-                  { key:'support',    label:'Support',    students:support,    bg:'#FEF2F2', border:'#FECACA', labelColor:'#991B1B', tip: isMaths ? 'Work with these students on writing numbers and showing at least one step of working.' : 'Work with these students on identifying behaviour and adding simple detail.' },
-                  { key:'developing', label:'Developing', students:developing, bg:'#FFFBEB', border:'#FDE68A', labelColor:'#92400E', tip: isMaths ? 'Encourage more complete working, correct units, and mathematical vocabulary.' : 'Encourage adding more specific detail and clearer explanations.' },
-                  { key:'proficient', label:'Proficient', students:proficient, bg:'#F0FDF4', border:'#BBF7D0', labelColor:'#14532D', tip: isMaths ? 'Extend by asking students to verify answers, explain their method, and apply maths to new contexts.' : 'Extend by asking students to explain significance and use scientific reasoning.' },
+                  { key:'support',    label:'Support',    students:support,    bg:'#FEF2F2', border:'#FECACA', labelColor:'#991B1B', tip: isMaths ? 'Work with these students on writing numbers and showing at least one step of working.' : isPdhpe ? 'Ask these students to name one body part or health concept connected to what they observed.' : 'Work with these students on identifying behaviour and adding simple detail.' },
+                  { key:'developing', label:'Developing', students:developing, bg:'#FFFBEB', border:'#FDE68A', labelColor:'#92400E', tip: isMaths ? 'Encourage more complete working, correct units, and mathematical vocabulary.' : isPdhpe ? 'Prompt students to name a specific PDHPE concept (heart rate, cortisol, muscle type) and explain how it connects to their observation.' : 'Encourage adding more specific detail and clearer explanations.' },
+                  { key:'proficient', label:'Proficient', students:proficient, bg:'#F0FDF4', border:'#BBF7D0', labelColor:'#14532D', tip: isMaths ? 'Extend by asking students to verify answers, explain their method, and apply maths to new contexts.' : isPdhpe ? 'Challenge these students to apply a PDHPE framework (biopsychosocial model, energy systems, SDT) and evaluate evidence.' : 'Extend by asking students to explain significance and use scientific reasoning.' },
                 ];
                 return (
                   <div style={{ marginBottom:'1rem' }}>
@@ -827,6 +885,10 @@ export default function ClassDetailsScreen() {
                         {title:'Method',color:'#34A85A',bg:'#F4FBF7',desc:'Assesses whether students show their mathematical working.',items:['Numbers, operators, and equations used','Step-by-step working visible in response'],note:'Higher: clear, logical working chain'},
                         {title:'Accuracy',color:'#4A90D9',bg:'#F4F7FB',desc:'Assesses correctness of numbers, units, and answers.',items:['Numbers and measurements present','Correct answer included with appropriate units'],note:'Correct key answer detected = score boost'},
                         {title:'Communication',color:'#E8894A',bg:'#FDF8F4',desc:'Assesses clarity of mathematical expression.',items:['Structured response with labels or steps','Mathematical vocabulary used appropriately'],note:'Higher: well-structured, precise maths language'},
+                      ] : isPdhpe ? [
+                        {title:'Physical Obs',color:'#DC2626',bg:'#FEF2F2',desc:'Assesses whether students identified a relevant physical or health-related behaviour.',items:['Named a physical action or social behaviour','Connected observation to the body or health'],note:'Higher: specific PDHPE-relevant observation with correct terminology'},
+                        {title:'Health Concepts',color:'#7C3AED',bg:'#F5F3FF',desc:'Assesses application of PDHPE knowledge to what they observed.',items:['Named a body system, hormone, or health concept','Explained a physiological or mental health connection'],note:'Higher: accurate, in-depth application of PDHPE frameworks'},
+                        {title:'Communication',color:'#059669',bg:'#F0FDF4',desc:'Assesses clarity and use of PDHPE language.',items:['Full sentences with PDHPE vocabulary','Explanatory language: because, therefore, which means'],note:'Higher: structured, precise PDHPE language throughout'},
                       ] : [
                         {title:'Behaviour',color:'#34A85A',bg:'#F4FBF7',desc:'Assesses what students observe at the exhibit.',items:['Identifying what the animal is doing','Recognising behaviours (feeding, resting, interacting)'],note:'Higher: clear, accurate observations'},
                         {title:'Detail',color:'#4A90D9',bg:'#F4F7FB',desc:'Assesses level of understanding shown.',items:['A clear observation or relevant concept','A simple explanation or link to behaviour'],note:'Students do NOT need all elements for marks'},
@@ -1071,6 +1133,8 @@ export default function ClassDetailsScreen() {
                             <div style={{ display:'flex', gap:'0.75rem', flexWrap:'wrap', alignItems:'center', marginBottom:'0.3rem' }}>
                               {(isMaths
                                 ? [{l:'Method',v:activeScores.bv,c:'#059669'},{l:'Accuracy',v:activeScores.dv,c:'#0284C7'},{l:'Comms',v:activeScores.wv,c:'#2E7D55'}]
+                                : isPdhpe
+                                ? [{l:'Comparison',v:activeScores.bv,c:'#DC2626'},{l:'Understanding',v:activeScores.dv,c:'#7C3AED'},{l:'Comms',v:activeScores.wv,c:'#059669'}]
                                 : [{l:'Behaviour',v:activeScores.bv,c:'#059669'},{l:'Detail',v:activeScores.dv,c:'#0284C7'},{l:'Writing',v:activeScores.wv,c:'#2E7D55'}]
                               ).map(d => (
                                 <span key={d.l} style={{ fontSize:'0.7rem', color:'#666' }}>{d.l}: <strong style={{ color:d.c }}>{d.v}/5</strong></span>
@@ -1082,6 +1146,8 @@ export default function ClassDetailsScreen() {
                               <div style={{ marginTop:'0.5rem', background:'white', borderRadius:'var(--t-r-xs)', padding:'0.7rem 0.85rem', border:'1px solid #E8EDF0' }}>
                                 {(isMaths
                                   ? [{l:'Method',v:activeScores.bv,c:'#059669',rat:obs.rationale?.behaviour,tip:obs.improvementTips?.behaviour},{l:'Accuracy',v:activeScores.dv,c:'#0284C7',rat:obs.rationale?.detail,tip:obs.improvementTips?.detail},{l:'Communication',v:activeScores.wv,c:'#2E7D55',rat:obs.rationale?.writing,tip:obs.improvementTips?.writing}]
+                                  : isPdhpe
+                                  ? [{l:'Comparison',v:activeScores.bv,c:'#DC2626',rat:obs.rationale?.behaviour,tip:obs.improvementTips?.behaviour},{l:'Understanding',v:activeScores.dv,c:'#7C3AED',rat:obs.rationale?.detail,tip:obs.improvementTips?.detail},{l:'Communication',v:activeScores.wv,c:'#059669',rat:obs.rationale?.writing,tip:obs.improvementTips?.writing}]
                                   : [{l:'Behaviour',v:activeScores.bv,c:'#059669',rat:obs.rationale?.behaviour,tip:obs.improvementTips?.behaviour},{l:'Detail',v:activeScores.dv,c:'#0284C7',rat:obs.rationale?.detail,tip:obs.improvementTips?.detail},{l:'Writing',v:activeScores.wv,c:'#2E7D55',rat:obs.rationale?.writing,tip:obs.improvementTips?.writing}]
                                 ).map(d => (
                                   <div key={d.l} style={{ marginBottom:'0.5rem', paddingBottom:'0.5rem', borderBottom:'1px solid #F0F0F0' }}>
@@ -1103,7 +1169,7 @@ export default function ClassDetailsScreen() {
                                     <div style={{ background:'#F9FAFB', borderRadius:'var(--t-r-xs)', padding:'0.65rem 0.75rem', border:'1px solid #E5E7EB' }}>
                                       <p style={{ fontSize:'0.7rem', fontWeight:700, color:'#374151', margin:'0 0 0.4rem' }}>Override Scores</p>
                                       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'0.4rem', marginBottom:'0.4rem' }}>
-                                        {(isMaths ? [['b','Met'],['d','Acc'],['w','Com']] : [['b','Beh'],['d','Det'],['w','Wri']]).map(([key,lbl]) => (
+                                        {(isMaths ? [['b','Met'],['d','Acc'],['w','Com']] : isPdhpe ? [['b','Cmp'],['d','Und'],['w','Com']] : [['b','Beh'],['d','Det'],['w','Wri']]).map(([key,lbl]) => (
                                           <div key={key}>
                                             <label style={{ fontSize:'0.62rem', color:'#6B7280', display:'block', marginBottom:'0.1rem' }}>{lbl}</label>
                                             <select value={form[key]??''} onChange={e=>setOverrideForms(p=>({...p,[bKey]:{...p[bKey],[key]:e.target.value}}))} style={{ width:'100%', padding:'0.22rem 0.3rem', borderRadius:'4px', border:'1px solid #D1D5DB', fontSize:'0.75rem', background:'white' }}>

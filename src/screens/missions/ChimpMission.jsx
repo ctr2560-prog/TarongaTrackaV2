@@ -67,7 +67,7 @@ export default function ChimpMission() {
               <p style={{ color:'#333', fontSize:'clamp(0.9rem,2vh,1.1rem)', lineHeight:1.5, fontWeight:500 }}>💡 {fact}</p>
             </div>
           )}
-          <button onClick={() => { if (isCorrect) { if (classSubject === 'maths') setMissionContext({ type: 'chimp-behaviour', resting: graph.resting, feeding: graph.feeding, moving: graph.moving }); handleNextQuestion(1); } else { setIsProcessingAnswer(false); setShowResult(false); } }}
+          <button onClick={() => { if (isCorrect) { setMissionContext({ type: 'chimp-behaviour', resting: graph.resting, feeding: graph.feeding, moving: graph.moving }); handleNextQuestion(1); } else { setIsProcessingAnswer(false); setShowResult(false); } }}
             style={{ background: isCorrect ? 'linear-gradient(135deg,var(--t-eucalyptus),var(--t-mid))' : 'linear-gradient(135deg,#DC2626,#991B1B)', color:'white', border:'none', padding:'clamp(0.8rem,2vh,1.2rem) clamp(2rem,5vw,3rem)', fontSize:'clamp(1rem,2.5vh,1.3rem)', fontWeight:700, borderRadius:'var(--t-r-pill)', cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.05em', marginTop:'0.5rem' }}>
             {isCorrect ? 'Continue to Observation →' : 'Try Again'}
           </button>

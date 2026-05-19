@@ -1,4 +1,5 @@
 import { MATHS_ANIMALS } from '../data/animalsMaths';
+import { PDHPE_ANIMALS } from '../data/animalsPdhpe';
 
 export const normaliseCode = (code) =>
   code.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 6);
@@ -60,6 +61,9 @@ export function getStageQuestions(animal, classStage, classSubject) {
   if (classSubject === 'maths' && animal) {
     const mathsData = MATHS_ANIMALS[animal.id];
     questions = mathsData ? mathsData.questions : animal.questions;
+  } else if (classSubject === 'pdhpe' && animal) {
+    const pdhpeData = PDHPE_ANIMALS[animal.id];
+    questions = pdhpeData ? pdhpeData.questions : animal.questions;
   } else {
     questions = (animal && animal.questions) ? animal.questions : [];
   }
@@ -78,7 +82,16 @@ export function getMathsObservationData(animalId, classStage) {
   const data = MATHS_ANIMALS[animalId];
   if (!data) return null;
   return {
-    prompt:          data.writingPromptByStage?.[classStage] || data.observationPrompt || '',
+    prompt:            data.writingPromptByStage?.[classStage] || data.observationPrompt || '',
+    observationPrompt: data.observationPrompt || '',
+  };
+}
+
+export function getPdhpeObservationData(animalId, classStage) {
+  const data = PDHPE_ANIMALS[animalId];
+  if (!data) return null;
+  return {
+    prompt:            data.writingPromptByStage?.[classStage] || data.observationPrompt || '',
     observationPrompt: data.observationPrompt || '',
   };
 }

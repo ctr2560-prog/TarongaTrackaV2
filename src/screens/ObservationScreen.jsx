@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { useStudent } from '../context/StudentContext';
-import { getStageScaffoldTip, getMinWords, getMathsObservationData } from '../utils/helpers';
+import { getStageScaffoldTip, getMinWords, getMathsObservationData, getPdhpeObservationData } from '../utils/helpers';
 import MathsCalculator from '../components/MathsCalculator';
 
 // Per-animal heading / chip / bullet config for stage 3+
@@ -424,6 +424,129 @@ const MATHS_OBS_CONFIG = {
   },
 };
 
+const PDHPE_OBS_CONFIG = {
+  'chimpanzee': {
+    heading: 'Chimp Lifestyle vs. Yours',
+    chips: [{ label:'Physical Activity', color:'#059669' },{ label:'Sleep', color:'#7C3AED' },{ label:'Social Time', color:'#0284C7' },{ label:'Time Outdoors', color:'#D97706' }],
+    hintsByStage: {
+      3: ['Describe one similarity between chimp habits and healthy human habits', 'Describe one difference you noticed in the comparison chart', 'Suggest one chimp habit you could adopt to improve your own health'],
+      4: ['For two lifestyle habits from the chart, explain how each addresses a determinant of health', 'Evaluate whether your own habits support or undermine each determinant', 'Use PDHPE terminology (e.g. determinants of health, health behaviours)'],
+      5: ['Apply the biopsychosocial model to two chimp lifestyle behaviours', 'Explain how each addresses a determinant of health', 'Propose one evidence-based lifestyle change for adolescents based on what chimp habits suggest'],
+    },
+    starters: ['I noticed that chimpanzees…', 'One similarity between my habits and the chimp is…', 'A healthy habit I could adopt is…'],
+  },
+  'gorilla': {
+    heading: 'Nutrition and Healthy Eating',
+    chips: [{ label:'Food variety', color:'#059669' },{ label:'Nutrients', color:'#D97706' },{ label:'Food groups', color:'#0284C7' },{ label:'Healthy diet', color:'#7C3AED' }],
+    hintsByStage: {
+      3: ['Name two types of food the gorilla eats', 'Name two food groups and what they do for the body', 'Explain why eating a variety of foods matters for health'],
+      4: ['Name two food groups and describe the key nutrients each provides', 'Explain the role those nutrients play in keeping the body healthy', 'Use the gorilla\'s diet as an example in your answer'],
+      5: ['Name specific nutrients (fibre, vitamins, minerals, plant protein) and explain their physiological roles', 'Evaluate how the gorilla\'s diet compares to adolescent dietary guidelines', 'Discuss at least two health outcomes supported by the gorilla\'s diet'],
+    },
+    starters: ['Gorillas eat…', 'Eating a variety of foods is important because…', 'The gorilla\'s diet shows that…'],
+  },
+  'lion': {
+    heading: 'Energy Systems & Recovery',
+    chips: [{ label:'ATP-PC system', color:'#DC2626' },{ label:'Aerobic / Anaerobic', color:'#059669' },{ label:'BMR', color:'#0284C7' },{ label:'Recovery', color:'#7C3AED' }],
+    hintsByStage: {
+      3: ['Name the energy system used in a 6-second sprint', 'Explain what BMR means and why it matters for health', 'Give 2 reasons why rest and recovery are important after exercise'],
+      4: ['Explain the ATP-PC (phosphocreatine) system and its duration (~10 seconds)', 'Describe how phosphocreatine is replenished during aerobic recovery (3–5 minutes)', 'Link the lion\'s rest-to-activity ratio to human training recovery principles'],
+      5: ['Compare ATP-PC, glycolytic, and oxidative energy systems with durations and fuel sources', 'Evaluate how sleep supports growth hormone secretion and physical recovery', 'Apply BMR and energy conservation principles to elite athletic performance'],
+    },
+    starters: ['The lion uses the ATP-PC system when…', 'Recovery is important because…', 'The aerobic system replenishes…'],
+  },
+  'giraffe': {
+    heading: 'Cardiovascular System',
+    chips: [{ label:'Heart rate', color:'#DC2626' },{ label:'Blood pressure', color:'#059669' },{ label:'Stroke volume', color:'#0284C7' },{ label:'Cardiac output', color:'#7C3AED' }],
+    hintsByStage: {
+      3: ['Measure your resting heart rate (count pulse for 15 s × 4)', 'Explain why the giraffe needs a larger, more powerful heart than a human', 'Define heart rate and explain what happens to it during exercise'],
+      4: ['Use the formula: Cardiac output (CO) = Heart Rate × Stroke Volume', 'Explain why giraffe blood pressure (~280/180 mmHg) is double a human\'s', 'Describe how aerobic exercise increases stroke volume over time'],
+      5: ['Evaluate how left ventricular hypertrophy (caused by aerobic training) increases stroke volume', 'Compare giraffe cardiovascular adaptations to athlete\'s heart syndrome in elite endurance athletes', 'Analyse how cardiac output responds to increasing exercise intensity'],
+    },
+    starters: ['My resting heart rate is…', 'Cardiac output is calculated as…', 'Left ventricular hypertrophy means…'],
+  },
+  'tiger': {
+    heading: 'Muscle Fibres & Wellbeing',
+    chips: [{ label:'Fast-twitch', color:'#DC2626' },{ label:'Slow-twitch', color:'#059669' },{ label:'Stress & cortisol', color:'#7C3AED' },{ label:'Enrichment', color:'#0284C7' }],
+    hintsByStage: {
+      3: ['Describe Type I (slow-twitch) and Type II (fast-twitch) muscle fibres', 'Identify which type the tiger uses for sprinting vs stalking', 'Explain how enrichment activities reduce stress in captive animals (and humans)'],
+      4: ['Compare fast-twitch (Type IIx) and slow-twitch (Type I) fibres: recruitment, fatigue, fuel', 'Explain how chronic stress elevates cortisol via the HPA axis', 'Link environmental enrichment to reduced cortisol and improved psychological wellbeing'],
+      5: ['Evaluate the role of muscle fibre type composition in athletic specialisation', 'Analyse how captive stress (elevated cortisol) affects physical health (immune suppression, muscle breakdown)', 'Apply the concept of psychological safety and environmental enrichment to human mental health'],
+    },
+    starters: ['Fast-twitch muscle fibres are used for…', 'The HPA axis responds to stress by…', 'Environmental enrichment reduces cortisol because…'],
+  },
+  'koala': {
+    heading: 'Sleep, Recovery & Metabolism',
+    chips: [{ label:'Sleep stages', color:'#7C3AED' },{ label:'Growth hormone', color:'#059669' },{ label:'BMR', color:'#0284C7' },{ label:'Recovery', color:'#DC2626' }],
+    hintsByStage: {
+      3: ['Explain why teenagers need 8–10 hours of sleep for physical recovery', 'Name 2 things the body does during sleep to repair and grow', 'Explain what BMR (basal metabolic rate) means'],
+      4: ['Describe the role of slow-wave (NREM) sleep in growth hormone secretion and muscle repair', 'Explain how sleep deprivation raises cortisol and impairs metabolic function', 'Link koala sleep requirements to human recovery needs after exercise'],
+      5: ['Evaluate the two primary sleep phases (NREM and REM) and their distinct physiological roles', 'Analyse how chronic sleep deprivation affects HPA axis activity, immune function, and athletic performance', 'Assess the relationship between sleep quality, metabolic rate, and mental health'],
+    },
+    starters: ['During slow-wave sleep, the body…', 'Growth hormone is released when…', 'Sleep deprivation affects cortisol because…'],
+  },
+  'dingo': {
+    heading: 'Aerobic Fitness & Heart Rate Zones',
+    chips: [{ label:'VO2 max', color:'#DC2626' },{ label:'Target heart rate', color:'#059669' },{ label:'Aerobic training', color:'#0284C7' },{ label:'MHR formula', color:'#7C3AED' }],
+    hintsByStage: {
+      3: ['Calculate your maximum heart rate: 220 − your age', 'Calculate your moderate aerobic zone: 60–80% of your MHR', 'Explain what happens to your heart and lungs during sustained aerobic exercise'],
+      4: ['Define VO2 max and explain why it measures aerobic fitness', 'Calculate aerobic heart rate zones for a 14-year-old (MHR = 206, zones at 60%, 70%, 80%)', 'Describe 2 cardiovascular adaptations that result from regular aerobic training'],
+      5: ['Evaluate VO2 max as a predictor of cardiovascular health and endurance performance', 'Analyse the cardiovascular adaptations of aerobic training (stroke volume, cardiac output, capillary density)', 'Design a 4-week aerobic training program using heart rate zone progression for a beginner'],
+    },
+    starters: ['My maximum heart rate is…', 'VO2 max measures…', 'Regular aerobic training causes…'],
+  },
+  'lemur': {
+    heading: 'Belonging, Identity & Wellbeing',
+    chips: [{ label:'Oxytocin', color:'#7C3AED' },{ label:'Belonging', color:'#059669' },{ label:'Social health', color:'#0284C7' },{ label:'Identity', color:'#DC2626' }],
+    hintsByStage: {
+      3: ['Describe 2 social behaviours you observed in the lemurs', 'Explain how belonging to a group affects mental health', 'Name the hormone released during positive social contact that reduces stress'],
+      4: ['Explain the role of oxytocin in social bonding and cortisol reduction', 'Link the lemur\'s social grooming to human social determinants of mental health', 'Describe how identity and belonging contribute to psychological wellbeing'],
+      5: ['Apply the biopsychosocial model to explain how social belonging affects physical and mental health', 'Evaluate the research linking social isolation to health outcomes (e.g. Holt-Lunstad 2015)', 'Analyse how identity formation during adolescence interacts with sense of belonging and wellbeing'],
+    },
+    starters: ['The lemurs I observed were…', 'Oxytocin is released when…', 'Belonging to a group supports wellbeing because…'],
+  },
+  'sea-lion': {
+    heading: 'Respiratory & Cardiovascular Systems',
+    chips: [{ label:'Heart rate', color:'#DC2626' },{ label:'Haemoglobin', color:'#059669' },{ label:'Dive reflex', color:'#0284C7' },{ label:'Aerobic capacity', color:'#7C3AED' }],
+    hintsByStage: {
+      3: ['Measure your resting heart rate (15 s × 4)', 'Explain how exercise changes your breathing rate and why', 'Describe what happens to heart rate during the mammalian dive reflex'],
+      4: ['Explain the role of haemoglobin in oxygen transport to working muscles', 'Describe how the mammalian dive reflex (bradycardia, vasoconstriction) conserves oxygen', 'Explain why cardiovascular and respiratory systems are interdependent during sustained exercise'],
+      5: ['Evaluate how the cardiovascular and respiratory systems work together during sustained aerobic exercise', 'Analyse how aerobic training increases haemoglobin concentration, stroke volume, and VO2 max', 'Compare the sea lion\'s physiological adaptations for diving to elite human free-divers'],
+    },
+    starters: ['My resting heart rate is…', 'Haemoglobin transports…', 'The respiratory and cardiovascular systems work together because…'],
+  },
+  'asian-water-buffalo': {
+    heading: 'Musculoskeletal Health',
+    chips: [{ label:'Bone density', color:'#DC2626' },{ label:'Muscle hypertrophy', color:'#059669' },{ label:'Type I / II fibres', color:'#0284C7' },{ label:'Resistance training', color:'#7C3AED' }],
+    hintsByStage: {
+      3: ['Name 3 muscle groups you can observe on the buffalo', 'Explain 2 ways regular physical activity strengthens bones', 'Describe the difference between muscular strength and muscular endurance'],
+      4: ['Compare Type I (slow-twitch, endurance) and Type II (fast-twitch, power) muscle fibres', 'Explain how resistance training increases bone mineral density via mechanical loading', 'Describe progressive overload and how it causes muscle hypertrophy'],
+      5: ['Evaluate how resistance training causes adaptations in bone density (osteoblasts), muscle hypertrophy, and connective tissue strength', 'Analyse the role of mechanical loading signals in bone remodelling (Wolff\'s Law)', 'Compare the musculoskeletal adaptations of a working buffalo to a resistance-trained human athlete'],
+    },
+    starters: ['The buffalo\'s major muscle groups include…', 'Resistance training increases bone density because…', 'Type I fibres are used for…'],
+  },
+  'blue-mountains-bushwalk': {
+    heading: 'Exercise Physiology & Nature Therapy',
+    chips: [{ label:'Heart rate', color:'#DC2626' },{ label:'Aerobic exercise', color:'#059669' },{ label:'Cortisol & nature', color:'#7C3AED' },{ label:'Wellbeing', color:'#0284C7' }],
+    hintsByStage: {
+      3: ['Record your heart rate before and after a brisk walk (15 s × 4)', 'Calculate the increase and explain why it happened', 'Identify 2 mental health benefits of spending time in nature'],
+      4: ['Calculate your target aerobic heart rate zone (60–80% of 220 − age)', 'Explain how aerobic exercise affects cardiovascular and respiratory systems', 'Describe how nature exposure reduces cortisol and supports mental wellbeing'],
+      5: ['Evaluate the physiological response to aerobic exercise (cardiac output, respiratory rate, VO2)', 'Analyse Attention Restoration Theory (ART) and stress reduction theory as explanations for nature therapy effects', 'Assess how regular bush walking supports both physical fitness and psychological resilience'],
+    },
+    starters: ['My heart rate before walking was…', 'Aerobic exercise causes…', 'Nature therapy research shows…'],
+  },
+  'concert-lawn': {
+    heading: 'Physical Activity & Lifelong Health',
+    chips: [{ label:'Heart rate', color:'#DC2626' },{ label:'Intrinsic motivation', color:'#7C3AED' },{ label:'Active lifestyle', color:'#059669' },{ label:'Wellbeing', color:'#0284C7' }],
+    hintsByStage: {
+      3: ['Take your heart rate before and after 2 minutes of activity', 'List 3 physical health benefits of regular moderate exercise', 'Explain how enjoying physical activity helps people stay active lifelong'],
+      4: ['Calculate your heart rate as a % of maximum (220 − age) before and after activity', 'Explain how intrinsic motivation (enjoyment, choice) supports lifelong physical activity habits', 'Describe the mental health benefits of regular recreational physical activity'],
+      5: ['Apply Self-Determination Theory (autonomy, competence, relatedness) to explain why enjoyable physical activity supports lifelong participation', 'Evaluate the physical and mental health benefits of regular moderate aerobic activity (150 min/week recommendation)', 'Design a sustainable physical activity plan that supports both physiological health and psychological wellbeing'],
+    },
+    starters: ['My heart rate increased from…', 'Intrinsic motivation means…', 'Regular physical activity supports health because…'],
+  },
+};
+
 export default function ObservationScreen() {
   const { classStage, classSubject } = useApp();
   const { currentAnimal, observation, setObservation, submitObservation, missionContext } = useStudent();
@@ -503,17 +626,23 @@ export default function ObservationScreen() {
 
   useEffect(() => () => stopCamera(), []);
 
-  const isMaths = classSubject === 'maths';
+  const isMaths  = classSubject === 'maths';
+  const isPdhpe  = classSubject === 'pdhpe';
   const mathsData = isMaths ? getMathsObservationData(animalId, classStage) : null;
-  const cfg    = isMaths ? (MATHS_OBS_CONFIG[animalId] || OBS_CONFIG[animalId]) : OBS_CONFIG[animalId];
-  const prompt = isMaths
-    ? (mathsData?.prompt || '')
-    : ((currentAnimal?.writingPromptByStage?.[classStage]) || currentAnimal?.observationPrompt || '');
+  const pdhpeData = isPdhpe ? getPdhpeObservationData(animalId, classStage) : null;
+  const cfg    = isMaths  ? (MATHS_OBS_CONFIG[animalId] || OBS_CONFIG[animalId])
+               : isPdhpe  ? (PDHPE_OBS_CONFIG[animalId] || OBS_CONFIG[animalId])
+               : OBS_CONFIG[animalId];
+  const prompt = isMaths  ? (mathsData?.prompt || '')
+               : isPdhpe  ? (pdhpeData?.prompt || '')
+               : ((currentAnimal?.writingPromptByStage?.[classStage]) || currentAnimal?.observationPrompt || '');
   const tip    = getStageScaffoldTip(classStage);
 
   // Placeholder text
   const placeholder = isMaths
     ? (classStage <= 2 ? 'I calculated…' : classStage === 5 ? 'Based on my calculations…' : 'I calculated that…')
+    : isPdhpe
+    ? (classStage <= 2 ? 'I noticed…' : classStage === 5 ? 'Based on my observation and knowledge of PDHPE…' : 'I observed that…')
     : classStage <= 2
     ? 'I saw…'
     : classStage === 5
@@ -549,8 +678,41 @@ export default function ObservationScreen() {
     'blue-mountains-bushwalk': ['Count on your fingers', 'Which category had the most?'],
   };
 
-  const s1q    = isMaths ? (mathsS1Q[animalId] || 'What number or measurement did you record?') : (S1_QUESTIONS[animalId] || 'What did you see?');
-  const s1cues = isMaths ? (mathsS1Cues[animalId] || ['What did you calculate?', 'Show your working.']) : (S1_CUES[animalId] || ['What did you see?','What was it doing?']);
+  const pdhpeS1Q = {
+    'chimpanzee':          'Look at the comparison chart. Which chimp habit do you think is most important for health?',
+    'gorilla':             'What did you feed the gorillas in the game? Can you name one of those foods?',
+    'lion':                'Is the lion resting or moving right now?',
+    'giraffe':             'Can you feel your own heartbeat?',
+    'tiger':               'Does the tiger move fast or slow?',
+    'koala':               'Is the koala awake or asleep?',
+    'dingo':               'How does the dingo move around?',
+    'lemur':               'Are the lemurs together or alone?',
+    'sea-lion':            'Watch the sea lion — is it swimming or resting?',
+    'asian-water-buffalo': 'Which parts of the buffalo look the most muscular?',
+    'blue-mountains-bushwalk': 'How does your body feel after walking?',
+    'concert-lawn':        'How does your body feel after being active on the grass?',
+  };
+  const pdhpeS1Cues = {
+    'chimpanzee':          ['Think about physical activity, sleep, or time outdoors', 'Which habit could help YOUR health the most?'],
+    'gorilla':             ['Was it leaves, bamboo, fruit or termites?', 'Which one do YOU eat too?'],
+    'lion':                ['How long has it been resting?', 'Why do you think it needs so much rest?'],
+    'giraffe':             ['Put your hand on your chest', 'Count how many times it beats in 10 seconds'],
+    'tiger':               ['Is it sneaking slowly or pacing quickly?', 'What muscles can you see moving?'],
+    'koala':               ['How many hours might it sleep?', 'Do YOU feel better after a good sleep?'],
+    'dingo':               ['Is it walking, trotting, or running?', 'Does it look tired or energetic?'],
+    'lemur':               ['Count how many are in the group', 'Are they touching each other or staying apart?'],
+    'sea-lion':            ['Count how many times it surfaces to breathe', 'Does it look comfortable in the water?'],
+    'asian-water-buffalo': ['Point to where you think the biggest muscles are', 'Do you think it is strong or fast?'],
+    'blue-mountains-bushwalk': ['Is your heart beating faster?', 'Take a deep breath — how does it feel?'],
+    'concert-lawn':        ['Is your heart beating faster?', 'Do you feel warm or energetic?'],
+  };
+
+  const s1q    = isMaths  ? (mathsS1Q[animalId]    || 'What number or measurement did you record?')
+               : isPdhpe  ? (pdhpeS1Q[animalId]    || 'What did you observe about this animal\'s body or behaviour?')
+               : (S1_QUESTIONS[animalId] || 'What did you see?');
+  const s1cues = isMaths  ? (mathsS1Cues[animalId]  || ['What did you calculate?', 'Show your working.'])
+               : isPdhpe  ? (pdhpeS1Cues[animalId]  || ['Describe one thing you noticed', 'How does it connect to your own body?'])
+               : (S1_CUES[animalId] || ['What did you see?','What was it doing?']);
   const chipsList = isMaths ? [
     { label:'Show working', color:'var(--jungle-light)' },
     { label:'Use numbers', color:'var(--discovery-blue)' },
@@ -724,7 +886,7 @@ export default function ObservationScreen() {
                   <div key={i} style={{ background:`${chip.color}12`, border:`1.5px solid ${chip.color}35`, borderRadius:'var(--t-r-pill)', padding:'0.35rem 0.8rem', fontSize:'0.8rem', fontWeight:600, color:chip.color }}>{chip.label}</div>
                 ))}
               </div>
-              {classStage >= 4 && <p style={{ fontSize:'0.82rem', color:'#aaa', marginBottom:'1rem', textAlign:'center', fontStyle:'italic' }}>{isMaths ? 'Show your full working and include units.' : 'Use specific evidence from your observation.'}</p>}
+              {classStage >= 4 && <p style={{ fontSize:'0.82rem', color:'#aaa', marginBottom:'1rem', textAlign:'center', fontStyle:'italic' }}>{isMaths ? 'Show your full working and include units.' : isPdhpe ? 'Use PDHPE terminology and connect your observation to a body system or health concept.' : 'Use specific evidence from your observation.'}</p>}
               {animalId === 'blue-mountains-bushwalk' && bushwalkTimerDone && isMaths && (() => {
                 const maxCount = Math.max(...SOUND_CATEGORIES.map(c => soundTally[c.key]));
                 return (
@@ -758,8 +920,8 @@ export default function ObservationScreen() {
             </>
           )}
 
-          {/* Maths: chimp behaviour data summary */}
-          {isMaths && animalId === 'chimpanzee' && missionContext?.type === 'chimp-behaviour' && (
+          {/* Chimp behaviour data summary (maths + PDHPE) */}
+          {(isMaths || isPdhpe) && animalId === 'chimpanzee' && missionContext?.type === 'chimp-behaviour' && (
             <div style={{ background:'linear-gradient(135deg,#F0F7F0,#E8F4E8)', border:'1.5px solid rgba(46,125,85,0.25)', borderRadius:'var(--t-r-md)', padding:'0.85rem 1rem', marginBottom:'0.75rem' }}>
               <p style={{ fontSize:'0.72rem', fontWeight:800, color:'#2E7D55', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:'0.5rem' }}>📊 Your Behaviour Data</p>
               <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'0.5rem', marginBottom:'0.5rem' }}>
@@ -783,6 +945,7 @@ export default function ObservationScreen() {
                 const topLabel = allEqual ? 'All equal' : labels[tops.indexOf(max)];
                 return <p style={{ fontSize:'0.75rem', color:'#444', margin:0, fontWeight:600 }}>Most common: <span style={{ color:'#2E7D55' }}>{topLabel}{!allEqual ? ` (${max}%)` : ''}</span></p>;
               })()}
+              {isPdhpe && <p style={{ fontSize:'0.75rem', color:'#444', fontWeight:600, margin:'0.4rem 0 0' }}>Use this graph to compare the chimp's lifestyle with your own in your response below.</p>}
             </div>
           )}
 
@@ -846,7 +1009,36 @@ export default function ObservationScreen() {
               </div>
             );
           })()}
-          {classStage > 2 && !isMaths && (
+          {classStage > 2 && isPdhpe && (() => {
+            const hints = cfg?.hintsByStage?.[classStage] || cfg?.hintsByStage?.[3] || [];
+            return (
+              <div style={{ marginTop:'0.75rem' }}>
+                <button
+                  onClick={() => setHintsOpen(o => !o)}
+                  style={{ width:'100%', display:'flex', justifyContent:'space-between', alignItems:'center', background:'#FAF5FF', border:'1px solid #E9D5FF', borderRadius: hintsOpen ? '10px 10px 0 0' : '10px', padding:'0.7rem 1rem', cursor:'pointer', color:'#7C3AED', fontWeight:700, fontSize:'0.82rem', textAlign:'left' }}>
+                  <span>Need a hint?</span>
+                  <span style={{ fontSize:'0.7rem' }}>{hintsOpen ? '▲' : '▼'}</span>
+                </button>
+                {hintsOpen && (
+                  <div style={{ background:'#FAF5FF', border:'1px solid #E9D5FF', borderTop:'none', borderRadius:'0 0 10px 10px', padding:'0.75rem 1rem' }}>
+                    {hints.length > 0 && (
+                      <>
+                        <p style={{ fontSize:'0.72rem', fontWeight:700, color:'#7C3AED', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:'0.35rem' }}>Your response should include:</p>
+                        <ul style={{ margin:'0 0 0.6rem', paddingLeft:'1.1rem', fontSize:'0.8rem', color:'#555', lineHeight:1.8 }}>
+                          {hints.map((h, i) => <li key={i}>{h}</li>)}
+                        </ul>
+                      </>
+                    )}
+                    <p style={{ fontSize:'0.73rem', fontWeight:600, color:'#7C3AED', marginBottom:'0.2rem' }}>Sentence starters:</p>
+                    {(cfg?.starters || tip.starters).map((s, i) => (
+                      <p key={i} style={{ fontSize:'0.75rem', color:'#555', margin:'0.1rem 0', paddingLeft:'0.5rem', fontStyle:'italic' }}>"{s}"</p>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+          {classStage > 2 && !isMaths && !isPdhpe && (
             <div style={{ background:'#F7FAF8', border:'1px solid #D4E8DC', borderRadius:'var(--t-r-md)', padding:'0.9rem 1.1rem', marginTop:'0.75rem' }}>
               {cfg?.bullets?.length > 0 ? (
                 <>

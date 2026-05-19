@@ -3,6 +3,7 @@ import { collection, doc, onSnapshot, getDocs, getDoc, runTransaction, serverTim
 import { db } from '../firebase';
 import { useApp } from '../context/AppContext';
 import LegalModal from '../components/LegalModal';
+import { openTeacherInfoSheet } from '../utils/teacherInfoSheet';
 
 const WILDLY_PHRASES = ['Wildly by Taronga', 'Continue the learning', 'Resources', 'Programs', 'Assessments'];
 
@@ -34,6 +35,106 @@ function generateClassCode() {
   for (let i = 0; i < 6; i++) code += chars.charAt(Math.floor(Math.random() * chars.length));
   return code;
 }
+
+// NSW Curriculum outcomes relevant to Taronga Tracka zoo-based learning
+const NSW_OUTCOMES = {
+  pdhpe: {
+    syllabus: { '1':'PDHPE K–6 (2024)', '2':'PDHPE K–6 (2024)', '3':'PDHPE K–6 (2024)', '4':'PDHPE 7–10 (2024)', '5':'PDHPE 7–10 (2024)' },
+    1: [
+      { code:'PH1-MSP-01', desc:'Demonstrates fundamental movement skills and fair play in physical activities' },
+      { code:'PH1-IHW-01', desc:'Describes factors that contribute to identity, health and wellbeing' },
+      { code:'PH1-SMI-01', desc:'Describes and demonstrates self-management and interpersonal skills in a range of contexts' },
+    ],
+    2: [
+      { code:'PH2-MSP-01', desc:'Applies movement skills, strategies and teamwork in physical activities' },
+      { code:'PH2-IHW-01', desc:'Explains how related factors influence identity, health and wellbeing' },
+      { code:'PH2-SMI-01', desc:'Explains and applies self-management and interpersonal skills in a range of contexts' },
+    ],
+    3: [
+      { code:'PH3-MSP-01', desc:'Refines and applies movement skills, strategies and collaboration in physical activities' },
+    ],
+    4: [
+      { code:'PH4-MSS-01', desc:'Transfers movement skills and concepts for use in a range of dynamic movement environments' },
+      { code:'PH4-SHP-01', desc:'Plans for and uses strategies to participate in activities that encourage safety, health and lifelong physical activity' },
+      { code:'PH4-SHW-01', desc:'Assesses the influence of contextual factors on attitudes and behaviours to propose strategies that enhance safety, health and wellbeing' },
+      { code:'PH4-IBC-01', desc:'Investigates and explains factors that shape identity and sense of belonging' },
+      { code:'PH4-SMI-01', desc:'Refines and applies self-management and interpersonal skills to manage complex situations' },
+    ],
+    5: [
+      { code:'PH5-MSS-01', desc:'Refines and transfers movement skills and concepts for adaptation in a range of dynamic movement environments' },
+      { code:'PH5-SHP-01', desc:'Designs, implements and evaluates plans to enhance safety, health and participation in lifelong physical activity' },
+      { code:'PH5-SHW-01', desc:'Analyses the interrelationship between contextual factors, attitudes and behaviours to promote safety, health and wellbeing' },
+      { code:'PH5-IBC-01', desc:'Analyses how identity and a sense of belonging contribute to the health and wellbeing of individuals and communities' },
+      { code:'PH5-SMI-01', desc:'Evaluates and adapts self-management and interpersonal skills to manage complex situations' },
+    ],
+  },
+  science: {
+    syllabus: { '1':'Science & Technology K–6 (2017)', '2':'Science & Technology K–6 (2017)', '3':'Science & Technology K–6 (2017)', '4':'Science 7–10 (2023)', '5':'Science 7–10 (2023)' },
+    1: [
+      { code:'ST1-1WS-S',  desc:'Observes, questions and collects data to communicate and compare ideas' },
+      { code:'ST1-4LW-S',  desc:'Describes the behaviours and needs of living things and the features of their environment that help them survive' },
+      { code:'ST1-2DP-T',  desc:'Uses materials, tools and equipment to develop solutions' },
+    ],
+    2: [
+      { code:'ST2-1WS-S',  desc:'Conducts investigations by observing, questioning, planning, predicting, testing and communicating' },
+      { code:'ST2-4LW-S',  desc:'Compares features of living things and examines how environments affect living things' },
+      { code:'ST2-5WT-T',  desc:'Selects and uses materials, tools and equipment to design and create solutions' },
+    ],
+    3: [
+      { code:'ST3-1WS-S',  desc:'Plans and conducts scientific investigations to answer questions or solve problems' },
+      { code:'ST3-4LW-S',  desc:'Examines the role of living things in the environment and the effect of environmental change' },
+      { code:'ST3-5WT-T',  desc:'Applies design processes and selects appropriate materials, tools and equipment' },
+    ],
+    4: [
+      { code:'SC4-WS-01',  desc:'Uses scientific tools and instruments for observations' },
+      { code:'SC4-WS-05',  desc:'Uses a variety of ways to process and represent data' },
+      { code:'SC4-WS-06',  desc:'Uses data to identify trends, patterns and relationships, and draw conclusions' },
+      { code:'SC4-WS-08',  desc:'Communicates scientific concepts and ideas using a range of communication forms' },
+      { code:'SC4-CLS-01', desc:'Describes the unique features of cells in living things and how structural features can be used to classify organisms' },
+      { code:'SC4-LIV-01', desc:'Describes the role, structure and function of a range of living systems and their components' },
+    ],
+    5: [
+      { code:'SC5-WS-01',  desc:'Selects and uses scientific tools and instruments for accurate observations' },
+      { code:'SC5-WS-06',  desc:'Analyses data from investigations to identify trends, patterns and relationships, and draws conclusions' },
+      { code:'SC5-WS-08',  desc:'Communicates scientific arguments with evidence, using scientific language and terminology in a range of communication forms' },
+      { code:'SC5-ENV-01', desc:'Analyses the impact of human activity on the natural world' },
+      { code:'SC5-GEV-01', desc:'Describes the relationship between the diversity of living things and the theory of evolution' },
+    ],
+  },
+  maths: {
+    syllabus: { '1':'Mathematics K–10 (2022)', '2':'Mathematics K–10 (2022)', '3':'Mathematics K–10 (2022)', '4':'Mathematics K–10 (2022)', '5':'Mathematics K–10 (2022)' },
+    1: [
+      { code:'MAO-WM-01',   desc:'Develops understanding and fluency by exploring and connecting mathematical concepts and communicating thinking' },
+      { code:'MA1-DATA-01', desc:'Gathers and organises data, displays data in lists, tables and picture graphs, and interprets results' },
+      { code:'MA1-GM-01',   desc:'Describes and compares lengths and distances using uniform informal units, metres and centimetres' },
+    ],
+    2: [
+      { code:'MAO-WM-01',   desc:'Applies mathematical reasoning and communicates thinking when solving problems' },
+      { code:'MA2-DATA-01', desc:'Collects discrete data and constructs graphs using a given scale' },
+      { code:'MA2-MR-01',   desc:'Represents and uses the structure of multiplicative relations to 10 × 10 to solve problems' },
+      { code:'MA2-GM-01',   desc:'Estimates, measures and compares lengths, distances and perimeters in metres, centimetres and millimetres' },
+    ],
+    3: [
+      { code:'MAO-WM-01',   desc:'Develops fluency by exploring and connecting mathematical concepts to solve problems and communicate reasoning' },
+      { code:'MA3-DATA-01', desc:'Constructs, interprets and evaluates data displays including dot plots, line graphs and two-way tables' },
+      { code:'MA3-FRC-01',  desc:'Compares, orders and calculates with fractions, decimals and percentages' },
+      { code:'MA3-GM-01',   desc:'Selects appropriate units to estimate, measure and calculate lengths, perimeters and converts between units' },
+    ],
+    4: [
+      { code:'MAO-WM-01',    desc:'Reasons, communicates and solves problems using mathematical concepts, skills and techniques' },
+      { code:'MA4-RAT-C-01', desc:'Solves problems involving ratios and rates, and explores their graphical representation' },
+      { code:'MA4-FRC-C-01', desc:'Operates with fractions, decimals and percentages in a variety of contexts' },
+      { code:'MA4-ALG-C-01', desc:'Generalises number properties to operate with algebraic expressions and equations' },
+      { code:'MA4-STA-C-01', desc:'Classifies and displays data using a variety of statistical representations and interprets results' },
+    ],
+    5: [
+      { code:'MAO-WM-01',    desc:'Selects and applies appropriate mathematical techniques to reason, communicate and solve problems' },
+      { code:'MA5-RAT-C-01', desc:'Applies ratios and rates to solve problems including financial mathematics and similar figures' },
+      { code:'MA5-ALG-C-01', desc:'Develops and applies algebraic techniques to expand, factorise and solve equations and inequalities' },
+      { code:'MA5-STA-C-01', desc:'Interprets and critically analyses statistical data and evaluates the validity of claims and predictions' },
+    ],
+  },
+};
 
 export default function TeacherDashboardScreen() {
   const { setCurrentScreen, teacherEmail, setTeacherEmail, setSelectedClass, teacher, authLoading, signOutTeacher, demoMode } = useApp();
@@ -337,7 +438,8 @@ export default function TeacherDashboardScreen() {
                     <option value="maths" disabled={import.meta.env.PROD}>Mathematics{import.meta.env.PROD ? ' (Coming Soon)' : ''}</option>
                     <option value="english" disabled>English (Coming Soon)</option>
                     <option value="geography" disabled>Geography (Coming Soon)</option>
-                    <option value="pdhpe" disabled>PDHPE (Coming Soon)</option>
+                    <option value="pdhpe">PDHPE</option>
+                    <option value="ngara-nura" disabled>Ngara Nura (Coming Soon)</option>
                   </select>
                 </>
               )}
@@ -398,6 +500,46 @@ export default function TeacherDashboardScreen() {
               {classCreated && (
                 <p style={{ marginTop:'0.6rem', fontSize:'0.8rem', color:'#2e7d32', fontWeight:600 }}>✓ Class created successfully.</p>
               )}
+
+              {/* NSW Curriculum Alignment */}
+              {(newSubject === 'science' || newSubject === 'maths' || newSubject === 'pdhpe') && (() => {
+                const subjectData = NSW_OUTCOMES[newSubject];
+                const outcomes    = subjectData?.[newClassStage] || [];
+                const syllabusName = subjectData?.syllabus?.[newClassStage] || '';
+                const accentColor  = newSubject === 'maths' ? '#0369a1' : newSubject === 'pdhpe' ? '#7C3AED' : '#2E7D55';
+                const bgColor      = newSubject === 'maths' ? '#EFF6FF' : newSubject === 'pdhpe' ? '#F5F3FF' : '#F0F7F0';
+                const borderColor  = newSubject === 'maths' ? '#BFDBFE' : newSubject === 'pdhpe' ? '#DDD6FE' : '#C6E2C6';
+                return (
+                  <div style={{ marginTop:'1rem', background:bgColor, border:`1px solid ${borderColor}`, borderRadius:'var(--t-r-sm)', padding:'0.85rem 1rem' }}>
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'0.6rem' }}>
+                      <p style={{ fontSize:'0.72rem', fontWeight:800, color:accentColor, textTransform:'uppercase', letterSpacing:'0.07em', margin:0 }}>
+                        NSW Curriculum Outcomes — Stage {newClassStage}
+                      </p>
+                      <span style={{ fontSize:'0.65rem', color:'#888', fontStyle:'italic' }}>{syllabusName}</span>
+                    </div>
+                    <div style={{ display:'flex', flexDirection:'column', gap:'0.4rem' }}>
+                      {outcomes.map(({ code, desc }) => (
+                        <div key={code} style={{ display:'flex', gap:'0.6rem', alignItems:'flex-start' }}>
+                          <span style={{ flexShrink:0, background:accentColor, color:'white', fontSize:'0.63rem', fontWeight:800, padding:'0.15rem 0.45rem', borderRadius:'4px', letterSpacing:'0.03em', marginTop:'0.1rem', fontFamily:'monospace' }}>{code}</span>
+                          <span style={{ fontSize:'0.78rem', color:'#444', lineHeight:1.45 }}>{desc}</span>
+                        </div>
+                      ))}
+                    </div>
+                    {(newSubject === 'science' || newSubject === 'maths') && (
+                      <button
+                        onClick={() => openTeacherInfoSheet(newSubject, newClassStage, outcomes)}
+                        style={{ marginTop:'0.75rem', display:'flex', alignItems:'center', gap:'0.5rem', background:'none', border:`1px solid ${accentColor}`, color:accentColor, fontSize:'0.75rem', fontWeight:700, padding:'0.4rem 0.85rem', borderRadius:'40px', cursor:'pointer', letterSpacing:'0.04em', transition:'all 0.18s', width:'100%', justifyContent:'center' }}
+                        onMouseEnter={e => { e.currentTarget.style.background = accentColor; e.currentTarget.style.color = 'white'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = accentColor; }}>
+                        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style={{ flexShrink:0 }}>
+                          <path d="M8 1v9m0 0L5 7m3 3l3-3M2 12v1a1 1 0 001 1h10a1 1 0 001-1v-1" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                        Teacher Information Sheet
+                      </button>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
 
             {/* My Classes */}
