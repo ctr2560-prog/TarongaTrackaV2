@@ -125,34 +125,50 @@ export function StudentProvider({ children }) {
     if (geoWatchIdRef.current !== null) return;
     setLocationError(null);
 
-    geoWatchIdRef.current = navigator.geolocation.watchPosition(
-      (position) => {
-        setLocationError(null);
-        setUserLocation({ latitude: position.coords.latitude, longitude: position.coords.longitude, accuracy: position.coords.accuracy });
-        setLocationEnabled(true);
-        if (!hasEnteredMapRef.current) {
-          hasEnteredMapRef.current = true;
-          setCurrentScreen(prev => (prev === 'home' ? 'map' : prev));
-        }
-      },
-      (error) => {
-        geoWatchIdRef.current = null;
-        if (error.code === 1) {
-          setLocationError('Location access was denied. Please allow location in your browser settings and refresh.');
-        } else if (error.code === 2) {
-          setLocationError('Unable to determine your location. Make sure GPS is enabled on your device.');
-        } else {
-          setLocationError('Location timed out. Please check your signal and try again.');
-        }
-      },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 }
-    );
+    const poll = () => {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setLocationError(null);
+          setUserLocation({ latitude: position.coords.latitude, longitude: position.coords.longitude, accuracy: position.coords.accuracy });
+          setLocationEnabled(true);
+          if (!hasEnteredMapRef.current) {
+            hasEnteredMapRef.current = true;
+            setCurrentScreen(prev => (prev === 'home' ? 'map' : prev));
+          }
+        },
+        (error) => {
+          if (error.code === 1) {
+            // Permission denied — stop polling
+            clearInterval(geoWatchIdRef.current);
+            geoWatchIdRef.current = null;
+            setLocationError('Location access was denied. Please allow location in your browser settings and refresh.');
+          } else if (error.code === 2) {
+            setLocationError('Unable to determine your location. Make sure GPS is enabled on your device.');
+          } else {
+            setLocationError('Location timed out. Please check your signal and try again.');
+          }
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    };
+
+    poll(); // immediate first fix
+    geoWatchIdRef.current = setInterval(poll, 4000); // refresh every 4 s
   }, [setCurrentScreen]);
+
+  const retryLocation = useCallback(() => {
+    if (geoWatchIdRef.current !== null) {
+      clearInterval(geoWatchIdRef.current);
+      geoWatchIdRef.current = null;
+    }
+    setLocationError(null);
+    enableLocation();
+  }, [enableLocation]);
 
   useEffect(() => {
     return () => {
       if (geoWatchIdRef.current !== null) {
-        navigator.geolocation.clearWatch(geoWatchIdRef.current);
+        clearInterval(geoWatchIdRef.current);
         geoWatchIdRef.current = null;
       }
     };
@@ -375,6 +391,7 @@ export function StudentProvider({ children }) {
       locationError,
       gpsRequired,
       enableLocation,
+      retryLocation,
       checkAnimalProximity,
       // Zoo map
       showZooMap, setShowZooMap,
