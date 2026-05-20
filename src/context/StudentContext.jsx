@@ -154,10 +154,10 @@ export function StudentProvider({ children }) {
     // Primary: watchPosition fires instantly whenever the device moves
     geoWatchIdRef.current = navigator.geolocation.watchPosition(onSuccess, onError, opts);
 
-    // Fallback: poll every 3 s for iOS Safari, which sometimes stalls watchPosition
+    // Fallback: poll every 1 s for iOS Safari, which sometimes stalls watchPosition
     geoIntervalRef.current = setInterval(() => {
       navigator.geolocation.getCurrentPosition(onSuccess, () => {}, opts);
-    }, 3000);
+    }, 1000);
   }, [setCurrentScreen]);
 
   const retryLocation = useCallback(() => {
