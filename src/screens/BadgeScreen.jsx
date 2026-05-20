@@ -77,7 +77,8 @@ export default function BadgeScreen() {
   const obs     = lastBadge.observationScore || {};
   const msgs    = KID_MSGS[classSubject] || KID_MSGS.science;
 
-  const wellDone = obs.behaviour != null ? domains.filter(({ key }) => (obs[key] ?? 0) >= 4) : [];
+  const wellDone  = obs.behaviour != null ? domains.filter(({ key }) => (obs[key] ?? 0) >= 4) : [];
+  const nextTime  = obs.behaviour != null ? domains.filter(({ key }) => (obs[key] ?? 0) <  4) : [];
 
   return (
     <div style={{ position:'fixed', inset:0, background:'linear-gradient(135deg,var(--sunset-orange) 0%,var(--earth-clay) 50%,var(--jungle-mid) 100%)', display:'flex', alignItems:'flex-start', justifyContent:'center', padding:'1rem', overflowY:'auto' }}>
@@ -122,12 +123,24 @@ export default function BadgeScreen() {
         )}
 
         {/* Feedback */}
-        {wellDone.length > 0 && (
-          <div style={{ background:'#F0FDF4', borderRadius:'var(--t-r-md)', padding:'0.6rem 0.7rem', border:'1px solid #BBF7D0', textAlign:'left', marginBottom:'0.85rem' }}>
-            <div style={{ fontSize:'0.6rem', fontWeight:800, color:'#15803D', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:'0.35rem' }}>What you did well</div>
-            {wellDone.map(({ key }) => (
-              <p key={key} style={{ margin:'0 0 0.25rem', fontSize:'0.72rem', color:'#166534', lineHeight:1.45 }}>{msgs[key]?.well}</p>
-            ))}
+        {obs.behaviour != null && (
+          <div style={{ display:'grid', gridTemplateColumns: wellDone.length && nextTime.length ? '1fr 1fr' : '1fr', gap:'0.4rem', marginBottom:'0.85rem' }}>
+            {wellDone.length > 0 && (
+              <div style={{ background:'#F0FDF4', borderRadius:'var(--t-r-md)', padding:'0.6rem 0.65rem', border:'1px solid #BBF7D0', textAlign:'left' }}>
+                <div style={{ fontSize:'0.58rem', fontWeight:800, color:'#15803D', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:'0.35rem' }}>What you did well</div>
+                {wellDone.map(({ key }) => (
+                  <p key={key} style={{ margin:'0 0 0.22rem', fontSize:'0.7rem', color:'#166534', lineHeight:1.4 }}>{msgs[key]?.well}</p>
+                ))}
+              </div>
+            )}
+            {nextTime.length > 0 && (
+              <div style={{ background:'#FFF7ED', borderRadius:'var(--t-r-md)', padding:'0.6rem 0.65rem', border:'1px solid #FED7AA', textAlign:'left' }}>
+                <div style={{ fontSize:'0.58rem', fontWeight:800, color:'#C2410C', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:'0.35rem' }}>Next time, try to...</div>
+                {nextTime.map(({ key }) => (
+                  <p key={key} style={{ margin:'0 0 0.22rem', fontSize:'0.7rem', color:'#9A3412', lineHeight:1.4 }}>{msgs[key]?.next}</p>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
