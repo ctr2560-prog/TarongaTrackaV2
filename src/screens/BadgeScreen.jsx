@@ -82,7 +82,7 @@ export default function BadgeScreen() {
   const bestDomain  = sorted[0] || null;
   const worstDomain = sorted[sorted.length - 1] || null;
   const wellMsg = bestDomain
-    ? ((obs[bestDomain.key] ?? 0) >= 4 ? msgs[bestDomain.key]?.well : "You gave it a go today, keep practising!")
+    ? ((obs[bestDomain.key] ?? 0) >= 3 ? msgs[bestDomain.key]?.well : "You gave it a go! Try again with the next animal.")
     : null;
   const nextMsg = worstDomain ? msgs[worstDomain.key]?.next : null;
 

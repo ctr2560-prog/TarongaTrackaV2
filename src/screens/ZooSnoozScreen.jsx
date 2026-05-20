@@ -1403,7 +1403,7 @@ export default function ZooSnoozScreen() {
                   const zzBestKey   = zzSorted[0]?.key;
                   const zzWorstKey  = zzSorted[zzSorted.length - 1]?.key;
                   const zzWellMsg   = zzBestKey
-                    ? ((baObs[zzBestKey] ?? 0) >= 4 ? zzMsgs[zzBestKey]?.well : "You gave it a go today, keep practising!")
+                    ? ((baObs[zzBestKey] ?? 0) >= 3 ? zzMsgs[zzBestKey]?.well : "You gave it a go! Try again with the next animal.")
                     : null;
                   const zzNextMsg   = zzWorstKey ? zzMsgs[zzWorstKey]?.next : null;
                   if (!zzWellMsg || !zzNextMsg) return null;
