@@ -7,7 +7,7 @@ export default function MapScreen() {
   const { setCurrentScreen, studentName, classCode } = useApp();
   const {
     animalsToRender, foundAnimals, totalPoints, badges,
-    userLocation, locationEnabled, gpsRequired, checkAnimalProximity, enableLocation,
+    userLocation, locationEnabled, locationError, gpsRequired, checkAnimalProximity, enableLocation,
     activityCompleted, isSubmittingActivity,
     discoverAnimal, completeActivity,
     studentStatus, statusLoaded,
@@ -132,6 +132,16 @@ export default function MapScreen() {
           </button>
         </div>
       </div>
+
+      {/* Location error banner */}
+      {locationError && gpsRequired && (
+        <div style={{ background:'#FEF3C7', border:'1px solid #FCD34D', borderRadius:'var(--t-r-md)', padding:'0.75rem 1rem', margin:'0.75rem 1rem 0', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'0.75rem' }}>
+          <p style={{ margin:0, fontSize:'0.82rem', color:'#92400E', lineHeight:1.4 }}>⚠️ {locationError}</p>
+          <button onClick={enableLocation} style={{ flexShrink:0, padding:'0.4rem 0.85rem', background:'#D97706', color:'white', border:'none', borderRadius:'var(--t-r-pill)', fontSize:'0.78rem', fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>
+            Retry
+          </button>
+        </div>
+      )}
 
       {/* Discovery grid */}
       <div>

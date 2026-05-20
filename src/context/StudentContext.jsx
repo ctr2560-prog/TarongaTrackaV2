@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { doc, getDoc, onSnapshot, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useApp } from './AppContext';
 import { animals as hardcodedAnimals } from '../data/animals';
@@ -54,9 +54,10 @@ export function StudentProvider({ children }) {
   const [gpsRequired, setGpsRequired] = useState(true); // false = admin has turned GPS off
 
   useEffect(() => {
-    getDoc(doc(db, 'settings', 'app')).then(snap => {
+    const unsub = onSnapshot(doc(db, 'settings', 'app'), snap => {
       if (snap.exists()) setGpsRequired(snap.data().gpsEnabled !== false);
-    }).catch(() => {});
+    }, () => {});
+    return unsub;
   }, []);
 
   // ── Geolocation ────────────────────────────────────────────────────────────
@@ -117,12 +118,16 @@ export function StudentProvider({ children }) {
   }, [studentName, classCode]);
 
   // ── Geolocation ────────────────────────────────────────────────────────────
+  const [locationError, setLocationError] = useState(null);
+
   const enableLocation = useCallback(() => {
-    if (!('geolocation' in navigator)) { alert('Geolocation not supported.'); return; }
+    if (!('geolocation' in navigator)) { alert('Geolocation not supported on this device.'); return; }
     if (geoWatchIdRef.current !== null) return;
+    setLocationError(null);
 
     geoWatchIdRef.current = navigator.geolocation.watchPosition(
       (position) => {
+        setLocationError(null);
         setUserLocation({ latitude: position.coords.latitude, longitude: position.coords.longitude, accuracy: position.coords.accuracy });
         setLocationEnabled(true);
         if (!hasEnteredMapRef.current) {
@@ -131,7 +136,14 @@ export function StudentProvider({ children }) {
         }
       },
       (error) => {
-        console.warn('Geolocation error:', error.message);
+        geoWatchIdRef.current = null;
+        if (error.code === 1) {
+          setLocationError('Location access was denied. Please allow location in your browser settings and refresh.');
+        } else if (error.code === 2) {
+          setLocationError('Unable to determine your location. Make sure GPS is enabled on your device.');
+        } else {
+          setLocationError('Location timed out. Please check your signal and try again.');
+        }
       },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 }
     );
@@ -360,6 +372,7 @@ export function StudentProvider({ children }) {
       // Geolocation
       userLocation,
       locationEnabled,
+      locationError,
       gpsRequired,
       enableLocation,
       checkAnimalProximity,
