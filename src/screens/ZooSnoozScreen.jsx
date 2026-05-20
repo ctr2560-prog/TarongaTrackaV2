@@ -1399,27 +1399,24 @@ export default function ZooSnoozScreen() {
                     detail:    { well:"You used great details and science words to back up your ideas!",   next:"Try explaining WHY the animal does that. What's the reason?" },
                     writing:   { well:"Your sentences were clear and easy to read!",                       next:"Start with a capital letter and finish with a full stop." },
                   };
-                  const zzWell = zzDomains.filter(({ key }) => (baObs[key] ?? 0) >= 4);
-                  const zzNext = zzDomains.filter(({ key }) => (baObs[key] ?? 0) <  4);
-                  if (!zzWell.length && !zzNext.length) return null;
+                  const zzSorted    = [...zzDomains].sort((a, b) => (baObs[b.key] ?? 0) - (baObs[a.key] ?? 0));
+                  const zzBestKey   = zzSorted[0]?.key;
+                  const zzWorstKey  = zzSorted[zzSorted.length - 1]?.key;
+                  const zzWellMsg   = zzBestKey
+                    ? ((baObs[zzBestKey] ?? 0) >= 4 ? zzMsgs[zzBestKey]?.well : "You gave it a go today — keep practising!")
+                    : null;
+                  const zzNextMsg   = zzWorstKey ? zzMsgs[zzWorstKey]?.next : null;
+                  if (!zzWellMsg || !zzNextMsg) return null;
                   return (
-                    <div style={{ display:'grid', gridTemplateColumns: zzWell.length && zzNext.length ? '1fr 1fr' : '1fr', gap:'0.4rem', marginBottom:'0.85rem' }}>
-                      {zzWell.length > 0 && (
-                        <div style={{ background:'rgba(74,222,128,0.07)', border:'1px solid rgba(74,222,128,0.2)', borderRadius:'12px', padding:'0.6rem 0.65rem', textAlign:'left' }}>
-                          <div style={{ fontSize:'0.58rem', fontWeight:800, color:'#4ADE80', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:'0.35rem' }}>What you did well</div>
-                          {zzWell.map(({ key }) => (
-                            <p key={key} style={{ margin:'0 0 0.2rem', fontSize:'0.7rem', color:'rgba(74,222,128,0.85)', lineHeight:1.4 }}>{zzMsgs[key]?.well}</p>
-                          ))}
-                        </div>
-                      )}
-                      {zzNext.length > 0 && (
-                        <div style={{ background:'rgba(251,191,36,0.07)', border:'1px solid rgba(251,191,36,0.25)', borderRadius:'12px', padding:'0.6rem 0.65rem', textAlign:'left' }}>
-                          <div style={{ fontSize:'0.58rem', fontWeight:800, color:'#FCD34D', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:'0.35rem' }}>Next time, try to...</div>
-                          {zzNext.map(({ key }) => (
-                            <p key={key} style={{ margin:'0 0 0.2rem', fontSize:'0.7rem', color:'rgba(253,224,71,0.8)', lineHeight:1.4 }}>{zzMsgs[key]?.next}</p>
-                          ))}
-                        </div>
-                      )}
+                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.4rem', marginBottom:'0.85rem' }}>
+                      <div style={{ background:'rgba(74,222,128,0.07)', border:'1px solid rgba(74,222,128,0.2)', borderRadius:'12px', padding:'0.6rem 0.65rem', textAlign:'left' }}>
+                        <div style={{ fontSize:'0.58rem', fontWeight:800, color:'#4ADE80', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:'0.35rem' }}>What you did well</div>
+                        <p style={{ margin:0, fontSize:'0.7rem', color:'rgba(74,222,128,0.85)', lineHeight:1.4 }}>{zzWellMsg}</p>
+                      </div>
+                      <div style={{ background:'rgba(251,191,36,0.07)', border:'1px solid rgba(251,191,36,0.25)', borderRadius:'12px', padding:'0.6rem 0.65rem', textAlign:'left' }}>
+                        <div style={{ fontSize:'0.58rem', fontWeight:800, color:'#FCD34D', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:'0.35rem' }}>Next time, try to...</div>
+                        <p style={{ margin:0, fontSize:'0.7rem', color:'rgba(253,224,71,0.8)', lineHeight:1.4 }}>{zzNextMsg}</p>
+                      </div>
                     </div>
                   );
                 })()}
