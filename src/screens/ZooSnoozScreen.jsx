@@ -1393,31 +1393,33 @@ export default function ZooSnoozScreen() {
                 {/* Feedback */}
                 {zzBadgeAnimal.observationScore && (() => {
                   const baObs = zzBadgeAnimal.observationScore;
-                  const domains = [
-                    { key:'behaviour', label:'Observation' },
-                    { key:'detail',    label:'Detail'      },
-                    { key:'writing',   label:'Writing'     },
-                  ];
-                  const wellDone = domains.filter(({ key }) => (baObs[key] ?? 0) >= 4);
-                  const improve  = domains.filter(({ key }) => (baObs[key] ?? 0) < 4);
+                  const zzDomains = [{ key:'behaviour' }, { key:'detail' }, { key:'writing' }];
+                  const zzMsgs = {
+                    behaviour: { well:"You described exactly what the animal was doing — great watching! 👀", next:"Watch closely and write down exactly what the animal is doing." },
+                    detail:    { well:"You used great details and science words to back up your ideas! 🔬",   next:"Try explaining WHY the animal does that. What's the reason?" },
+                    writing:   { well:"Your sentences were clear and easy to read! ✍️",                       next:"Start with a capital letter and finish with a full stop." },
+                  };
+                  const zzWell = zzDomains.filter(({ key }) => (baObs[key] ?? 0) >= 4);
+                  const zzNext = zzDomains.filter(({ key }) => (baObs[key] ?? 0) < 4);
+                  if (!zzWell.length && !zzNext.length) return null;
                   return (
-                    <div style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(168,196,178,0.15)', borderRadius:'14px', padding:'0.9rem 1rem', marginBottom:'0.85rem', textAlign:'left' }}>
-                      <div style={{ fontSize:'0.6rem', fontWeight:800, color:'rgba(168,196,178,0.55)', textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:'0.5rem' }}>Feedback</div>
-                      {baObs.overallFeedback && (
-                        <p style={{ fontSize:'0.8rem', color:'rgba(168,196,178,0.9)', fontWeight:600, margin:'0 0 0.5rem', lineHeight:1.5 }}>{baObs.overallFeedback}</p>
+                    <div style={{ display:'grid', gridTemplateColumns: zzWell.length > 0 && zzNext.length > 0 ? '1fr 1fr' : '1fr', gap:'0.5rem', marginBottom:'0.85rem' }}>
+                      {zzWell.length > 0 && (
+                        <div style={{ background:'rgba(74,222,128,0.07)', border:'1px solid rgba(74,222,128,0.2)', borderRadius:'12px', padding:'0.6rem 0.7rem', textAlign:'left' }}>
+                          <div style={{ fontSize:'0.58rem', fontWeight:800, color:'#4ADE80', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:'0.35rem' }}>⭐ What you did well</div>
+                          {zzWell.map(({ key }) => (
+                            <p key={key} style={{ margin:'0 0 0.2rem', fontSize:'0.7rem', color:'rgba(74,222,128,0.85)', lineHeight:1.4 }}>{zzMsgs[key]?.well}</p>
+                          ))}
+                        </div>
                       )}
-                      {wellDone.map(({ key, label }) => (
-                        <div key={key} style={{ display:'flex', gap:'0.4rem', alignItems:'flex-start', marginBottom:'0.28rem' }}>
-                          <span style={{ color:'#4ADE80', fontWeight:800, fontSize:'0.75rem', flexShrink:0, marginTop:'0.05rem' }}>✓</span>
-                          <span style={{ fontSize:'0.75rem', color:'rgba(74,222,128,0.85)', lineHeight:1.4 }}><strong>{label}:</strong> {baObs.rationale?.[key]}</span>
+                      {zzNext.length > 0 && (
+                        <div style={{ background:'rgba(251,191,36,0.07)', border:'1px solid rgba(251,191,36,0.2)', borderRadius:'12px', padding:'0.6rem 0.7rem', textAlign:'left' }}>
+                          <div style={{ fontSize:'0.58rem', fontWeight:800, color:'#FBBF24', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:'0.35rem' }}>🎯 Next time, try to...</div>
+                          {zzNext.map(({ key }) => (
+                            <p key={key} style={{ margin:'0 0 0.2rem', fontSize:'0.7rem', color:'rgba(251,191,36,0.8)', lineHeight:1.4 }}>{zzMsgs[key]?.next}</p>
+                          ))}
                         </div>
-                      ))}
-                      {improve.map(({ key, label }) => (
-                        <div key={key} style={{ display:'flex', gap:'0.4rem', alignItems:'flex-start', marginBottom:'0.28rem' }}>
-                          <span style={{ color:'#FBBF24', fontWeight:800, fontSize:'0.75rem', flexShrink:0, marginTop:'0.05rem' }}>→</span>
-                          <span style={{ fontSize:'0.75rem', color:'rgba(251,191,36,0.8)', lineHeight:1.4 }}><strong>{label}:</strong> {baObs.rationale?.[key]}</span>
-                        </div>
-                      ))}
+                      )}
                     </div>
                   );
                 })()}
