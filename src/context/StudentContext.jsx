@@ -63,7 +63,8 @@ export function StudentProvider({ children }) {
   // ── Geolocation ────────────────────────────────────────────────────────────
   const [userLocation,    setUserLocation]    = useState(null);
   const [locationEnabled, setLocationEnabled] = useState(savedProgress?.locationEnabled || false);
-  const geoWatchIdRef = useRef(null);
+  const geoWatchIdRef   = useRef(null); // watchPosition ID
+  const geoIntervalRef  = useRef(null); // iOS fallback poll interval
   const hasEnteredMapRef = useRef(false);
 
   // ── Zoo map modal ──────────────────────────────────────────────────────────
@@ -125,52 +126,51 @@ export function StudentProvider({ children }) {
     if (geoWatchIdRef.current !== null) return;
     setLocationError(null);
 
-    const poll = () => {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setLocationError(null);
-          setUserLocation({ latitude: position.coords.latitude, longitude: position.coords.longitude, accuracy: position.coords.accuracy });
-          setLocationEnabled(true);
-          if (!hasEnteredMapRef.current) {
-            hasEnteredMapRef.current = true;
-            setCurrentScreen(prev => (prev === 'home' ? 'map' : prev));
-          }
-        },
-        (error) => {
-          if (error.code === 1) {
-            // Permission denied — stop polling
-            clearInterval(geoWatchIdRef.current);
-            geoWatchIdRef.current = null;
-            setLocationError('Location access was denied. Please allow location in your browser settings and refresh.');
-          } else if (error.code === 2) {
-            setLocationError('Unable to determine your location. Make sure GPS is enabled on your device.');
-          } else {
-            setLocationError('Location timed out. Please check your signal and try again.');
-          }
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-      );
+    const onSuccess = (position) => {
+      setLocationError(null);
+      setUserLocation({ latitude: position.coords.latitude, longitude: position.coords.longitude, accuracy: position.coords.accuracy });
+      setLocationEnabled(true);
+      if (!hasEnteredMapRef.current) {
+        hasEnteredMapRef.current = true;
+        setCurrentScreen(prev => (prev === 'home' ? 'map' : prev));
+      }
     };
 
-    poll(); // immediate first fix
-    geoWatchIdRef.current = setInterval(poll, 4000); // refresh every 4 s
+    const onError = (error) => {
+      if (error.code === 1) {
+        // Permission denied — tear everything down
+        if (geoWatchIdRef.current !== null)  { navigator.geolocation.clearWatch(geoWatchIdRef.current); geoWatchIdRef.current = null; }
+        if (geoIntervalRef.current !== null) { clearInterval(geoIntervalRef.current); geoIntervalRef.current = null; }
+        setLocationError('Location access was denied. Please allow location in your browser settings and refresh.');
+      } else if (error.code === 2) {
+        setLocationError('Unable to determine your location. Make sure GPS is enabled on your device.');
+      } else {
+        setLocationError('Location timed out. Please check your signal and try again.');
+      }
+    };
+
+    const opts = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };
+
+    // Primary: watchPosition fires instantly whenever the device moves
+    geoWatchIdRef.current = navigator.geolocation.watchPosition(onSuccess, onError, opts);
+
+    // Fallback: poll every 3 s for iOS Safari, which sometimes stalls watchPosition
+    geoIntervalRef.current = setInterval(() => {
+      navigator.geolocation.getCurrentPosition(onSuccess, () => {}, opts);
+    }, 3000);
   }, [setCurrentScreen]);
 
   const retryLocation = useCallback(() => {
-    if (geoWatchIdRef.current !== null) {
-      clearInterval(geoWatchIdRef.current);
-      geoWatchIdRef.current = null;
-    }
+    if (geoWatchIdRef.current !== null)  { navigator.geolocation.clearWatch(geoWatchIdRef.current); geoWatchIdRef.current = null; }
+    if (geoIntervalRef.current !== null) { clearInterval(geoIntervalRef.current); geoIntervalRef.current = null; }
     setLocationError(null);
     enableLocation();
   }, [enableLocation]);
 
   useEffect(() => {
     return () => {
-      if (geoWatchIdRef.current !== null) {
-        clearInterval(geoWatchIdRef.current);
-        geoWatchIdRef.current = null;
-      }
+      if (geoWatchIdRef.current !== null)  { navigator.geolocation.clearWatch(geoWatchIdRef.current); geoWatchIdRef.current = null; }
+      if (geoIntervalRef.current !== null) { clearInterval(geoIntervalRef.current); geoIntervalRef.current = null; }
     };
   }, []);
 
