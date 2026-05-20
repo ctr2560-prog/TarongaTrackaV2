@@ -1395,7 +1395,7 @@ export default function ZooSnoozScreen() {
                   const baObs = zzBadgeAnimal.observationScore;
                   const zzDomains = [{ key:'behaviour' }, { key:'detail' }, { key:'writing' }];
                   const zzMsgs = {
-                    behaviour: { well:"You described exactly what the animal was doing — great watching!", next:"Watch closely and write down exactly what the animal is doing." },
+                    behaviour: { well:"You described exactly what the animal was doing, great watching!", next:"Watch closely and write down exactly what the animal is doing." },
                     detail:    { well:"You used great details and science words to back up your ideas!",   next:"Try explaining WHY the animal does that. What's the reason?" },
                     writing:   { well:"Your sentences were clear and easy to read!",                       next:"Start with a capital letter and finish with a full stop." },
                   };
@@ -1403,7 +1403,7 @@ export default function ZooSnoozScreen() {
                   const zzBestKey   = zzSorted[0]?.key;
                   const zzWorstKey  = zzSorted[zzSorted.length - 1]?.key;
                   const zzWellMsg   = zzBestKey
-                    ? ((baObs[zzBestKey] ?? 0) >= 4 ? zzMsgs[zzBestKey]?.well : "You gave it a go today — keep practising!")
+                    ? ((baObs[zzBestKey] ?? 0) >= 4 ? zzMsgs[zzBestKey]?.well : "You gave it a go today, keep practising!")
                     : null;
                   const zzNextMsg   = zzWorstKey ? zzMsgs[zzWorstKey]?.next : null;
                   if (!zzWellMsg || !zzNextMsg) return null;

@@ -23,7 +23,7 @@ const SCORE_DOMAINS = {
 const KID_MSGS = {
   science: {
     behaviour: {
-      well: "You described exactly what the animal was doing — great watching!",
+      well: "You described exactly what the animal was doing, great watching!",
       next: "Watch closely and write down exactly what the animal is doing.",
     },
     detail: {
@@ -37,11 +37,11 @@ const KID_MSGS = {
   },
   maths: {
     behaviour: {
-      well: "You showed your working step by step — just like a mathematician!",
+      well: "You showed your working step by step, just like a mathematician!",
       next: "Show every step of your working so we can follow your thinking.",
     },
     detail: {
-      well: "Your numbers and units were accurate — nice work!",
+      well: "Your numbers and units were accurate, nice work!",
       next: "Include correct units (cm, m, kg) and double-check your numbers.",
     },
     writing: {
@@ -82,7 +82,7 @@ export default function BadgeScreen() {
   const bestDomain  = sorted[0] || null;
   const worstDomain = sorted[sorted.length - 1] || null;
   const wellMsg = bestDomain
-    ? ((obs[bestDomain.key] ?? 0) >= 4 ? msgs[bestDomain.key]?.well : "You gave it a go today — keep practising!")
+    ? ((obs[bestDomain.key] ?? 0) >= 4 ? msgs[bestDomain.key]?.well : "You gave it a go today, keep practising!")
     : null;
   const nextMsg = worstDomain ? msgs[worstDomain.key]?.next : null;
 
