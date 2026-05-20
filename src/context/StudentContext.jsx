@@ -63,8 +63,7 @@ export function StudentProvider({ children }) {
   // ── Geolocation ────────────────────────────────────────────────────────────
   const [userLocation,    setUserLocation]    = useState(null);
   const [locationEnabled, setLocationEnabled] = useState(savedProgress?.locationEnabled || false);
-  const geoWatchIdRef   = useRef(null); // watchPosition ID
-  const geoIntervalRef  = useRef(null); // iOS fallback poll interval
+  const geoWatchIdRef    = useRef(null);
   const hasEnteredMapRef = useRef(false);
 
   // ── Zoo map modal ──────────────────────────────────────────────────────────
@@ -121,10 +120,11 @@ export function StudentProvider({ children }) {
   // ── Geolocation ────────────────────────────────────────────────────────────
   const [locationError, setLocationError] = useState(null);
 
-  const enableLocation = useCallback(() => {
-    if (!('geolocation' in navigator)) { alert('Geolocation not supported on this device.'); return; }
-    if (geoWatchIdRef.current !== null) return;
-    setLocationError(null);
+  const startWatch = useCallback(() => {
+    if (geoWatchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(geoWatchIdRef.current);
+      geoWatchIdRef.current = null;
+    }
 
     const onSuccess = (position) => {
       setLocationError(null);
@@ -137,10 +137,8 @@ export function StudentProvider({ children }) {
     };
 
     const onError = (error) => {
+      geoWatchIdRef.current = null;
       if (error.code === 1) {
-        // Permission denied — tear everything down
-        if (geoWatchIdRef.current !== null)  { navigator.geolocation.clearWatch(geoWatchIdRef.current); geoWatchIdRef.current = null; }
-        if (geoIntervalRef.current !== null) { clearInterval(geoIntervalRef.current); geoIntervalRef.current = null; }
         setLocationError('Location access was denied. Please allow location in your browser settings and refresh.');
       } else if (error.code === 2) {
         setLocationError('Unable to determine your location. Make sure GPS is enabled on your device.');
@@ -149,28 +147,39 @@ export function StudentProvider({ children }) {
       }
     };
 
-    const opts = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };
-
-    // Primary: watchPosition fires instantly whenever the device moves
-    geoWatchIdRef.current = navigator.geolocation.watchPosition(onSuccess, onError, opts);
-
-    // Fallback: poll every 1 s for iOS Safari, which sometimes stalls watchPosition
-    geoIntervalRef.current = setInterval(() => {
-      navigator.geolocation.getCurrentPosition(onSuccess, () => {}, opts);
-    }, 1000);
+    geoWatchIdRef.current = navigator.geolocation.watchPosition(
+      onSuccess, onError,
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 1000 }
+    );
   }, [setCurrentScreen]);
 
-  const retryLocation = useCallback(() => {
-    if (geoWatchIdRef.current !== null)  { navigator.geolocation.clearWatch(geoWatchIdRef.current); geoWatchIdRef.current = null; }
-    if (geoIntervalRef.current !== null) { clearInterval(geoIntervalRef.current); geoIntervalRef.current = null; }
+  const enableLocation = useCallback(() => {
+    if (!('geolocation' in navigator)) { alert('Geolocation not supported on this device.'); return; }
+    if (geoWatchIdRef.current !== null) return;
     setLocationError(null);
-    enableLocation();
-  }, [enableLocation]);
+    startWatch();
+  }, [startWatch]);
+
+  const retryLocation = useCallback(() => {
+    setLocationError(null);
+    startWatch();
+  }, [startWatch]);
+
+  // Restart watchPosition when the page becomes visible again (iOS pauses it in background)
+  useEffect(() => {
+    const onVisible = () => {
+      if (!document.hidden && geoWatchIdRef.current !== null) startWatch();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [startWatch]);
 
   useEffect(() => {
     return () => {
-      if (geoWatchIdRef.current !== null)  { navigator.geolocation.clearWatch(geoWatchIdRef.current); geoWatchIdRef.current = null; }
-      if (geoIntervalRef.current !== null) { clearInterval(geoIntervalRef.current); geoIntervalRef.current = null; }
+      if (geoWatchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(geoWatchIdRef.current);
+        geoWatchIdRef.current = null;
+      }
     };
   }, []);
 
