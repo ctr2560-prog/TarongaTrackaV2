@@ -23,43 +23,43 @@ const SCORE_DOMAINS = {
 const KID_MSGS = {
   science: {
     behaviour: {
-      well: "You described exactly what the animal was doing — great watching! 👀",
+      well: "You described exactly what the animal was doing — great watching!",
       next: "Watch closely and write down exactly what the animal is doing.",
     },
     detail: {
-      well: "You used great details and science words to back up your ideas! 🔬",
+      well: "You used great details and science words to back up your ideas!",
       next: "Try explaining WHY the animal does that. What's the reason?",
     },
     writing: {
-      well: "Your sentences were clear and easy to read! ✍️",
+      well: "Your sentences were clear and easy to read!",
       next: "Start with a capital letter and finish with a full stop.",
     },
   },
   maths: {
     behaviour: {
-      well: "You showed your working step by step — just like a mathematician! 🔢",
+      well: "You showed your working step by step — just like a mathematician!",
       next: "Show every step of your working so we can follow your thinking.",
     },
     detail: {
-      well: "Your numbers and units were accurate — nice! ✅",
+      well: "Your numbers and units were accurate — nice work!",
       next: "Include correct units (cm, m, kg) and double-check your numbers.",
     },
     writing: {
-      well: "You explained your maths ideas clearly in sentences! 💬",
+      well: "You explained your maths ideas clearly in sentences!",
       next: "Write your maths ideas in full sentences with a capital and full stop.",
     },
   },
   pdhpe: {
     behaviour: {
-      well: "You made a great connection between the animal and your own life! 🌟",
+      well: "You made a great connection between the animal and your own life!",
       next: "Try comparing what the animal does to what you do in your own life.",
     },
     detail: {
-      well: "You explained really well how this links to health! 💪",
+      well: "You explained really well how this links to health!",
       next: "Explain how what the animal does connects to being healthy.",
     },
     writing: {
-      well: "Your writing was clear with great sentences! ✍️",
+      well: "Your writing was clear with great sentences!",
       next: "Use a capital letter, full stops, and write in full sentences.",
     },
   },
@@ -128,7 +128,7 @@ export default function BadgeScreen() {
 
             {wellDone.length > 0 && (
               <div style={{ background:'#F0FDF4', borderRadius:'var(--t-r-md)', padding:'0.6rem 0.7rem', border:'1px solid #BBF7D0', textAlign:'left' }}>
-                <div style={{ fontSize:'0.6rem', fontWeight:800, color:'#15803D', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:'0.35rem' }}>⭐ What you did well</div>
+                <div style={{ fontSize:'0.6rem', fontWeight:800, color:'#15803D', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:'0.35rem' }}>What you did well</div>
                 {wellDone.map(({ key }) => (
                   <p key={key} style={{ margin:'0 0 0.25rem', fontSize:'0.72rem', color:'#166534', lineHeight:1.45 }}>{msgs[key]?.well}</p>
                 ))}
@@ -137,7 +137,7 @@ export default function BadgeScreen() {
 
             {nextTime.length > 0 && (
               <div style={{ background:'#FFFBEB', borderRadius:'var(--t-r-md)', padding:'0.6rem 0.7rem', border:'1px solid #FDE68A', textAlign:'left' }}>
-                <div style={{ fontSize:'0.6rem', fontWeight:800, color:'#92400E', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:'0.35rem' }}>🎯 Next time, try to...</div>
+                <div style={{ fontSize:'0.6rem', fontWeight:800, color:'#92400E', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:'0.35rem' }}>Next time, try to...</div>
                 {nextTime.map(({ key }) => (
                   <p key={key} style={{ margin:'0 0 0.25rem', fontSize:'0.72rem', color:'#78350F', lineHeight:1.45 }}>{msgs[key]?.next}</p>
                 ))}
