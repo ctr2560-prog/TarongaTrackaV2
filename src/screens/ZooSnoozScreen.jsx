@@ -114,6 +114,7 @@ export default function ZooSnoozScreen() {
   const [mcqAnswer,      setMcqAnswer]      = useState(null);
   const [mcqFirstOk,     setMcqFirstOk]     = useState(null);
   const [mcqRevealed,    setMcqRevealed]    = useState(false);
+  const [mcqShowResult,  setMcqShowResult]  = useState(false);
 
   // ── Observation ───────────────────────────────────────────────────────────
   const [obsText,    setObsText]    = useState('');
@@ -300,6 +301,7 @@ export default function ZooSnoozScreen() {
     setMcqAnswer(null);
     setMcqFirstOk(null);
     setMcqRevealed(false);
+    setMcqShowResult(false);
     setObsText('');
     setObsLock(20);
     setObsOpen(false);
@@ -2196,16 +2198,46 @@ export default function ZooSnoozScreen() {
               </div>
 
               {mcqAnswer !== null && !mcqRevealed && (
-                <button onClick={() => setMcqRevealed(true)} className="zz-btn">Check Answer</button>
+                <button onClick={() => setMcqShowResult(true)} className="zz-btn">Check Answer</button>
               )}
               {mcqRevealed && (
-                <>
-                  <div className="zz-card" style={{ background: mcqAnswer === correct ? 'rgba(74,222,128,0.1)' : 'rgba(239,68,68,0.1)', border:`1px solid ${mcqAnswer === correct ? 'rgba(74,222,128,0.3)' : 'rgba(239,68,68,0.3)'}` }}>
-                    <p style={{ color:'var(--zz-text)', fontSize:'0.85rem', lineHeight:1.6, margin:0 }}>{zzAnimal.fact}</p>
-                  </div>
-                  <button onClick={() => setZzPhase('observation')} className="zz-btn">Continue →</button>
-                </>
+                <button onClick={() => setZzPhase('observation')} className="zz-btn">Continue →</button>
               )}
+
+              {/* Full-screen result overlay */}
+              {mcqShowResult && mcqAnswer !== null && (() => {
+                const isRight = mcqAnswer === correct;
+                return (
+                  <div style={{ position:'fixed', inset:0, zIndex:500, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'2rem', textAlign:'center', background: isRight ? 'linear-gradient(135deg,#053318 0%,#0A2E1A 100%)' : 'linear-gradient(135deg,#3B0A0A 0%,#1F0505 100%)' }}>
+                    <div style={{ fontSize:'4.5rem', marginBottom:'0.6rem' }}>{isRight ? '✓' : '✗'}</div>
+                    <h2 style={{ fontSize:'2.4rem', fontWeight:800, color: isRight ? '#4ADE80' : '#F87171', marginBottom:'0.5rem', lineHeight:1.1 }}>
+                      {isRight ? 'Correct!' : 'Not Quite'}
+                    </h2>
+                    {isRight ? (
+                      <p style={{ color:'rgba(168,196,178,0.85)', fontSize:'0.95rem', lineHeight:1.7, maxWidth:'340px', marginBottom:'2rem' }}>
+                        {zzAnimal.fact}
+                      </p>
+                    ) : (
+                      <p style={{ color:'rgba(255,255,255,0.55)', fontSize:'0.92rem', lineHeight:1.7, maxWidth:'320px', marginBottom:'2rem' }}>
+                        Review your observations and give it another go.
+                      </p>
+                    )}
+                    {isRight ? (
+                      <button
+                        onClick={() => { setMcqShowResult(false); setMcqRevealed(true); setZzPhase('observation'); }}
+                        className="zz-btn">
+                        Continue →
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => { setMcqShowResult(false); setMcqAnswer(null); }}
+                        style={{ background:'rgba(248,113,113,0.12)', border:'1.5px solid rgba(248,113,113,0.4)', color:'#F87171', borderRadius:'var(--t-r-pill)', padding:'0.85rem 2.5rem', fontSize:'1rem', fontWeight:700, cursor:'pointer', letterSpacing:'0.04em' }}>
+                        Try Again
+                      </button>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           );
         })()}
