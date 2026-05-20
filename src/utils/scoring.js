@@ -210,10 +210,10 @@ export function stage5Score(text, behaviourWords, detailWords, hasExplanation) {
   let wScore = 1;
   if (wc >= 3) wScore = 2;
   if (wc >= 6) wScore = 3;
-  if (wc >= 10 && uniqueWords.size >= 6) wScore = Math.max(wScore, 4);
-  if (wc >= 12 && hasExplanation) wScore = Math.max(wScore, 4);
-  if (wc >= 15 && hasSentence && uniqueWords.size >= 10) wScore = Math.max(wScore, 5);
-  if (wc >= 12 && hasExplanation && uniqueWords.size >= 10) wScore = Math.max(wScore, 5);
+  if (wc >= 8 && uniqueWords.size >= 5) wScore = Math.max(wScore, 4);
+  if (wc >= 10 && hasExplanation) wScore = Math.max(wScore, 4);
+  if (wc >= 12 && hasSentence && uniqueWords.size >= 8) wScore = Math.max(wScore, 5);
+  if (wc >= 10 && hasExplanation && uniqueWords.size >= 8) wScore = Math.max(wScore, 5);
   if (!/^[A-Z]/.test(text.trim()) || !/[.!?]/.test(text.trim())) wScore = Math.min(wScore, 3);
   return { b: bScore, d: dScore, w: wScore };
 }
@@ -227,7 +227,6 @@ export function normaliseScores({ behaviourScore, detailScore, writingScore, evi
   const detailCount = (detailScore || 0);
   if (s === 5) {
     if (!hasExplanation) b = Math.min(b, 3);
-    if (!hasExplanation) w = Math.min(w, 3);
     if (!hasExplanation && detailCount <= 3) d = Math.min(d, 3);
   }
   if (s <= 2) {
@@ -486,8 +485,8 @@ function scoreConcertLawnMathsObservation(text, classStage) {
   let comms = 1;
   if (wc >= 10) comms = 2;
   if (wc >= 20 && (hasCapital || hasFullStop)) comms = 3;
-  if (wc >= 35 && hasCapital && hasFullStop && sentences >= 2) comms = 4;
-  if (wc >= 55 && hasCapital && hasFullStop && sentences >= 3) comms = 5;
+  if (wc >= 25 && hasCapital && hasFullStop && sentences >= 2) comms = 4;
+  if (wc >= 40 && hasCapital && hasFullStop && sentences >= 3) comms = 5;
 
   if (classStage <= 2) {
     method   = Math.min(5, method + 1);
@@ -543,8 +542,8 @@ function scoreTigerMathsObservation(text, classStage) {
   let comms = 1;
   if (wc >= 10) comms = 2;
   if (wc >= 20 && (hasCapital || hasFullStop)) comms = 3;
-  if (wc >= 35 && hasCapital && hasFullStop && sentences >= 2) comms = 4;
-  if (wc >= 55 && hasCapital && hasFullStop && sentences >= 3) comms = 5;
+  if (wc >= 25 && hasCapital && hasFullStop && sentences >= 2) comms = 4;
+  if (wc >= 40 && hasCapital && hasFullStop && sentences >= 3) comms = 5;
 
   if (classStage <= 2) {
     method   = Math.min(5, method + 1);
@@ -786,10 +785,12 @@ function buildPdhpeObservationScore(text, animalId, classStage) {
   let comms = 1;
   if (wc >= 3)                                              comms = 2;
   if (wc >= 5 && hasCap)                                    comms = Math.max(comms, 2);
-  if (wc >= 6 && hasCap && hasStop)                         comms = 3;
-  if (multiSentence && hasCap && hasStop)                   comms = Math.max(comms, 3);
-  if (multiSentence && hasCap && hasStop && uniqueWords.size >= 8)  comms = 4;
+  if (wc >= 6 && hasCap && hasStop)                                               comms = 3;
+  if (multiSentence && hasCap && hasStop)                                         comms = Math.max(comms, 3);
+  if (wc >= 12 && hasCap && hasStop && uniqueWords.size >= 8)                    comms = Math.max(comms, 4);
+  if (multiSentence && hasCap && hasStop && uniqueWords.size >= 8)                comms = Math.max(comms, 4);
   if (multiSentence && hasCap && hasStop && uniqueWords.size >= 12 && !isAllCaps) comms = 5;
+  if (wc >= 18 && hasCap && hasStop && uniqueWords.size >= 12 && !isAllCaps)     comms = Math.max(comms, 5);
   if (isAllCaps) comms = Math.max(1, comms - 1);
 
   comparison    = Math.max(1, Math.min(5, comparison));
@@ -910,12 +911,12 @@ export function calculateWritingScore(studentResponse, stage) {
     if (wc >= 5)                                      score = 2;
     if (wc >= 7)                                      score = 3;
     if (hasCapital && hasFullStop)                     score = Math.max(score, 4);
-    if (hasCapital && hasFullStop && (multiSentence || hasExplanation || uCount >= 10)) score = Math.max(score, 5);
+    if (hasCapital && hasFullStop && (multiSentence || hasExplanation || uCount >= 8)) score = Math.max(score, 5);
   } else {
     if (wc >= 6)                                      score = 2;
     if (wc >= 9)                                      score = 3;
-    if (hasCapital && hasFullStop && uCount >= 7)     score = Math.max(score, 4);
-    if (hasCapital && hasFullStop && (multiSentence || hasExplanation) && uCount >= 10) score = Math.max(score, 5);
+    if (hasCapital && hasFullStop && uCount >= 5)     score = Math.max(score, 4);
+    if (hasCapital && hasFullStop && (multiSentence || hasExplanation) && uCount >= 8) score = Math.max(score, 5);
   }
 
   if (isAllCaps) score = Math.max(score - 1, 1);
