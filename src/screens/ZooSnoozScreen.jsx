@@ -353,7 +353,7 @@ export default function ZooSnoozScreen() {
       quizCorrect: mcqFirstOk === true,
       observation: obsText,
       observationNotes: obsText,
-      observationScore: { behaviour: obsScore.behaviour, detail: obsScore.detail, writing: obsScore.writing },
+      observationScore: { behaviour: obsScore.behaviour, detail: obsScore.detail, writing: obsScore.writing, rationale: obsScore.rationale, overallFeedback: obsScore.overallFeedback },
       videoTitle,
       conservationMsg,
       nightVisionUsed: nightVision,
@@ -371,7 +371,7 @@ export default function ZooSnoozScreen() {
         const o = b.observationScore || {};
         return s + Math.round(((o.behaviour||0)+(o.detail||0)+(o.writing||0))/15*100) + (b.quizResults?.[0]?.correctOnFirstAttempt ? 20 : 0);
       }, 0);
-      setZzBadgeAnimal({ animal: zzAnimal, points: animalPoints, quizCorrect: mcqFirstOk === true, totalDone: newTotalDone, runningTotal: prevTotal + animalPoints });
+      setZzBadgeAnimal({ animal: zzAnimal, points: animalPoints, quizCorrect: mcqFirstOk === true, totalDone: newTotalDone, runningTotal: prevTotal + animalPoints, observationScore: { behaviour: obsScore.behaviour, detail: obsScore.detail, writing: obsScore.writing, rationale: obsScore.rationale, overallFeedback: obsScore.overallFeedback } });
       return next;
     });
     setZzVideoTitle('');
@@ -1389,6 +1389,38 @@ export default function ZooSnoozScreen() {
                   <div style={{ fontSize:'0.65rem', fontWeight:800, color:'rgba(168,196,178,0.6)', textTransform:'uppercase', letterSpacing:'0.12em', marginTop:'0.2rem' }}>Points Earned</div>
                   {baQuiz && <div style={{ fontSize:'0.72rem', color:'#4A9E6B', marginTop:'0.4rem' }}>+20 quiz bonus included</div>}
                 </div>
+
+                {/* Feedback */}
+                {zzBadgeAnimal.observationScore && (() => {
+                  const baObs = zzBadgeAnimal.observationScore;
+                  const domains = [
+                    { key:'behaviour', label:'Observation' },
+                    { key:'detail',    label:'Detail'      },
+                    { key:'writing',   label:'Writing'     },
+                  ];
+                  const wellDone = domains.filter(({ key }) => (baObs[key] ?? 0) >= 4);
+                  const improve  = domains.filter(({ key }) => (baObs[key] ?? 0) < 4);
+                  return (
+                    <div style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(168,196,178,0.15)', borderRadius:'14px', padding:'0.9rem 1rem', marginBottom:'0.85rem', textAlign:'left' }}>
+                      <div style={{ fontSize:'0.6rem', fontWeight:800, color:'rgba(168,196,178,0.55)', textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:'0.5rem' }}>Feedback</div>
+                      {baObs.overallFeedback && (
+                        <p style={{ fontSize:'0.8rem', color:'rgba(168,196,178,0.9)', fontWeight:600, margin:'0 0 0.5rem', lineHeight:1.5 }}>{baObs.overallFeedback}</p>
+                      )}
+                      {wellDone.map(({ key, label }) => (
+                        <div key={key} style={{ display:'flex', gap:'0.4rem', alignItems:'flex-start', marginBottom:'0.28rem' }}>
+                          <span style={{ color:'#4ADE80', fontWeight:800, fontSize:'0.75rem', flexShrink:0, marginTop:'0.05rem' }}>✓</span>
+                          <span style={{ fontSize:'0.75rem', color:'rgba(74,222,128,0.85)', lineHeight:1.4 }}><strong>{label}:</strong> {baObs.rationale?.[key]}</span>
+                        </div>
+                      ))}
+                      {improve.map(({ key, label }) => (
+                        <div key={key} style={{ display:'flex', gap:'0.4rem', alignItems:'flex-start', marginBottom:'0.28rem' }}>
+                          <span style={{ color:'#FBBF24', fontWeight:800, fontSize:'0.75rem', flexShrink:0, marginTop:'0.05rem' }}>→</span>
+                          <span style={{ fontSize:'0.75rem', color:'rgba(251,191,36,0.8)', lineHeight:1.4 }}><strong>{label}:</strong> {baObs.rationale?.[key]}</span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
 
                 {/* Progress */}
                 <div style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'14px', padding:'0.85rem', marginBottom:'1.25rem', display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.5rem' }}>

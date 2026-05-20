@@ -869,6 +869,7 @@ export function buildObservationScore(text, animalId, classStage, classSubject) 
     detail:    normalisedScores.detailScore,
     writing:   normalisedScores.writingScore,
     rationale: scoreRationale.rationale,
+    overallFeedback: scoreRationale.overallFeedback,
     improvementTips: scoreRationale.improvementTips,
     extractedEvidence: scoreRationale.extractedEvidence,
     confidence: scoreRationale.confidence,

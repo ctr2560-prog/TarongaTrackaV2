@@ -68,6 +68,40 @@ export default function BadgeScreen() {
           </div>
         )}
 
+        {/* Feedback */}
+        {obs.behaviour != null && (() => {
+          const wellDone = domains.filter(({ key }) => (obs[key] ?? 0) >= 4);
+          const improve  = domains.filter(({ key }) => (obs[key] ?? 0) < 4);
+          return (
+            <div style={{ background:'var(--t-foam)', borderRadius:'var(--t-r-md)', padding:'0.85rem 1rem', marginBottom:'clamp(0.7rem,1.4vh,1rem)', border:'1px solid var(--t-mist)', textAlign:'left' }}>
+              <div style={{ fontSize:'0.68rem', fontWeight:800, color:'var(--t-slate)', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:'0.5rem' }}>Feedback</div>
+              {obs.overallFeedback && (
+                <p style={{ fontSize:'0.82rem', color:'var(--t-deep)', fontWeight:600, margin:'0 0 0.55rem', lineHeight:1.5 }}>{obs.overallFeedback}</p>
+              )}
+              {wellDone.length > 0 && (
+                <div style={{ marginBottom: improve.length > 0 ? '0.45rem' : 0 }}>
+                  {wellDone.map(({ key, label }) => (
+                    <div key={key} style={{ display:'flex', gap:'0.45rem', alignItems:'flex-start', marginBottom:'0.3rem' }}>
+                      <span style={{ color:'#16A34A', fontWeight:800, fontSize:'0.8rem', flexShrink:0, marginTop:'0.05rem' }}>✓</span>
+                      <span style={{ fontSize:'0.78rem', color:'#15803D', lineHeight:1.45 }}><strong>{label}:</strong> {obs.rationale?.[key]}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {improve.length > 0 && (
+                <div>
+                  {improve.map(({ key, label }) => (
+                    <div key={key} style={{ display:'flex', gap:'0.45rem', alignItems:'flex-start', marginBottom:'0.3rem' }}>
+                      <span style={{ color:'#D97706', fontWeight:800, fontSize:'0.8rem', flexShrink:0, marginTop:'0.05rem' }}>→</span>
+                      <span style={{ fontSize:'0.78rem', color:'#92400E', lineHeight:1.45 }}><strong>{label}:</strong> {obs.rationale?.[key]}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
         {/* Progress */}
         <div style={{ background:'var(--t-foam)', borderRadius:'var(--t-r-md)', padding:'clamp(0.9rem,1.8vh,1.2rem)', marginBottom:'clamp(0.9rem,1.8vh,1.3rem)', border:'1px solid var(--t-mist)' }}>
           <div style={{ color:'var(--t-slate)', fontSize:'clamp(0.75rem,1.5vh,0.85rem)', marginBottom:'0.4rem', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em' }}>Total Progress</div>
