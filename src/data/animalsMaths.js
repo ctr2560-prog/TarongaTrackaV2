@@ -256,9 +256,9 @@ export const MATHS_ANIMALS = {
         stageVariants: {
           1: 'How many koalas were lost in the 2019/20 bushfires?',
           2: '10,000 koalas were lost in the fires. How many groups of 1,000 is that?',
-          3: 'Before 2019 there were about 80,000 koalas. 10,000 were lost in the fires. What percentage is that?',
-          4: 'If koalas decline from 80,000 in 2020 to extinct by 2050, what is the average annual loss?',
-          5: 'A population of 80,000 decreases by 12.5% each year. How many remain after 2 years?',
+          3: 'Find the "An Aussie Icon" sign at the koala enclosure. Use the number of koalas lost in 2019/20 from the sign. If there were 80,000 koalas before the fires, what percentage were lost?',
+          4: 'Find the "An Aussie Icon" sign. Use the extinction year shown on the sign and a starting population of 80,000 koalas in 2020 to calculate the average annual loss.',
+          5: 'Find the "An Aussie Icon" sign. Use the koalas lost and a starting population of 80,000 to calculate the annual percentage loss. If this rate repeats each year, how many koalas remain after 2 years?',
         },
         stageOptions: {
           1: ['100', '1,000', '100,000', '10,000'],
