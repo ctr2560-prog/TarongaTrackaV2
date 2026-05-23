@@ -1,13 +1,25 @@
 import { useState, useRef, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useStudent } from '../../context/StudentContext';
-import { getStageQuestions } from '../../utils/helpers';
 import MathsCalculator from '../../components/MathsCalculator';
 
+const GIRAFFE_MCQ = {
+  stageQ: {
+    1: 'How tall is a giraffe?',
+    2: 'About how tall is a giraffe?',
+    3: 'About how tall is the tallest giraffe?',
+    4: 'How tall is the tallest giraffe?',
+    5: 'How tall can an adult giraffe grow?',
+  },
+  options: ['1 m', '5 m', '12 m', '20 m'],
+  correct: 1,
+  fact: 'Adult giraffes can grow up to around 5–6 metres tall — the tallest land animals on Earth.',
+};
+
 export default function GiraffeMission() {
-  const { setCurrentScreen, classStage, classSubject } = useApp();
+  const { setCurrentScreen, classStage } = useApp();
   const {
-    currentAnimal, showResult, setShowResult, isCorrect,
+    showResult, setShowResult, isCorrect,
     setIsProcessingAnswer, handleQuizAnswer, handleNextQuestion,
   } = useStudent();
 
@@ -19,9 +31,9 @@ export default function GiraffeMission() {
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
 
-  const currentQuestion   = getStageQuestions(currentAnimal, classStage, classSubject)[0];
-  const correctAnswerIndex = currentQuestion?.correct ?? 0;
-  const fact = currentQuestion?.stageFacts?.[classStage] || currentQuestion?.fact;
+  const correctAnswerIndex = GIRAFFE_MCQ.correct;
+  const question = GIRAFFE_MCQ.stageQ[classStage] || GIRAFFE_MCQ.stageQ[4];
+  const fact     = GIRAFFE_MCQ.fact;
 
   const startCamera = async () => {
     if (!videoRef.current) return;
@@ -170,10 +182,10 @@ export default function GiraffeMission() {
 
           <div style={{ flexShrink:0, background:'white', borderTop:'1px solid #eee', padding:'0.85rem 1rem', zIndex:10 }}>
             <p style={{ fontSize:'0.82rem', fontWeight:600, color:'var(--jungle-deep)', marginBottom:'0.6rem', textAlign:'center' }}>
-              {currentQuestion?.q || 'How tall is an adult giraffe?'}
+              {question}
             </p>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.5rem' }}>
-              {(currentQuestion?.options || []).map((opt, i) => (
+              {GIRAFFE_MCQ.options.map((opt, i) => (
                 <button key={i} onClick={() => handleQuizAnswer(0, i, correctAnswerIndex)}
                   style={{ padding:'0.7rem 0.5rem', borderRadius:'var(--t-r-sm)', border:'2px solid transparent', background:'#f4f8f6', color:'var(--jungle-deep)', fontSize:'0.8rem', fontWeight:600, cursor:'pointer', textAlign:'left', transition:'all 0.15s', lineHeight:1.3 }}>
                   {opt}
