@@ -13,6 +13,9 @@ export default function TigerMission() {
   const [attempted, setAttempted]   = useState(false);
   const [cameraError, setCameraError] = useState(false);
 
+  const APPROX_LENGTHS = [0.5, 2.5, 5, 10];
+  const RULER_PCT      = { 0.5: 12, 2.5: 42, 5: 68, 10: 88 };
+
   const videoRef  = useRef(null);
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
@@ -58,19 +61,14 @@ export default function TigerMission() {
   };
 
   const submitMeasurement = () => {
-    const correct     = measurement >= 2.0 && measurement <= 2.5;
-    const isFirst     = !attempted;
+    const correct = measurement === 2.5;
+    const isFirst = !attempted;
     setAttempted(true);
     setFirstAttemptResults(prev => {
       if (prev[0] !== undefined) return prev;
       return { ...prev, 0: correct && isFirst };
     });
-    if (correct) {
-      setPhase('fact');
-    } else {
-      setPhoto(null);
-      setPhase('incorrect');
-    }
+    setPhase(correct ? 'fact' : 'incorrect');
   };
 
   const retake = () => {
@@ -79,7 +77,7 @@ export default function TigerMission() {
     setTimeout(() => startCamera(), 80);
   };
 
-  const rulerPct = 18 + ((measurement - 1.0) / 3.0) * 70;
+  const rulerPct = RULER_PCT[measurement] ?? 42;
 
   // ── Incorrect ────────────────────────────────────────────────────────────────
   if (phase === 'incorrect') {
@@ -88,13 +86,19 @@ export default function TigerMission() {
         <div className="animate-scale-in" style={{ textAlign:'center', padding:'clamp(1.5rem,3vh,2rem)', background:'rgba(255,255,255,0.95)', borderRadius:'var(--t-r-xl)', boxShadow:'var(--t-shadow-lg)', maxWidth:'480px', width:'100%' }}>
           <div style={{ fontSize:'clamp(2rem,6vh,3rem)', marginBottom:'0.5rem' }}>📏</div>
           <h2 className="heading-display" style={{ fontSize:'clamp(2rem,5vh,3rem)', color:'#ef4444', marginBottom:'0.4rem', lineHeight:1.1 }}>Not Quite</h2>
-          <p style={{ fontSize:'clamp(0.9rem,2vh,1rem)', color:'#555', marginBottom:'1rem', lineHeight:1.6 }}>
-            Sumatran tigers range from <strong>2.0–2.5 metres</strong> nose to tail. Align the ruler carefully and try again!
+          <p style={{ fontSize:'clamp(0.9rem,2vh,1rem)', color:'#555', marginBottom:'1.25rem', lineHeight:1.6 }}>
+            Think about how long a Sumatran tiger really is — nose to tail. Have another look at the options!
           </p>
-          <button onClick={retake}
-            style={{ background:'linear-gradient(135deg,#DC2626,#991B1B)', color:'white', border:'none', padding:'clamp(0.8rem,2vh,1.2rem) clamp(2rem,5vw,3rem)', fontSize:'clamp(1rem,2.5vh,1.3rem)', fontWeight:700, borderRadius:'var(--t-r-pill)', cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.05em', boxShadow:'0 4px 12px rgba(0,0,0,0.2)' }}>
-            Try Again
-          </button>
+          <div style={{ display:'flex', flexDirection:'column', gap:'0.6rem' }}>
+            <button onClick={() => setPhase('measure')}
+              style={{ background:'linear-gradient(135deg,#DC2626,#991B1B)', color:'white', border:'none', padding:'clamp(0.8rem,2vh,1.2rem) clamp(2rem,5vw,3rem)', fontSize:'clamp(1rem,2.5vh,1.3rem)', fontWeight:700, borderRadius:'var(--t-r-pill)', cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.05em', boxShadow:'0 4px 12px rgba(0,0,0,0.2)' }}>
+              Try Again
+            </button>
+            <button onClick={retake}
+              style={{ background:'none', border:'none', color:'#888', fontSize:'0.85rem', cursor:'pointer', textDecoration:'underline' }}>
+              Retake photo
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -149,25 +153,28 @@ export default function TigerMission() {
               <div style={{ position:'absolute', right:0, bottom:'calc(50% + 24px)', transform:'translateX(50%)', fontSize:'0.65rem', fontWeight:800, color:'rgba(100,230,140,0.9)', letterSpacing:'0.1em', whiteSpace:'nowrap', textShadow:'0 1px 4px rgba(0,0,0,0.8)' }}>TAIL</div>
             </div>
             <div style={{ background:'rgba(10,47,31,0.85)', border:'1.5px solid rgba(100,230,140,0.4)', borderRadius:'40px', padding:'0.3rem 1.2rem', backdropFilter:'blur(8px)' }}>
-              <span style={{ fontSize:'1.6rem', fontWeight:800, color:'white', letterSpacing:'0.02em' }}>{measurement.toFixed(1)}</span>
+              <span style={{ fontSize:'1.6rem', fontWeight:800, color:'white', letterSpacing:'0.02em' }}>~{measurement}</span>
               <span style={{ fontSize:'0.9rem', fontWeight:600, color:'rgba(100,230,140,0.85)', marginLeft:'0.2rem' }}>m</span>
             </div>
           </div>
         </div>
 
-        <div style={{ flexShrink:0, background:'#0F0500', padding:'0.75rem 1.5rem 1.25rem', borderTop:'1px solid rgba(255,160,50,0.15)' }}>
-          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'0.3rem' }}>
-            <span style={{ fontSize:'0.7rem', color:'rgba(255,255,255,0.45)', fontWeight:600 }}>1.0 m</span>
-            <span style={{ fontSize:'0.75rem', color:'rgba(255,160,50,0.8)', fontWeight:700, letterSpacing:'0.04em' }}>ALIGN NOSE → TAIL</span>
-            <span style={{ fontSize:'0.7rem', color:'rgba(255,255,255,0.45)', fontWeight:600 }}>4.0 m</span>
+        <div style={{ flexShrink:0, background:'#0F0500', padding:'0.6rem 1.25rem 1rem', borderTop:'1px solid rgba(255,160,50,0.15)' }}>
+          <div style={{ fontSize:'0.65rem', color:'rgba(255,160,50,0.7)', fontWeight:700, letterSpacing:'0.06em', textAlign:'center', marginBottom:'0.4rem', textTransform:'uppercase' }}>Estimate the length</div>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'0.4rem', marginBottom:'0.65rem' }}>
+            {APPROX_LENGTHS.map(h => {
+              const selected = measurement === h;
+              return (
+                <button key={h} onClick={() => setMeasurement(h)}
+                  style={{ padding:'0.55rem 0.3rem', borderRadius:'10px', border: selected ? '2px solid rgba(255,160,50,0.8)' : '2px solid rgba(255,255,255,0.1)', background: selected ? 'rgba(255,160,50,0.15)' : 'rgba(255,255,255,0.04)', color: selected ? 'rgba(255,160,50,0.95)' : 'rgba(255,255,255,0.45)', fontSize:'1rem', fontWeight:800, cursor:'pointer', transition:'all 0.15s' }}>
+                  ~{h}m
+                </button>
+              );
+            })}
           </div>
-          <input type="range" min="1.0" max="4.0" step="0.1"
-            value={measurement}
-            onChange={e => setMeasurement(parseFloat(e.target.value))}
-            style={{ width:'100%', marginBottom:'0.85rem', accentColor:'#E86A00' }} />
           <button onClick={submitMeasurement}
             style={{ width:'100%', padding:'0.9rem', borderRadius:'40px', border:'none', background:'linear-gradient(to right,#C25A00,#8A3800)', color:'white', fontSize:'1rem', fontWeight:700, cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.1em', boxShadow:'0 4px 20px rgba(180,80,0,0.5)' }}>
-            Submit Measurement →
+            Submit →
           </button>
         </div>
       </div>
