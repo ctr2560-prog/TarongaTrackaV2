@@ -12,8 +12,11 @@ export default function GiraffeMission() {
   } = useStudent();
 
   const [photo, setPhoto]           = useState(null);
-  const [measurement, setMeasurement] = useState(5.0);
+  const [measurement, setMeasurement] = useState(5);
   const [cameraError, setCameraError] = useState(false);
+
+  const APPROX_HEIGHTS = [1, 5, 12, 20];
+  const RULER_PCT      = { 1: 10, 5: 32, 12: 62, 20: 84 };
 
   const videoRef  = useRef(null);
   const canvasRef = useRef(null);
@@ -72,7 +75,7 @@ export default function GiraffeMission() {
     else { stopCamera(); setCurrentScreen('map'); }
   };
 
-  const rulerPct = 15 + ((measurement - 2.0) / 6.0) * 75;
+  const rulerPct = RULER_PCT[measurement] ?? 32;
 
   return (
     <div style={{ position:'fixed', inset:0, background: showResult ? (isCorrect ? 'linear-gradient(135deg,#10b981 0%,#059669 100%)' : 'linear-gradient(135deg,#ef4444 0%,#dc2626 100%)') : 'var(--mist-light)', transition:'background 0.5s ease', display:'flex', flexDirection:'column' }}>
@@ -147,7 +150,7 @@ export default function GiraffeMission() {
                 <div style={{ position:'absolute', top:0, right:'calc(50% + 26px)', transform:'translateY(-50%)', fontSize:'0.65rem', fontWeight:800, color:'rgba(100,230,140,0.9)', letterSpacing:'0.1em', whiteSpace:'nowrap', textShadow:'0 1px 4px rgba(0,0,0,0.8)' }}>HORNS</div>
                 <div style={{ flex:1, width:'3px', background:'rgba(100,230,140,0.95)', boxShadow:'0 0 8px rgba(100,230,140,0.6)' }} />
                 <div style={{ position:'absolute', top:'50%', transform:'translateY(-50%) translateX(32px)', background:'rgba(10,47,31,0.85)', border:'1.5px solid rgba(100,230,140,0.4)', borderRadius:'40px', padding:'0.25rem 0.9rem', backdropFilter:'blur(8px)', whiteSpace:'nowrap' }}>
-                  <span style={{ fontSize:'1.3rem', fontWeight:800, color:'white' }}>{measurement.toFixed(1)}</span>
+                  <span style={{ fontSize:'1.3rem', fontWeight:800, color:'white' }}>~{measurement}</span>
                   <span style={{ fontSize:'0.85rem', fontWeight:600, color:'rgba(100,230,140,0.85)', marginLeft:'0.2rem' }}>m</span>
                 </div>
                 <div style={{ width:'44px', height:'3px', background:'rgba(100,230,140,0.95)', borderRadius:'2px', boxShadow:'0 0 8px rgba(100,230,140,0.7)', flexShrink:0 }} />
@@ -156,16 +159,19 @@ export default function GiraffeMission() {
             </div>
           </div>
 
-          <div style={{ flexShrink:0, background:'#050F07', padding:'0.5rem 1.25rem 0.6rem', borderTop:'1px solid rgba(120,200,80,0.15)' }}>
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'0.25rem' }}>
-              <span style={{ fontSize:'0.68rem', color:'rgba(255,255,255,0.4)', fontWeight:600 }}>2.0 m</span>
-              <span style={{ fontSize:'0.68rem', color:'rgba(120,200,80,0.75)', fontWeight:700, letterSpacing:'0.04em' }}>ALIGN HORNS → HOOVES</span>
-              <span style={{ fontSize:'0.68rem', color:'rgba(255,255,255,0.4)', fontWeight:600 }}>8.0 m</span>
+          <div style={{ flexShrink:0, background:'#050F07', padding:'0.5rem 1.25rem 0.65rem', borderTop:'1px solid rgba(120,200,80,0.15)' }}>
+            <div style={{ fontSize:'0.65rem', color:'rgba(120,200,80,0.7)', fontWeight:700, letterSpacing:'0.06em', textAlign:'center', marginBottom:'0.4rem', textTransform:'uppercase' }}>Estimate the height</div>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'0.4rem' }}>
+              {APPROX_HEIGHTS.map(h => {
+                const selected = measurement === h;
+                return (
+                  <button key={h} onClick={() => setMeasurement(h)}
+                    style={{ padding:'0.55rem 0.3rem', borderRadius:'10px', border: selected ? '2px solid rgba(100,230,140,0.8)' : '2px solid rgba(255,255,255,0.1)', background: selected ? 'rgba(100,230,140,0.15)' : 'rgba(255,255,255,0.04)', color: selected ? 'rgba(100,230,140,0.95)' : 'rgba(255,255,255,0.45)', fontSize:'1rem', fontWeight:800, cursor:'pointer', transition:'all 0.15s' }}>
+                    ~{h}m
+                  </button>
+                );
+              })}
             </div>
-            <input type="range" min="2.0" max="8.0" step="0.1"
-              value={measurement}
-              onChange={e => setMeasurement(parseFloat(e.target.value))}
-              style={{ width:'100%', accentColor:'#4CAF50' }} />
           </div>
 
           <div style={{ flexShrink:0, background:'white', borderTop:'1px solid #eee', padding:'0.85rem 1rem', zIndex:10 }}>
