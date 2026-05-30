@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { useStudent } from '../context/StudentContext';
-import { getStageScaffoldTip, getMinWords, getMathsObservationData, getPdhpeObservationData } from '../utils/helpers';
+import { getStageScaffoldTip, getMinWords, getMathsObservationData, getPdhpeObservationData, getEnglishObservationData } from '../utils/helpers';
 import MathsCalculator from '../components/MathsCalculator';
 
 // Per-animal heading / chip / bullet config for stage 3+
@@ -565,6 +565,153 @@ const PDHPE_OBS_CONFIG = {
   },
 };
 
+const ENGLISH_OBS_CONFIG = {
+  'chimpanzee': {
+    heading: 'Precise Verbs',
+    chips: [{ label:'Verbs', color:'#B45309' },{ label:'Word choice', color:'#059669' },{ label:'Describe', color:'#0284C7' },{ label:'Vivid', color:'#DC2626' }],
+    hintsByStage: {
+      1: ['What action word (verb) describes what the chimp is doing right now?', 'Swap a vague word for a more exact one - "moves" vs "swings"', 'Write one sentence using a precise verb'],
+      2: ['Write two precise verbs that describe exactly how the chimps move', 'Use a specific verb - "leaps" tells us more than "goes"', 'Add two adjectives to your description'],
+      3: ['Choose three precise verbs to describe the chimpanzees', 'Add adjectives to paint a clearer picture', 'What image do your words create in the reader\'s mind?'],
+      4: ['Use precise verbs and specific noun groups (e.g. "the silver-backed male")', 'What connotations do your verb choices carry?', 'How do your word choices shape the reader\'s impression?'],
+      5: ['Analyse how your verb choices shape connotation', 'Discuss how precise vocabulary positions the reader', 'Explain the effect of your word choices on the reader\'s impression of the animal'],
+    },
+    starters: ['The chimpanzee…', 'I chose the verb "…" because…', 'Precise verbs like "…" create the effect of…'],
+  },
+  'gorilla': {
+    heading: 'Figurative Language',
+    chips: [{ label:'Simile', color:'#B45309' },{ label:'Metaphor', color:'#059669' },{ label:'Like / as', color:'#0284C7' },{ label:'Comparison', color:'#DC2626' }],
+    hintsByStage: {
+      1: ['A simile uses "like" or "as" to compare two things', 'Try: "The gorilla is as big as…"', 'Write one sentence comparing the gorilla to something'],
+      2: ['A simile uses "like" or "as" - a metaphor says something IS something else', 'Write one simile and one metaphor about the gorilla', 'Think about its size, colour, movement or power'],
+      3: ['A simile compares using "like" or "as" - a metaphor makes a direct comparison', 'Explain what effect each device creates for the reader', 'Try to use an unusual or surprising comparison'],
+      4: ['Write a simile and an extended metaphor about the gorilla', 'How does each device shape the reader\'s impression differently?', 'Consider the connotations of what you are comparing the gorilla to'],
+      5: ['Analyse the different effects of simile versus extended metaphor', 'How do your figurative language choices position the reader?', 'Discuss how figurative language constructs meaning beyond literal description'],
+    },
+    starters: ['The gorilla is like…', 'The gorilla is a…', 'I used this comparison because…'],
+  },
+  'lion': {
+    heading: 'Persuasive Writing',
+    chips: [{ label:'Argument', color:'#B45309' },{ label:'Evidence', color:'#059669' },{ label:'Persuade', color:'#0284C7' },{ label:'Conservation', color:'#DC2626' }],
+    hintsByStage: {
+      1: ['Give one reason why lions should be protected', 'Use the word "because" to explain your reason', 'Write one sentence that tries to convince the reader'],
+      2: ['Give two reasons why lions matter', 'Use linking words: "firstly", "also", "because"', 'What would the world be like without lions?'],
+      3: ['Write a persuasive statement with at least two reasons and evidence', 'Use persuasive language - "we must", "it is vital that"', 'How does your word choice convince the reader?'],
+      4: ['Identify a persuasive technique you used (emotive language, rhetorical question, statistics)', 'How does this technique position the reader?', 'Explain the effect of your persuasive choices'],
+      5: ['Use and name at least two rhetorical devices in your argument', 'Analyse how your language choices position the reader', 'Consider counterarguments and how you address them'],
+    },
+    starters: ['Lions must be protected because…', 'Without lions, the world would…', 'I believe that…'],
+  },
+  'giraffe': {
+    heading: 'Vocabulary & Word Choice',
+    chips: [{ label:'Vocabulary', color:'#B45309' },{ label:'Precise words', color:'#059669' },{ label:'Tier 2 words', color:'#0284C7' },{ label:'Description', color:'#DC2626' }],
+    hintsByStage: {
+      1: ['Choose a describing word (adjective) for the giraffe', 'Instead of "big", what more precise word could you use?', 'Write one sentence with a describing word'],
+      2: ['Upgrade vague words to precise ones - "nice" to "striking"', 'Think of two Tier 2 vocabulary words (sophisticated everyday words)', 'Use your precise words in a sentence about the giraffe'],
+      3: ['Choose two Tier 2 or Tier 3 vocabulary words to describe the giraffe', 'Explain why you chose those words over simpler alternatives', 'What impression do your word choices give the reader?'],
+      4: ['Select vocabulary that carries specific connotations', 'How do your word choices shape the reader\'s impression?', 'Analyse the difference between your chosen words and simpler synonyms'],
+      5: ['Analyse how vocabulary choices construct meaning and position readers', 'Discuss the connotations of at least two words you chose', 'How do your language choices reflect the author\'s attitude toward the subject?'],
+    },
+    starters: ['I chose the word "…" to describe the giraffe because…', 'A more precise word than "tall" is…', 'The vocabulary I used creates the impression that…'],
+  },
+  'koala': {
+    heading: 'Narrative Structure',
+    chips: [{ label:'Beginning', color:'#B45309' },{ label:'Problem', color:'#DC2626' },{ label:'Resolution', color:'#059669' },{ label:'Narrative', color:'#0284C7' }],
+    hintsByStage: {
+      1: ['Every story has a beginning, middle and end', 'What could happen to the koala at the start of the story?', 'Write a sentence to start a story about the koala'],
+      2: ['A narrative needs: a setting, characters, a problem and a resolution', 'Write two sentences - one to start the story, one to end it', 'What problem might the koala face?'],
+      3: ['A strong narrative opening hooks the reader straight away', 'What is the complication your koala faces?', 'How is the problem resolved? Write one sentence for each part'],
+      4: ['Describe how narrative structure shapes the reader\'s experience', 'How do exposition, complication and resolution each create tension or release?', 'What narrative techniques (dialogue, description, pacing) could you use?'],
+      5: ['Analyse how narrative structure creates meaning and reader response', 'How could you subvert the traditional narrative arc to create a different effect?', 'Discuss the relationship between narrative structure and theme'],
+    },
+    starters: ['The koala\'s story begins when…', 'The problem in this story is…', 'The resolution of the narrative shows…'],
+  },
+  'tiger': {
+    heading: 'Sensory Imagery',
+    chips: [{ label:'Sight', color:'#B45309' },{ label:'Sound', color:'#059669' },{ label:'Touch', color:'#0284C7' },{ label:'Imagery', color:'#DC2626' }],
+    hintsByStage: {
+      1: ['Write one thing you can see, one thing you can hear', 'Use describing words for what your senses notice', 'Write two sentences about the tiger\'s habitat'],
+      2: ['Describe the habitat using two different senses', 'Use adjectives - what words describe exactly what you see, hear or feel?', 'Write three sentences using sensory language'],
+      3: ['Use at least three senses in your description of the habitat', 'Choose precise words for each sensation', 'Explain how your sensory language creates a mood or atmosphere'],
+      4: ['Describe the tiger\'s habitat using imagery from at least three senses', 'How does sensory language create atmosphere for the reader?', 'Which sense creates the strongest effect - and why?'],
+      5: ['Analyse how sensory imagery positions the reader inside the scene', 'Discuss which sensory details you chose and why', 'How does your sensory language construct a particular mood or point of view?'],
+    },
+    starters: ['I could see…', 'The sound of…', 'The atmosphere of the tiger\'s habitat is…'],
+  },
+  'dingo': {
+    heading: 'Informative Texts',
+    chips: [{ label:'Topic sentence', color:'#B45309' },{ label:'Facts', color:'#059669' },{ label:'Text features', color:'#0284C7' },{ label:'Informative', color:'#DC2626' }],
+    hintsByStage: {
+      1: ['Write one true fact about the dingo', 'A fact is something that is true and can be checked', 'Write your fact in a full sentence'],
+      2: ['An informative text has a topic sentence that says what it is about', 'Write a topic sentence about the dingo, then add two facts', 'How is an informative text different from a story?'],
+      3: ['Write an informative paragraph with a topic sentence, two facts and a concluding sentence', 'Use specific vocabulary related to your topic', 'How do informative texts use language differently from narratives?'],
+      4: ['Identify the features of an effective informative text (topic sentence, evidence, technical vocabulary)', 'How does language in an informative text differ from a persuasive text?', 'Analyse the purpose and audience of your informative writing'],
+      5: ['Analyse the structural and language features of informative texts', 'Compare how informative and persuasive texts use evidence differently', 'Discuss how the intended audience shapes language choices in informative writing'],
+    },
+    starters: ['The dingo is…', 'One important fact about dingoes is…', 'An informative text about the dingo would include…'],
+  },
+  'lemur': {
+    heading: 'Point of View',
+    chips: [{ label:'First person', color:'#B45309' },{ label:'Third person', color:'#059669' },{ label:'Perspective', color:'#0284C7' },{ label:'Narrator', color:'#DC2626' }],
+    hintsByStage: {
+      1: ['First person uses "I" - third person uses "he", "she", "it" or "they"', 'Write one sentence from the lemur\'s point of view using "I"', 'How would the lemur describe its day?'],
+      2: ['First person ("I") puts the reader inside the story', 'Write two sentences from the lemur\'s point of view', 'How does the story feel different when told by the character?'],
+      3: ['Write a paragraph from the lemur\'s first-person perspective', 'How does first person create a different effect from third person?', 'What does the narrator know or not know in each perspective?'],
+      4: ['Analyse how first and third person perspectives create different effects on the reader', 'How does the choice of perspective shape what information the reader receives?', 'Write from two different perspectives and compare the effect'],
+      5: ['Discuss how narrative perspective constructs reader positioning', 'Analyse how an unreliable or limited narrator creates particular effects', 'How does the choice of narrator shape the themes and meaning of a text?'],
+    },
+    starters: ['From the lemur\'s point of view, "I…"', 'First person perspective makes the reader feel…', 'The narrative perspective creates the effect of…'],
+  },
+  'sea-lion': {
+    heading: 'Persuasive Techniques',
+    chips: [{ label:'Rhetorical Q', color:'#B45309' },{ label:'Emotive words', color:'#059669' },{ label:'Evidence', color:'#0284C7' },{ label:'Persuade', color:'#DC2626' }],
+    hintsByStage: {
+      1: ['Give one reason why sea lions need our help', 'Use the word "must" or "should" to make your writing persuasive', 'Write a sentence that makes the reader want to help sea lions'],
+      2: ['Write one sentence using emotive language (words that make the reader feel something)', 'Add a fact to support your argument', 'Why is evidence important in persuasive writing?'],
+      3: ['Write a persuasive paragraph using emotive language, a fact and a rhetorical question', 'Identify the persuasive technique you used', 'How does each technique affect the reader differently?'],
+      4: ['Use and name at least two persuasive techniques (rhetorical question, emotive language, repetition, statistics)', 'How does each technique position the reader?', 'Explain the effect of your chosen techniques on the audience'],
+      5: ['Analyse how different rhetorical devices construct argument and position readers', 'Discuss how the intended audience shapes your choice of persuasive techniques', 'Evaluate the effectiveness of each rhetorical device you used'],
+    },
+    starters: ['Should we really allow sea lions to…?', 'Sea lions need our help because…', 'I used the technique of… because it…'],
+  },
+  'asian-water-buffalo': {
+    heading: 'Personification',
+    chips: [{ label:'Personification', color:'#B45309' },{ label:'Human qualities', color:'#059669' },{ label:'Effect', color:'#0284C7' },{ label:'Figurative', color:'#DC2626' }],
+    hintsByStage: {
+      1: ['Personification gives a human quality to an animal or object', 'Try: "The buffalo smiled in the mud"', 'Write one sentence giving the buffalo a human feeling or action'],
+      2: ['Personification makes writing more vivid and emotional', 'Write two sentences giving the buffalo human qualities', 'What emotion or action have you given it?'],
+      3: ['Write a paragraph using personification to describe the buffalo', 'Explain what effect personification creates for the reader', 'How is personification different from a simile or metaphor?'],
+      4: ['Use personification to create a specific mood or reader response', 'Analyse the effect your personification creates', 'How does personification differ from metaphor in the way it works on the reader?'],
+      5: ['Analyse how personification constructs meaning and shapes reader positioning', 'Discuss the connotations of the human qualities you assigned to the buffalo', 'Compare the effect of personification to other figurative devices in creating empathy'],
+    },
+    starters: ['The buffalo…(human action/feeling)', 'I used personification to show that…', 'The effect of giving the buffalo human qualities is…'],
+  },
+  'concert-lawn': {
+    heading: 'Poetry & Creative Writing',
+    chips: [{ label:'Imagery', color:'#B45309' },{ label:'Rhyme', color:'#059669' },{ label:'Rhythm', color:'#0284C7' },{ label:'Poetic devices', color:'#DC2626' }],
+    hintsByStage: {
+      1: ['A poem uses special language to describe feelings and the world', 'Write two lines about the lawn that rhyme', 'Use a describing word (adjective) in each line'],
+      2: ['Try writing two rhyming lines about the Concert Lawn using sensory language', 'A poetic device is a special language technique like rhyme, rhythm or alliteration', 'What words help the reader picture or feel the scene?'],
+      3: ['Write a short poem (4 lines) about the Concert Lawn using one poetic device', 'Name the device you used and explain its effect', 'How does your poem create a mood or feeling?'],
+      4: ['Write a short poem using at least two named poetic devices', 'Explain the effect of each device on the reader', 'How does your choice of form (rhyming, free verse) shape meaning?'],
+      5: ['Write a poem about the Concert Lawn experience using multiple poetic devices', 'Analyse how your language and structural choices create meaning', 'Discuss how the form of your poem contributes to its overall effect'],
+    },
+    starters: ['The grass feels…', 'On the Concert Lawn,…', 'I used the device of… to create…'],
+  },
+  'blue-mountains-bushwalk': {
+    heading: 'Recount Text',
+    chips: [{ label:'Time connectives', color:'#B45309' },{ label:'Past tense', color:'#059669' },{ label:'First person', color:'#0284C7' },{ label:'Recount', color:'#DC2626' }],
+    hintsByStage: {
+      1: ['A recount tells us what happened in order', 'Use time words like "first", "then", "next", "finally"', 'Write two sentences about the walk in order'],
+      2: ['A recount uses first person ("I") and past tense (e.g. "I walked", "I saw")', 'Include time connectives to sequence events', 'Write three sentences about what happened on the walk'],
+      3: ['Write a recount paragraph using first person, past tense and time connectives', 'Include descriptive language to make the recount more engaging', 'How does a recount text differ from a narrative?'],
+      4: ['Identify the key features of an effective recount (orientation, sequence, reorientation)', 'How does descriptive language improve a recount?', 'Analyse how the choice of details shapes the reader\'s understanding of events'],
+      5: ['Analyse the structural and language features that make a recount effective', 'How does the writer\'s selection of events and details shape the reader\'s experience?', 'Compare the purpose and language features of a recount with a narrative'],
+    },
+    starters: ['First, we…', 'I noticed that…', 'A recount uses… to retell events because…'],
+  },
+};
+
 export default function ObservationScreen() {
   const { classStage, classSubject } = useApp();
   const { currentAnimal, observation, setObservation, submitObservation, missionContext } = useStudent();
@@ -644,15 +791,19 @@ export default function ObservationScreen() {
 
   useEffect(() => () => stopCamera(), []);
 
-  const isMaths  = classSubject === 'maths';
-  const isPdhpe  = classSubject === 'pdhpe';
-  const mathsData = isMaths ? getMathsObservationData(animalId, classStage) : null;
-  const pdhpeData = isPdhpe ? getPdhpeObservationData(animalId, classStage) : null;
-  const cfg    = isMaths  ? (MATHS_OBS_CONFIG[animalId] || OBS_CONFIG[animalId])
-               : isPdhpe  ? (PDHPE_OBS_CONFIG[animalId] || OBS_CONFIG[animalId])
+  const isMaths   = classSubject === 'maths';
+  const isPdhpe   = classSubject === 'pdhpe';
+  const isEnglish = classSubject === 'english';
+  const mathsData   = isMaths   ? getMathsObservationData(animalId, classStage)   : null;
+  const pdhpeData   = isPdhpe   ? getPdhpeObservationData(animalId, classStage)   : null;
+  const englishData = isEnglish ? getEnglishObservationData(animalId, classStage) : null;
+  const cfg    = isMaths   ? (MATHS_OBS_CONFIG[animalId]   || OBS_CONFIG[animalId])
+               : isPdhpe   ? (PDHPE_OBS_CONFIG[animalId]   || OBS_CONFIG[animalId])
+               : isEnglish ? (ENGLISH_OBS_CONFIG[animalId] || OBS_CONFIG[animalId])
                : OBS_CONFIG[animalId];
-  const prompt = isMaths  ? (mathsData?.prompt || '')
-               : isPdhpe  ? (pdhpeData?.prompt || '')
+  const prompt = isMaths   ? (mathsData?.prompt   || '')
+               : isPdhpe   ? (pdhpeData?.prompt   || '')
+               : isEnglish ? (englishData?.prompt || '')
                : ((currentAnimal?.writingPromptByStage?.[classStage]) || currentAnimal?.observationPrompt || '');
   const tip    = getStageScaffoldTip(classStage);
 
@@ -661,6 +812,8 @@ export default function ObservationScreen() {
     ? (classStage <= 2 ? 'I calculated…' : classStage === 5 ? 'Based on my calculations…' : 'I calculated that…')
     : isPdhpe
     ? (classStage <= 2 ? 'I noticed…' : classStage === 5 ? 'Based on my observation and knowledge of PDHPE…' : 'I observed that…')
+    : isEnglish
+    ? (classStage <= 2 ? 'I noticed…' : classStage === 5 ? 'In my response I will use the technique of…' : 'I noticed the language technique of…')
     : classStage <= 2
     ? 'I saw…'
     : classStage === 5
@@ -725,11 +878,13 @@ export default function ObservationScreen() {
     'concert-lawn':        ['Is your heart beating faster?', 'Do you feel warm or energetic?'],
   };
 
-  const s1q    = isMaths  ? (mathsS1Q[animalId]    || 'What number or measurement did you record?')
-               : isPdhpe  ? (pdhpeS1Q[animalId]    || 'What did you observe about this animal\'s body or behaviour?')
+  const s1q    = isMaths   ? (mathsS1Q[animalId]  || 'What number or measurement did you record?')
+               : isPdhpe   ? (pdhpeS1Q[animalId]  || 'What did you observe about this animal\'s body or behaviour?')
+               : isEnglish ? ('What action word (verb) best describes what this animal is doing right now?')
                : (S1_QUESTIONS[animalId] || 'What did you see?');
-  const s1cues = isMaths  ? (mathsS1Cues[animalId]  || ['What did you calculate?', 'Show your working.'])
-               : isPdhpe  ? (pdhpeS1Cues[animalId]  || ['Describe one thing you noticed', 'How does it connect to your own body?'])
+  const s1cues = isMaths   ? (mathsS1Cues[animalId] || ['What did you calculate?', 'Show your working.'])
+               : isPdhpe   ? (pdhpeS1Cues[animalId] || ['Describe one thing you noticed', 'How does it connect to your own body?'])
+               : isEnglish ? (['What is the animal doing?', 'Which word describes it best?'])
                : (S1_CUES[animalId] || ['What did you see?','What was it doing?']);
   const chipsList = isMaths ? [
     { label:'Show working', color:'var(--jungle-light)' },
@@ -926,7 +1081,7 @@ export default function ObservationScreen() {
                   <div key={i} style={{ background:`${chip.color}12`, border:`1.5px solid ${chip.color}35`, borderRadius:'var(--t-r-pill)', padding:'0.35rem 0.8rem', fontSize:'0.8rem', fontWeight:600, color:chip.color }}>{chip.label}</div>
                 ))}
               </div>
-              {classStage >= 4 && <p style={{ fontSize:'0.82rem', color:'#aaa', marginBottom:'1rem', textAlign:'center', fontStyle:'italic' }}>{isMaths ? 'Show your full working and include units.' : isPdhpe ? 'Use PDHPE terminology and connect your observation to a body system or health concept.' : 'Use specific evidence from your observation.'}</p>}
+              {classStage >= 4 && <p style={{ fontSize:'0.82rem', color:'#aaa', marginBottom:'1rem', textAlign:'center', fontStyle:'italic' }}>{isMaths ? 'Show your full working and include units.' : isPdhpe ? 'Use PDHPE terminology and connect your observation to a body system or health concept.' : isEnglish ? 'Name the language technique you are using and explain its effect on the reader.' : 'Use specific evidence from your observation.'}</p>}
               {animalId === 'blue-mountains-bushwalk' && bushwalkTimerDone && isMaths && (() => {
                 const maxCount = Math.max(...SOUND_CATEGORIES.map(c => soundTally[c.key]));
                 return (
@@ -1004,11 +1159,11 @@ export default function ObservationScreen() {
             <>
               <div style={{ background:'var(--t-foam)', border:'1px solid var(--t-mist)', borderRadius:'var(--t-r-sm)', padding:'0.6rem 1rem', marginTop:'0.6rem', display:'flex', alignItems:'center', gap:'0.5rem' }}>
                 <span style={{ fontSize:'0.85rem', color:'#555' }}>Try starting with:</span>
-                <span style={{ fontSize:'0.88rem', fontWeight:600, color:'var(--jungle-deep)', fontStyle:'italic' }}>{isMaths ? '"I calculated…"' : '"I saw…"'}</span>
+                <span style={{ fontSize:'0.88rem', fontWeight:600, color:'var(--jungle-deep)', fontStyle:'italic' }}>{isMaths ? '"I calculated…"' : isEnglish ? '"I noticed…"' : '"I saw…"'}</span>
               </div>
               <div style={{ background:'#F7FAF8', border:'1px solid #D4E8DC', borderRadius:'var(--t-r-md)', padding:'0.9rem 1.1rem', marginTop:'0.75rem' }}>
                 <p style={{ fontSize:'0.72rem', fontWeight:700, color:'#059669', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:'0.5rem' }}>You could write:</p>
-                {(isMaths ? ['I calculated…','The answer is…'] : ['I saw…','It was…']).map((s, i) => (
+                {(isMaths ? ['I calculated…','The answer is…'] : isEnglish ? ['The animal…','I noticed the word…'] : ['I saw…','It was…']).map((s, i) => (
                   <p key={i} style={{ fontSize:'0.78rem', color:'#555', margin:'0.1rem 0', paddingLeft:'0.5rem', fontStyle:'italic' }}>"{s}"</p>
                 ))}
                 <p style={{ fontSize:'0.72rem', fontWeight:700, color:'var(--jungle-mid)', textTransform:'uppercase', letterSpacing:'0.05em', margin:'0.6rem 0 0.3rem' }}>{isMaths ? 'Think about:' : 'Think about:'}</p>
@@ -1078,7 +1233,36 @@ export default function ObservationScreen() {
               </div>
             );
           })()}
-          {classStage > 2 && !isMaths && !isPdhpe && (
+          {classStage > 2 && isEnglish && (() => {
+            const hints = cfg?.hintsByStage?.[classStage] || cfg?.hintsByStage?.[3] || [];
+            return (
+              <div style={{ marginTop:'0.75rem' }}>
+                <button
+                  onClick={() => setHintsOpen(o => !o)}
+                  style={{ width:'100%', display:'flex', justifyContent:'space-between', alignItems:'center', background:'#FFFBEB', border:'1px solid #FDE68A', borderRadius: hintsOpen ? '10px 10px 0 0' : '10px', padding:'0.7rem 1rem', cursor:'pointer', color:'#B45309', fontWeight:700, fontSize:'0.82rem', textAlign:'left' }}>
+                  <span>Need a hint?</span>
+                  <span style={{ fontSize:'0.7rem' }}>{hintsOpen ? '▲' : '▼'}</span>
+                </button>
+                {hintsOpen && (
+                  <div style={{ background:'#FFFBEB', border:'1px solid #FDE68A', borderTop:'none', borderRadius:'0 0 10px 10px', padding:'0.75rem 1rem' }}>
+                    {hints.length > 0 && (
+                      <>
+                        <p style={{ fontSize:'0.72rem', fontWeight:700, color:'#B45309', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:'0.35rem' }}>Your response should include:</p>
+                        <ul style={{ margin:'0 0 0.6rem', paddingLeft:'1.1rem', fontSize:'0.8rem', color:'#555', lineHeight:1.8 }}>
+                          {hints.map((h, i) => <li key={i}>{h}</li>)}
+                        </ul>
+                      </>
+                    )}
+                    <p style={{ fontSize:'0.73rem', fontWeight:600, color:'#B45309', marginBottom:'0.2rem' }}>Sentence starters:</p>
+                    {(cfg?.starters || tip.starters).map((s, i) => (
+                      <p key={i} style={{ fontSize:'0.75rem', color:'#555', margin:'0.1rem 0', paddingLeft:'0.5rem', fontStyle:'italic' }}>"{s}"</p>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+          {classStage > 2 && !isMaths && !isPdhpe && !isEnglish && (
             <div style={{ background:'#F7FAF8', border:'1px solid #D4E8DC', borderRadius:'var(--t-r-md)', padding:'0.9rem 1.1rem', marginTop:'0.75rem' }}>
               {cfg?.bullets?.length > 0 ? (
                 <>

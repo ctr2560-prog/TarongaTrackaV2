@@ -863,12 +863,140 @@ function buildPdhpeObservationScore(text, animalId, classStage) {
   };
 }
 
+function buildEnglishObservationScore(text, animalId, classStage) {
+  if (isLowQualityResponse(text)) {
+    return {
+      behaviour: 1, detail: 1, writing: 1,
+      rationale: {
+        behaviour: 'Response did not engage with the English task.',
+        detail:    'No language or literacy understanding demonstrated.',
+        writing:   'Response needs capital letters, full stops and complete sentences.',
+      },
+      improvementTips: ['Write at least one full sentence responding to the prompt.'],
+      extractedEvidence: [],
+      confidence: 'low',
+      reviewRecommended: true,
+      overallFeedback: 'Response needs development - prompt the student to write at least one full sentence about what they observed.',
+    };
+  }
+
+  const lower = text.toLowerCase();
+  const wc    = text.trim().split(/\s+/).filter(Boolean).length;
+
+  // Literary / language device vocabulary
+  const deviceVocab = ['simile', 'metaphor', 'personification', 'imagery', 'alliteration', 'onomatopoeia',
+    'connotation', 'symbol', 'symbolism', 'irony', 'tone', 'mood', 'theme', 'narrative',
+    'verb', 'adjective', 'noun', 'adverb', 'figurative', 'literal', 'technique', 'device',
+    'persuasive', 'informative', 'imaginative', 'recount', 'poem', 'poetry', 'rhyme',
+    'allusion', 'paradox', 'juxtaposition', 'rhetorical', 'argument', 'evidence', 'language',
+    'word choice', 'vocabulary', 'describe', 'description', 'descriptive', 'effect', 'reader'];
+  const deviceHits = deviceVocab.filter(w => lower.includes(w)).length;
+
+  // Textual connection - did they reference the animal or their observation?
+  const hasAnimalRef = ['chimp', 'gorilla', 'lion', 'giraffe', 'koala', 'tiger', 'dingo',
+    'lemur', 'sea lion', 'buffalo', 'lyrebird', 'platypus', 'lizard', 'animal', 'enclosure',
+    'zoo', 'habitat', 'i noticed', 'i observed', 'i saw', 'i felt', 'i could hear'].some(p => lower.includes(p));
+
+  // Explanation language
+  const hasExplanation = ['because', 'therefore', 'which means', 'this shows', 'this creates',
+    'this helps', 'this suggests', 'in order to', 'as a result', 'so that', 'the effect',
+    'the reader', 'the audience', 'makes the reader', 'allows the reader'].some(p => lower.includes(p));
+
+  const hasCap        = /^[A-Z]/.test(text);
+  const hasStop       = /[.!?]/.test(text);
+  const sentences     = text.split(/[.!?]+/).filter(s => s.trim().length > 2);
+  const multiSentence = sentences.length >= 2;
+  const words         = text.trim().split(/\s+/).filter(Boolean);
+  const uniqueWords   = new Set(words.map(w => w.toLowerCase().replace(/[^a-z]/g, '')).filter(Boolean));
+  const isAllCaps     = text.length > 4 && text === text.toUpperCase();
+
+  // Vocabulary (behaviour slot) - did they engage with the language task?
+  let vocabulary = 1;
+  if (wc >= 4 && (deviceHits >= 1 || hasAnimalRef))                      vocabulary = 2;
+  if (wc >= 5 && (deviceHits >= 1 || hasAnimalRef))                      vocabulary = 3;
+  if (deviceHits >= 1 && (hasExplanation || hasAnimalRef))               vocabulary = Math.max(vocabulary, 3);
+  if (deviceHits >= 2 && (hasExplanation || hasAnimalRef))               vocabulary = Math.max(vocabulary, 4);
+  if (deviceHits >= 3 && hasExplanation && multiSentence)                vocabulary = 5;
+
+  // Understanding (detail slot) - did they demonstrate literacy understanding?
+  let understanding = 1;
+  if (wc >= 4 && (deviceHits >= 1 || hasAnimalRef))                      understanding = 2;
+  if (deviceHits >= 1 || hasAnimalRef)                                   understanding = Math.max(understanding, 3);
+  if (deviceHits >= 2 && hasExplanation)                                 understanding = Math.max(understanding, 4);
+  if (deviceHits >= 3 && hasExplanation && multiSentence)                understanding = 5;
+
+  // Expression (writing slot) - sentence structure and punctuation
+  let expression = 1;
+  if (wc >= 5 && (hasCap || hasStop))                                    expression = 2;
+  if (wc >= 6 && hasCap && hasStop)                                      expression = 3;
+  if (multiSentence && hasCap && hasStop)                                expression = Math.max(expression, 3);
+  if (wc >= 12 && hasCap && hasStop && uniqueWords.size >= 8)            expression = Math.max(expression, 4);
+  if (multiSentence && hasCap && hasStop && uniqueWords.size >= 10 && !isAllCaps) expression = 5;
+  if (isAllCaps) expression = Math.max(1, expression - 1);
+
+  vocabulary    = Math.max(1, Math.min(5, vocabulary));
+  understanding = Math.max(1, Math.min(5, understanding));
+  expression    = Math.max(1, Math.min(5, expression));
+
+  const rationale = {
+    behaviour: vocabulary >= 4
+      ? 'Student used specific literary or language vocabulary and engaged clearly with the task.'
+      : vocabulary >= 3
+      ? 'Student referenced relevant language concepts or made an observation about the text.'
+      : vocabulary >= 2
+      ? 'Student attempted the task but needs to use more precise English terminology.'
+      : 'Student response did not clearly engage with the language task.',
+    detail: understanding >= 4
+      ? 'Student demonstrated solid understanding of a language or literary concept with explanation.'
+      : understanding >= 3
+      ? 'Student showed some understanding of how language works.'
+      : understanding >= 2
+      ? 'Student showed basic awareness but needs more depth or explanation.'
+      : 'Student response did not demonstrate understanding of a language concept.',
+    writing: expression >= 4
+      ? 'Student wrote in clear, correctly punctuated sentences with varied vocabulary.'
+      : expression >= 3
+      ? 'Student used capital letters and full stops with reasonable sentence structure.'
+      : expression >= 2
+      ? 'Student attempted to write sentences but is missing capital letters or punctuation.'
+      : 'Response needs capital letters, full stops and complete sentences.',
+  };
+
+  const avg = (vocabulary + understanding + expression) / 3;
+  const overallFeedback = avg >= 4
+    ? 'Strong response - student used literary language, showed understanding, and wrote clearly.'
+    : avg >= 3
+    ? 'Good response - student addressed the task. Encourage more explanation and check punctuation.'
+    : avg >= 2
+    ? 'Developing response - encourage the student to write in full sentences with a capital letter and full stop.'
+    : 'Response needs development - prompt the student to write at least one full sentence.';
+
+  return {
+    behaviour: vocabulary,
+    detail:    understanding,
+    writing:   expression,
+    rationale,
+    improvementTips: [
+      vocabulary < 3    ? 'Use a language term (e.g. verb, simile, imagery) in your response.' : null,
+      understanding < 3 ? 'Explain what the technique does or why the writer chose those words.' : null,
+      expression < 3    ? 'Start with a capital letter, use full stops, and write in complete sentences.' : null,
+    ].filter(Boolean),
+    extractedEvidence: [],
+    confidence: avg >= 3 ? 'high' : avg >= 2 ? 'medium' : 'low',
+    reviewRecommended: false,
+    overallFeedback,
+  };
+}
+
 export function buildObservationScore(text, animalId, classStage, classSubject) {
   if (classSubject === 'maths') {
     return buildMathsObservationScore(text, animalId, classStage);
   }
   if (classSubject === 'pdhpe') {
     return buildPdhpeObservationScore(text, animalId, classStage);
+  }
+  if (classSubject === 'english') {
+    return buildEnglishObservationScore(text, animalId, classStage);
   }
   const { behaviourBonus, detailBonus, literacyBonus } = scoreObservation(text, animalId, classStage);
   const scoreRationale = generateScoreRationale(text, behaviourBonus, detailBonus, literacyBonus, animalId, classStage);

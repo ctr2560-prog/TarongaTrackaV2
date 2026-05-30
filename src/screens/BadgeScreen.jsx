@@ -18,6 +18,11 @@ const SCORE_DOMAINS = {
     { key:'detail',    label:'Understanding' },
     { key:'writing',   label:'Communication' },
   ],
+  english: [
+    { key:'behaviour', label:'Vocabulary'   },
+    { key:'detail',    label:'Understanding' },
+    { key:'writing',   label:'Expression'   },
+  ],
 };
 
 const KID_MSGS = {
@@ -61,6 +66,20 @@ const KID_MSGS = {
     writing: {
       well: "Your writing was clear with great sentences!",
       next: "Use a capital letter, full stops, and write in full sentences.",
+    },
+  },
+  english: {
+    behaviour: {
+      well: "You used great language words and described things really precisely!",
+      next: "Try using a language term like 'verb', 'simile' or 'imagery' in your response.",
+    },
+    detail: {
+      well: "You explained your thinking about language really clearly!",
+      next: "Explain why the writer chose those words - what effect do they create?",
+    },
+    writing: {
+      well: "Your sentences were clear, well-punctuated and easy to read!",
+      next: "Start with a capital letter and finish each sentence with a full stop.",
     },
   },
 };

@@ -101,8 +101,39 @@ const NSW_OUTCOMES = {
       { code:'SC5-GEV-01', desc:'Describes the relationship between the diversity of living things and the theory of evolution' },
     ],
   },
+  english: {
+    syllabus: { '1':'English K-10 (2022)', '2':'English K-10 (2022)', '3':'English K-10 (2022)', '4':'English K-10 (2022)', '5':'English K-10 (2022)' },
+    1: [
+      { code:'EN1-VOCAB-01', desc:'Uses Tier 1 and Tier 2 vocabulary to understand and create texts' },
+      { code:'EN1-RECOM-01', desc:'Comprehends texts by activating background knowledge and identifying key ideas' },
+      { code:'EN1-CWT-01',   desc:'Plans and creates written texts for different purposes using simple sentences' },
+      { code:'EN1-UARL-01',  desc:'Responds to literature by identifying characters, setting and plot events' },
+    ],
+    2: [
+      { code:'EN2-VOCAB-01', desc:'Builds Tier 2 and Tier 3 vocabulary through wide reading and morphological analysis' },
+      { code:'EN2-RECOM-01', desc:'Reads and comprehends texts using knowledge of text structures and features' },
+      { code:'EN2-CWT-01',   desc:'Plans, creates and revises imaginative, informative and persuasive texts' },
+      { code:'EN2-UARL-01',  desc:'Identifies how ideas are represented in literature through character, setting and plot' },
+    ],
+    3: [
+      { code:'EN3-VOCAB-01', desc:'Extends Tier 2 and Tier 3 vocabulary through wide reading and morphological analysis' },
+      { code:'EN3-RECOM-01', desc:'Fluently reads and comprehends texts, analysing text structures and language features' },
+      { code:'EN3-CWT-01',   desc:'Plans, creates and revises written texts for multiple purposes and audiences' },
+      { code:'EN3-UARL-01',  desc:'Analyses representations of ideas through narrative, character, imagery, symbol and connotation' },
+    ],
+    4: [
+      { code:'EN4-RVL-01',   desc:'Uses personal, creative and critical strategies to read and interpret complex texts' },
+      { code:'EN4-URA-01',   desc:'Analyses how meaning is created through language forms, features and structures' },
+      { code:'EN4-ECA-01',   desc:'Composes imaginative, informative and persuasive texts with deliberate language choices' },
+    ],
+    5: [
+      { code:'EN5-RVL-01',   desc:'Employs sophisticated strategies to interpret and evaluate complex texts' },
+      { code:'EN5-URA-01',   desc:'Examines how increasingly complex language forms create meaning and position readers' },
+      { code:'EN5-ECA-01',   desc:'Composes sustained texts with deliberate structural and language choices for effect' },
+    ],
+  },
   maths: {
-    syllabus: { '1':'Mathematics K–10 (2022)', '2':'Mathematics K–10 (2022)', '3':'Mathematics K–10 (2022)', '4':'Mathematics K–10 (2022)', '5':'Mathematics K–10 (2022)' },
+    syllabus: { '1':'Mathematics K-10 (2022)', '2':'Mathematics K-10 (2022)', '3':'Mathematics K-10 (2022)', '4':'Mathematics K-10 (2022)', '5':'Mathematics K-10 (2022)' },
     1: [
       { code:'MAO-WM-01',   desc:'Develops understanding and fluency by exploring and connecting mathematical concepts and communicating thinking' },
       { code:'MA1-DATA-01', desc:'Gathers and organises data, displays data in lists, tables and picture graphs, and interprets results' },
@@ -436,7 +467,7 @@ export default function TeacherDashboardScreen() {
                     onFocus={e => e.target.style.borderColor='var(--t-mid)'} onBlur={e => e.target.style.borderColor='var(--t-stone)'}>
                     <option value="science">Science</option>
                     <option value="maths">Mathematics</option>
-                    <option value="english" disabled>English (Coming Soon)</option>
+                    <option value="english">English</option>
                     <option value="geography" disabled>Geography (Coming Soon)</option>
                     <option value="pdhpe">PDHPE</option>
                     <option value="ngara-nura" disabled>Ngara Nura (Coming Soon)</option>
@@ -502,13 +533,13 @@ export default function TeacherDashboardScreen() {
               )}
 
               {/* NSW Curriculum Alignment */}
-              {(newSubject === 'science' || newSubject === 'maths' || newSubject === 'pdhpe') && (() => {
+              {(newSubject === 'science' || newSubject === 'maths' || newSubject === 'pdhpe' || newSubject === 'english') && (() => {
                 const subjectData = NSW_OUTCOMES[newSubject];
                 const outcomes    = subjectData?.[newClassStage] || [];
                 const syllabusName = subjectData?.syllabus?.[newClassStage] || '';
-                const accentColor  = newSubject === 'maths' ? '#0369a1' : newSubject === 'pdhpe' ? '#7C3AED' : '#2E7D55';
-                const bgColor      = newSubject === 'maths' ? '#EFF6FF' : newSubject === 'pdhpe' ? '#F5F3FF' : '#F0F7F0';
-                const borderColor  = newSubject === 'maths' ? '#BFDBFE' : newSubject === 'pdhpe' ? '#DDD6FE' : '#C6E2C6';
+                const accentColor  = newSubject === 'maths' ? '#0369a1' : newSubject === 'pdhpe' ? '#7C3AED' : newSubject === 'english' ? '#B45309' : '#2E7D55';
+                const bgColor      = newSubject === 'maths' ? '#EFF6FF' : newSubject === 'pdhpe' ? '#F5F3FF' : newSubject === 'english' ? '#FFFBEB' : '#F0F7F0';
+                const borderColor  = newSubject === 'maths' ? '#BFDBFE' : newSubject === 'pdhpe' ? '#DDD6FE' : newSubject === 'english' ? '#FDE68A' : '#C6E2C6';
                 return (
                   <div style={{ marginTop:'1rem', background:bgColor, border:`1px solid ${borderColor}`, borderRadius:'var(--t-r-sm)', padding:'0.85rem 1rem' }}>
                     <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'0.6rem' }}>
