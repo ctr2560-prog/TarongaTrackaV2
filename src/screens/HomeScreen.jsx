@@ -10,7 +10,7 @@ const MODES = [
     accent: '#4ecb71',
     tag: 'Live Experience',
     summary: 'GPS-guided animal tracking and live missions during your Taronga Zoo excursion.',
-    detail: 'Explore Taronga Zoo Sydney (Dubbo coming soon). Students discover animals with real-time GPS guidance, completing keeper-designed missions and building their badge collection — all across one incredible visit.',
+    detail: 'Explore Taronga Zoo Sydney (Dubbo coming soon). Students discover animals with real-time GPS guidance, completing keeper-designed missions and building their badge collection - all across one incredible visit.',
     image: '/images/screenshots/mode-zoo.jpg',
   },
   {
@@ -19,7 +19,7 @@ const MODES = [
     accent: '#a482e8',
     tag: 'Overnight Program',
     summary: 'Taronga\'s overnight experience with after-dark keeper missions and documentary making.',
-    detail: 'Designed exclusively for Taronga\'s ZooSnooz overnight program. Students complete nocturnal animal observations, interact with keepers and produce a wildlife documentary — all under the stars at the zoo.',
+    detail: 'Designed exclusively for Taronga\'s ZooSnooz overnight program. Students complete nocturnal animal observations, interact with keepers and produce a wildlife documentary - all under the stars at the zoo.',
     image: '/images/screenshots/mode-zoosnooz.jpg',
   },
   {
@@ -29,7 +29,7 @@ const MODES = [
     tag: 'Coming Soon',
     comingSoon: true,
     summary: 'A virtual zoo that brings the full Taronga experience into your classroom.',
-    detail: 'Can\'t make it to the zoo? Taronga Tracka will recreate the complete zoo experience in your classroom. Students track virtual animals, complete digital missions and earn badges — building their own virtual Taronga from their desks.',
+    detail: 'Can\'t make it to the zoo? Taronga Tracka will recreate the complete zoo experience in your classroom. Students track virtual animals, complete digital missions and earn badges - building their own virtual Taronga from their desks.',
     image: '/images/screenshots/mode-school.jpg',
   },
 ];
@@ -39,14 +39,14 @@ const FEATURES = [
     id: 'gps',
     label: 'GPS Technology',
     tagline: 'Find every animal, every time.',
-    desc: 'Real-time GPS guidance leads students directly to each animal zone across the zoo. No paper maps, no lost groups — just a seamless, self-guided wildlife trail that keeps every student on track.',
+    desc: 'Real-time GPS guidance leads students directly to each animal zone across the zoo. No paper maps, no lost groups - just a seamless, self-guided wildlife trail that keeps every student on track.',
     image: '/images/screenshots/app-map.jpg',
   },
   {
     id: 'missions',
     label: 'Missions & Games',
     tagline: 'Learning through play.',
-    desc: 'Students engage through interactive games, hands-on keeper activities and documentary making — all built around each animal\'s real habitat and behaviour. Every mission is different, every visit stays fresh.',
+    desc: 'Students engage through interactive games, hands-on keeper activities and documentary making - all built around each animal\'s real habitat and behaviour. Every mission is different, every visit stays fresh.',
     images: [
       '/images/screenshots/mission-1.jpg',
       '/images/screenshots/mission-2.jpg',
@@ -58,14 +58,14 @@ const FEATURES = [
     id: 'badges',
     label: 'Badge Collection',
     tagline: 'Every visit tells a story.',
-    desc: 'Completed missions unlock personalised animal badges. Students build a digital wildlife collection that reflects their real discoveries at the zoo — a tangible record of what they found, learned and explored.',
+    desc: 'Completed missions unlock personalised animal badges. Students build a digital wildlife collection that reflects their real discoveries at the zoo - a tangible record of what they found, learned and explored.',
     image: '/images/screenshots/app-collection.jpg',
   },
   {
     id: 'conservation',
     label: 'Learning through Conservation',
     tagline: 'Extending the impact beyond the visit.',
-    desc: 'Taronga Tracka connects directly to the Wildly Online Learning platform — giving teachers access to curriculum-aligned resources, assessments and learning pathways that extend the zoo experience and create lasting conservation impact.',
+    desc: 'Taronga Tracka connects directly to the Wildly Online Learning platform - giving teachers access to curriculum-aligned resources, assessments and learning pathways that extend the zoo experience and create lasting conservation impact.',
     image: '/images/screenshots/app-wildly.jpg',
   },
 ];
@@ -196,14 +196,14 @@ const DEMO_SLIDES = [
     label: 'Class Overview',
     accent: '#4ecb71',
     src: '/images/screenshots/portal-slide-4.jpg',
-    caption: 'At a glance: students, average points, badges earned, missions completed and quiz scores — plus most-visited animals and quiz distribution across your class.',
+    caption: 'At a glance: students, average points, badges earned, missions completed and quiz scores - plus most-visited animals and quiz distribution across your class.',
   },
   {
     id: 'writing',
     label: 'Writing Analytics',
     accent: '#50c8a0',
     src: '/images/screenshots/portal-slide-1.jpg',
-    caption: 'Automated writing analysis scores every observation across Behaviour, Detail and Writing — with strength and focus area callouts for your whole class.',
+    caption: 'Automated writing analysis scores every observation across Behaviour, Detail and Writing - with strength and focus area callouts for your whole class.',
   },
   {
     id: 'observations',
@@ -217,7 +217,7 @@ const DEMO_SLIDES = [
     label: 'ZooSnooz Portal',
     accent: '#a482e8',
     src: '/images/screenshots/portal-slide-3.jpg',
-    caption: 'Student-made wildlife documentaries are automatically collected and playable from your portal — ready to screen back in class.',
+    caption: 'Student-made wildlife documentaries are automatically collected and playable from your portal - ready to screen back in class.',
   },
 ];
 
@@ -257,7 +257,7 @@ function TeacherPortalDemo() {
         </div>
       </div>
 
-      {/* Screenshot area — no fixed aspect ratio, let image dictate height */}
+      {/* Screenshot area - no fixed aspect ratio, let image dictate height */}
       <div style={{ position:'relative', overflow:'hidden', background:'#f0f0ee' }}>
         <img
           key={imgKey}
@@ -266,7 +266,7 @@ function TeacherPortalDemo() {
           style={{ width:'100%', display:'block', animation:'portal-slide-in 0.5s cubic-bezier(0.32,0,0.18,1) both' }}
         />
 
-        {/* Slide label badge — top left overlay */}
+        {/* Slide label badge - top left overlay */}
         <div style={{ position:'absolute', top:'0.6rem', left:'0.7rem', zIndex:3, display:'flex', alignItems:'center', gap:'0.38rem', background:'rgba(0,0,0,0.55)', backdropFilter:'blur(8px)', borderRadius:'99px', padding:'0.22rem 0.6rem' }}>
           <div style={{ width:'5px', height:'5px', borderRadius:'50%', background:accent, flexShrink:0 }} />
           <span style={{ fontSize:'0.56rem', fontWeight:800, color:accent, textTransform:'uppercase', letterSpacing:'0.14em' }}>{current.label}</span>
@@ -460,7 +460,7 @@ export default function HomeScreen() {
                 <span style={{ fontSize:'0.62rem', fontWeight:800, color:'#4ecbcb', textTransform:'uppercase', letterSpacing:'0.2em' }}>The Journey</span>
               </div>
               <h2 className="taronga-title" style={{ fontSize:'clamp(2.6rem,7vw,4.2rem)', color:'white', margin:'0 0 0.8rem', letterSpacing:'-0.02em', lineHeight:1.05 }}>How It Works</h2>
-              <p style={{ fontSize:'clamp(0.92rem,1.4vw,1.15rem)', color:'rgba(255,255,255,0.42)', lineHeight:1.65, margin:'0 auto', maxWidth:'460px' }}>From first log-in to final badge — a seamless guided experience.</p>
+              <p style={{ fontSize:'clamp(0.92rem,1.4vw,1.15rem)', color:'rgba(255,255,255,0.42)', lineHeight:1.65, margin:'0 auto', maxWidth:'460px' }}>From first log-in to final badge - a seamless guided experience.</p>
             </div>
 
             <div key={p2Key} style={{ width:'100%', maxWidth:'min(92vw, 960px)', padding:'0 1.5rem' }}>
@@ -510,7 +510,7 @@ export default function HomeScreen() {
               </div>
               <h2 className="taronga-title" style={{ fontSize:'clamp(2.6rem,7vw,4.2rem)', color:'white', margin:'0 0 1rem', letterSpacing:'-0.02em', lineHeight:1.04 }}>Teacher Portal</h2>
               <p style={{ fontSize:'clamp(0.95rem,1.4vw,1.15rem)', color:'rgba(255,255,255,0.52)', lineHeight:1.7, margin:'0 auto', maxWidth:'520px' }}>
-                Live analytics, student observations, and wildlife documentaries — all in one place.
+                Live analytics, student observations, and wildlife documentaries - all in one place.
               </p>
             </div>
 

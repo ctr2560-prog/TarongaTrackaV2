@@ -146,7 +146,7 @@ export default function DingoMission() {
 
             {wrongTap && (
               <div style={{ background:'#FEE2E2', border:'1px solid #FCA5A5', borderRadius:'var(--t-r-xs)', padding:'0.5rem 0.75rem', marginBottom:'0.75rem', textAlign:'center' }}>
-                <p style={{ fontSize:'0.82rem', color:'#ef4444', fontWeight:600, margin:0 }}>Try again — tap the next correct organism</p>
+                <p style={{ fontSize:'0.82rem', color:'#ef4444', fontWeight:600, margin:0 }}>Try again - tap the next correct organism</p>
               </div>
             )}
 

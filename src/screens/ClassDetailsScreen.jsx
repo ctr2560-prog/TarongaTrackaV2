@@ -190,11 +190,11 @@ export default function ClassDetailsScreen() {
       const lastBadge = s.badges?.length > 0 ? s.badges[s.badges.length - 1] : null;
       let totalQ = 0, correctQ = 0;
       (s.badges||[]).forEach(b => { (b.quizResults||[]).forEach(r => { totalQ++; if(r.correctOnFirstAttempt) correctQ++; }); });
-      const quizStr = totalQ > 0 ? `${Math.round((correctQ/totalQ)*100)}%` : '—';
+      const quizStr = totalQ > 0 ? `${Math.round((correctQ/totalQ)*100)}%` : ' - ';
       const obsStr  = (s.badges||[]).filter(b=>b.observation).map(b=>`${b.animal}: ${b.observation}`).join(' | ');
       return [s.name, s.totalPoints||0, s.badges?.length||0, quizStr, s.completed?'Yes':'No',
-        s.completedAt ? new Date(s.completedAt.toDate?.() || s.completedAt).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'}) : (lastBadge?.timestamp ? new Date(lastBadge.timestamp).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'}) : '—'),
-        obsStr || '—'];
+        s.completedAt ? new Date(s.completedAt.toDate?.() || s.completedAt).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'}) : (lastBadge?.timestamp ? new Date(lastBadge.timestamp).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'}) : ' - '),
+        obsStr || ' - '];
     });
     const csv = [header,...rows].map(row=>row.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
     const a = document.createElement('a');
@@ -942,8 +942,8 @@ export default function ClassDetailsScreen() {
                           return (
                             <tr key={i} style={{ borderBottom:'1px solid rgba(46,125,85,0.1)', background: allDone?'rgba(46,125,85,0.08)':i%2===0?'rgba(255,255,255,0.02)':'transparent' }}>
                               <td style={{ padding:'0.8rem 0.75rem', color:'#D4EDE0', fontWeight:600 }}>{s.name}{allDone&&<span style={{ marginLeft:'0.4rem', fontSize:'0.6rem', background:'#2E7D55', color:'white', borderRadius:'4px', padding:'0.1rem 0.35rem', fontWeight:700, verticalAlign:'middle' }}>Done</span>}</td>
-                              <td style={{ padding:'0.8rem 0.75rem', textAlign:'center', fontWeight:700, color:'#A8C4B2' }}>{completedCount>0?zzPts:<span style={{ color:'rgba(255,255,255,0.2)' }}>—</span>}</td>
-                              <td style={{ padding:'0.8rem 0.75rem', textAlign:'center', fontWeight:600, color:'#4A9E6B' }}>{quizPct!==null?`${quizPct}%`:<span style={{ color:'rgba(255,255,255,0.2)' }}>—</span>}</td>
+                              <td style={{ padding:'0.8rem 0.75rem', textAlign:'center', fontWeight:700, color:'#A8C4B2' }}>{completedCount>0?zzPts:<span style={{ color:'rgba(255,255,255,0.2)' }}> - </span>}</td>
+                              <td style={{ padding:'0.8rem 0.75rem', textAlign:'center', fontWeight:600, color:'#4A9E6B' }}>{quizPct!==null?`${quizPct}%`:<span style={{ color:'rgba(255,255,255,0.2)' }}> - </span>}</td>
                               <td style={{ padding:'0.8rem 0.75rem', textAlign:'center' }}>
                                 <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'0.2rem' }}>
                                   <div style={{ width:'48px', height:'4px', background:'rgba(46,125,85,0.2)', borderRadius:'3px', overflow:'hidden' }}><div style={{ height:'100%', width:`${(completedCount/ZOOSNOOZ_ANIMALS.length)*100}%`, background:'#2E7D55', borderRadius:'3px' }}/></div>
@@ -951,10 +951,10 @@ export default function ClassDetailsScreen() {
                                 </div>
                               </td>
                               <td style={{ padding:'0.8rem 0.75rem', textAlign:'center', color:'rgba(184,212,192,0.5)', fontSize:'0.82rem' }}>
-                                {s.completedAt ? new Date(s.completedAt.toDate?.() || s.completedAt).toLocaleDateString('en-AU',{day:'numeric',month:'short'}) : '—'}
+                                {s.completedAt ? new Date(s.completedAt.toDate?.() || s.completedAt).toLocaleDateString('en-AU',{day:'numeric',month:'short'}) : ' - '}
                               </td>
                               <td style={{ padding:'0.8rem 0.75rem', textAlign:'center' }}>
-                                {completedCount>0 ? <button onClick={() => setObsModal({...s, isZZ:true})} style={{ background:'rgba(46,125,85,0.18)', color:'#A8C4B2', border:'1px solid rgba(46,125,85,0.35)', padding:'0.25rem 0.55rem', borderRadius:'var(--t-r-xs)', fontSize:'0.75rem', fontWeight:600, cursor:'pointer' }}>View</button> : <span style={{ color:'rgba(255,255,255,0.2)', fontSize:'0.72rem' }}>—</span>}
+                                {completedCount>0 ? <button onClick={() => setObsModal({...s, isZZ:true})} style={{ background:'rgba(46,125,85,0.18)', color:'#A8C4B2', border:'1px solid rgba(46,125,85,0.35)', padding:'0.25rem 0.55rem', borderRadius:'var(--t-r-xs)', fontSize:'0.75rem', fontWeight:600, cursor:'pointer' }}>View</button> : <span style={{ color:'rgba(255,255,255,0.2)', fontSize:'0.72rem' }}> - </span>}
                               </td>
                             </tr>
                           );
@@ -983,9 +983,9 @@ export default function ClassDetailsScreen() {
                         </div>
                         <div style={{ fontWeight:700, color:'var(--sunset-orange)', fontSize:'0.9rem' }}>{s.totalPoints||0}</div>
                         <div style={{ fontWeight:600, color:'var(--t-mid)', fontSize:'0.9rem' }}>{badgeCount}</div>
-                        <div style={{ fontWeight:600, color:'var(--t-mid)', fontSize:'0.85rem' }}>{s.quizPercentage!==undefined ? `${s.quizPercentage}%` : '—'}</div>
-                        <div>{hasObs ? <button onClick={()=>setObsModal(s)} style={{ background:'var(--t-deep)', color:'white', border:'none', padding:'0.25rem 0.6rem', borderRadius:'6px', fontSize:'0.72rem', fontWeight:600, cursor:'pointer' }}>View</button> : <span style={{ color:'#bbb', fontSize:'0.75rem' }}>—</span>}</div>
-                        <div>{s.conservationStatement ? <button onClick={()=>setConservationModal({name:s.name,text:s.conservationStatement})} style={{ background:'var(--t-deep)', color:'white', border:'none', padding:'0.25rem 0.6rem', borderRadius:'6px', fontSize:'0.72rem', fontWeight:600, cursor:'pointer' }}>View</button> : <span style={{ color:'#bbb', fontSize:'0.75rem' }}>—</span>}</div>
+                        <div style={{ fontWeight:600, color:'var(--t-mid)', fontSize:'0.85rem' }}>{s.quizPercentage!==undefined ? `${s.quizPercentage}%` : ' - '}</div>
+                        <div>{hasObs ? <button onClick={()=>setObsModal(s)} style={{ background:'var(--t-deep)', color:'white', border:'none', padding:'0.25rem 0.6rem', borderRadius:'6px', fontSize:'0.72rem', fontWeight:600, cursor:'pointer' }}>View</button> : <span style={{ color:'#bbb', fontSize:'0.75rem' }}> - </span>}</div>
+                        <div>{s.conservationStatement ? <button onClick={()=>setConservationModal({name:s.name,text:s.conservationStatement})} style={{ background:'var(--t-deep)', color:'white', border:'none', padding:'0.25rem 0.6rem', borderRadius:'6px', fontSize:'0.72rem', fontWeight:600, cursor:'pointer' }}>View</button> : <span style={{ color:'#bbb', fontSize:'0.75rem' }}> - </span>}</div>
                         <div style={{ display:'flex', alignItems:'center', gap:'0.35rem' }}>
                           <div style={{ width:'8px', height:'8px', borderRadius:'50%', background: s.status==='complete'?'#16A34A':'#CA8A04' }} />
                           <span style={{ fontSize:'0.72rem', fontWeight:700, color: s.status==='complete'?'#16A34A':'#CA8A04' }}>{s.status==='complete'?'Complete':'Incomplete'}</span>

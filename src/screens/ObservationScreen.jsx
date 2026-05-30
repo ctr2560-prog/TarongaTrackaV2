@@ -209,7 +209,7 @@ const MATHS_OBS_CONFIG = {
       ],
       5: [
         'Calculate total growth: 5.5 m − 1.8 m',
-        'Annual rate: total growth ÷ 4 years — convert to cm/year',
+        'Annual rate: total growth ÷ 4 years - convert to cm/year',
         'Percentage growth = total growth ÷ birth height × 100',
         'Show all working with units throughout',
       ],
@@ -226,8 +226,8 @@ const MATHS_OBS_CONFIG = {
         'What looks big or small compared to something else?',
       ],
       2: [
-        'Look for repeating patterns — stripes, tiles, shadows',
-        'Estimate a distance — how far away is the tiger?',
+        'Look for repeating patterns - stripes, tiles, shadows',
+        'Estimate a distance - how far away is the tiger?',
         'Can you make a comparison using numbers?',
       ],
       3: [
@@ -237,13 +237,13 @@ const MATHS_OBS_CONFIG = {
       ],
       4: [
         'Aim to notice at least 4 different categories: patterns, shapes, numbers, distances, movements, comparisons',
-        'Use mathematical vocabulary — symmetry, parallel, estimate, ratio',
+        'Use mathematical vocabulary - symmetry, parallel, estimate, ratio',
         'Describe *where* you see it to make your observation specific',
       ],
       5: [
         'Identify at least 5 distinct mathematical observations across different categories',
         'Include estimates or rough calculations where possible (e.g. "approx. 3 m")',
-        'Use precise mathematical language — perpendicular, angle, frequency, scale',
+        'Use precise mathematical language - perpendicular, angle, frequency, scale',
       ],
     },
     starters: ['I noticed…', 'I can see a pattern…', 'Comparing the…'],
@@ -276,28 +276,28 @@ const MATHS_OBS_CONFIG = {
     hintsByStage: {
       1: [
         'Write a number you noticed (e.g. steps, people, objects)',
-        'Describe how the ground felt — soft, hard, flat, bumpy?',
+        'Describe how the ground felt - soft, hard, flat, bumpy?',
         'Can you compare it to another surface?',
       ],
       2: [
-        'Include a number — how many steps did you take?',
-        'Make a comparison — how is grass different to concrete?',
+        'Include a number - how many steps did you take?',
+        'Make a comparison - how is grass different to concrete?',
         'Describe the surface texture in your own words',
       ],
       3: [
-        'Include an estimate — e.g. "the lawn is approximately ___ m long"',
-        'Include a measurement — steps × 0.6 m = ___ m',
-        'Include a comparison — grass vs concrete, soft vs hard',
+        'Include an estimate - e.g. "the lawn is approximately ___ m long"',
+        'Include a measurement - steps × 0.6 m = ___ m',
+        'Include a comparison - grass vs concrete, soft vs hard',
       ],
       4: [
         'Use at least 3 categories: estimate, measurement, comparison, pattern, number, shape/surface',
-        'Use mathematical vocabulary — area, perimeter, texture, slope, estimate',
+        'Use mathematical vocabulary - area, perimeter, texture, slope, estimate',
         'Tie each observation to something specific you felt or saw',
       ],
       5: [
         'Use at least 4 categories: estimate, measurement, comparison, pattern, number, shape/surface',
-        'Include a rough calculation where possible — e.g. stride length × steps = distance',
-        'Use precise language — perpendicular, gradient, surface area, frequency',
+        'Include a rough calculation where possible - e.g. stride length × steps = distance',
+        'Use precise language - perpendicular, gradient, surface area, frequency',
       ],
     },
     starters: ['I noticed…', 'I estimated…', 'Comparing the grass to…'],
@@ -332,7 +332,7 @@ const MATHS_OBS_CONFIG = {
       3: [
         'Record: ___ black rings and ___ white rings',
         'Write the ratio as black : white',
-        'Simplify the ratio — is it close to 1:1?',
+        'Simplify the ratio - is it close to 1:1?',
         'Show your simplification working',
       ],
       4: [
@@ -460,7 +460,7 @@ const PDHPE_OBS_CONFIG = {
     chips: [{ label:'Heart rate', color:'#DC2626' },{ label:'Heart size', color:'#059669' },{ label:'Blood flow', color:'#0284C7' },{ label:'Heart health', color:'#7C3AED' }],
     hintsByStage: {
       1: ['Think about how big the giraffe\'s heart is compared to yours', 'What does the heart do for your body?', 'How might a healthy heart help you every day?'],
-      2: ['A giraffe\'s heart weighs about 11 kg — a human heart weighs about 0.3 kg', 'Both hearts pump blood to keep the body alive', 'Name one thing that keeps a human heart healthy (e.g. exercise, diet)'],
+      2: ['A giraffe\'s heart weighs about 11 kg - a human heart weighs about 0.3 kg', 'Both hearts pump blood to keep the body alive', 'Name one thing that keeps a human heart healthy (e.g. exercise, diet)'],
       3: ['Think about one way the two hearts are the same and one way they are different', 'What happens to your heart rate when you exercise?', 'How does regular exercise help keep your heart healthy?'],
       4: ['Describe a difference in size, rate or pressure between the two hearts', 'What does regular exercise do to the human heart over time?', 'Connect heart function to a health outcome (e.g. lower resting heart rate)'],
       5: ['Consider how a trained athlete\'s heart adapts compared to an untrained person', 'How does the giraffe\'s long neck create a similar challenge to intense exercise?', 'Link cardiovascular fitness to long-term health outcomes'],
@@ -471,7 +471,7 @@ const PDHPE_OBS_CONFIG = {
     heading: 'Tiger & Sport',
     chips: [{ label:'Power', color:'#DC2626' },{ label:'Speed', color:'#059669' },{ label:'Patience', color:'#7C3AED' },{ label:'Sport', color:'#0284C7' }],
     hintsByStage: {
-      1: ['How does the tiger move — fast or slow?', 'What does the tiger\'s body look like?', 'What could a sports player copy from the tiger?'],
+      1: ['How does the tiger move - fast or slow?', 'What does the tiger\'s body look like?', 'What could a sports player copy from the tiger?'],
       2: ['Look at how the tiger moves', 'Think about a sport that needs speed or power', 'What could an athlete copy from the tiger?'],
       3: ['Describe how the tiger moves and what its body looks like', 'Name a sport that uses similar skills to the tiger', 'What could an athlete take away from watching this animal?'],
       4: ['Describe the tiger\'s physical qualities (power, speed, patience, muscle)', 'Name a sporting quality that matches what you see', 'Explain what athletes could learn from this animal'],
@@ -484,7 +484,7 @@ const PDHPE_OBS_CONFIG = {
     chips: [{ label:'Sleep', color:'#7C3AED' },{ label:'Recovery', color:'#059669' },{ label:'Human vs koala', color:'#0284C7' },{ label:'Health', color:'#DC2626' }],
     hintsByStage: {
       1: ['How many hours does the koala sleep?', 'How many hours do you sleep each night?', 'Name one thing sleep does for your body'],
-      2: ['Koalas sleep up to 22 hours — humans need about 8 to 10', 'Write one similarity and one difference between koala and human sleep', 'Name two things sleep does for your body'],
+      2: ['Koalas sleep up to 22 hours - humans need about 8 to 10', 'Write one similarity and one difference between koala and human sleep', 'Name two things sleep does for your body'],
       3: ['Compare how many hours a koala sleeps to how many hours a human needs', 'Write what sleep does for your body (e.g. rest, repair, grow)', 'Explain why sleep matters for your health'],
       4: ['Compare koala sleep to the amount of sleep teenagers need', 'Describe what happens to your body when you do not get enough sleep', 'Connect sleep to a health outcome like mood, energy or recovery'],
       5: ['Compare the koala\'s extreme sleep needs to human recommendations', 'Describe at least two health consequences of not getting enough sleep', 'Explain why sleep is important for teenagers specifically'],
@@ -531,7 +531,7 @@ const PDHPE_OBS_CONFIG = {
     heading: 'Hydration & Health',
     chips: [{ label:'Water', color:'#0284C7' },{ label:'Sweat', color:'#DC2626' },{ label:'Performance', color:'#059669' },{ label:'Buffalo', color:'#7C3AED' }],
     hintsByStage: {
-      1: ['Watch the buffalo — it loves mud and water to cool down', 'Why do you need water when you are hot or active?', 'What happens to your body when you do not drink enough?'],
+      1: ['Watch the buffalo - it loves mud and water to cool down', 'Why do you need water when you are hot or active?', 'What happens to your body when you do not drink enough?'],
       2: ['Just like the buffalo needs water to keep going, so do you', 'Name two reasons your body needs water during activity', 'What happens if you do not drink enough water?'],
       3: ['Think about what the buffalo uses water for', 'Why does your body need water when you exercise?', 'Name one sign that your body needs more water'],
       4: ['Connect the buffalo\'s need for water to your own hydration needs', 'What does water do for your body during physical activity?', 'What are the signs of dehydration and why do they happen?'],
@@ -544,10 +544,10 @@ const PDHPE_OBS_CONFIG = {
     chips: [{ label:'Identity', color:'#7C3AED' },{ label:'Environment', color:'#059669' },{ label:'World around me', color:'#0284C7' },{ label:'Wellbeing', color:'#DC2626' }],
     hintsByStage: {
       1: ['Think back to when you stood still and listened to the birds', 'What people, places or experiences shape who you are?', 'Write two ways the world around you makes you who you are'],
-      2: ['Remember listening to the bush — the world around you shaped that moment', 'Think about your family, culture, friends or school', 'Write two ways the world around you shapes your identity'],
-      3: ['You listened to the bush — just like these animals are shaped by it, so are you', 'What parts of your world shape who you are — family, culture, friends, experiences?', 'Write two ways your environment shapes your identity'],
-      4: ['Think back to standing still and listening — how did that environment feel?', 'How do people, places and experiences around you shape your identity?', 'How does the world shaping your identity connect to your wellbeing?'],
-      5: ['Remember becoming part of the environment for that moment — the world shapes us', 'What aspects of your environment most shape your identity?', 'Write about how your environment shapes your identity and connects to your wellbeing'],
+      2: ['Remember listening to the bush - the world around you shaped that moment', 'Think about your family, culture, friends or school', 'Write two ways the world around you shapes your identity'],
+      3: ['You listened to the bush - just like these animals are shaped by it, so are you', 'What parts of your world shape who you are - family, culture, friends, experiences?', 'Write two ways your environment shapes your identity'],
+      4: ['Think back to standing still and listening - how did that environment feel?', 'How do people, places and experiences around you shape your identity?', 'How does the world shaping your identity connect to your wellbeing?'],
+      5: ['Remember becoming part of the environment for that moment - the world shapes us', 'What aspects of your environment most shape your identity?', 'Write about how your environment shapes your identity and connects to your wellbeing'],
     },
     starters: ['The world around me shapes my identity by…', 'When I stood still and listened, I noticed…', 'My identity is shaped by…'],
   },
@@ -687,7 +687,7 @@ export default function ObservationScreen() {
     'lion': ['How many big lions?', 'How many small ones?'],
     'giraffe': ['Taller or shorter than the fence?', 'Taller than a nearby tree?'],
     'tiger': ['Count the head stripes', 'Draw the stripe pattern you see'],
-    'koala': ['How long did it stay still?', 'Koalas sleep up to 22 hours — does that match?'],
+    'koala': ['How long did it stay still?', 'Koalas sleep up to 22 hours - does that match?'],
     'concert-lawn': ['Count steps one way across', 'Draw the shape of the lawn'],
     'dingo': ['More or fewer than 5?', 'Write a number sentence about what you see'],
     'lemur': ['Count the black rings', 'Count the white rings'],
@@ -705,7 +705,7 @@ export default function ObservationScreen() {
     'koala':               'Is the koala awake or asleep?',
     'dingo':               'How does the dingo move around?',
     'lemur':               'Are the lemurs together or alone?',
-    'sea-lion':            'Watch the sea lion — is it swimming or resting?',
+    'sea-lion':            'Watch the sea lion - is it swimming or resting?',
     'asian-water-buffalo': 'Which parts of the buffalo look the most muscular?',
     'blue-mountains-bushwalk': 'How does your body feel after walking?',
     'concert-lawn':        'How does your body feel after being active on the grass?',
@@ -721,7 +721,7 @@ export default function ObservationScreen() {
     'lemur':               ['Count how many are in the group', 'Are they touching each other or staying apart?'],
     'sea-lion':            ['Count how many times it surfaces to breathe', 'Does it look comfortable in the water?'],
     'asian-water-buffalo': ['Point to where you think the biggest muscles are', 'Do you think it is strong or fast?'],
-    'blue-mountains-bushwalk': ['Is your heart beating faster?', 'Take a deep breath — how does it feel?'],
+    'blue-mountains-bushwalk': ['Is your heart beating faster?', 'Take a deep breath - how does it feel?'],
     'concert-lawn':        ['Is your heart beating faster?', 'Do you feel warm or energetic?'],
   };
 
@@ -949,12 +949,12 @@ export default function ObservationScreen() {
               })()}
               {animalId === 'blue-mountains-bushwalk' && bushwalkTimerDone && !isMaths && (
                 <div style={{ background:'#D1FAE5', borderRadius:'var(--t-r-sm)', padding:'0.4rem 0.9rem', marginBottom:'0.75rem', textAlign:'center' }}>
-                  <p style={{ fontSize:'0.82rem', fontWeight:700, color:'#065F46', margin:0 }}>✓ Listening complete — write your response below</p>
+                  <p style={{ fontSize:'0.82rem', fontWeight:700, color:'#065F46', margin:0 }}>✓ Listening complete - write your response below</p>
                 </div>
               )}
               {animalId === 'tiger' && tigerTimerDone && (
                 <div style={{ background:'#D1FAE5', borderRadius:'var(--t-r-sm)', padding:'0.4rem 0.9rem', marginBottom:'0.75rem', textAlign:'center' }}>
-                  <p style={{ fontSize:'0.82rem', fontWeight:700, color:'#065F46', margin:0 }}>✓ Observation complete — write your response below</p>
+                  <p style={{ fontSize:'0.82rem', fontWeight:700, color:'#065F46', margin:0 }}>✓ Observation complete - write your response below</p>
                 </div>
               )}
             </>

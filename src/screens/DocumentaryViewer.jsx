@@ -7,8 +7,8 @@ import { animals as DAY_ANIMALS } from '../data/animals';
 import { normaliseCode, safeStudentId } from '../utils/helpers';
 
 // doc param formats:
-//   zzv_{animalId}_{classCode}_{studentId}  — personal ZooSnooz souvenir
-//   {animalId}                              — generic animal info card
+//   zzv_{animalId}_{classCode}_{studentId} - personal ZooSnooz souvenir
+//   {animalId} - generic animal info card
 
 function parseDocCode(code) {
   if (!code) return { type: 'unknown' };
@@ -158,7 +158,7 @@ export default function DocumentaryViewer() {
           <div style={{ background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:16, padding:'1rem' }}>
             <div style={{ color:'rgba(255,255,255,0.4)', fontSize:'0.65rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.12em', marginBottom:'0.5rem' }}>Field Observation</div>
             <p style={{ color:'rgba(255,255,255,0.85)', fontSize:'0.9rem', lineHeight:1.7, margin:0, fontStyle:'italic' }}>"{obs}"</p>
-            {studentName && <div style={{ color:'rgba(255,255,255,0.35)', fontSize:'0.72rem', marginTop:'0.5rem' }}>— {studentName}</div>}
+            {studentName && <div style={{ color:'rgba(255,255,255,0.35)', fontSize:'0.72rem', marginTop:'0.5rem' }}> - {studentName}</div>}
           </div>
         )}
 

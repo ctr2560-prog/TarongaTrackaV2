@@ -104,7 +104,7 @@ export default function MathsCalculator() {
             {display}
           </div>
 
-          {/* Buttons — standard 4×5 layout */}
+          {/* Buttons - standard 4×5 layout */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.35rem' }}>
             {/* Row 1 */}
             <button style={D('#6B7280', 'white')} onClick={clear}>C</button>
@@ -128,7 +128,7 @@ export default function MathsCalculator() {
             <button style={{ ...D('#F0F4F0', '#1a3a2a'), gridColumn: 'span 2' }} onClick={() => inputDigit('0')}>0</button>
             <button style={D('#F0F4F0', '#1a3a2a')} onClick={inputDecimal}>.</button>
 
-            {/* = — standalone last row */}
+            {/* = - standalone last row */}
             <button style={{ ...D('#2E7D55'), gridColumn: 'span 4', marginTop: '0.05rem' }} onClick={equals}>=</button>
           </div>
         </div>

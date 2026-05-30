@@ -49,19 +49,19 @@ export const MATHS_ANIMALS = {
         },
         options: ['2', '2.5 hours', '3/5', '9 hours'],
         correct: 2,
-        fact: '60% of a chimp\'s day is spent on active behaviours — use Percentage × Total to find how many hours.',
+        fact: '60% of a chimp\'s day is spent on active behaviours - use Percentage × Total to find how many hours.',
       },
     ],
   },
 
   // ── Gorilla ────────────────────────────────────────────────────────────────
-  // Activity: Gorilla Whopper Rush — stack Leaves / Bamboo / Fruit / Termites in order
+  // Activity: Gorilla Whopper Rush - stack Leaves / Bamboo / Fruit / Termites in order
   gorilla: {
     observationPrompt: 'Look at the silverback. How does its size compare to yours? Write the ratio of your estimated mass to the silverback\'s mass (about 200 kg) in simplest form.',
     writingPromptByStage: {
       1: 'Count every gorilla you can see. Draw a picture and write the number next to each one.',
       2: 'Estimate how much bigger the silverback looks compared to yourself. Write a comparison using numbers (e.g. the silverback looks __ times bigger than me).',
-      3: 'A silverback weighs about 200 kg. Estimate your own mass in kg. Write the ratio of your mass to the silverback\'s mass in simplest form. If you weigh 50 kg the ratio simplifies to 1:4 — show how, then calculate your own.',
+      3: 'A silverback weighs about 200 kg. Estimate your own mass in kg. Write the ratio of your mass to the silverback\'s mass in simplest form. If you weigh 50 kg the ratio simplifies to 1:4 - show how, then calculate your own.',
       4: 'A silverback eats 18 kg of food per day and has a body mass of 200 kg. Write the ratio of daily food intake to body mass in simplest form. Show your working.',
       5: 'Wild gorilla population has declined from 400,000 in 1980 to approximately 316,000 now (about 44 years). Write the ratio of current to 1980 population in simplest form. Calculate the average annual decline in gorilla numbers.',
     },
@@ -80,7 +80,7 @@ export const MATHS_ANIMALS = {
           2: 'A gorilla eats 6 kg of leaves, 8 kg of bamboo, and 4 kg of fruit per day. How much food total?',
           3: 'Leaves make up 12 kg of a gorilla\'s 18 kg daily diet. What fraction of the diet is leaves?',
           4: 'Leaves make up 12 kg of a gorilla\'s 18 kg daily diet. What is the ratio of leaves to the remaining food? Give your answer in simplest form.',
-          5: 'Gorilla diet ratio — leaves:bamboo:fruit:termites = 5:4:2:1. If total daily food = 18 kg, how many kg of leaves?',
+          5: 'Gorilla diet ratio - leaves:bamboo:fruit:termites = 5:4:2:1. If total daily food = 18 kg, how many kg of leaves?',
         },
         stageOptions: {
           1: ['4', '5', '6', '7'],
@@ -99,16 +99,16 @@ export const MATHS_ANIMALS = {
         },
         options: ['6', '18 kg', '2/3', '2:1'],
         correct: 2,
-        fact: 'Gorillas eat up to 18 kg per day — mostly leaves and bamboo, with some fruit and protein from termites.',
+        fact: 'Gorillas eat up to 18 kg per day - mostly leaves and bamboo, with some fruit and protein from termites.',
       },
       {
-        q: 'Gorilla Whopper Rush — Diet Maths',
+        q: 'Gorilla Whopper Rush - Diet Maths',
         stageVariants: {
           1: 'A gorilla eats 3 servings of leaves, 2 of bamboo, and 1 of fruit. How many servings altogether?',
           2: 'A gorilla eats 6 kg of leaves, 8 kg of bamboo, and 4 kg of fruit per day. How much food total?',
           3: 'Leaves make up 12 kg of a gorilla\'s 18 kg daily diet. What fraction of the diet is leaves?',
           4: 'Leaves make up 12 kg of a gorilla\'s 18 kg daily diet. What is the ratio of leaves to the remaining food? Give your answer in simplest form.',
-          5: 'Gorilla diet ratio — leaves:bamboo:fruit:termites = 5:4:2:1. Total 18 kg per day. How many kg of leaves?',
+          5: 'Gorilla diet ratio - leaves:bamboo:fruit:termites = 5:4:2:1. Total 18 kg per day. How many kg of leaves?',
         },
         stageOptions: {
           1: ['4', '5', '6', '7'],
@@ -127,13 +127,13 @@ export const MATHS_ANIMALS = {
         },
         options: ['6', '18 kg', '2/3', '2:1'],
         correct: 2,
-        fact: 'Gorillas eat up to 18 kg per day — mostly leaves and bamboo. Use ratios and fractions to understand their diet.',
+        fact: 'Gorillas eat up to 18 kg per day - mostly leaves and bamboo. Use ratios and fractions to understand their diet.',
       },
     ],
   },
 
   // ── Lion ───────────────────────────────────────────────────────────────────
-  // Activity: Camera zoom selection (2× / 5× / 10× / 20×) — magnification
+  // Activity: Camera zoom selection (2× / 5× / 10× / 20×) - magnification
   lion: {
     observationPrompt: 'Count the lions and estimate the enclosure area. Compare it to a real lion territory of up to 260 km².',
     writingPromptByStage: {
@@ -169,15 +169,15 @@ export const MATHS_ANIMALS = {
         },
         stageCorrect: { 1: 0, 2: 0, 3: 1, 4: 1, 5: 1 },
         stageFacts: {
-          1: 'Zooming in makes the image appear larger — that\'s what magnification does.',
+          1: 'Zooming in makes the image appear larger - that\'s what magnification does.',
           2: 'When you zoom in, the image appears bigger on screen. This is magnification in action.',
           3: 'The real lion at 200 cm is far bigger than a 10 mm image. The photo is a tiny representation of the real animal.',
           4: 'The zoom feature lets you see fine details by making small things appear bigger.',
-          5: 'Higher zoom levels magnify more — choose the one that makes the text readable.',
+          5: 'Higher zoom levels magnify more - choose the one that makes the text readable.',
         },
         options: ['A. Bigger', 'B. Smaller', 'C. The same', 'D. Not sure'],
         correct: 1,
-        fact: 'Lions are apex predators. The zoom lets you observe fine details — like fur texture and eye colour — from a safe distance.',
+        fact: 'Lions are apex predators. The zoom lets you observe fine details - like fur texture and eye colour - from a safe distance.',
       },
     ],
   },
@@ -227,7 +227,7 @@ export const MATHS_ANIMALS = {
         },
         options: ['8', '0.5 m', '2/5', '5:11'],
         correct: 2,
-        fact: 'Ratios compare two quantities. Neck : Total height = 5 : 11 — the neck makes up just under half of a giraffe\'s height.',
+        fact: 'Ratios compare two quantities. Neck : Total height = 5 : 11 - the neck makes up just under half of a giraffe\'s height.',
       },
     ],
   },
@@ -235,7 +235,7 @@ export const MATHS_ANIMALS = {
   // ── Koala ──────────────────────────────────────────────────────────────────
   // Activity: Standard quiz at the koala enclosure
   koala: {
-    observationPrompt: 'Watch the koala. Is it moving or still? Taronga spends $15,000 per year caring for each koala — explore the financial maths of koala conservation.',
+    observationPrompt: 'Watch the koala. Is it moving or still? Taronga spends $15,000 per year caring for each koala - explore the financial maths of koala conservation.',
     writingPromptByStage: {
       1: 'Watch the koala for 2 minutes. Is it moving or still? Record how long it stayed still using a clock drawing or time.',
       2: 'A koala eats 1 kg of leaves per day. If you have 7 kg of leaves, how many days would that feed one koala? Write your number sentence and answer.',
@@ -252,7 +252,7 @@ export const MATHS_ANIMALS = {
     },
     questions: [
       {
-        q: 'Koala Conservation — An Aussie Icon',
+        q: 'Koala Conservation - An Aussie Icon',
         stageVariants: {
           1: 'How many koalas were lost in the 2019/20 bushfires?',
           2: '10,000 koalas were lost in the fires. How many groups of 1,000 is that?',
@@ -269,11 +269,11 @@ export const MATHS_ANIMALS = {
         },
         stageCorrect: { 1: 3, 2: 3, 3: 3, 4: 3, 5: 3 },
         stageFacts: {
-          1: '10,000 koalas were lost in the 2019/20 fires — enough to fill a large sports stadium.',
+          1: '10,000 koalas were lost in the 2019/20 fires - enough to fill a large sports stadium.',
           2: '10,000 ÷ 1,000 = 10 groups. Place value helps us understand how large numbers compare.',
           3: '10,000 ÷ 80,000 = 0.125 = 12.5%. Losing 1 in 8 koalas in a single season is catastrophic.',
-          4: '80,000 ÷ 30 years ≈ 2,667 per year — more than 7 koalas lost every single day.',
-          5: '80,000 × 0.875² = 61,250. Compound decline is faster than linear — nearly 19,000 are gone in just 2 years.',
+          4: '80,000 ÷ 30 years ≈ 2,667 per year - more than 7 koalas lost every single day.',
+          5: '80,000 × 0.875² = 61,250. Compound decline is faster than linear - nearly 19,000 are gone in just 2 years.',
         },
         options: ['100', '1,000', '100,000', '10,000'],
         correct: 3,
@@ -302,7 +302,7 @@ export const MATHS_ANIMALS = {
     },
     questions: [
       {
-        q: 'Tiger Measurement — Scale and Length',
+        q: 'Tiger Measurement - Scale and Length',
         stageVariants: {
           1: 'An adult tiger is between 2 and 3 metres long. Which measurement could be a Sumatran tiger\'s length?',
           2: 'A tiger is 2.5 m long. A dachshund is 50 cm long. How many dachshunds laid end-to-end equal the tiger?',
@@ -337,7 +337,7 @@ export const MATHS_ANIMALS = {
   'concert-lawn': {
     observationPrompt: 'What maths did you notice while walking on the Concert Lawn?',
     writingPromptByStage: {
-      1: 'What maths did you notice while walking on the Concert Lawn? Write or draw 2 things — one about a number you noticed and one about how the ground felt.',
+      1: 'What maths did you notice while walking on the Concert Lawn? Write or draw 2 things - one about a number you noticed and one about how the ground felt.',
       2: 'What maths did you notice while walking on the Concert Lawn? Try to include a number, a comparison, and a description of the surface.',
       3: 'What maths did you notice while walking on the Concert Lawn? Try to include at least one estimate, one measurement, and one comparison. Show your thinking.',
       4: 'What maths did you notice while walking on the Concert Lawn? Include at least three of these: an estimate, a measurement, a comparison, a pattern, a number, a shape or surface description. Use mathematical vocabulary.',
@@ -352,7 +352,7 @@ export const MATHS_ANIMALS = {
     },
     questions: [
       {
-        q: 'Concert Lawn — Area and Measurement',
+        q: 'Concert Lawn - Area and Measurement',
         stageVariants: {
           1: 'The Concert Lawn is 10 m long and 5 m wide. What is its area?',
           2: 'On the zoo map, 1 cm = 10 m. The Concert Lawn is 4 cm on the map. How long is it in real life?',
@@ -383,7 +383,7 @@ export const MATHS_ANIMALS = {
   },
 
   // ── Dingo ──────────────────────────────────────────────────────────────────
-  // Activity: Food Chain Builder — Sun → Grass → Kangaroo → Dingo → Decomposer
+  // Activity: Food Chain Builder - Sun → Grass → Kangaroo → Dingo → Decomposer
   dingo: {
     observationPrompt: 'Count the dingoes. Calculate how much territory they would need if each requires 10 km². Compare this to a real dingo territory of 10–70 km².',
     writingPromptByStage: {
@@ -402,7 +402,7 @@ export const MATHS_ANIMALS = {
     },
     questions: [
       {
-        q: 'Dingo Food Chain — Energy Transfer',
+        q: 'Dingo Food Chain - Energy Transfer',
         stageVariants: {
           1: 'A dingo eats 2 kangaroos per week. How many kangaroos does it eat in 4 weeks?',
           2: '5 kangaroos each eat 10 kg of grass per day. How many kg of grass is needed for all 5 for 3 days?',
@@ -423,7 +423,7 @@ export const MATHS_ANIMALS = {
           2: '5 × 10 kg × 3 days = 150 kg. Multiply per-animal, per-day, by number of days.',
           3: '1/10 of 1000 kJ = 1000 ÷ 10 = 100 kJ reaching the kangaroos.',
           4: 'Kangaroo: 1000 ÷ 10 = 100 kJ. Dingo: 100 ÷ 10 = 10 kJ. Only 1/100 of original energy reaches the dingo!',
-          5: '10,000 ÷ 10 ÷ 10 ÷ 10 = 10 kJ. Each level keeps only 1/10 of energy — that is why food chains are short.',
+          5: '10,000 ÷ 10 ÷ 10 ÷ 10 = 10 kJ. Each level keeps only 1/10 of energy - that is why food chains are short.',
         },
         options: ['8', '150 kg', '100 kJ', '10 kJ'],
         correct: 2,
@@ -441,7 +441,7 @@ export const MATHS_ANIMALS = {
       2: 'Count as many tail rings as you can see. Write: ___black + ___white = ___total. Is this close to the known total of 25 rings?',
       3: 'A ring-tailed lemur has 13 black rings and 12 white rings (25 total). Calculate the ratio of black rings to white rings. Is this ratio close to 1:1? Show your working.',
       4: 'If there are 20 lemurs in a troop and each has 25 tail rings, how many rings are there in total? What fraction of the total rings are black? Express as a simplified fraction and a ratio. Show all working.',
-      5: 'If each tail ring is approximately 2.4 cm wide, calculate the total length of rings alone. The actual tail is about 60 cm — what accounts for the difference? Express the difference as a percentage of the actual tail length. Show all working.',
+      5: 'If each tail ring is approximately 2.4 cm wide, calculate the total length of rings alone. The actual tail is about 60 cm - what accounts for the difference? Express the difference as a percentage of the actual tail length. Show all working.',
     },
     expectedAnswers: {
       1: [],
@@ -452,7 +452,7 @@ export const MATHS_ANIMALS = {
     },
     questions: [
     {
-      q: 'Reading Your Behaviour Tally — Statistics',
+      q: 'Reading Your Behaviour Tally - Statistics',
       stageVariants: {
         1: 'Your tally: Feeding = 4, Resting = 3, Moving = 2, Social = 1. Which behaviour happened the MOST?',
         2: 'Your tally: Feeding = 8, Resting = 2, Moving = 6, Social = 4. What is the range of your data?',
@@ -469,7 +469,7 @@ export const MATHS_ANIMALS = {
       },
       stageCorrect: { 1: 2, 2: 2, 3: 1, 4: 1, 5: 1 },
       stageFacts: {
-        1: 'The mode is the most common value. Feeding had 4 taps — more than any other behaviour.',
+        1: 'The mode is the most common value. Feeding had 4 taps - more than any other behaviour.',
         2: 'Range = highest − lowest = 8 − 2 = 6. The range tells you how spread out your data is.',
         3: '6 ÷ 20 = 3/10. Divide both by 2 to simplify. Moving made up 3/10 of all observations.',
         4: 'Median of 4 values: find the mean of the 2 middle values. (4 + 6) ÷ 2 = 5.',
@@ -485,7 +485,7 @@ export const MATHS_ANIMALS = {
   // ── Sea Lion ───────────────────────────────────────────────────────────────
   // Activity: $320 budget design challenge (E/W/S scores)
   'sea-lion': {
-    observationPrompt: 'Watch the sea lion. Compare its size to a person. Fish costs $8 per kg — explore the financial side of sea lion care.',
+    observationPrompt: 'Watch the sea lion. Compare its size to a person. Fish costs $8 per kg - explore the financial side of sea lion care.',
     writingPromptByStage: {
       1: 'Watch the sea lion. Is it bigger or smaller than a person? Write 3 things you could measure about a sea lion.',
       2: 'A male sea lion weighs 300 kg and a female weighs 85 kg. What is the difference? How many times heavier is the male? Write a number sentence.',
@@ -502,7 +502,7 @@ export const MATHS_ANIMALS = {
     },
     questions: [
     {
-      q: 'Sea Lion Care — Rates and Financial Maths',
+      q: 'Sea Lion Care - Rates and Financial Maths',
       stageVariants: {
         1: 'A sea lion eats 8 kg of fish per day. How many kg does it eat in 3 days?',
         2: 'A male sea lion weighs 300 kg and a female weighs 85 kg. What is the difference in their mass?',
@@ -533,7 +533,7 @@ export const MATHS_ANIMALS = {
   },
 
   // ── Blue Mountains Bushwalk ────────────────────────────────────────────────
-  // Activity: 3 riddle clues — Clue 1: Platypus, Clue 2: Lizard, Clue 3: Lyrebird
+  // Activity: 3 riddle clues - Clue 1: Platypus, Clue 2: Lizard, Clue 3: Lyrebird
   // BushwalkMission uses questions[0], questions[1], questions[2] for the 3 clues
   'blue-mountains-bushwalk': {
     observationPrompt: 'Close your eyes and listen for 30 seconds. Tally the sounds you hear. Which sound did you hear the most, and how do you know?',
@@ -552,26 +552,26 @@ export const MATHS_ANIMALS = {
       5: [],
     },
     questions: [
-      // questions[0] — Clue 1: Platypus cipher (WATERFALL)
+      // questions[0] - Clue 1: Platypus cipher (WATERFALL)
       {
         q: 'What animal lives where the code leads?',
         options: ['Platypus', 'Echidna', 'Koala', 'Lyrebird'],
         correct: 0,
-        fact: '23–1–20–5–18–6–1–12–12 → W–A–T–E–R–F–A–L–L → WATERFALL. Platypuses are monotremes — the only egg-laying mammals!',
+        fact: '23–1–20–5–18–6–1–12–12 → W–A–T–E–R–F–A–L–L → WATERFALL. Platypuses are monotremes - the only egg-laying mammals!',
       },
-      // questions[1] — Clue 2: Lizard (4:1 scale)
+      // questions[1] - Clue 2: Lizard (4:1 scale)
       {
         q: 'What animal is it?',
         options: ['Turtle', 'Frog', 'Snake', 'Lizard'],
         correct: 3,
-        fact: 'A 4:1 scale means the display is 4 times larger than the real animal. Lizards are cold-blooded reptiles — they bask in the sun to warm up.',
+        fact: 'A 4:1 scale means the display is 4 times larger than the real animal. Lizards are cold-blooded reptiles - they bask in the sun to warm up.',
       },
-      // questions[2] — Clue 3: Lyrebird (sequence puzzle — maths only)
+      // questions[2] - Clue 3: Lyrebird (sequence puzzle - maths only)
       {
         q: 'What bird did you find?',
         options: ['Kookaburra', 'Magpie', 'Lyrebird', 'Cockatoo'],
         correct: 2,
-        fact: '20 + (4 × 5) = 20 + 20 = 40 sounds. Lyrebirds can mimic over 20 different sounds — including chainsaws and cameras!',
+        fact: '20 + (4 × 5) = 20 + 20 = 40 sounds. Lyrebirds can mimic over 20 different sounds - including chainsaws and cameras!',
       },
     ],
   },
@@ -596,7 +596,7 @@ export const MATHS_ANIMALS = {
     },
     questions: [
       {
-        q: 'River Run Score — Fractions and Operations',
+        q: 'River Run Score - Fractions and Operations',
         stageVariants: {
           1: 'You passed 7 out of 100 gates. How many gates did you NOT pass?',
           2: 'You passed 10 gates and each earns 5 points. What is your total score?',

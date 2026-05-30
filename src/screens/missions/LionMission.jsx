@@ -72,7 +72,7 @@ export default function LionMission() {
             {isCorrect ? 'Correct!' : 'Not Quite'}
           </h2>
           {isCorrect && <p style={{ fontSize:'clamp(0.95rem,2.2vh,1.1rem)', color:'#555', marginBottom:'0.8rem', fontStyle:'italic' }}>Great observation!</p>}
-          {!isCorrect && <p style={{ fontSize:'clamp(0.9rem,2vh,1rem)', color:'#555', marginBottom:'0.8rem', lineHeight:1.6 }}>Zoom in and look closely at the lion's body — think about what it needs to catch prey in short, powerful bursts.</p>}
+          {!isCorrect && <p style={{ fontSize:'clamp(0.9rem,2vh,1rem)', color:'#555', marginBottom:'0.8rem', lineHeight:1.6 }}>Zoom in and look closely at the lion's body - think about what it needs to catch prey in short, powerful bursts.</p>}
           {isCorrect && fact && (
             <div style={{ background:'linear-gradient(135deg,#FFF9E6 0%,#FFE6B3 100%)', borderRadius:'var(--t-r-md)', padding:'clamp(1rem,2vh,1.5rem)', marginTop:'0.8rem', marginBottom:'1rem' }}>
               <p style={{ color:'#333', fontSize:'clamp(0.9rem,2vh,1.1rem)', lineHeight:1.5, fontWeight:500 }}>💡 {fact}</p>
@@ -92,7 +92,7 @@ export default function LionMission() {
             {cameraError ? (
               <div style={{ width:'100%', height:'100%', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'1rem', color:'rgba(255,255,255,0.7)' }}>
                 <span style={{ fontSize:'3rem' }}>🦁</span>
-                <p style={{ fontSize:'0.9rem', textAlign:'center', padding:'0 2rem', lineHeight:1.6 }}>Camera unavailable — answer the question below using your knowledge of the lion.</p>
+                <p style={{ fontSize:'0.9rem', textAlign:'center', padding:'0 2rem', lineHeight:1.6 }}>Camera unavailable - answer the question below using your knowledge of the lion.</p>
               </div>
             ) : (
               <video ref={videoRef} autoPlay playsInline muted

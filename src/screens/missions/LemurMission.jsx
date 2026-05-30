@@ -235,7 +235,7 @@ export default function LemurMission() {
           <div style={{ background:'white', borderRadius:'var(--t-r-md)', padding:'1rem 1.2rem', boxShadow:'var(--t-shadow-md)', marginBottom:'1rem', textAlign:'center' }}>
             <h2 style={{ fontSize:'1.25rem', fontWeight:700, color:'var(--jungle-deep)', margin:'0 0 0.2rem' }}>Lemur Activity Tracker</h2>
             <p style={{ fontSize:'0.82rem', color:'#666', margin:0 }}>
-              {!timerOn ? 'Watch the lemurs carefully. Press Start, then tap each behaviour you see in real time.' : timerDone ? 'Observation complete — review your tally, then play the game!' : 'Tap the behaviours you see in real time.'}
+              {!timerOn ? 'Watch the lemurs carefully. Press Start, then tap each behaviour you see in real time.' : timerDone ? 'Observation complete - review your tally, then play the game!' : 'Tap the behaviours you see in real time.'}
             </p>
           </div>
           {!timerDone && (
@@ -279,7 +279,7 @@ export default function LemurMission() {
               </div>
               <div style={{ background:'rgba(155,48,255,0.06)', border:'1px solid rgba(155,48,255,0.2)', borderRadius:'var(--t-r-md)', padding:'0.85rem 1rem', marginBottom:'1rem' }}>
                 <p style={{ fontSize:'0.8rem', color:'#5A1AAF', lineHeight:1.5, margin:0 }}>
-                  <strong>Great work!</strong> You just completed a real ethogram. Now play the Lemur Dance Party game — after, you'll compare what you recorded to what you experienced in the game.
+                  <strong>Great work!</strong> You just completed a real ethogram. Now play the Lemur Dance Party game - after, you'll compare what you recorded to what you experienced in the game.
                 </p>
               </div>
               <button onClick={() => { setGamePhase('intro'); setSchlPhase('game'); }}
@@ -438,8 +438,8 @@ export default function LemurMission() {
             <div style={{ padding:'0.55rem 0.7rem', background:'rgba(255,255,255,0.05)', borderRadius:'10px', borderLeft:`3px solid ${matchedTop?'#6EE7A0':'#FFD93D'}` }}>
               <p style={{ fontSize:'0.78rem', color:'rgba(255,255,255,0.82)', lineHeight:1.55, margin:0 }}>
                 {matchedTop
-                  ? <><strong style={{ color:topRealBeat.color }}>{topRealBeat.label}</strong> was most common in the game — matching real lemur field data! Did your tally agree?</>
-                  : <>In the game, <strong style={{ color:topPlayerBeat.color }}>{topPlayerBeat.label}</strong> was your top tap. Compare this to your real-life tally — do they match?</>
+                  ? <><strong style={{ color:topRealBeat.color }}>{topRealBeat.label}</strong> was most common in the game - matching real lemur field data! Did your tally agree?</>
+                  : <>In the game, <strong style={{ color:topPlayerBeat.color }}>{topPlayerBeat.label}</strong> was your top tap. Compare this to your real-life tally - do they match?</>
                 }
               </p>
             </div>
@@ -474,7 +474,7 @@ export default function LemurMission() {
           <div style={{ fontSize:'clamp(3rem,8vh,4.5rem)', marginBottom:'0.5rem' }}>{isCorrect ? '✓' : '✗'}</div>
           <h2 className="heading-display" style={{ fontSize:'clamp(2rem,5vh,3rem)', color:isCorrect?'#10b981':'#ef4444', marginBottom:'0.4rem', lineHeight:1.1 }}>{isCorrect ? 'Correct!' : 'Not Quite'}</h2>
           {isCorrect && <p style={{ fontSize:'clamp(0.9rem,2vh,1rem)', color:'#555', marginBottom:'0.8rem', fontStyle:'italic' }}>Your observation data was spot on!</p>}
-          {!isCorrect && <p style={{ fontSize:'clamp(0.9rem,2vh,1rem)', color:'#555', marginBottom:'0.8rem' }}>Check your tally above — what did you record most?</p>}
+          {!isCorrect && <p style={{ fontSize:'clamp(0.9rem,2vh,1rem)', color:'#555', marginBottom:'0.8rem' }}>Check your tally above - what did you record most?</p>}
           {(q?.stageFacts?.[classStage] || q?.fact) && (
             <div style={{ background:'linear-gradient(135deg,#F3EEFF 0%,#E8D8FF 100%)', borderRadius:'var(--t-r-md)', padding:'clamp(1rem,2vh,1.5rem)', marginTop:'0.8rem', marginBottom:'1rem' }}>
               <p style={{ color:'#333', fontSize:'clamp(0.9rem,2vh,1.1rem)', lineHeight:1.5, fontWeight:500 }}>💡 {q.stageFacts?.[classStage] || q.fact}</p>

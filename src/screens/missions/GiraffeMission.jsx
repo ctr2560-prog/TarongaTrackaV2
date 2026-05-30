@@ -13,7 +13,7 @@ const GIRAFFE_MCQ = {
   },
   options: ['1 m', '5 m', '12 m', '20 m'],
   correct: 1,
-  fact: 'Adult giraffes can grow up to around 5–6 metres tall — the tallest land animals on Earth.',
+  fact: 'Adult giraffes can grow up to around 5–6 metres tall - the tallest land animals on Earth.',
 };
 
 const GIRAFFE_PDHPE_MCQ = {
@@ -32,7 +32,7 @@ const GIRAFFE_PDHPE_MCQ = {
     5: ['2.5 m', '3.1 m', '3.7 m', '4.5 m'],
   },
   correct: 2,
-  fact: 'A giraffe\'s heart pumps blood approximately 3.7 metres up to its brain — requiring blood pressure twice as high as a human\'s. This is why giraffes have the highest blood pressure of any land animal!',
+  fact: 'A giraffe\'s heart pumps blood approximately 3.7 metres up to its brain - requiring blood pressure twice as high as a human\'s. This is why giraffes have the highest blood pressure of any land animal!',
 };
 
 export default function GiraffeMission() {
@@ -128,7 +128,7 @@ export default function GiraffeMission() {
             {isCorrect ? 'Correct!' : 'Not Quite'}
           </h2>
           {isCorrect && <p style={{ fontSize:'clamp(0.95rem,2.2vh,1.1rem)', color:'#555', marginBottom:'0.8rem', fontStyle:'italic' }}>Great estimation!</p>}
-          {!isCorrect && <p style={{ fontSize:'clamp(0.9rem,2vh,1rem)', color:'#555', marginBottom:'0.8rem', lineHeight:1.6 }}>Look carefully at the scale — giraffes are much taller than most animals!</p>}
+          {!isCorrect && <p style={{ fontSize:'clamp(0.9rem,2vh,1rem)', color:'#555', marginBottom:'0.8rem', lineHeight:1.6 }}>Look carefully at the scale - giraffes are much taller than most animals!</p>}
           {isCorrect && fact && (
             <div style={{ background:'linear-gradient(135deg,#FFF9E6 0%,#FFE6B3 100%)', borderRadius:'var(--t-r-md)', padding:'clamp(1rem,2vh,1.5rem)', marginTop:'0.8rem', marginBottom:'1rem' }}>
               <p style={{ color:'#333', fontSize:'clamp(0.9rem,2vh,1.1rem)', lineHeight:1.5, fontWeight:500 }}>💡 {fact}</p>
@@ -148,7 +148,7 @@ export default function GiraffeMission() {
             {cameraError ? (
               <div style={{ width:'100%', height:'100%', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'1rem', color:'rgba(255,255,255,0.7)' }}>
                 <span style={{ fontSize:'3rem' }}>🦒</span>
-                <p style={{ fontSize:'0.9rem', textAlign:'center', padding:'0 2rem', lineHeight:1.6 }}>Camera unavailable — tap Capture to proceed to the measuring and quiz step.</p>
+                <p style={{ fontSize:'0.9rem', textAlign:'center', padding:'0 2rem', lineHeight:1.6 }}>Camera unavailable - tap Capture to proceed to the measuring and quiz step.</p>
               </div>
             ) : (
               <video ref={videoRef} autoPlay playsInline muted style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:'center' }} />

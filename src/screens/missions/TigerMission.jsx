@@ -9,7 +9,7 @@ const TIGER_MCQ = {
     2: 'How long is a Sumatran tiger from nose to tail?',
     3: 'About how long is a Sumatran tiger from nose to tail?',
     4: 'How long is an adult Sumatran tiger from nose to tail?',
-    5: 'Sumatran tigers are the smallest subspecies — about how long can they grow?',
+    5: 'Sumatran tigers are the smallest subspecies - about how long can they grow?',
   },
   options: ['About 0.5 m', 'About 1 m', 'About 2–2.5 m', 'About 5 m'],
   correct: 2,
@@ -32,7 +32,7 @@ const TIGER_PDHPE_MCQ = {
     5: ['Gluteals, hamstrings, quadriceps and shoulder muscles', 'Biceps, triceps and deltoids', 'Abdominals and chest muscles only', 'Hip flexors and calf muscles only'],
   },
   correct: 0,
-  fact: 'A tiger\'s power comes from its gluteals, hamstrings, quadriceps and powerful shoulder muscles working together — driving the explosive acceleration, leaping and grappling needed to bring down prey.',
+  fact: 'A tiger\'s power comes from its gluteals, hamstrings, quadriceps and powerful shoulder muscles working together - driving the explosive acceleration, leaping and grappling needed to bring down prey.',
 };
 
 export default function TigerMission() {
@@ -127,7 +127,7 @@ export default function TigerMission() {
             {isCorrect ? 'Correct!' : 'Not Quite'}
           </h2>
           {isCorrect && <p style={{ fontSize:'clamp(0.95rem,2.2vh,1.1rem)', color:'#555', marginBottom:'0.8rem', fontStyle:'italic' }}>Great estimation!</p>}
-          {!isCorrect && <p style={{ fontSize:'clamp(0.9rem,2vh,1rem)', color:'#555', marginBottom:'0.8rem', lineHeight:1.6 }}>Think about how long a tiger is compared to a person — they're longer than you might think!</p>}
+          {!isCorrect && <p style={{ fontSize:'clamp(0.9rem,2vh,1rem)', color:'#555', marginBottom:'0.8rem', lineHeight:1.6 }}>Think about how long a tiger is compared to a person - they're longer than you might think!</p>}
           {isCorrect && fact && (
             <div style={{ background:'linear-gradient(135deg,#FFF9E6 0%,#FFE6B3 100%)', borderRadius:'var(--t-r-md)', padding:'clamp(1rem,2vh,1.5rem)', marginTop:'0.8rem', marginBottom:'1rem' }}>
               <p style={{ color:'#333', fontSize:'clamp(0.9rem,2vh,1.1rem)', lineHeight:1.5, fontWeight:500 }}>💡 {fact}</p>
@@ -147,7 +147,7 @@ export default function TigerMission() {
             {cameraError ? (
               <div style={{ width:'100%', height:'100%', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'1rem', color:'rgba(255,255,255,0.7)' }}>
                 <span style={{ fontSize:'3rem' }}>🐯</span>
-                <p style={{ fontSize:'0.9rem', textAlign:'center', padding:'0 2rem', lineHeight:1.6 }}>Camera unavailable — tap Capture to proceed to the measuring and quiz step.</p>
+                <p style={{ fontSize:'0.9rem', textAlign:'center', padding:'0 2rem', lineHeight:1.6 }}>Camera unavailable - tap Capture to proceed to the measuring and quiz step.</p>
               </div>
             ) : (
               <video ref={videoRef} autoPlay playsInline muted style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />

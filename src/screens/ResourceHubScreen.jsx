@@ -7,7 +7,7 @@ const RESOURCES = [
     color: '#2E7D55',
     items: [
       { title:'Teacher Setup Guide', desc:'Step-by-step instructions for creating a class, generating codes, and running the activity.', type:'PDF', icon:'📋' },
-      { title:'Student Quick-Start Card', desc:'One-page printable handout for students — how to join, observe, and earn badges.', type:'PDF', icon:'🎒' },
+      { title:'Student Quick-Start Card', desc:'One-page printable handout for students - how to join, observe, and earn badges.', type:'PDF', icon:'🎒' },
       { title:'ZooSnooz Facilitation Guide', desc:'Night mode setup, managing NFC stations, and interaction instrument overview.', type:'PDF', icon:'🌙' },
     ],
   },
@@ -107,7 +107,7 @@ export default function ResourceHubScreen() {
             <div style={{ display:'flex', flexDirection:'column', gap:'0.5rem' }}>
               {cat.items.map(item => (
                 <div key={item.title} style={{ background:'white', borderRadius:'var(--t-r-md)', border:'1px solid var(--t-mist)', padding:'0.9rem 1rem', display:'flex', gap:'0.85rem', alignItems:'flex-start', cursor:'pointer', transition:'box-shadow 0.15s' }}
-                  onClick={() => alert(`"${item.title}" — resource downloads will be available when connected to the content library.`)}
+                  onClick={() => alert(`"${item.title}" - resource downloads will be available when connected to the content library.`)}
                   onMouseEnter={e => e.currentTarget.style.boxShadow = 'var(--t-shadow-sm)'}
                   onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}
                 >

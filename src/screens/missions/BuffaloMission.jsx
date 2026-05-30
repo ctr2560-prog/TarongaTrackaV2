@@ -404,7 +404,7 @@ export default function BuffaloMission() {
             <div style={{ width:'100%', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.11)', borderRadius:'14px', padding:'1.1rem 1.2rem', marginBottom:'0.85rem' }}>
               <p style={{ fontSize:'0.65rem', fontWeight:800, color:'rgba(100,220,140,0.85)', textTransform:'uppercase', letterSpacing:'0.12em', margin:'0 0 0.55rem' }}>About the Species</p>
               <p style={{ fontSize:'0.9rem', color:'rgba(255,255,255,0.88)', lineHeight:1.65, margin:0 }}>
-                Asian Water Buffalo thrive in <strong style={{ color:'white' }}>wetlands and muddy riverbeds</strong> — their wide hooves act like natural snowshoes, spreading their weight so they don't sink. On <strong style={{ color:'#F4A460' }}>hard, dry ground</strong> those same hooves become a liability, making river habitat essential to their survival.
+                Asian Water Buffalo thrive in <strong style={{ color:'white' }}>wetlands and muddy riverbeds</strong> - their wide hooves act like natural snowshoes, spreading their weight so they don't sink. On <strong style={{ color:'#F4A460' }}>hard, dry ground</strong> those same hooves become a liability, making river habitat essential to their survival.
               </p>
             </div>
             <div style={{ width:'100%', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.11)', borderRadius:'14px', padding:'1.1rem 1.2rem', marginBottom:'1.1rem' }}>
@@ -412,8 +412,8 @@ export default function BuffaloMission() {
               <div style={{ display:'flex', flexDirection:'column', gap:'0.6rem' }}>
                 {[
                   ['Tap the screen', 'to float the buffalo upward through the river.'],
-                  ['Avoid the earth banks', '— touching them ends your run.'],
-                  ['Pass as many gaps as you can', '— then answer the quiz question!'],
+                  ['Avoid the earth banks', ' - touching them ends your run.'],
+                  ['Pass as many gaps as you can', ' - then answer the quiz question!'],
                 ].map(([bold, rest], i) => (
                   <div key={i} style={{ display:'flex', alignItems:'flex-start', gap:'0.6rem' }}>
                     <div style={{ flexShrink:0, width:'5px', height:'5px', borderRadius:'50%', background:'rgba(100,220,140,0.7)', marginTop:'0.42rem' }} />
@@ -451,7 +451,7 @@ export default function BuffaloMission() {
         </div>
       )}
 
-      {/* Dead — first death: offer retry */}
+      {/* Dead - first death: offer retry */}
       {bflPhase === 'dead' && !bflUsedRetry && (
         <div style={{ position:'absolute', top:'52px', left:0, right:0, bottom:0, display:'flex', alignItems:'center', justifyContent:'center', background:'rgba(28,4,4,0.72)', backdropFilter:'blur(4px)', zIndex:10 }}>
           <div className="animate-scale-in" style={{ background:'white', borderRadius:'var(--t-r-xl)', padding:'1.65rem 2rem', textAlign:'center', maxWidth:'300px', width:'calc(100% - 3rem)', boxShadow:'0 16px 50px rgba(0,0,0,0.48)' }}>
@@ -462,7 +462,7 @@ export default function BuffaloMission() {
             </p>
             {bflBest > 0 && <p style={{ color:'#999', fontSize:'0.76rem', marginBottom:'0.9rem' }}>Personal best: {bflBest} gates</p>}
             <div style={{ background:'#F0FDF4', border:'1px solid #BBF7D0', borderRadius:'var(--t-r-md)', padding:'0.4rem 0.75rem', marginBottom:'1.1rem', fontSize:'0.82rem', color:'#059669', fontWeight:700 }}>
-              {ptsForScore(bflBest)} game pts earned — keep going for more!
+              {ptsForScore(bflBest)} game pts earned - keep going for more!
             </div>
             <div style={{ display:'flex', flexDirection:'column', gap:'0.55rem' }}>
               <button onClick={() => { setBflUsedRetry(true); startGame(); }}
@@ -478,7 +478,7 @@ export default function BuffaloMission() {
         </div>
       )}
 
-      {/* Dead — after retry: full end card */}
+      {/* Dead - after retry: full end card */}
       {bflPhase === 'dead' && bflUsedRetry && (
         <div style={{ position:'absolute', inset:0, zIndex:30, background:'linear-gradient(160deg,#0A2818 0%,#0D3320 50%,#0A2010 100%)', display:'flex', flexDirection:'column', overflowY:'auto' }}>
           <div style={{ flex:'1 1 auto', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'2rem 1.5rem', maxWidth:'420px', margin:'0 auto', width:'100%' }}>

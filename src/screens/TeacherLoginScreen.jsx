@@ -158,7 +158,7 @@ export default function TeacherLoginScreen() {
           <p style={{ color:'#ef4444', fontSize:'0.8rem', marginBottom:'0.75rem', marginTop:0 }}>{errorMsg}</p>
         )}
         {status === 'reset-sent' && (
-          <p style={{ color:'#1B6B3A', fontSize:'0.8rem', marginBottom:'0.75rem', marginTop:0 }}>Password reset email sent — check your inbox.</p>
+          <p style={{ color:'#1B6B3A', fontSize:'0.8rem', marginBottom:'0.75rem', marginTop:0 }}>Password reset email sent - check your inbox.</p>
         )}
 
         {isLogin && (

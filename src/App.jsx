@@ -27,7 +27,7 @@ function SplashDismisser() {
     PRELOAD_IMAGES.forEach(src => { const img = new Image(); img.src = src; });
   }, []);
 
-  // Minimum hold — prevents instant flash-and-dismiss when assets are cached
+  // Minimum hold - prevents instant flash-and-dismiss when assets are cached
   useEffect(() => {
     const t = setTimeout(() => setMinTimeDone(true), 2200);
     return () => clearTimeout(t);
@@ -41,7 +41,7 @@ function SplashDismisser() {
     if (video.readyState >= 3) { setVideoReady(true); return; }
     const onReady = () => setVideoReady(true);
     video.addEventListener('canplay', onReady);
-    // Hard fallback — faststart means canplay fires quickly; this only kicks in on very slow connections
+    // Hard fallback - faststart means canplay fires quickly; this only kicks in on very slow connections
     const fallback = setTimeout(() => setVideoReady(true), 3500);
     return () => { video.removeEventListener('canplay', onReady); clearTimeout(fallback); };
   }, []);

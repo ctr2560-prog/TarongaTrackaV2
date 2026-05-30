@@ -21,7 +21,7 @@ export default function MapScreen() {
     if (gpsRequired) enableLocation();
   }, [gpsRequired]);
 
-  // Session already submitted — show completion card
+  // Session already submitted - show completion card
   if (studentStatus === 'complete' && !completionCardDismissed) {
     return (
       <div className="fade-in" style={{ position:'fixed', inset:0, background:'linear-gradient(135deg, var(--jungle-deep) 0%, var(--jungle-mid) 50%, var(--jungle-light) 100%)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'clamp(1rem, 5vw, 2rem)', overflow:'hidden' }}>

@@ -30,7 +30,7 @@ const ITEMS = [
   { id:'native-garden',name:'Native Garden',  cost:18,  cat:'Sustainability', E:5,  W:2,  S:8,  max:3, icon:'Seal Game/native garden.png',  desc:'Habitat-friendly planting.' },
 ];
 
-// Slot positions (% of world) per zone — used as default drop positions
+// Slot positions (% of world) per zone - used as default drop positions
 const SLOTS = {
   pool:           [{ x:27, y:52, w:22 },{ x:22, y:56, w:28 },{ x:30, y:48, w:34 }],
   land:           [{ x:62, y:44, w:11 },{ x:68, y:48, w:10 },{ x:58, y:52, w:11 }],
@@ -330,7 +330,7 @@ export default function SeaLionMission() {
             </div>
           </div>
 
-          {/* Placed items — draggable + rotatable */}
+          {/* Placed items - draggable + rotatable */}
           {placements.map((pl) => {
             const item = ITEMS.find(it => it.id === pl.itemId);
             const isSelected = selectedKey === pl.key;
@@ -375,13 +375,13 @@ export default function SeaLionMission() {
             );
           })}
 
-          {/* Sea lion — above placed items */}
+          {/* Sea lion - above placed items */}
           <img ref={sealRef} src="Seal Game/seal.png" alt="Sea lion"
             style={{ position:'absolute', width:110, left:'37%', top:'44%', transform:'translate(-50%,-50%)', filter:'drop-shadow(0 10px 12px rgba(0,0,0,0.2))', pointerEvents:'none', zIndex:5 }} />
 
         </div>
 
-        {/* Selected item action panel — floats above the build tray */}
+        {/* Selected item action panel - floats above the build tray */}
         {selectedPlacement && selectedItem && (
           <div
             style={{

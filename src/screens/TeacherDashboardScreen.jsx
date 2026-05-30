@@ -139,7 +139,7 @@ const NSW_OUTCOMES = {
 export default function TeacherDashboardScreen() {
   const { setCurrentScreen, teacherEmail, setTeacherEmail, setSelectedClass, teacher, authLoading, signOutTeacher, demoMode } = useApp();
 
-  // Auth guard — redirect if not signed in once Firebase has resolved
+  // Auth guard - redirect if not signed in once Firebase has resolved
   useEffect(() => {
     if (!authLoading && !teacher && !demoMode) setCurrentScreen('teacherLogin');
   }, [teacher, authLoading, demoMode]);
@@ -421,13 +421,13 @@ export default function TeacherDashboardScreen() {
               <select value={newLocation} onChange={e => setNewLocation(e.target.value)}
                 style={{ ...inputStyle, appearance:'auto', cursor:'pointer' }}
                 onFocus={e => e.target.style.borderColor='var(--t-mid)'} onBlur={e => e.target.style.borderColor='var(--t-stone)'}>
-                <option value="taronga-sydney">Taronga Sydney — Zoo Visit</option>
-                <option value="zoosnooz-sydney">ZooSnooz — Taronga Sydney</option>
+                <option value="taronga-sydney">Taronga Sydney - Zoo Visit</option>
+                <option value="zoosnooz-sydney">ZooSnooz - Taronga Sydney</option>
                 <option value="dubbo" disabled>Taronga Dubbo (Coming Soon)</option>
                 <option value="school" disabled>Your School (Coming Soon)</option>
               </select>
 
-              {/* Subject — hidden for ZooSnooz */}
+              {/* Subject - hidden for ZooSnooz */}
               {newLocation !== 'zoosnooz-sydney' && (
                 <>
                   <label style={{ display:'block', fontSize:'0.78rem', fontWeight:700, color:'var(--t-deep)', marginBottom:'0.3rem', textTransform:'uppercase', letterSpacing:'0.05em' }}>Subject</label>
@@ -513,7 +513,7 @@ export default function TeacherDashboardScreen() {
                   <div style={{ marginTop:'1rem', background:bgColor, border:`1px solid ${borderColor}`, borderRadius:'var(--t-r-sm)', padding:'0.85rem 1rem' }}>
                     <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'0.6rem' }}>
                       <p style={{ fontSize:'0.72rem', fontWeight:800, color:accentColor, textTransform:'uppercase', letterSpacing:'0.07em', margin:0 }}>
-                        NSW Curriculum Outcomes — Stage {newClassStage}
+                        NSW Curriculum Outcomes - Stage {newClassStage}
                       </p>
                       <span style={{ fontSize:'0.65rem', color:'#888', fontStyle:'italic' }}>{syllabusName}</span>
                     </div>
@@ -611,7 +611,7 @@ export default function TeacherDashboardScreen() {
             </div>
             <p style={{ fontSize:'0.78rem', fontWeight:700, color:'var(--t-deep)', marginBottom:'0.4rem' }}>Written Feedback <span style={{ color:'#aaa', fontWeight:400 }}>(optional)</span></p>
             <textarea value={feedbackComment} onChange={e => setFeedbackComment(e.target.value)}
-              placeholder="Share your feedback — what worked well, what could improve..."
+              placeholder="Share your feedback - what worked well, what could improve..."
               style={{ width:'100%', minHeight:'90px', padding:'0.75rem', borderRadius:'var(--t-r-sm)', border:'1.5px solid #E5E5E5', fontSize:'0.88rem', fontFamily:'DM Sans, sans-serif', resize:'vertical', boxSizing:'border-box', marginBottom:'1rem', outline:'none' }}
               onFocus={e => e.target.style.borderColor='var(--t-mid)'}
               onBlur={e  => e.target.style.borderColor='#E5E5E5'} />
@@ -679,14 +679,14 @@ export default function TeacherDashboardScreen() {
               <div style={{ background:'#e8f5ed', border:'1px solid #b6d9c3', borderRadius:'10px', padding:'12px 14px', marginBottom:'16px', display:'flex', gap:'10px', alignItems:'flex-start' }}>
                 <span style={{ fontSize:'18px', flexShrink:0, marginTop:'1px' }}>&#128274;</span>
                 <p style={{ fontSize:'0.83rem', color:'#1a4a2a', lineHeight:1.65, margin:0 }}>
-                  <strong>Students are de-identified for privacy.</strong> Instead of entering their real name, each student picks an animal alias — their name is never stored in the app.
+                  <strong>Students are de-identified for privacy.</strong> Instead of entering their real name, each student picks an animal alias - their name is never stored in the app.
                 </p>
               </div>
               <p style={{ fontSize:'0.83rem', color:'#444', lineHeight:1.7, marginBottom:'14px' }}>
                 To record which student chose which alias, print the <strong>Who's Who in the Zoo</strong> document and fill it in during the excursion. Keep it secure and do not share it publicly.
               </p>
               <p style={{ fontSize:'0.83rem', color:'#444', lineHeight:1.7, marginBottom:'20px' }}>
-                The document is also accessible in the <strong>class navigation panel</strong> once you open any class. On-site at Taronga, staff can also assist — just see a team member for details.
+                The document is also accessible in the <strong>class navigation panel</strong> once you open any class. On-site at Taronga, staff can also assist - just see a team member for details.
               </p>
               <a
                 href="/whos-who-in-the-zoo.pdf"

@@ -210,7 +210,7 @@ export default function GorillaMission() {
           <div style={{ width:'100%', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.11)', borderRadius:'14px', padding:'1.1rem 1.2rem', marginBottom:'0.85rem' }}>
             <p style={{ fontSize:'0.65rem', fontWeight:800, color:'rgba(100,220,140,0.85)', textTransform:'uppercase', letterSpacing:'0.12em', margin:'0 0 0.55rem' }}>Gorilla Diet Facts</p>
             <p style={{ fontSize:'0.9rem', color:'rgba(255,255,255,0.88)', lineHeight:1.65, margin:0 }}>
-              Gorillas eat <strong style={{ color:'white' }}>leaves, bamboo &amp; fruit</strong> every day — up to <strong style={{ color:'#F4A460' }}>18 kg!</strong> They also eat <strong style={{ color:'white' }}>termites</strong> for protein. No meat, ever!
+              Gorillas eat <strong style={{ color:'white' }}>leaves, bamboo &amp; fruit</strong> every day - up to <strong style={{ color:'#F4A460' }}>18 kg!</strong> They also eat <strong style={{ color:'white' }}>termites</strong> for protein. No meat, ever!
             </p>
           </div>
           <div style={{ width:'100%', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.11)', borderRadius:'14px', padding:'1.1rem 1.2rem', marginBottom:'1.1rem' }}>
@@ -330,7 +330,7 @@ export default function GorillaMission() {
           </div>
           <div style={{ width:'100%', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.11)', borderRadius:'14px', padding:'1rem 1.2rem', marginBottom:'0.85rem', textAlign:'left' }}>
             <p style={{ fontSize:'0.88rem', color:'rgba(255,255,255,0.82)', lineHeight:1.65, margin:0 }}>
-              <strong style={{ color:'rgba(100,220,140,0.9)' }}>Did you know?</strong> Gorillas spend up to <strong style={{ color:'white' }}>6 hours a day</strong> foraging — mostly leaves, bark, roots and fruit from the rainforest floor.
+              <strong style={{ color:'rgba(100,220,140,0.9)' }}>Did you know?</strong> Gorillas spend up to <strong style={{ color:'white' }}>6 hours a day</strong> foraging - mostly leaves, bark, roots and fruit from the rainforest floor.
             </p>
           </div>
 

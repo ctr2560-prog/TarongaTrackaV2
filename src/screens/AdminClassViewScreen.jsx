@@ -65,7 +65,7 @@ export default function AdminClassViewScreen() {
     const rows = [['Name','Points','Badges','Quiz %','Completed','Observations']];
     students.forEach(s => {
       const obsText = (s.badges||[]).filter(b=>b.observation).map(b=>`${b.animal}: ${b.observation}`).join(' | ');
-      rows.push([s.name||s.id, s.totalPoints||0, s.badges?.length||0, s.quizPercentage||'—', s.completed?'Yes':'No', `"${obsText.replace(/"/g,'""')}"`]);
+      rows.push([s.name||s.id, s.totalPoints||0, s.badges?.length||0, s.quizPercentage||' - ', s.completed?'Yes':'No', `"${obsText.replace(/"/g,'""')}"`]);
     });
     const csv  = rows.map(r => r.join(',')).join('\n');
     const blob = new Blob([csv], { type:'text/csv' });
@@ -82,9 +82,9 @@ export default function AdminClassViewScreen() {
   const completedStuds = students.filter(s => s.completed);
   const avgQuiz        = completedStuds.length ? Math.round(completedStuds.reduce((s,st)=>s+(st.quizPercentage||0),0)/completedStuds.length) : 0;
   const allObs         = students.flatMap(s => (s.badges||[]).filter(b=>b.observationScore));
-  const avgB           = allObs.length ? (allObs.reduce((s,b)=>s+(b.observationScore.behaviour||0),0)/allObs.length).toFixed(1) : '—';
-  const avgD           = allObs.length ? (allObs.reduce((s,b)=>s+(b.observationScore.detail||0),0)/allObs.length).toFixed(1) : '—';
-  const avgW           = allObs.length ? (allObs.reduce((s,b)=>s+(b.observationScore.writing||0),0)/allObs.length).toFixed(1) : '—';
+  const avgB           = allObs.length ? (allObs.reduce((s,b)=>s+(b.observationScore.behaviour||0),0)/allObs.length).toFixed(1) : ' - ';
+  const avgD           = allObs.length ? (allObs.reduce((s,b)=>s+(b.observationScore.detail||0),0)/allObs.length).toFixed(1) : ' - ';
+  const avgW           = allObs.length ? (allObs.reduce((s,b)=>s+(b.observationScore.writing||0),0)/allObs.length).toFixed(1) : ' - ';
 
   const isZZ = cls?.sessionType === 'zoosnooz';
 
@@ -131,7 +131,7 @@ export default function AdminClassViewScreen() {
           <StatCard label="Completed"  value={completedCount} sub={`${students.length ? Math.round(completedCount/students.length*100) : 0}%`} />
           <StatCard label="Avg Points" value={avgPoints} />
           <StatCard label="Badges"     value={totalBadges} />
-          <StatCard label="Avg Quiz"   value={completedStuds.length ? `${avgQuiz}%` : '—'} />
+          <StatCard label="Avg Quiz"   value={completedStuds.length ? `${avgQuiz}%` : ' - '} />
           <StatCard label="Obs B·D·W"  value={`${avgB}·${avgD}·${avgW}`} />
         </div>
 
@@ -164,9 +164,9 @@ export default function AdminClassViewScreen() {
                   {sorted.map(s => {
                     const isExpanded = expanded === s.id;
                     const allObs = (s.badges||[]).filter(b=>b.observationScore);
-                    const sAvgB = allObs.length ? (allObs.reduce((t,b)=>t+(b.observationScore.behaviour||0),0)/allObs.length).toFixed(1) : '—';
-                    const sAvgD = allObs.length ? (allObs.reduce((t,b)=>t+(b.observationScore.detail||0),0)/allObs.length).toFixed(1) : '—';
-                    const sAvgW = allObs.length ? (allObs.reduce((t,b)=>t+(b.observationScore.writing||0),0)/allObs.length).toFixed(1) : '—';
+                    const sAvgB = allObs.length ? (allObs.reduce((t,b)=>t+(b.observationScore.behaviour||0),0)/allObs.length).toFixed(1) : ' - ';
+                    const sAvgD = allObs.length ? (allObs.reduce((t,b)=>t+(b.observationScore.detail||0),0)/allObs.length).toFixed(1) : ' - ';
+                    const sAvgW = allObs.length ? (allObs.reduce((t,b)=>t+(b.observationScore.writing||0),0)/allObs.length).toFixed(1) : ' - ';
                     return (
                       <>
                         <tr key={s.id} onClick={() => setExpanded(isExpanded ? null : s.id)} style={{ cursor:'pointer', background: isExpanded ? 'var(--t-foam)' : 'white', transition:'background 0.15s' }}>
@@ -176,7 +176,7 @@ export default function AdminClassViewScreen() {
                           </td>
                           <td style={{ ...tdStyle, fontWeight:700, color:'var(--sunset-orange)' }}>{s.totalPoints || 0}</td>
                           <td style={tdStyle}>{s.badges?.length || 0}</td>
-                          <td style={tdStyle}>{s.quizPercentage != null ? `${s.quizPercentage}%` : '—'}</td>
+                          <td style={tdStyle}>{s.quizPercentage != null ? `${s.quizPercentage}%` : ' - '}</td>
                           <td style={tdStyle}>
                             <span style={{ display:'inline-block', padding:'0.2rem 0.6rem', borderRadius:999, fontSize:'0.7rem', fontWeight:700, background: s.completed ? '#D1FAE5' : '#F3F4F6', color: s.completed ? '#065F46' : '#6B7280' }}>
                               {s.completed ? '✓ Done' : 'In progress'}

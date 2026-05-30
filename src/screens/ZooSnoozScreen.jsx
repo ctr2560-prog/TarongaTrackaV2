@@ -425,7 +425,7 @@ export default function ZooSnoozScreen() {
     mr.onstop = () => {
       const blob = new Blob(zzChunksRef.current, { type: blobType });
       if (blob.size < 500) {
-        alert('Recording failed — no video was captured. Please try again.');
+        alert('Recording failed - no video was captured. Please try again.');
         setZzRecording(false);
         return;
       }
@@ -448,7 +448,7 @@ export default function ZooSnoozScreen() {
         const stuckTimer = setTimeout(() => {
           setZzUploadProgress(prev => {
             if (prev[animalId] === 0) {
-              console.warn('ZZ upload stuck — check Firebase Storage rules for zoosnooz/ path');
+              console.warn('ZZ upload stuck - check Firebase Storage rules for zoosnooz/ path');
               return { ...prev, [animalId]: 'error' };
             }
             return prev;
@@ -700,7 +700,7 @@ export default function ZooSnoozScreen() {
       await new Promise(res => setTimeout(res, 80)); // let MediaRecorder settle before first frame
 
       const wait = ms => new Promise(res => setTimeout(res, ms));
-      // Redraws drawFn at rAF rate for ms milliseconds — ensures captureStream gets frames for static cards
+      // Redraws drawFn at rAF rate for ms milliseconds - ensures captureStream gets frames for static cards
       const drawCardFor = (drawFn, ms) => new Promise(resolve => {
         if (cancelled) { resolve(); return; }
         const end = performance.now() + ms;
@@ -753,7 +753,7 @@ export default function ZooSnoozScreen() {
         setZzStitchAnimalIdx(i);
         setZzStitchProgress(Math.round(((i + 1) / TOTAL) * 100));
 
-        // Entry card (3s) — measure name size once before the rAF loop
+        // Entry card (3s) - measure name size once before the rAF loop
         const bandY = H/2 - 190, bandH = 380;
         let nameSize = 72;
         ctx.font = `bold ${nameSize}px "Taronga Headline", sans-serif`;
@@ -1265,7 +1265,7 @@ export default function ZooSnoozScreen() {
           ))}
         </div>
 
-        {/* Header — matches daily MapScreen style */}
+        {/* Header - matches daily MapScreen style */}
         <div className="student-header" style={{ position:'sticky', top:0, zIndex:100 }}>
           <div className="student-banner-mobile student-header-inner">
             <div className="logo-title-block" style={{ display:'flex', alignItems:'center', gap:'1rem' }}>
@@ -1545,7 +1545,7 @@ export default function ZooSnoozScreen() {
                         {!done && <div style={{ fontSize:'0.5rem', color:'rgba(255,255,255,0.3)', textTransform:'uppercase', letterSpacing:'0.12em', fontFamily:'DM Sans, sans-serif' }}>seconds left</div>}
                       </div>
                     </div>
-                    {/* Timeline grid — 60 cells */}
+                    {/* Timeline grid - 60 cells */}
                     <div style={{ display:'grid', gridTemplateColumns:'repeat(30,1fr)', gap:'3px', marginBottom:'0.8rem' }}>
                       {[...Array(60)].map((_,i) => {
                         const recorded = i < tigerTimeline.length;
@@ -1564,7 +1564,7 @@ export default function ZooSnoozScreen() {
                         <span style={{ display:'flex', alignItems:'center', gap:'0.3rem' }}><span style={{ display:'inline-block', width:'10px', height:'10px', borderRadius:'2px', background:'linear-gradient(180deg,#5DBF7F,#2E7D55)' }} />Active</span>
                         <span style={{ display:'flex', alignItems:'center', gap:'0.3rem' }}><span style={{ display:'inline-block', width:'10px', height:'10px', borderRadius:'2px', background:'rgba(255,255,255,0.06)' }} />Still</span>
                       </div>
-                      <span style={{ fontSize:'0.55rem', color:'rgba(255,255,255,0.2)', fontFamily:'DM Sans, sans-serif' }}>0s ←——————→ 30s</span>
+                      <span style={{ fontSize:'0.55rem', color:'rgba(255,255,255,0.2)', fontFamily:'DM Sans, sans-serif' }}>0s ← -  -  -  -  -  - → 30s</span>
                     </div>
                     {/* Stat cards */}
                     <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.65rem' }}>
@@ -1661,7 +1661,7 @@ export default function ZooSnoozScreen() {
                       })}
                     </div>
                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'0.85rem' }}>
-                      <span style={{ fontSize:'0.72rem', fontWeight:700, color:actColor, fontFamily:'DM Sans, sans-serif', transition:'color 0.3s' }}>{lionMonitoring||done?actLabel:'—'}</span>
+                      <span style={{ fontSize:'0.72rem', fontWeight:700, color:actColor, fontFamily:'DM Sans, sans-serif', transition:'color 0.3s' }}>{lionMonitoring||done?actLabel:' - '}</span>
                       <span style={{ fontSize:'0.6rem', color:'rgba(255,255,255,0.25)', fontFamily:'DM Sans, sans-serif' }}>0 ·········· 30s</span>
                     </div>
                     <div style={{ display:'flex', gap:'2px', alignItems:'flex-end', height:'36px', marginBottom:'0.85rem', background:'rgba(0,0,0,0.3)', borderRadius:'6px', padding:'4px 6px', overflow:'hidden' }}>
@@ -1680,7 +1680,7 @@ export default function ZooSnoozScreen() {
                       ))}
                     </div>
                   </div>
-                  {lionError && <div style={{ fontSize:'0.78rem', color:'#F87171', marginBottom:'0.75rem', textAlign:'center' }}>Microphone unavailable — tap continue and observe quietly.</div>}
+                  {lionError && <div style={{ fontSize:'0.78rem', color:'#F87171', marginBottom:'0.75rem', textAlign:'center' }}>Microphone unavailable - tap continue and observe quietly.</div>}
                   {!lionMonitoring && !done && !lionError && (
                     <button className="zz-btn" style={{ marginBottom:'0.5rem', fontSize:'1rem', padding:'0.9rem' }} onClick={zzStartMic}>▶ Start 30-Second Recording</button>
                   )}
@@ -1704,7 +1704,7 @@ export default function ZooSnoozScreen() {
               const rDist      = rs?.totalDist || 0;
               const rMaxSpeed  = rs?.maxSpeed  || 0;
               const rFootfalls = rs?.footfalls || 0;
-              const speedLabel = rMaxSpeed>=0.55?'CHARGE':rMaxSpeed>=0.28?'TROT':rStarted?'WALK':'—';
+              const speedLabel = rMaxSpeed>=0.55?'CHARGE':rMaxSpeed>=0.28?'TROT':rStarted?'WALK':' - ';
               const speedColor = rMaxSpeed>=0.55?'#FBBF24':rMaxSpeed>=0.28?'#A8C4B2':'#4A9E6B';
 
               function drawFootprint(ctx, x, y, angle, sn) {
@@ -1816,7 +1816,7 @@ export default function ZooSnoozScreen() {
                   )}
                   <canvas ref={el => zzRhinoInitCanvas(el)} width={560} height={300}
                     style={{ borderRadius:'10px', width:'100%', display:'block', touchAction:'none', cursor:rDone?'default':'crosshair' }} />
-                  {!rStarted && <p style={{ fontSize:'0.63rem', color:'rgba(168,196,178,0.35)', textAlign:'center', margin:'0.45rem 0 0', fontFamily:'DM Sans, sans-serif', fontStyle:'italic' }}>Drag your finger across the pad — slow and heavy, like a 2,700 kg rhino</p>}
+                  {!rStarted && <p style={{ fontSize:'0.63rem', color:'rgba(168,196,178,0.35)', textAlign:'center', margin:'0.45rem 0 0', fontFamily:'DM Sans, sans-serif', fontStyle:'italic' }}>Drag your finger across the pad - slow and heavy, like a 2,700 kg rhino</p>}
                   {rDone && <p style={{ fontSize:'0.63rem', color:'rgba(74,158,107,0.65)', textAlign:'center', margin:'0.45rem 0 0', fontFamily:'DM Sans, sans-serif' }}>{rFootfalls} footfall{rFootfalls!==1?'s':''} recorded · Use your data to answer the next question</p>}
                 </div>
               );
@@ -1869,7 +1869,7 @@ export default function ZooSnoozScreen() {
                           <line x1="160" y1="78" x2="173" y2="78" stroke="rgba(74,158,107,0.3)" strokeWidth="1"/>
                           <text x="130" y="132" textAnchor="middle" fill="rgba(168,196,178,0.35)" fontSize="9" fontFamily="DM Sans, sans-serif">scanning environment</text>
                         </svg>
-                        {bintuError && <p style={{ fontSize:'0.72rem', color:'#F87171', margin:'-0.5rem 0 0', fontFamily:'DM Sans, sans-serif', textAlign:'center' }}>Camera access denied — check permissions</p>}
+                        {bintuError && <p style={{ fontSize:'0.72rem', color:'#F87171', margin:'-0.5rem 0 0', fontFamily:'DM Sans, sans-serif', textAlign:'center' }}>Camera access denied - check permissions</p>}
                       </div>
                     )}
                     {(bintuScanning||bintuDone) && <div style={{ position:'absolute', inset:0, pointerEvents:'none', backgroundImage:'linear-gradient(rgba(74,158,107,0.07) 1px,transparent 1px),linear-gradient(90deg,rgba(74,158,107,0.07) 1px,transparent 1px)', backgroundSize:'28px 28px' }} />}
@@ -1921,7 +1921,7 @@ export default function ZooSnoozScreen() {
                         <div style={{ height:'7px', borderRadius:'999px', background:'rgba(255,255,255,0.07)', overflow:'hidden', marginBottom:'0.45rem' }}>
                           <div style={{ height:'100%', width:`${bintuCamIdx}%`, background:bintuCamIdx>70?'linear-gradient(90deg,#2E7D55,#4ADE80)':bintuCamIdx>40?'linear-gradient(90deg,#B45309,#FBBF24)':'linear-gradient(90deg,#991B1B,#F87171)', borderRadius:'999px', transition:'width 0.4s ease' }} />
                         </div>
-                        <p style={{ fontSize:'0.6rem', color:'rgba(255,255,255,0.28)', margin:0, fontFamily:'DM Sans, sans-serif', fontStyle:'italic' }}>{bintuCamIdx>70?'Binturong well-camouflaged — dark fur matches this environment':bintuCamIdx>40?'Partial camouflage — binturong detectable at close range':'Binturong exposed — dark fur stands out against bright light'}</p>
+                        <p style={{ fontSize:'0.6rem', color:'rgba(255,255,255,0.28)', margin:0, fontFamily:'DM Sans, sans-serif', fontStyle:'italic' }}>{bintuCamIdx>70?'Binturong well-camouflaged - dark fur matches this environment':bintuCamIdx>40?'Partial camouflage - binturong detectable at close range':'Binturong exposed - dark fur stands out against bright light'}</p>
                       </div>
                     )}
                     {bintuDone && <p style={{ fontSize:'0.63rem', color:'rgba(74,158,107,0.65)', fontFamily:'DM Sans, sans-serif', textAlign:'center', margin:0 }}>Habitat scan complete · {bintuReadings.length} light readings captured · Analyse your results below</p>}
@@ -1989,7 +1989,7 @@ export default function ZooSnoozScreen() {
                     {hasDrawn && <button onClick={zzSunClear} style={{ fontSize:'0.65rem', color:'rgba(168,196,178,0.55)', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'6px', padding:'0.25rem 0.55rem', cursor:'pointer', fontFamily:'DM Sans, sans-serif' }}>Clear</button>}
                   </div>
                   <p style={{ fontSize:'0.68rem', color:sbLabel?'rgba(74,158,107,0.7)':'rgba(251,191,36,0.85)', fontFamily:'DM Sans, sans-serif', margin:'0 0 0.5rem', fontWeight:600 }}>
-                    {sbLabel?'✓ Label selected — draw on the canvas':'↓ Select a label below, then draw on the canvas'}
+                    {sbLabel?'✓ Label selected - draw on the canvas':'↓ Select a label below, then draw on the canvas'}
                   </p>
                   <div style={{ display:'flex', gap:'0.35rem', flexWrap:'wrap', marginBottom:'0.65rem' }}>
                     {LABELS.map(lbl=>(
@@ -2019,7 +2019,7 @@ export default function ZooSnoozScreen() {
               );
             })()}
 
-            {/* Next button — locked until timed analysis done for tiger/lion/rhino/binturong */}
+            {/* Next button - locked until timed analysis done for tiger/lion/rhino/binturong */}
             {(['tiger','lion','rhino','binturong'].includes(zzAnimal.id) ? interDone : true) && (
               <button
                 onClick={() => setZzPhase('mcq')}
@@ -2051,7 +2051,7 @@ export default function ZooSnoozScreen() {
           return (
             <div style={{ display:'flex', flexDirection:'column', gap:'1rem', flex:1 }}>
 
-              {/* Tiger — recording data summary */}
+              {/* Tiger - recording data summary */}
               {zzAnimal.id === 'tiger' && (
                 <div style={{ background:'rgba(0,0,0,0.45)', border:'1px solid rgba(46,125,85,0.35)', borderRadius:'14px', padding:'1rem', fontFamily:'monospace' }}>
                   <p style={{ fontSize:'0.6rem', fontWeight:700, color:'rgba(168,196,178,0.7)', textTransform:'uppercase', letterSpacing:'0.14em', margin:'0 0 0.6rem', fontFamily:'DM Sans, sans-serif' }}>Your 30-second recording</p>
@@ -2081,7 +2081,7 @@ export default function ZooSnoozScreen() {
                 </div>
               )}
 
-              {/* Lion — audio recording summary */}
+              {/* Lion - audio recording summary */}
               {zzAnimal.id === 'lion' && (() => {
                 const maxVol = 100;
                 const peakPct = Math.min(100, lionPeak);
@@ -2105,7 +2105,7 @@ export default function ZooSnoozScreen() {
                 );
               })()}
 
-              {/* Binturong — habitat scan results */}
+              {/* Binturong - habitat scan results */}
               {zzAnimal.id === 'binturong' && bintuDone && (() => {
                 const avgB     = bintuReadings.length > 0 ? Math.round(bintuReadings.reduce((a,b)=>a+b,0)/bintuReadings.length) : bintuBrightness;
                 const avgCamIdx = Math.max(0, 100 - Math.round((avgB/255)*100));
@@ -2148,7 +2148,7 @@ export default function ZooSnoozScreen() {
                 );
               })()}
 
-              {/* Rhino — movement path + stats */}
+              {/* Rhino - movement path + stats */}
               {zzAnimal.id === 'rhino' && (() => {
                 const rs = rhinoStateRef.current;
                 const pts = rs?.pathPoints || [];
@@ -2185,7 +2185,7 @@ export default function ZooSnoozScreen() {
                 );
               })()}
 
-              {/* Sun Bear — field sketch preview */}
+              {/* Sun Bear - field sketch preview */}
               {zzAnimal.id === 'sun-bear' && hasDrawn && (() => {
                 let dataUrl = null;
                 try { dataUrl = sketchRef.current?.toDataURL('image/png'); } catch(e) {}
@@ -2277,11 +2277,11 @@ export default function ZooSnoozScreen() {
         {zzPhase === 'observation' && (
           <div style={{ display:'flex', flexDirection:'column', gap:'1rem', flex:1 }}>
             {!obsOpen ? (
-              /* Countdown — full-width centred, matches live site */
+              /* Countdown - full-width centred, matches live site */
               <div style={{ textAlign:'center', padding:'3rem 1rem 2rem' }}>
                 <div style={{ fontSize:'4.5rem', fontWeight:800, color:'#4A9E6B', lineHeight:1, marginBottom:'0.65rem', fontVariantNumeric:'tabular-nums' }}>{obsLock}</div>
                 <div style={{ fontSize:'0.85rem', color:'var(--zz-muted)', lineHeight:1.7, marginBottom:'1.75rem' }}>
-                  Observe carefully before recording your thoughts.<br/>Watch the {zzAnimal.name} — don't write yet.
+                  Observe carefully before recording your thoughts.<br/>Watch the {zzAnimal.name} - don't write yet.
                 </div>
                 <div style={{ height:'4px', borderRadius:'999px', background:'rgba(255,255,255,0.08)', overflow:'hidden', marginBottom:'1.5rem' }}>
                   <div style={{ height:'100%', width:`${((20 - obsLock) / 20) * 100}%`, background:'linear-gradient(90deg,#2E7D55,#4A9E6B)', transition:'width 1s linear', borderRadius:'999px' }} />
@@ -2301,14 +2301,14 @@ export default function ZooSnoozScreen() {
                   : classStage === 3
                   ? { header:'A good response includes:', points:['What you can observe','One feature or behaviour','Why you think it does that'], starters:['I noticed…','I think this is because…'] }
                   : classStage === 5
-                  ? { header:'✓ Stage 5 — Explain and reason:', points:['What did you observe?','Why does this happen?','How does this help the animal or environment?'], starters:['Based on my observation…','This is significant because…','This adaptation allows the animal to…'] }
+                  ? { header:'✓ Stage 5 - Explain and reason:', points:['What did you observe?','Why does this happen?','How does this help the animal or environment?'], starters:['Based on my observation…','This is significant because…','This adaptation allows the animal to…'] }
                   : { header:'✓ A strong response includes:', points:['A clear observation (what + where/what doing)','A relevant concept or feature','A simple explanation or link to survival'], starters:['I observed that…','This may help the animal because…'] };
                 const lastName = zzAnimal.name.split(' ').pop().toLowerCase();
                 const placeholder = classStage <= 2
                   ? `I can see the ${lastName}… The keeper told me…`
                   : classStage === 5
                   ? `Describe the ${lastName}'s adaptations and behaviour. Then include what the keeper told you about "${keeperQ}"`
-                  : `Describe what you observe — what is the ${lastName} doing? What do you notice? Then write what the keeper said when you asked them your question.`;
+                  : `Describe what you observe - what is the ${lastName} doing? What do you notice? Then write what the keeper said when you asked them your question.`;
                 return (
                   <>
                     {/* Prompt + keeper question card */}
@@ -2366,7 +2366,7 @@ export default function ZooSnoozScreen() {
         {zzPhase === 'video' && (
           <div style={{ display:'flex', flexDirection:'column', gap:'1rem' }}>
 
-            {/* Filming guidance — compact */}
+            {/* Filming guidance - compact */}
             <div style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(46,125,85,0.2)', borderRadius:'10px', padding:'0.6rem 0.85rem' }}>
               <p style={{ fontSize:'0.58rem', fontWeight:800, color:'rgba(46,125,85,0.7)', textTransform:'uppercase', letterSpacing:'0.12em', margin:'0 0 0.25rem' }}>🎬 What to Capture</p>
               <p style={{ fontSize:'0.78rem', color:'var(--zz-muted)', lineHeight:1.5, margin:0 }}>{(zzAnimal.filmingGuidance||'').split('\n')[0]}</p>
@@ -2421,7 +2421,7 @@ export default function ZooSnoozScreen() {
                   </div>
                 </div>
 
-                {/* Bottom panel — inline editable, two-column */}
+                {/* Bottom panel - inline editable, two-column */}
                 <div style={{ padding:'1.1rem 1rem 1.25rem', background:'rgba(6,8,6,0.98)', borderTop:'2px solid rgba(46,125,85,0.3)', position:'relative', overflow:'hidden', display:'flex', alignItems:'flex-start', gap:'0.85rem' }}>
                   {[...Array(8)].map((_,i) => (
                     <div key={i} style={{ position:'absolute', left:`${(i*13+4)%96}%`, top:`${(i*19+6)%80}%`, width:'1.5px', height:'1.5px', borderRadius:'50%', background:'rgba(168,196,178,0.2)', pointerEvents:'none' }} />
@@ -2455,7 +2455,7 @@ export default function ZooSnoozScreen() {
                 </div>
               </div>
 
-              {/* ✏ Tap to fill in callout — hidden during recording */}
+              {/* ✏ Tap to fill in callout - hidden during recording */}
               {!zzRecording && (
                 <div style={{ position:'absolute', right:0, bottom:'130px', transform:'translateX(calc(100% + 10px))', width:'118px', zIndex:20, pointerEvents:'none' }}>
                   <svg width="44" height="70" viewBox="0 0 44 70" style={{ position:'absolute', left:'-44px', bottom:'18px', overflow:'visible' }}>
@@ -2489,7 +2489,7 @@ export default function ZooSnoozScreen() {
           return (
             <div style={{ display:'flex', flexDirection:'column', gap:'1rem' }}>
 
-              {/* Social Media Night Frame — Preview */}
+              {/* Social Media Night Frame - Preview */}
               <div style={{ borderRadius:'22px', overflow:'hidden', background:'linear-gradient(160deg,#020D06 0%,#040F08 55%,#071E14 100%)', boxShadow:'0 16px 48px rgba(0,0,0,0.75), 0 0 0 1px rgba(46,125,85,0.3)', position:'relative' }}>
 
                 {/* Top bar */}
@@ -2544,7 +2544,7 @@ export default function ZooSnoozScreen() {
               )}
               {up === 'error' && (
                 <div style={{ padding:'0.6rem 0.85rem', borderRadius:'10px', background:'rgba(248,113,113,0.1)', border:'1px solid rgba(248,113,113,0.25)' }}>
-                  <span style={{ color:'#F87171', fontSize:'0.82rem' }}>Upload failed — video saved locally</span>
+                  <span style={{ color:'#F87171', fontSize:'0.82rem' }}>Upload failed - video saved locally</span>
                 </div>
               )}
               {up !== undefined && up !== 'done' && up !== 'error' && (

@@ -3,7 +3,7 @@ import { useStudent } from '../context/StudentContext';
 import { getStageQuestions } from '../utils/helpers';
 import MathsCalculator from '../components/MathsCalculator';
 
-// Special mission dispatch — each returns a screen component if it applies
+// Special mission dispatch - each returns a screen component if it applies
 import ChimpMission    from './missions/ChimpMission';
 import GorillaMission  from './missions/GorillaMission';
 import LionMission     from './missions/LionMission';

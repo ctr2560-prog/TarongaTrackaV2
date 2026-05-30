@@ -98,7 +98,7 @@ export default function ComingSoonScreen() {
         </button>
       </div>
 
-      {/* Developer login — bottom of screen */}
+      {/* Developer login - bottom of screen */}
       <div
         onClick={() => setCurrentScreen('adminLogin')}
         style={{

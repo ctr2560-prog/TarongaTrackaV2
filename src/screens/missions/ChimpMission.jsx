@@ -118,7 +118,7 @@ export default function ChimpMission() {
             ))}
             <div style={{ marginTop:'0.25rem', textAlign:'center', padding:'0.55rem 0.8rem', borderRadius:'10px', background: isValid ? 'rgba(74,222,128,0.15)' : 'rgba(248,113,113,0.15)', border:`1px solid ${isValid ? 'rgba(74,222,128,0.4)' : 'rgba(248,113,113,0.4)'}` }}>
               <span style={{ fontSize:'0.88rem', fontWeight:700, color: isValid ? '#4ADE80' : '#F87171' }}>
-                Total: {total}% {isValid ? '✓ Ready!' : '— must equal 100%'}
+                Total: {total}% {isValid ? '✓ Ready!' : ' - must equal 100%'}
               </span>
             </div>
           </div>

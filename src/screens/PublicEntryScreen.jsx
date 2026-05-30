@@ -42,7 +42,7 @@ export default function PublicEntryScreen() {
           {/* Name entry card */}
           <div style={{ background:'rgba(255,255,255,0.1)', backdropFilter:'blur(16px)', WebkitBackdropFilter:'blur(16px)', borderRadius:20, padding:'1.5rem', border:'1px solid rgba(255,255,255,0.2)' }}>
             <h2 style={{ color:'white', margin:'0 0 0.3rem', fontSize:'1.1rem', fontWeight:700 }}>What's your name?</h2>
-            <p style={{ color:'rgba(255,255,255,0.65)', fontSize:'0.82rem', margin:'0 0 1rem', lineHeight:1.5 }}>Optional — helps personalise your experience.</p>
+            <p style={{ color:'rgba(255,255,255,0.65)', fontSize:'0.82rem', margin:'0 0 1rem', lineHeight:1.5 }}>Optional - helps personalise your experience.</p>
             <input
               value={name}
               onChange={e => setName(e.target.value)}

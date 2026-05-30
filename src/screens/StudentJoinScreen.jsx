@@ -47,8 +47,8 @@ export default function StudentJoinScreen() {
 
   const handleCodeContinue = async () => {
     const code = normaliseCode(classCode);
-    if (code.length !== 6) { setJoinError('Code not found — check with your teacher.'); return; }
-    if (!lookedUpClass) { setJoinError('Code not found — check with your teacher.'); return; }
+    if (code.length !== 6) { setJoinError('Code not found - check with your teacher.'); return; }
+    if (!lookedUpClass) { setJoinError('Code not found - check with your teacher.'); return; }
 
     setLoading(true);
     setJoinError('');
@@ -59,7 +59,7 @@ export default function StudentJoinScreen() {
       setSelectedAnimal('');
       setStep('animal');
     } catch {
-      setJoinError('Could not verify code — check your connection and try again.');
+      setJoinError('Could not verify code - check your connection and try again.');
     } finally {
       setLoading(false);
     }
@@ -75,7 +75,7 @@ export default function StudentJoinScreen() {
     try {
       const classSnap = await getDoc(doc(db, 'classes', code));
       if (!classSnap.exists()) {
-        setJoinError('Code not found — check with your teacher.');
+        setJoinError('Code not found - check with your teacher.');
         setLoading(false);
         return;
       }
@@ -98,11 +98,11 @@ export default function StudentJoinScreen() {
       const existingSnap = await getDocs(existingQ);
 
       if (!existingSnap.empty) {
-        // Someone else grabbed it — refresh taken list and stay on animal screen
+        // Someone else grabbed it - refresh taken list and stay on animal screen
         const allSnap = await getDocs(studentsRef);
         setTakenAnimals(allSnap.docs.map(d => d.data().name).filter(Boolean));
         setSelectedAnimal('');
-        setJoinError(`${selectedAnimal} was just taken by a classmate — please choose another.`);
+        setJoinError(`${selectedAnimal} was just taken by a classmate - please choose another.`);
         setLoading(false);
         return;
       }
@@ -140,7 +140,7 @@ export default function StudentJoinScreen() {
 
     } catch (err) {
       console.error('Join failed:', err);
-      setJoinError('Could not join — check your connection and try again.');
+      setJoinError('Could not join - check your connection and try again.');
     } finally {
       setLoading(false);
     }
@@ -183,7 +183,7 @@ export default function StudentJoinScreen() {
 
           {lookedUpClass && !joinError && (
             <div style={{ background:'var(--t-success-bg)', border:'1px solid #BBF7D0', borderRadius:'var(--t-r-xs)', padding:'0.55rem 0.85rem', marginBottom:'0.85rem', display:'flex', alignItems:'center', gap:'0.4rem' }}>
-              <p style={{ color:'var(--t-success)', fontSize:'0.8rem', fontWeight:600, margin:0 }}>✓ {lookedUpClass.className}{lookedUpClass.yearGroup ? ` — ${lookedUpClass.yearGroup}` : ''}</p>
+              <p style={{ color:'var(--t-success)', fontSize:'0.8rem', fontWeight:600, margin:0 }}>✓ {lookedUpClass.className}{lookedUpClass.yearGroup ? ` - ${lookedUpClass.yearGroup}` : ''}</p>
             </div>
           )}
 
@@ -210,7 +210,7 @@ export default function StudentJoinScreen() {
           <div style={{ textAlign:'center', marginBottom:'1.25rem' }}>
             <h2 className="taronga-title" style={{ fontSize:'clamp(1.3rem, 3vh, 1.75rem)', color:'var(--t-deep)', marginBottom:'0.3rem', letterSpacing:'0.04em' }}>Choose Your Animal Alias</h2>
             <p style={{ color:'var(--t-slate)', fontSize:'0.85rem', lineHeight:1.5 }}>
-              Pick an animal — this is how your teacher will see you. Each alias can only be used once per class.
+              Pick an animal - this is how your teacher will see you. Each alias can only be used once per class.
             </p>
             {lookedUpClass && (
               <div style={{ display:'inline-block', marginTop:'0.5rem', background:'var(--t-success-bg)', border:'1px solid #BBF7D0', borderRadius:'var(--t-r-pill)', padding:'0.3rem 0.9rem' }}>

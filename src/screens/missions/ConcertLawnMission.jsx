@@ -95,7 +95,7 @@ export default function ConcertLawnMission() {
                     style={{ padding:'0.55rem 1.6rem', borderRadius:'40px', border:'none', background:'rgba(100,220,140,0.2)', color:'rgba(100,220,140,0.95)', fontWeight:700, fontSize:'0.85rem', cursor:'pointer', letterSpacing:'0.06em' }}>
                     ▶ Start Timer
                   </button>
-                : <p style={{ fontSize:'0.8rem', color:'rgba(255,255,255,0.5)', margin:0, fontWeight:600 }}>Timer running — untangle the knot!</p>
+                : <p style={{ fontSize:'0.8rem', color:'rgba(255,255,255,0.5)', margin:0, fontWeight:600 }}>Timer running - untangle the knot!</p>
               }
             </div>
           )}

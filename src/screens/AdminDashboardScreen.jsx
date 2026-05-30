@@ -136,10 +136,10 @@ function AnalyticsTab({ classes }) {
       const isZz = st._sessionType === 'zoosnooz' || !!(st.zzBadges?.length || st.zoosnooz);
       if (isZz) {
         if (st.zzBadges?.length) {
-          // Completed session — zzBadges array written on submit
+          // Completed session - zzBadges array written on submit
           st.zzBadges.forEach(b => add(b.observationScore));
         } else if (st.zoosnooz) {
-          // Mid-session or per-badge writes — scores stored under zoosnooz[animalId]
+          // Mid-session or per-badge writes - scores stored under zoosnooz[animalId]
           ZOOSNOOZ_ANIMALS.forEach(a => add(st.zoosnooz[a.id]?.observationScore));
         }
       } else {
@@ -304,7 +304,7 @@ function AnalyticsTab({ classes }) {
             ['Students',   kpi.students,  null],
             ['Submitted',  kpi.completed, `${kpi.students?Math.round(kpi.completed/kpi.students*100):0}% completion`],
             ['Badges',     kpi.badges,    null],
-            ['Avg Quiz',   kpi.avgQuiz!=null?`${kpi.avgQuiz}%`:'—', null],
+            ['Avg Quiz',   kpi.avgQuiz!=null?`${kpi.avgQuiz}%`:' - ', null],
             ['ZooSnooz',   kpi.zzCount,   `${viewClasses.length?Math.round(kpi.zzCount/viewClasses.length*100):0}% of classes`],
           ].map(([label, value, sub]) => (
             <div key={label} style={{ background:'var(--t-chalk)', borderRadius:'var(--t-r-md)', padding:'1rem', border:'1px solid var(--t-stone)', textAlign:'center' }}>
@@ -381,7 +381,7 @@ function AnalyticsTab({ classes }) {
                 ['Communication (%)', 'How clearly did the student write using correct sentences and punctuation?'],
               ] : subjectFilter === 'science' ? [
                 ['Behaviour (%)',  'Did the student identify real animal behaviour (pacing, grooming, feeding)?'],
-                ['Detail (%)',     'Did the student include specific evidence — colour, sound, movement, habitat features?'],
+                ['Detail (%)',     'Did the student include specific evidence - colour, sound, movement, habitat features?'],
                 ['Writing (%)',    'Measures sentence clarity, descriptive language, structure, and grammar.'],
               ] : [
                 ['Vocabulary (%)',   'How well did the student use subject-specific and descriptive vocabulary across all KLA areas?'],
@@ -468,8 +468,8 @@ function AnalyticsTab({ classes }) {
                         <td style={{ padding:'0.65rem 0.6rem', fontWeight:600, color:'var(--t-deep)' }}>{s.name}</td>
                         <td style={{ padding:'0.65rem 0.6rem', textAlign:'center', color:'var(--t-slate)' }}>{s.classes}</td>
                         <td style={{ padding:'0.65rem 0.6rem', textAlign:'center', color:'var(--t-slate)' }}>{s.students}</td>
-                        <td style={{ padding:'0.65rem 0.6rem', textAlign:'center', fontWeight:700, color:s.quizAvg==null?'var(--t-ash)':s.quizAvg<50?'#DC2626':s.quizAvg<75?'#D97706':GREEN }}>{s.quizAvg!=null?`${s.quizAvg}%`:'—'}</td>
-                        <td style={{ padding:'0.65rem 0.6rem', textAlign:'center', color:'var(--t-slate)' }}>{s.obsAvg!=null?`${s.obsAvg}%`:'—'}</td>
+                        <td style={{ padding:'0.65rem 0.6rem', textAlign:'center', fontWeight:700, color:s.quizAvg==null?'var(--t-ash)':s.quizAvg<50?'#DC2626':s.quizAvg<75?'#D97706':GREEN }}>{s.quizAvg!=null?`${s.quizAvg}%`:' - '}</td>
+                        <td style={{ padding:'0.65rem 0.6rem', textAlign:'center', color:'var(--t-slate)' }}>{s.obsAvg!=null?`${s.obsAvg}%`:' - '}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -487,7 +487,7 @@ function AnalyticsTab({ classes }) {
             </div>
           )}
 
-          {/* Conservation Statements — standard sessions only */}
+          {/* Conservation Statements - standard sessions only */}
           {view !== 'zoosnooz' && conStatements.length > 0 && (
             <div style={{ background:'white', borderRadius:'var(--t-r-md)', border:'1px solid var(--t-mist)', padding:'1.25rem' }}>
               <h3 style={{ fontSize:'1rem', fontWeight:700, color:'var(--t-deep)', margin:'0 0 0.35rem' }}>Conservation Statements</h3>
@@ -520,7 +520,7 @@ function AnalyticsTab({ classes }) {
                 <div key={stage} style={{ marginBottom:'0.65rem' }}>
                   <div style={{ display:'flex', justifyContent:'space-between', fontSize:'0.78rem', marginBottom:'0.2rem' }}>
                     <span style={{ fontWeight:600, color:'var(--t-deep)' }}>Stage {stage}</span>
-                    <span style={{ color:'var(--t-slate)' }}>{d.students} students · {quizAvg!=null?`${quizAvg}% quiz`:'—'}</span>
+                    <span style={{ color:'var(--t-slate)' }}>{d.students} students · {quizAvg!=null?`${quizAvg}% quiz`:' - '}</span>
                   </div>
                   <div style={{ height:6, background:'var(--t-foam)', borderRadius:3, overflow:'hidden' }}>
                     <div style={{ height:'100%', width:`${barW}%`, background:'var(--t-mid)', borderRadius:3 }} />
@@ -571,10 +571,10 @@ function AdminResourcesTab() {
   const ADMIN_RESOURCES = [
     { icon:'📊', title:'Taronga Tracka Data Guide', desc:'How student data is stored, what each field means, and how to interpret Firestore output.', type:'DOC' },
     { icon:'🔐', title:'Access Code Protocol', desc:'When to generate daily codes vs. class codes, expiry rules, and ZooSnooz night codes.', type:'PDF' },
-    { icon:'🌙', title:'ZooSnooz Operations Manual', desc:'Full operational guide for ZooSnooz night sessions — equipment, NFC setup, keeper coordination.', type:'PDF' },
+    { icon:'🌙', title:'ZooSnooz Operations Manual', desc:'Full operational guide for ZooSnooz night sessions - equipment, NFC setup, keeper coordination.', type:'PDF' },
     { icon:'📤', title:'Bulk Data Export Guide', desc:'How to export all class data as CSV from the admin dashboard and load into Excel/Sheets.', type:'PDF' },
     { icon:'🛠️', title:'Troubleshooting & FAQ', desc:'Common student issues, camera permission errors, geolocation problems, and Firebase offline mode.', type:'DOC' },
-    { icon:'📋', title:'School Visit Booking Checklist', desc:'Pre-visit coordination checklist for education staff — tech check, class setup, teacher briefing.', type:'PDF' },
+    { icon:'📋', title:'School Visit Booking Checklist', desc:'Pre-visit coordination checklist for education staff - tech check, class setup, teacher briefing.', type:'PDF' },
     { icon:'🔄', title:'Feedback Submission Form', desc:'Submit bug reports, feature requests, or content corrections to the Taronga digital team.', type:'FORM' },
   ];
   const typeColor = { PDF:'#DC2626', DOC:'#0284C7', FORM:'#7C3AED' };
@@ -583,7 +583,7 @@ function AdminResourcesTab() {
       <p style={{ color:'var(--t-slate)', fontSize:'0.85rem', marginBottom:'0.25rem' }}>Staff and operational resources for Taronga Education &amp; Digital teams.</p>
       {ADMIN_RESOURCES.map(r => (
         <div key={r.title} style={{ background:'var(--t-chalk)', borderRadius:'var(--t-r-md)', border:'1px solid var(--t-stone)', padding:'0.9rem 1rem', display:'flex', gap:'0.85rem', alignItems:'flex-start', cursor:'pointer' }}
-          onClick={() => alert(`"${r.title}" — connect this to the Taronga content library when ready.`)}
+          onClick={() => alert(`"${r.title}" - connect this to the Taronga content library when ready.`)}
           onMouseEnter={e=>{e.currentTarget.style.borderColor='var(--t-mid)';e.currentTarget.style.boxShadow='var(--t-shadow-sm)';}}
           onMouseLeave={e=>{e.currentTarget.style.borderColor='var(--t-stone)';e.currentTarget.style.boxShadow='none';}}>
           <div style={{ fontSize:'1.5rem', flexShrink:0 }}>{r.icon}</div>
@@ -767,7 +767,7 @@ function ReviewTab({ classes }) {
                     {[['B', bv], ['D', dv], ['W', wv]].map(([label, val]) => (
                       <div key={label}>
                         <div style={{ fontSize:'0.62rem', color:'var(--t-ash)', fontWeight:700 }}>{label}</div>
-                        <div style={{ fontSize:'0.92rem', fontWeight:800, color: (val||0) >= 4 ? GREEN : (val||0) >= 2 ? '#D97706' : '#DC2626' }}>{val ?? '—'}/5</div>
+                        <div style={{ fontSize:'0.92rem', fontWeight:800, color: (val||0) >= 4 ? GREEN : (val||0) >= 2 ? '#D97706' : '#DC2626' }}>{val ?? ' - '}/5</div>
                       </div>
                     ))}
                   </div>
@@ -1006,7 +1006,7 @@ function ZooSnoozAdminTab({ classes }) {
             });
           }
 
-          // Include if they have a documentary OR any animal clips — don't require both
+          // Include if they have a documentary OR any animal clips - don't require both
           const qualifies = hasDoc || clips.length > 0;
           if (qualifies && !rows.find(r => r.docId === `${cls.classCode}_${d.id}`)) {
             const submittedAt = sd.completedAt?.toDate?.() || null;
@@ -1039,7 +1039,7 @@ function ZooSnoozAdminTab({ classes }) {
     let docUrl = entry.zzDocumentaryURL || null;
     const clipUrls = {};
     if (!docUrl) {
-      // Try both extensions — Safari/iOS records mp4, Chrome records webm
+      // Try both extensions - Safari/iOS records mp4, Chrome records webm
       try { docUrl = await getDownloadURL(storageRef(storage, `${base}/documentary.webm`)); } catch {}
       if (!docUrl) {
         try { docUrl = await getDownloadURL(storageRef(storage, `${base}/documentary.mp4`)); } catch {}
@@ -1306,11 +1306,11 @@ function OverviewTab({ classes, loading, onClassClick }) {
                 <div style={{ borderTop:'1px solid var(--t-stone)', paddingTop:'0.7rem', display:'flex', justifyContent:'space-between', fontSize:'0.82rem' }}>
                   <div>
                     <div style={{ color:'#999', fontSize:'0.75rem', marginBottom:'0.2rem' }}>Stage</div>
-                    <div style={{ color:'var(--t-deep)', fontWeight:600 }}>{cls.stage != null ? `Stage ${cls.stage}` : '—'}</div>
+                    <div style={{ color:'var(--t-deep)', fontWeight:600 }}>{cls.stage != null ? `Stage ${cls.stage}` : ' - '}</div>
                   </div>
                   <div style={{ textAlign:'center' }}>
                     <div style={{ color:'#999', fontSize:'0.75rem', marginBottom:'0.2rem' }}>Quiz Avg</div>
-                    <div style={{ color:'var(--t-mid)', fontWeight:700 }}>{cls.quizAverage != null ? `${cls.quizAverage}%` : '—'}</div>
+                    <div style={{ color:'var(--t-mid)', fontWeight:700 }}>{cls.quizAverage != null ? `${cls.quizAverage}%` : ' - '}</div>
                   </div>
                   <div style={{ textAlign:'right' }}>
                     <div style={{ color:'#999', fontSize:'0.75rem', marginBottom:'0.2rem' }}>Students</div>
@@ -1461,8 +1461,8 @@ function ControlRoomTab({ adminAccessCode }) {
           <h3 style={{ fontSize:'1rem', fontWeight:700, color:'var(--t-deep)', margin:'0 0 0.25rem' }}>GPS Proximity Override</h3>
           <p style={{ fontSize:'0.82rem', color:'var(--t-slate)', margin:0, lineHeight:1.5 }}>
             {gpsOn
-              ? 'GPS is ON — students must be near each animal to unlock it.'
-              : 'GPS is OFF — all animals are unlocked regardless of location.'}
+              ? 'GPS is ON - students must be near each animal to unlock it.'
+              : 'GPS is OFF - all animals are unlocked regardless of location.'}
           </p>
         </div>
         <button onClick={toggleGPS} disabled={gpsLoading}
@@ -1619,7 +1619,7 @@ function UsersTab({ classes }) {
                   <tr key={t.email} style={{ borderBottom:'1px solid var(--t-mist)', background: i%2===0 ? 'transparent' : 'var(--t-chalk)' }}>
                     <td style={{ padding:'0.75rem 1rem', fontWeight:600, color:'var(--t-deep)' }}>{t.email}</td>
                     <td style={{ padding:'0.75rem 1rem', color:'var(--t-slate)', fontSize:'0.82rem' }}>
-                      {t.schools.length > 0 ? t.schools.join(', ') : <span style={{ color:'var(--t-ash)' }}>—</span>}
+                      {t.schools.length > 0 ? t.schools.join(', ') : <span style={{ color:'var(--t-ash)' }}> - </span>}
                     </td>
                     <td style={{ padding:'0.75rem 1rem', color:'var(--t-mid)', fontWeight:700, textAlign:'center' }}>{t.classCount}</td>
                     <td style={{ padding:'0.75rem 1rem', textAlign:'center' }}>
@@ -1714,7 +1714,7 @@ export default function AdminDashboardScreen() {
     return () => { cancelled = true; };
   }, []);
 
-  // Load current daily code — only pick it up if it hasn't expired yet
+  // Load current daily code - only pick it up if it hasn't expired yet
   useEffect(() => {
     const now = new Date();
     getDocs(query(collection(db, 'accessCodes'), where('active', '==', true)))

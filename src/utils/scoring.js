@@ -277,7 +277,7 @@ export function generateScoreRationale(text, behaviourScore, detailScore, writin
   let writingRationale;
   if (writingScore >= 5) writingRationale = `Clear, well-structured response (${wc} words). Good use of sentences.`;
   else if (writingScore === 4) writingRationale = `Mostly readable response (${wc} words). Reasonable sentence structure.`;
-  else if (writingScore === 3) writingRationale = `Readable response (${wc} words)${hasPunct ? '' : ' — missing punctuation'}.`;
+  else if (writingScore === 3) writingRationale = `Readable response (${wc} words)${hasPunct ? '' : ' - missing punctuation'}.`;
   else if (writingScore === 2) writingRationale = `Short or partial response (${wc} words). Some readable content.`;
   else writingRationale = `Very short response (${wc} word${wc !== 1 ? 's' : ''}). Difficult to assess written communication.`;
 
@@ -292,7 +292,7 @@ export function generateScoreRationale(text, behaviourScore, detailScore, writin
     if (total >= 12) overallFeedback = 'Strong response. Well observed and clearly written.';
     else if (total >= 9) overallFeedback = 'Good response. Add another detail to make it even stronger.';
     else if (total >= 6) overallFeedback = 'You have the right idea. Make sure your ideas are clearly explained.';
-    else overallFeedback = 'Try again — focus on what you saw and write it clearly.';
+    else overallFeedback = 'Try again - focus on what you saw and write it clearly.';
   } else if (s === 4) {
     if (total >= 12) overallFeedback = 'Strong, well-structured response with clear observation.';
     else if (total >= 9) overallFeedback = 'Good response. Include more specific evidence to strengthen it.';
@@ -394,7 +394,7 @@ export function scoreObservation(text, animalId, classStage) {
       detailBonus = stage === 3 ? Math.min(elements + 1, 4) : Math.min(elements + 2, 5);
     }
   } else if (animalId === 'dingo') {
-    // Dingo question is about camouflage — colour, texture, blending, environment
+    // Dingo question is about camouflage - colour, texture, blending, environment
     // Generic behaviour words (movement) don't fire → use camouflage-relevant words instead
     const camouflageWords = [
       'colour','color','yellow','brown','tan','sandy','golden','red','grey','gray','beige','cream','orange','buff',
@@ -619,13 +619,13 @@ function scoreMathsObservation(text, classStage, expectedAnswers) {
   if (hasStructure && numberCount >= 3 && (hasUnits || vocabHits >= 1)) comms = 4;
   if (hasStructure && numberCount >= 4 && hasUnits && (vocabHits >= 1 || hasInterpretation)) comms = 5;
 
-  // Answer check — boost accuracy if a key expected answer is found in the response
+  // Answer check - boost accuracy if a key expected answer is found in the response
   const answerCorrect = checkExpectedAnswers(text, expectedAnswers);
   if (answerCorrect) {
     accuracy = Math.min(5, accuracy + 1);
   }
 
-  // Stage adjustments — lower stages need fewer signals to reach a good score
+  // Stage adjustments - lower stages need fewer signals to reach a good score
   if (classStage <= 2) {
     method   = Math.min(5, method + 1);
     accuracy = Math.min(5, accuracy + 1);
@@ -653,9 +653,9 @@ function buildMathsObservationScore(text, animalId, classStage) {
   const wc = text.trim().split(/\s+/).filter(Boolean).length;
 
   const methodRationale = isOpenEnded
-    ? (behaviourBonus >= 5 ? 'Outstanding — covered 5+ distinct categories of maths.' :
-       behaviourBonus >= 4 ? 'Strong variety — covered 4 categories of maths.' :
-       behaviourBonus >= 3 ? 'Good range — covered 3 categories (e.g. estimate, number, comparison).' :
+    ? (behaviourBonus >= 5 ? 'Outstanding - covered 5+ distinct categories of maths.' :
+       behaviourBonus >= 4 ? 'Strong variety - covered 4 categories of maths.' :
+       behaviourBonus >= 3 ? 'Good range - covered 3 categories (e.g. estimate, number, comparison).' :
        behaviourBonus >= 2 ? 'Covered 1–2 categories. Try including more types.' :
                              'Response does not yet identify mathematical categories.')
     : (behaviourBonus >= 5 ? 'Working shown step-by-step with clear method.' :
@@ -697,7 +697,7 @@ function buildMathsObservationScore(text, animalId, classStage) {
   const overallFeedback = isOpenEnded
     ? (total >= 13 ? 'Excellent! You noticed maths across many categories and described them precisely.' :
        total >= 10 ? 'Great observations. Try to identify more categories or use more specific mathematical language.' :
-       total >= 7  ? 'Good start. Try to include more types — estimates, measurements, comparisons, patterns.' :
+       total >= 7  ? 'Good start. Try to include more types - estimates, measurements, comparisons, patterns.' :
                      'Keep looking! Try to write down at least 2 or 3 mathematical things you noticed.')
     : (total >= 13 ? 'Excellent mathematical response. Clear working, accurate numbers, well communicated.' :
        total >= 10 ? 'Strong response. Show more steps or include units to improve further.' :
@@ -730,7 +730,7 @@ function buildPdhpeObservationScore(text, animalId, classStage) {
       extractedEvidence: [],
       confidence: 'low',
       reviewRecommended: true,
-      overallFeedback: 'Response needs development — prompt the student to write at least one full sentence about what they observed.',
+      overallFeedback: 'Response needs development - prompt the student to write at least one full sentence about what they observed.',
     };
   }
 
@@ -782,7 +782,7 @@ function buildPdhpeObservationScore(text, animalId, classStage) {
   const uniqueWords   = new Set(words.map(w => w.toLowerCase().replace(/[^a-z]/g, '')).filter(Boolean));
   const isAllCaps     = text.length > 4 && text === text.toUpperCase();
 
-  // Comparison (behaviour slot) — did they engage with the topic?
+  // Comparison (behaviour slot) - did they engage with the topic?
   let comparison = 1;
   if (wc >= 4 && (lifestyleHits >= 1 || physHits >= 1 || wellHits >= 1 || hasPersonal)) comparison = 2;
   if (wc >= 5 && (lifestyleHits >= 1 || hasPersonal))            comparison = 3;
@@ -790,14 +790,14 @@ function buildPdhpeObservationScore(text, animalId, classStage) {
   if (totalVocabHits >= 2 && (hasExplanation || hasPersonal))    comparison = Math.max(comparison, 4);
   if (totalVocabHits >= 4 && hasExplanation && multiSentence)    comparison = 5;
 
-  // Understanding (detail slot) — did they show any health understanding?
+  // Understanding (detail slot) - did they show any health understanding?
   let understanding = 1;
   if (wc >= 4 && (lifestyleHits >= 1 || physHits >= 1 || wellHits >= 1)) understanding = 2;
   if (lifestyleHits >= 1 || physHits >= 1 || wellHits >= 1)      understanding = Math.max(understanding, 3);
   if (totalVocabHits >= 2 && hasExplanation)                      understanding = Math.max(understanding, 4);
   if (totalVocabHits >= 4 && hasExplanation && multiSentence)     understanding = 5;
 
-  // Communication (writing slot) — based on spelling, grammar, capitals and sentence structure only
+  // Communication (writing slot) - based on spelling, grammar, capitals and sentence structure only
   let comms = 1;
   if (wc >= 5 && (hasCap || hasStop))                       comms = 2;
   if (wc >= 5 && hasCap)                                    comms = Math.max(comms, 2);
@@ -839,12 +839,12 @@ function buildPdhpeObservationScore(text, animalId, classStage) {
 
   const avg = (comparison + understanding + comms) / 3;
   const overallFeedback = avg >= 4
-    ? 'Strong response — student engaged with the topic, showed health understanding and wrote clearly.'
+    ? 'Strong response - student engaged with the topic, showed health understanding and wrote clearly.'
     : avg >= 3
-    ? 'Good response — student addressed the topic. Encourage more explanation and check punctuation.'
+    ? 'Good response - student addressed the topic. Encourage more explanation and check punctuation.'
     : avg >= 2
-    ? 'Developing response — encourage the student to write in full sentences with a capital letter and full stop.'
-    : 'Response needs development — prompt the student to write at least one full sentence about what they observed.';
+    ? 'Developing response - encourage the student to write in full sentences with a capital letter and full stop.'
+    : 'Response needs development - prompt the student to write at least one full sentence about what they observed.';
 
   return {
     behaviour: comparison,

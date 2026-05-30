@@ -48,7 +48,7 @@ export const animals =
                 5: 'Gorillas consume up to 18 kg of food daily. What role does this plant-based diet play in the rainforest ecosystem?',
               },
               stageOptions: {
-                1: ['Yes, lots of meat', 'No — only plants', 'Mostly fish', 'Grass and dirt'],
+                1: ['Yes, lots of meat', 'No - only plants', 'Mostly fish', 'Grass and dirt'],
                 2: ['Meat and eggs', 'Leaves, bamboo & fruit', 'Seeds and nuts only', 'Insects only'],
                 5: ['They hunt prey to balance the food chain', 'As seed dispersers they help forests regenerate', 'They fertilise the soil with meat scraps', 'They compete with other primates for grass'],
               },
@@ -57,12 +57,12 @@ export const animals =
               correct: 1,
               stageFacts: {
                 1: 'Gorillas eat plants, not meat! They love leaves, fruit and bamboo.',
-                2: 'Gorillas are herbivores — they eat mainly leaves, fruit and bamboo.',
-                3: 'Gorillas eat mostly plants — leaves, bamboo and fruit — and occasionally termites for protein.',
-                4: 'Gorillas eat up to 18 kg of plants per day — leaves, bamboo and fruit — plus termites for extra protein. They never eat meat.',
-                5: 'Gorillas are vital seed dispersers — by eating fruit and depositing seeds across the forest, they help new plants grow and keep the rainforest healthy.',
+                2: 'Gorillas are herbivores - they eat mainly leaves, fruit and bamboo.',
+                3: 'Gorillas eat mostly plants - leaves, bamboo and fruit - and occasionally termites for protein.',
+                4: 'Gorillas eat up to 18 kg of plants per day - leaves, bamboo and fruit - plus termites for extra protein. They never eat meat.',
+                5: 'Gorillas are vital seed dispersers - by eating fruit and depositing seeds across the forest, they help new plants grow and keep the rainforest healthy.',
               },
-              fact: 'Gorillas eat up to 18 kg of plants a day — mainly leaves, bamboo and fruit — plus termites for protein. They never eat meat.',
+              fact: 'Gorillas eat up to 18 kg of plants a day - mainly leaves, bamboo and fruit - plus termites for protein. They never eat meat.',
             },
           ],
           observationPrompt: 'How are the gorillas similar to humans, including yourself?',
@@ -118,7 +118,7 @@ export const animals =
               },
               options: ['A. 2 metres', 'B. 4 metres', 'C. 5–6 metres', 'D. 8 metres'],
               correct: 2,
-              fact: 'Adult giraffes can grow up to around 5–6 metres tall — the tallest land animals on Earth.' }
+              fact: 'Adult giraffes can grow up to around 5–6 metres tall - the tallest land animals on Earth.' }
           ],
           writingPromptByStage: {
             1: 'What did you see?',
@@ -345,7 +345,7 @@ export const animals =
             { q: 'Based on your observation and the game, which behaviour did you record most?',
               stageVariants: {
                 1: 'What were the lemurs doing most when you watched them?',
-                2: 'Your tally is done — which behaviour did the lemurs do most?',
+                2: 'Your tally is done - which behaviour did the lemurs do most?',
                 3: 'Looking at your real-life tally, which behaviour did you record the most?',
                 4: 'Your ethogram shows a dominant behaviour. Which did you observe most frequently?',
                 5: 'You conducted a real-time ethogram. Which behaviour dominated your data, and what might this reveal about the lemurs\' needs right now?',
@@ -353,13 +353,13 @@ export const animals =
               options: ['Feeding', 'Resting', 'Moving', 'Social'],
               correct: 0,
               stageFacts: {
-                1: 'Great watching! Lemurs spend their day feeding, resting, moving and being social — just like you saw!',
+                1: 'Great watching! Lemurs spend their day feeding, resting, moving and being social - just like you saw!',
                 2: 'Well done! Your tally tells you what the lemurs were doing most. Real scientists call this an ethogram.',
-                3: 'Your observation used a real science technique called an ethogram — recording behaviours in real time. Taronga keepers do this every week!',
+                3: 'Your observation used a real science technique called an ethogram - recording behaviours in real time. Taronga keepers do this every week!',
                 4: 'Your ethogram captures a snapshot of lemur activity. Scientists compare many sessions over time to build a complete picture of behaviour patterns.',
-                5: 'Comparing your in-person ethogram to the game data reveals how activity patterns can vary by time of day, season, and individual — a key principle in behavioural ecology.',
+                5: 'Comparing your in-person ethogram to the game data reveals how activity patterns can vary by time of day, season, and individual - a key principle in behavioural ecology.',
               },
-              fact: 'Ring-tailed lemurs spend their time in a mix of feeding, resting, moving, and social interactions — your observation reflects real field research methods called an ethogram!' }
+              fact: 'Ring-tailed lemurs spend their time in a mix of feeding, resting, moving, and social interactions - your observation reflects real field research methods called an ethogram!' }
           ],
           observationPrompt: 'Describe how the lemurs use different parts of their enclosure.',
           pointValue: 50
@@ -394,7 +394,7 @@ export const animals =
               options: ['Sea lions eat plastic thinking it is food, causing injury or death', 'Plastic makes ocean water too salty', 'Plastic gives extra energy to swim faster', 'Plastic has no real effect on sea lions'],
               correct: 0,
               stageFacts: {
-                1: 'Yes! Keeping the ocean clean is vital — sea lions live in and around the water and rely on healthy oceans to find food.',
+                1: 'Yes! Keeping the ocean clean is vital - sea lions live in and around the water and rely on healthy oceans to find food.',
                 2: 'Reducing ocean plastic is one of the most important things we can do. Sea lions and other marine animals can be injured or killed by plastic waste.',
                 3: 'Pollution and overfishing are the biggest threats. They reduce the fish sea lions depend on and pollute the water they live in.',
                 4: 'Sea lions can mistake plastic bags and debris for food. When swallowed, plastic causes blockages, injury, and can be fatal.',
@@ -434,7 +434,7 @@ export const animals =
                 2: 'What animal is resting on the stone in the walkway?',
                 3: 'Which reptile is basking on the stone path ahead?',
                 4: 'What is basking on the warm stone in the walkway?',
-                5: 'Why might a lizard choose a warm stone in a walkway — what does this tell us about its biology?',
+                5: 'Why might a lizard choose a warm stone in a walkway - what does this tell us about its biology?',
               },
               options: ['Lizard', 'Snake', 'Frog', 'Turtle'],
               correct: 0 },
@@ -477,7 +477,7 @@ export const animals =
               },
               stageCorrect: { 1: 0 },
               options: ['A. It has small, narrow feet', 'B. It has wide hooves that spread its weight', 'C. It is very fast', 'D. It avoids muddy areas'],
-              correct: 1, fact: 'Wide hooves spread weight and reduce pressure on soft ground — an adaptation that helps buffalo move through wet, muddy environments.' }
+              correct: 1, fact: 'Wide hooves spread weight and reduce pressure on soft ground - an adaptation that helps buffalo move through wet, muddy environments.' }
           ],
           observationPrompt: 'Describe a relationship you can observe between the buffalo (or rhino) and another animal, and explain how it may help them.',
           pointValue: 50

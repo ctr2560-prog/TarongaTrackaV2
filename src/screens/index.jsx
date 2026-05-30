@@ -26,6 +26,6 @@ export { default as PublicAnimalScreen }      from './PublicAnimalScreen';
 export { default as PublicMissionScreen }     from './PublicMissionScreen';
 export { default as PublicLeaderboardScreen } from './PublicLeaderboardScreen';
 
-// Orphaned routes — redirect to publicEntry until navigation is wired
+// Orphaned routes - redirect to publicEntry until navigation is wired
 export const PublicHomeScreen    = () => { const { setCurrentScreen } = useApp(); useEffect(() => setCurrentScreen('publicEntry'), []); return null; };
 export const PublicHomeExtScreen = () => { const { setCurrentScreen } = useApp(); useEffect(() => setCurrentScreen('publicEntry'), []); return null; };

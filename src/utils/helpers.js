@@ -107,7 +107,7 @@ export function getStageScaffoldTip(stage) {
   if (stage <= 2) return { header: 'Start with:', points: [], starters: ['I saw…', 'I can see…'] };
   if (stage === 3) return { header: 'A good response includes:', points: ['What you can observe', 'One feature or behaviour', 'Why you think it does that'], starters: ['I noticed…', 'I think this is because…'] };
   if (stage === 4) return { header: '✓ A strong response includes:', points: ['A clear observation (what + where/what doing)', 'A relevant concept or feature', 'A simple explanation or link to survival'], starters: ['I observed that…', 'This may help the animal because…'] };
-  return { header: '✓ Stage 5 — Explain and reason:', points: ['What did you observe?', 'Why does this happen?', 'How does this help the animal or environment?'], starters: ['Based on my observation…', 'This is significant because…', 'This adaptation allows the animal to…'] };
+  return { header: '✓ Stage 5 - Explain and reason:', points: ['What did you observe?', 'Why does this happen?', 'How does this help the animal or environment?'], starters: ['Based on my observation…', 'This is significant because…', 'This adaptation allows the animal to…'] };
 }
 
 export const MIN_WORDS_BY_STAGE = { 1: 3, 2: 5, 3: 8, 4: 10, 5: 12 };
