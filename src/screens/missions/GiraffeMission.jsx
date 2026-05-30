@@ -16,8 +16,27 @@ const GIRAFFE_MCQ = {
   fact: 'Adult giraffes can grow up to around 5–6 metres tall — the tallest land animals on Earth.',
 };
 
+const GIRAFFE_PDHPE_MCQ = {
+  stageQ: {
+    1: 'How far does a giraffe\'s heart pump blood up to its head?',
+    2: 'About how far does a giraffe\'s heart need to pump blood to reach its brain?',
+    3: 'A giraffe has a very long neck. How far must its heart pump blood to reach its brain?',
+    4: 'How far must a giraffe\'s heart pump blood against gravity to maintain blood flow to its brain?',
+    5: 'What is the approximate vertical distance a giraffe\'s heart must overcome to maintain cerebral perfusion?',
+  },
+  stageOptions: {
+    1: ['0.3 m', '1 m', '3.7 m', '10 m'],
+    2: ['0.5 m', '2 m', '3.7 m', '8 m'],
+    3: ['1 m', '2.5 m', '3.7 m', '6 m'],
+    4: ['1.8 m', '2.5 m', '3.7 m', '5.2 m'],
+    5: ['2.5 m', '3.1 m', '3.7 m', '4.5 m'],
+  },
+  correct: 2,
+  fact: 'A giraffe\'s heart pumps blood approximately 3.7 metres up to its brain — requiring blood pressure twice as high as a human\'s. This is why giraffes have the highest blood pressure of any land animal!',
+};
+
 export default function GiraffeMission() {
-  const { setCurrentScreen, classStage } = useApp();
+  const { setCurrentScreen, classStage, classSubject } = useApp();
   const {
     showResult, setShowResult, isCorrect,
     setIsProcessingAnswer, handleQuizAnswer, handleNextQuestion,
@@ -31,9 +50,11 @@ export default function GiraffeMission() {
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
 
-  const correctAnswerIndex = GIRAFFE_MCQ.correct;
-  const question = GIRAFFE_MCQ.stageQ[classStage] || GIRAFFE_MCQ.stageQ[4];
-  const fact     = GIRAFFE_MCQ.fact;
+  const mcq = classSubject === 'pdhpe' ? GIRAFFE_PDHPE_MCQ : GIRAFFE_MCQ;
+  const correctAnswerIndex = mcq.correct;
+  const question = mcq.stageQ[classStage] || mcq.stageQ[4];
+  const options  = mcq.stageOptions ? (mcq.stageOptions[classStage] || mcq.stageOptions[4]) : mcq.options;
+  const fact     = mcq.fact;
 
   const startCamera = async () => {
     if (!videoRef.current) return;
@@ -185,7 +206,7 @@ export default function GiraffeMission() {
               {question}
             </p>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.5rem' }}>
-              {GIRAFFE_MCQ.options.map((opt, i) => (
+              {options.map((opt, i) => (
                 <button key={i} onClick={() => handleQuizAnswer(0, i, correctAnswerIndex)}
                   style={{ padding:'0.7rem 0.5rem', borderRadius:'var(--t-r-sm)', border:'2px solid transparent', background:'#f4f8f6', color:'var(--jungle-deep)', fontSize:'0.8rem', fontWeight:600, cursor:'pointer', textAlign:'left', transition:'all 0.15s', lineHeight:1.3 }}>
                   {opt}

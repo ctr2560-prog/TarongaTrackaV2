@@ -1517,22 +1517,43 @@ function ControlRoomTab({ adminAccessCode }) {
 
 // ─── Tab: Users ──────────────────────────────────────────────────────────────
 function UsersTab({ classes }) {
-  const [copied,   setCopied]   = useState(false);
-  const [profiles, setProfiles] = useState({});
-  const [profLoading, setProfLoading] = useState(true);
+  const [copied,          setCopied]          = useState(false);
+  const [profiles,        setProfiles]        = useState({});
+  const [profLoading,     setProfLoading]     = useState(true);
+  const [registeredEmails, setRegisteredEmails] = useState([]);
+
+  // Load all registered teacher accounts from the teachers collection
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const snap = await getDocs(collection(db, 'teachers'));
+        if (!cancelled) {
+          setRegisteredEmails(snap.docs.map(d => (d.data().email || d.id).toLowerCase()));
+        }
+      } catch { /* non-fatal */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const teachers = useMemo(() => {
     const map = {};
+    // Seed from all registered accounts first (so sign-ups with no class appear)
+    registeredEmails.forEach(email => {
+      if (!map[email]) map[email] = { email, schools: new Set(), classCount: 0 };
+    });
+    // Overlay with class data
     classes.forEach(cls => {
       if (!cls.teacherEmail) return;
-      if (!map[cls.teacherEmail]) map[cls.teacherEmail] = { email: cls.teacherEmail, schools: new Set(), classCount: 0 };
-      if (cls.schoolName) map[cls.teacherEmail].schools.add(cls.schoolName);
-      map[cls.teacherEmail].classCount++;
+      const key = cls.teacherEmail.toLowerCase();
+      if (!map[key]) map[key] = { email: cls.teacherEmail, schools: new Set(), classCount: 0 };
+      if (cls.schoolName) map[key].schools.add(cls.schoolName);
+      map[key].classCount++;
     });
     return Object.values(map)
       .map(t => ({ ...t, schools: [...t.schools] }))
       .sort((a, b) => a.email.localeCompare(b.email));
-  }, [classes]);
+  }, [classes, registeredEmails]);
 
   useEffect(() => {
     if (!teachers.length) { setProfLoading(false); return; }

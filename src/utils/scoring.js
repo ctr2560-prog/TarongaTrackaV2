@@ -718,6 +718,22 @@ function buildMathsObservationScore(text, animalId, classStage) {
 }
 
 function buildPdhpeObservationScore(text, animalId, classStage) {
+  if (isLowQualityResponse(text)) {
+    return {
+      behaviour: 1, detail: 1, writing: 1,
+      rationale: {
+        behaviour: 'Response did not clearly engage with the topic.',
+        detail:    'No health understanding demonstrated.',
+        writing:   'Response needs capital letters, full stops and complete sentences.',
+      },
+      improvementTips: ['Write at least one full sentence about what you observed.'],
+      extractedEvidence: [],
+      confidence: 'low',
+      reviewRecommended: true,
+      overallFeedback: 'Response needs development — prompt the student to write at least one full sentence about what they observed.',
+    };
+  }
+
   const lower = text.toLowerCase();
   const wc    = text.trim().split(/\s+/).filter(Boolean).length;
 
@@ -768,7 +784,7 @@ function buildPdhpeObservationScore(text, animalId, classStage) {
 
   // Comparison (behaviour slot) — did they engage with the topic?
   let comparison = 1;
-  if (wc >= 3)                                                    comparison = 2;
+  if (wc >= 4 && (lifestyleHits >= 1 || physHits >= 1 || wellHits >= 1 || hasPersonal)) comparison = 2;
   if (wc >= 5 && (lifestyleHits >= 1 || hasPersonal))            comparison = 3;
   if (wc >= 8 && (lifestyleHits >= 2 || (lifestyleHits >= 1 && hasPersonal))) comparison = Math.max(comparison, 3);
   if (totalVocabHits >= 2 && (hasExplanation || hasPersonal))    comparison = Math.max(comparison, 4);
@@ -776,14 +792,14 @@ function buildPdhpeObservationScore(text, animalId, classStage) {
 
   // Understanding (detail slot) — did they show any health understanding?
   let understanding = 1;
-  if (wc >= 4)                                                    understanding = 2;
+  if (wc >= 4 && (lifestyleHits >= 1 || physHits >= 1 || wellHits >= 1)) understanding = 2;
   if (lifestyleHits >= 1 || physHits >= 1 || wellHits >= 1)      understanding = Math.max(understanding, 3);
   if (totalVocabHits >= 2 && hasExplanation)                      understanding = Math.max(understanding, 4);
   if (totalVocabHits >= 4 && hasExplanation && multiSentence)     understanding = 5;
 
   // Communication (writing slot) — based on spelling, grammar, capitals and sentence structure only
   let comms = 1;
-  if (wc >= 3)                                              comms = 2;
+  if (wc >= 5 && (hasCap || hasStop))                       comms = 2;
   if (wc >= 5 && hasCap)                                    comms = Math.max(comms, 2);
   if (wc >= 6 && hasCap && hasStop)                                               comms = 3;
   if (multiSentence && hasCap && hasStop)                                         comms = Math.max(comms, 3);

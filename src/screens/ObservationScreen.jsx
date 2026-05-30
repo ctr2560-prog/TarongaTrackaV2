@@ -457,93 +457,111 @@ const PDHPE_OBS_CONFIG = {
   },
   'giraffe': {
     heading: 'Cardiovascular System',
-    chips: [{ label:'Heart rate', color:'#DC2626' },{ label:'Blood pressure', color:'#059669' },{ label:'Stroke volume', color:'#0284C7' },{ label:'Cardiac output', color:'#7C3AED' }],
+    chips: [{ label:'Heart rate', color:'#DC2626' },{ label:'Heart size', color:'#059669' },{ label:'Blood flow', color:'#0284C7' },{ label:'Heart health', color:'#7C3AED' }],
     hintsByStage: {
-      3: ['Measure your resting heart rate (count pulse for 15 s × 4)', 'Explain why the giraffe needs a larger, more powerful heart than a human', 'Define heart rate and explain what happens to it during exercise'],
-      4: ['Use the formula: Cardiac output (CO) = Heart Rate × Stroke Volume', 'Explain why giraffe blood pressure (~280/180 mmHg) is double a human\'s', 'Describe how aerobic exercise increases stroke volume over time'],
-      5: ['Evaluate how left ventricular hypertrophy (caused by aerobic training) increases stroke volume', 'Compare giraffe cardiovascular adaptations to athlete\'s heart syndrome in elite endurance athletes', 'Analyse how cardiac output responds to increasing exercise intensity'],
+      1: ['Think about how big the giraffe\'s heart is compared to yours', 'What does the heart do for your body?', 'How might a healthy heart help you every day?'],
+      2: ['A giraffe\'s heart weighs about 11 kg — a human heart weighs about 0.3 kg', 'Both hearts pump blood to keep the body alive', 'Name one thing that keeps a human heart healthy (e.g. exercise, diet)'],
+      3: ['Think about one way the two hearts are the same and one way they are different', 'What happens to your heart rate when you exercise?', 'How does regular exercise help keep your heart healthy?'],
+      4: ['Describe a difference in size, rate or pressure between the two hearts', 'What does regular exercise do to the human heart over time?', 'Connect heart function to a health outcome (e.g. lower resting heart rate)'],
+      5: ['Consider how a trained athlete\'s heart adapts compared to an untrained person', 'How does the giraffe\'s long neck create a similar challenge to intense exercise?', 'Link cardiovascular fitness to long-term health outcomes'],
     },
-    starters: ['My resting heart rate is…', 'Cardiac output is calculated as…', 'Left ventricular hypertrophy means…'],
+    starters: ['The giraffe\'s heart is…', 'Compared to a human heart, the giraffe\'s…', 'A healthy heart…'],
   },
   'tiger': {
-    heading: 'Muscle Fibres & Wellbeing',
-    chips: [{ label:'Fast-twitch', color:'#DC2626' },{ label:'Slow-twitch', color:'#059669' },{ label:'Stress & cortisol', color:'#7C3AED' },{ label:'Enrichment', color:'#0284C7' }],
+    heading: 'Tiger & Sport',
+    chips: [{ label:'Power', color:'#DC2626' },{ label:'Speed', color:'#059669' },{ label:'Patience', color:'#7C3AED' },{ label:'Sport', color:'#0284C7' }],
     hintsByStage: {
-      3: ['Describe Type I (slow-twitch) and Type II (fast-twitch) muscle fibres', 'Identify which type the tiger uses for sprinting vs stalking', 'Explain how enrichment activities reduce stress in captive animals (and humans)'],
-      4: ['Compare fast-twitch (Type IIx) and slow-twitch (Type I) fibres: recruitment, fatigue, fuel', 'Explain how chronic stress elevates cortisol via the HPA axis', 'Link environmental enrichment to reduced cortisol and improved psychological wellbeing'],
-      5: ['Evaluate the role of muscle fibre type composition in athletic specialisation', 'Analyse how captive stress (elevated cortisol) affects physical health (immune suppression, muscle breakdown)', 'Apply the concept of psychological safety and environmental enrichment to human mental health'],
+      1: ['How does the tiger move — fast or slow?', 'What does the tiger\'s body look like?', 'What could a sports player copy from the tiger?'],
+      2: ['Look at how the tiger moves', 'Think about a sport that needs speed or power', 'What could an athlete copy from the tiger?'],
+      3: ['Describe how the tiger moves and what its body looks like', 'Name a sport that uses similar skills to the tiger', 'What could an athlete take away from watching this animal?'],
+      4: ['Describe the tiger\'s physical qualities (power, speed, patience, muscle)', 'Name a sporting quality that matches what you see', 'Explain what athletes could learn from this animal'],
+      5: ['Describe the tiger\'s explosive power and patient stillness', 'Connect tiger qualities to specific sporting demands', 'Evaluate what training lessons athletes could take from observing this animal'],
     },
-    starters: ['Fast-twitch muscle fibres are used for…', 'The HPA axis responds to stress by…', 'Environmental enrichment reduces cortisol because…'],
+    starters: ['From watching the tiger, an athlete could…', 'The tiger shows that in sport…', 'One thing sport could take from the tiger is…'],
   },
   'koala': {
-    heading: 'Sleep, Recovery & Metabolism',
-    chips: [{ label:'Sleep stages', color:'#7C3AED' },{ label:'Growth hormone', color:'#059669' },{ label:'BMR', color:'#0284C7' },{ label:'Recovery', color:'#DC2626' }],
+    heading: 'Sleep & Health',
+    chips: [{ label:'Sleep', color:'#7C3AED' },{ label:'Recovery', color:'#059669' },{ label:'Human vs koala', color:'#0284C7' },{ label:'Health', color:'#DC2626' }],
     hintsByStage: {
-      3: ['Explain why teenagers need 8–10 hours of sleep for physical recovery', 'Name 2 things the body does during sleep to repair and grow', 'Explain what BMR (basal metabolic rate) means'],
-      4: ['Describe the role of slow-wave (NREM) sleep in growth hormone secretion and muscle repair', 'Explain how sleep deprivation raises cortisol and impairs metabolic function', 'Link koala sleep requirements to human recovery needs after exercise'],
-      5: ['Evaluate the two primary sleep phases (NREM and REM) and their distinct physiological roles', 'Analyse how chronic sleep deprivation affects HPA axis activity, immune function, and athletic performance', 'Assess the relationship between sleep quality, metabolic rate, and mental health'],
+      1: ['How many hours does the koala sleep?', 'How many hours do you sleep each night?', 'Name one thing sleep does for your body'],
+      2: ['Koalas sleep up to 22 hours — humans need about 8 to 10', 'Write one similarity and one difference between koala and human sleep', 'Name two things sleep does for your body'],
+      3: ['Compare how many hours a koala sleeps to how many hours a human needs', 'Write what sleep does for your body (e.g. rest, repair, grow)', 'Explain why sleep matters for your health'],
+      4: ['Compare koala sleep to the amount of sleep teenagers need', 'Describe what happens to your body when you do not get enough sleep', 'Connect sleep to a health outcome like mood, energy or recovery'],
+      5: ['Compare the koala\'s extreme sleep needs to human recommendations', 'Describe at least two health consequences of not getting enough sleep', 'Explain why sleep is important for teenagers specifically'],
     },
-    starters: ['During slow-wave sleep, the body…', 'Growth hormone is released when…', 'Sleep deprivation affects cortisol because…'],
+    starters: ['The koala sleeps…', 'Compared to a koala, humans…', 'Sleep is important because…'],
   },
   'dingo': {
-    heading: 'Aerobic Fitness & Heart Rate Zones',
-    chips: [{ label:'VO2 max', color:'#DC2626' },{ label:'Target heart rate', color:'#059669' },{ label:'Aerobic training', color:'#0284C7' },{ label:'MHR formula', color:'#7C3AED' }],
+    heading: 'Food as Fuel',
+    chips: [{ label:'Energy', color:'#DC2626' },{ label:'Food choices', color:'#059669' },{ label:'Performance', color:'#0284C7' },{ label:'Dingo', color:'#7C3AED' }],
     hintsByStage: {
-      3: ['Calculate your maximum heart rate: 220 − your age', 'Calculate your moderate aerobic zone: 60–80% of your MHR', 'Explain what happens to your heart and lungs during sustained aerobic exercise'],
-      4: ['Define VO2 max and explain why it measures aerobic fitness', 'Calculate aerobic heart rate zones for a 14-year-old (MHR = 206, zones at 60%, 70%, 80%)', 'Describe 2 cardiovascular adaptations that result from regular aerobic training'],
-      5: ['Evaluate VO2 max as a predictor of cardiovascular health and endurance performance', 'Analyse the cardiovascular adaptations of aerobic training (stroke volume, cardiac output, capillary density)', 'Design a 4-week aerobic training program using heart rate zone progression for a beginner'],
+      1: ['What does the dingo need food for?', 'Name one food that gives you energy', 'How does your body feel when you have not eaten enough?'],
+      2: ['Just like the dingo, your body needs fuel to move', 'Name two foods that give good energy for sport or play', 'Explain why you chose those foods'],
+      3: ['Think about what the dingo eats to survive its long hunts', 'What food would fuel a student for a sport session?', 'Explain why that food is a good choice'],
+      4: ['Connect the dingo\'s need for food to human performance', 'What should a student eat before physical activity and why?', 'Why do food choices matter for how your body performs?'],
+      5: ['Think about how the dingo relies on food to fuel every hunt', 'Describe what to eat before and after activity for performance and recovery', 'Explain why food quality and timing matters for active people'],
     },
-    starters: ['My maximum heart rate is…', 'VO2 max measures…', 'Regular aerobic training causes…'],
+    starters: ['Just like the dingo, my body needs…', 'A good food to eat before sport is…', 'Food affects performance because…'],
   },
   'lemur': {
-    heading: 'Belonging, Identity & Wellbeing',
-    chips: [{ label:'Oxytocin', color:'#7C3AED' },{ label:'Belonging', color:'#059669' },{ label:'Social health', color:'#0284C7' },{ label:'Identity', color:'#DC2626' }],
+    heading: 'Relationships & Wellbeing',
+    chips: [{ label:'Relationships', color:'#7C3AED' },{ label:'Belonging', color:'#059669' },{ label:'Lemurs', color:'#0284C7' },{ label:'Wellbeing', color:'#DC2626' }],
     hintsByStage: {
-      3: ['Describe 2 social behaviours you observed in the lemurs', 'Explain how belonging to a group affects mental health', 'Name the hormone released during positive social contact that reduces stress'],
-      4: ['Explain the role of oxytocin in social bonding and cortisol reduction', 'Link the lemur\'s social grooming to human social determinants of mental health', 'Describe how identity and belonging contribute to psychological wellbeing'],
-      5: ['Apply the biopsychosocial model to explain how social belonging affects physical and mental health', 'Evaluate the research linking social isolation to health outcomes (e.g. Holt-Lunstad 2015)', 'Analyse how identity formation during adolescence interacts with sense of belonging and wellbeing'],
+      1: ['Watch how the lemurs stay close together', 'Think about someone you feel safe around', 'How do your relationships make you feel?'],
+      2: ['How do the lemurs look after each other?', 'Think of one way your friendships or family are similar to the lemur troop', 'How do those relationships affect how you feel?'],
+      3: ['Describe one way lemur relationships are similar to human relationships', 'How do your relationships with others affect your mood or health?', 'What would it feel like to not have those connections?'],
+      4: ['Compare lemur social bonds to human relationships', 'How do relationships affect your physical and mental health?', 'Think about belonging, safety and connection'],
+      5: ['Compare the lemur troop\'s social bonds to human social connections', 'Describe how relationships affect both physical and mental health', 'Connect belonging and connection to health outcomes'],
     },
-    starters: ['The lemurs I observed were…', 'Oxytocin is released when…', 'Belonging to a group supports wellbeing because…'],
+    starters: ['Just like lemurs, humans…', 'My relationships with others make me feel…', 'Belonging to a group affects health because…'],
   },
   'sea-lion': {
-    heading: 'Respiratory & Cardiovascular Systems',
-    chips: [{ label:'Heart rate', color:'#DC2626' },{ label:'Haemoglobin', color:'#059669' },{ label:'Dive reflex', color:'#0284C7' },{ label:'Aerobic capacity', color:'#7C3AED' }],
+    heading: 'Human Impacts & Resilience',
+    chips: [{ label:'Human impacts', color:'#DC2626' },{ label:'Sea lion', color:'#059669' },{ label:'Resilience', color:'#0284C7' },{ label:'Strategies', color:'#7C3AED' }],
     hintsByStage: {
-      3: ['Measure your resting heart rate (15 s × 4)', 'Explain how exercise changes your breathing rate and why', 'Describe what happens to heart rate during the mammalian dive reflex'],
-      4: ['Explain the role of haemoglobin in oxygen transport to working muscles', 'Describe how the mammalian dive reflex (bradycardia, vasoconstriction) conserves oxygen', 'Explain why cardiovascular and respiratory systems are interdependent during sustained exercise'],
-      5: ['Evaluate how the cardiovascular and respiratory systems work together during sustained aerobic exercise', 'Analyse how aerobic training increases haemoglobin concentration, stroke volume, and VO2 max', 'Compare the sea lion\'s physiological adaptations for diving to elite human free-divers'],
+      1: ['Think about what threatens sea lions (pollution, fishing)', 'The sea lion keeps going despite those threats', 'What do YOU do when something is hard?'],
+      2: ['Name a human threat sea lions face', 'Think about how the sea lion adapts and keeps going', 'What strategy do you use when you face a challenge?'],
+      3: ['Name a human impact on sea lions', 'Just like the sea lion adapts, what do you do when things get difficult?', 'Name one resilience strategy that works for you'],
+      4: ['Describe a human impact sea lions face and how they survive it', 'Connect that to your own experience of overcoming a challenge', 'What strategies help you build resilience?'],
+      5: ['Name the human threats sea lions face', 'Just as sea lions must adapt and persist, what resilience strategies do you rely on?', 'Explain why those strategies help you overcome challenges'],
     },
-    starters: ['My resting heart rate is…', 'Haemoglobin transports…', 'The respiratory and cardiovascular systems work together because…'],
+    starters: ['Sea lions face threats from humans like…', 'Just like the sea lion, I keep going by…', 'A resilience strategy that works for me is…'],
   },
   'asian-water-buffalo': {
-    heading: 'Musculoskeletal Health',
-    chips: [{ label:'Bone density', color:'#DC2626' },{ label:'Muscle hypertrophy', color:'#059669' },{ label:'Type I / II fibres', color:'#0284C7' },{ label:'Resistance training', color:'#7C3AED' }],
+    heading: 'Hydration & Health',
+    chips: [{ label:'Water', color:'#0284C7' },{ label:'Sweat', color:'#DC2626' },{ label:'Performance', color:'#059669' },{ label:'Buffalo', color:'#7C3AED' }],
     hintsByStage: {
-      3: ['Name 3 muscle groups you can observe on the buffalo', 'Explain 2 ways regular physical activity strengthens bones', 'Describe the difference between muscular strength and muscular endurance'],
-      4: ['Compare Type I (slow-twitch, endurance) and Type II (fast-twitch, power) muscle fibres', 'Explain how resistance training increases bone mineral density via mechanical loading', 'Describe progressive overload and how it causes muscle hypertrophy'],
-      5: ['Evaluate how resistance training causes adaptations in bone density (osteoblasts), muscle hypertrophy, and connective tissue strength', 'Analyse the role of mechanical loading signals in bone remodelling (Wolff\'s Law)', 'Compare the musculoskeletal adaptations of a working buffalo to a resistance-trained human athlete'],
+      1: ['Watch the buffalo — it loves mud and water to cool down', 'Why do you need water when you are hot or active?', 'What happens to your body when you do not drink enough?'],
+      2: ['Just like the buffalo needs water to keep going, so do you', 'Name two reasons your body needs water during activity', 'What happens if you do not drink enough water?'],
+      3: ['Think about what the buffalo uses water for', 'Why does your body need water when you exercise?', 'Name one sign that your body needs more water'],
+      4: ['Connect the buffalo\'s need for water to your own hydration needs', 'What does water do for your body during physical activity?', 'What are the signs of dehydration and why do they happen?'],
+      5: ['Think about how the buffalo relies on water to perform and stay cool', 'Explain the role of hydration in physical performance', 'Describe the effects of dehydration on the body during exercise'],
     },
-    starters: ['The buffalo\'s major muscle groups include…', 'Resistance training increases bone density because…', 'Type I fibres are used for…'],
+    starters: ['Just like the buffalo, my body needs water to…', 'When I am active, hydration is important because…', 'Without enough water, my body…'],
   },
   'blue-mountains-bushwalk': {
-    heading: 'Exercise Physiology & Nature Therapy',
-    chips: [{ label:'Heart rate', color:'#DC2626' },{ label:'Aerobic exercise', color:'#059669' },{ label:'Cortisol & nature', color:'#7C3AED' },{ label:'Wellbeing', color:'#0284C7' }],
+    heading: 'Identity',
+    chips: [{ label:'Identity', color:'#7C3AED' },{ label:'Environment', color:'#059669' },{ label:'World around me', color:'#0284C7' },{ label:'Wellbeing', color:'#DC2626' }],
     hintsByStage: {
-      3: ['Record your heart rate before and after a brisk walk (15 s × 4)', 'Calculate the increase and explain why it happened', 'Identify 2 mental health benefits of spending time in nature'],
-      4: ['Calculate your target aerobic heart rate zone (60–80% of 220 − age)', 'Explain how aerobic exercise affects cardiovascular and respiratory systems', 'Describe how nature exposure reduces cortisol and supports mental wellbeing'],
-      5: ['Evaluate the physiological response to aerobic exercise (cardiac output, respiratory rate, VO2)', 'Analyse Attention Restoration Theory (ART) and stress reduction theory as explanations for nature therapy effects', 'Assess how regular bush walking supports both physical fitness and psychological resilience'],
+      1: ['Think back to when you stood still and listened to the birds', 'What people, places or experiences shape who you are?', 'Write two ways the world around you makes you who you are'],
+      2: ['Remember listening to the bush — the world around you shaped that moment', 'Think about your family, culture, friends or school', 'Write two ways the world around you shapes your identity'],
+      3: ['You listened to the bush — just like these animals are shaped by it, so are you', 'What parts of your world shape who you are — family, culture, friends, experiences?', 'Write two ways your environment shapes your identity'],
+      4: ['Think back to standing still and listening — how did that environment feel?', 'How do people, places and experiences around you shape your identity?', 'How does the world shaping your identity connect to your wellbeing?'],
+      5: ['Remember becoming part of the environment for that moment — the world shapes us', 'What aspects of your environment most shape your identity?', 'Write about how your environment shapes your identity and connects to your wellbeing'],
     },
-    starters: ['My heart rate before walking was…', 'Aerobic exercise causes…', 'Nature therapy research shows…'],
+    starters: ['The world around me shapes my identity by…', 'When I stood still and listened, I noticed…', 'My identity is shaped by…'],
   },
   'concert-lawn': {
-    heading: 'Physical Activity & Lifelong Health',
-    chips: [{ label:'Heart rate', color:'#DC2626' },{ label:'Intrinsic motivation', color:'#7C3AED' },{ label:'Active lifestyle', color:'#059669' },{ label:'Wellbeing', color:'#0284C7' }],
+    heading: 'Connection & Health',
+    chips: [{ label:'Mood', color:'#7C3AED' },{ label:'Body feeling', color:'#DC2626' },{ label:'Connection', color:'#059669' },{ label:'Outdoors', color:'#0284C7' }],
     hintsByStage: {
-      3: ['Take your heart rate before and after 2 minutes of activity', 'List 3 physical health benefits of regular moderate exercise', 'Explain how enjoying physical activity helps people stay active lifelong'],
-      4: ['Calculate your heart rate as a % of maximum (220 − age) before and after activity', 'Explain how intrinsic motivation (enjoyment, choice) supports lifelong physical activity habits', 'Describe the mental health benefits of regular recreational physical activity'],
-      5: ['Apply Self-Determination Theory (autonomy, competence, relatedness) to explain why enjoyable physical activity supports lifelong participation', 'Evaluate the physical and mental health benefits of regular moderate aerobic activity (150 min/week recommendation)', 'Design a sustainable physical activity plan that supports both physiological health and psychological wellbeing'],
+      1: ['Did your body feel different on the grass?', 'How did your mood change?', 'Write one word for how your body felt and one for your mood'],
+      2: ['How did being active make your body feel?', 'Did being outdoors change how you felt?', 'Write about your body and your mood'],
+      3: ['Describe how your body felt during the activity', 'Write about your mood or emotions', 'Did being with others change how you felt?'],
+      4: ['Describe one physical feeling and one emotional feeling', 'Connect being outdoors and active to a health benefit', 'How does this connect to your health habits?'],
+      5: ['Describe both physical and emotional effects of being active outdoors', 'Connect the experience to physical and mental health outcomes', 'How does connection to nature and others relate to your wellbeing?'],
     },
-    starters: ['My heart rate increased from…', 'Intrinsic motivation means…', 'Regular physical activity supports health because…'],
+    starters: ['Being on the lawn made me feel…', 'My body felt…', 'Being active outdoors…'],
   },
 };
 
@@ -806,13 +824,29 @@ export default function ObservationScreen() {
       {/* Concert lawn experience timer */}
       {animalId === 'concert-lawn' && !concertLawnTimerDone && (
         <div style={{ position:'fixed', inset:0, background:'linear-gradient(135deg,#1a3a2a 0%,#2e5c3e 100%)', zIndex:1900, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'2rem', color:'white', textAlign:'center' }}>
-          <h2 className="heading-display" style={{ fontSize:'2.5rem', marginBottom:'0.8rem' }}>Habitat Experience</h2>
-          <p style={{ fontSize:'1rem', opacity:0.9, maxWidth:'520px', lineHeight:1.7, marginBottom:'1rem' }}>Maths is not just numbers on a page. Mathematicians use observation, estimation and measurement to understand real places.</p>
+          <h2 className="heading-display" style={{ fontSize:'2.5rem', marginBottom:'0.8rem' }}>
+            {isPdhpe ? 'Concert Lawn' : 'Habitat Experience'}
+          </h2>
+          <p style={{ fontSize:'1rem', opacity:0.9, maxWidth:'520px', lineHeight:1.7, marginBottom:'1rem' }}>
+            {isPdhpe
+              ? 'Take off your shoes if it is safe to do so. Step onto the grass and notice how it makes you feel.'
+              : 'Maths is not just numbers on a page. Mathematicians use observation, estimation and measurement to understand real places.'}
+          </p>
           <div style={{ background:'rgba(255,255,255,0.12)', borderRadius:'14px', padding:'1rem 1.4rem', maxWidth:'480px', marginBottom:'1.5rem', textAlign:'left' }}>
             <p style={{ fontWeight:700, fontSize:'0.95rem', marginBottom:'0.4rem' }}>Take your shoes off if safe to do so.</p>
             <p style={{ fontWeight:700, fontSize:'0.95rem', marginBottom:'0.7rem' }}>⏱ Walk on the grass for 60 seconds.</p>
-            <p style={{ fontSize:'0.82rem', opacity:0.85, marginBottom:'0.4rem', fontWeight:600 }}>As you walk, think about:</p>
-            {[
+            <p style={{ fontSize:'0.82rem', opacity:0.85, marginBottom:'0.4rem', fontWeight:600 }}>
+              {isPdhpe ? 'As you walk, notice:' : 'As you walk, think about:'}
+            </p>
+            {isPdhpe ? [
+              'how the grass feels under your feet',
+              'how your body feels in the open space',
+              'how the fresh air and nature affect your mood',
+              'how it feels to be active with others around you',
+              'whether you feel more relaxed, energised or connected',
+            ].map((pt, i) => (
+              <p key={i} style={{ fontSize:'0.82rem', opacity:0.8, margin:'0.15rem 0', paddingLeft:'0.8rem' }}>– {pt}</p>
+            )) : [
               'how many steps you take',
               'the length of your stride',
               'whether the ground feels flat, sloped, soft or uneven',
@@ -840,7 +874,11 @@ export default function ObservationScreen() {
       {animalId === 'tiger' && !tigerTimerDone && (
         <div style={{ position:'fixed', inset:0, background:'linear-gradient(135deg,#1a3a2a 0%,#2e5c3e 100%)', zIndex:1900, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'2rem', color:'white', textAlign:'center' }}>
           <h2 className="heading-display" style={{ fontSize:'2.5rem', marginBottom:'0.8rem' }}>Silent Forest</h2>
-          <p style={{ fontSize:'1.1rem', opacity:0.9, maxWidth:'500px', lineHeight:1.7, marginBottom:'2rem' }}>Stop. Look closely. The zoo is full of hidden maths.</p>
+          <p style={{ fontSize:'1.1rem', opacity:0.9, maxWidth:'500px', lineHeight:1.7, marginBottom:'2rem' }}>
+            {isPdhpe
+              ? 'Stop. Look closely at the tiger. Think about what athletes could learn from this animal.'
+              : 'Stop. Look closely. The zoo is full of hidden maths.'}
+          </p>
           <h3 style={{ fontSize:'5rem', fontWeight:800, marginBottom:'1.5rem', fontVariantNumeric:'tabular-nums', color: tigerTimerSeconds <= 10 ? '#FFEB3B' : 'white' }}>
             {tigerTimerSeconds}
           </h3>
@@ -849,7 +887,9 @@ export default function ObservationScreen() {
                 style={{ padding:'0.9rem 2.5rem', borderRadius:'var(--t-r-pill)', border:'none', background:'var(--sunset-orange)', color:'white', fontWeight:700, fontSize:'1.1rem', cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.08em', boxShadow:'0 4px 12px rgba(0,0,0,0.3)' }}>
                 Start Observing
               </button>
-            : <p style={{ fontSize:'0.9rem', opacity:0.85, fontWeight:600 }}>Observe now… find the hidden maths.</p>
+            : <p style={{ fontSize:'0.9rem', opacity:0.85, fontWeight:600 }}>
+                {isPdhpe ? 'Observe now… what can sport learn from this animal?' : 'Observe now… find the hidden maths.'}
+              </p>
           }
         </div>
       )}

@@ -16,8 +16,27 @@ const TIGER_MCQ = {
   fact: 'Sumatran tigers are the smallest tiger subspecies, growing up to about 2.5 m from nose to tail. Their compact size helps them move through dense rainforest.',
 };
 
+const TIGER_PDHPE_MCQ = {
+  stageQ: {
+    1: 'Look at the tiger\'s body as you measure it. Where are its biggest muscles?',
+    2: 'As you measure the tiger, look at its muscular body. What is the job of skeletal muscles in any animal?',
+    3: 'Observe the tiger\'s powerful body as you measure it. Which muscle groups are most visible and important for a tiger to sprint and pounce?',
+    4: 'As you measure the tiger, look closely at its hindquarters and back legs. Which major muscle groups generate the power for its sprint and pounce?',
+    5: 'Measure the tiger and observe how its whole body is involved in hunting. Which combination of muscle groups enables the tiger to accelerate, leap and bring down prey?',
+  },
+  stageOptions: {
+    1: ['In its back legs and shoulders', 'In its tail', 'In its ears', 'In its stomach'],
+    2: ['Pull on bones to create movement', 'Pump blood around the body', 'Break down food during digestion', 'Control breathing automatically'],
+    3: ['Hindquarters and shoulder muscles', 'Facial and neck muscles', 'Abdominal and chest muscles', 'Forearm and paw muscles'],
+    4: ['Gluteals and hamstrings', 'Biceps and triceps', 'Deltoids and trapezius', 'Abdominals and hip flexors'],
+    5: ['Gluteals, hamstrings, quadriceps and shoulder muscles', 'Biceps, triceps and deltoids', 'Abdominals and chest muscles only', 'Hip flexors and calf muscles only'],
+  },
+  correct: 0,
+  fact: 'A tiger\'s power comes from its gluteals, hamstrings, quadriceps and powerful shoulder muscles working together — driving the explosive acceleration, leaping and grappling needed to bring down prey.',
+};
+
 export default function TigerMission() {
-  const { setCurrentScreen, classStage } = useApp();
+  const { setCurrentScreen, classStage, classSubject } = useApp();
   const {
     showResult, setShowResult, isCorrect,
     setIsProcessingAnswer, handleQuizAnswer, handleNextQuestion,
@@ -31,9 +50,11 @@ export default function TigerMission() {
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
 
-  const correctAnswerIndex = TIGER_MCQ.correct;
-  const question = TIGER_MCQ.stageQ[classStage] || TIGER_MCQ.stageQ[4];
-  const fact     = TIGER_MCQ.fact;
+  const mcq = classSubject === 'pdhpe' ? TIGER_PDHPE_MCQ : TIGER_MCQ;
+  const correctAnswerIndex = mcq.correct;
+  const question = mcq.stageQ[classStage] || mcq.stageQ[4];
+  const options  = mcq.stageOptions ? (mcq.stageOptions[classStage] || mcq.stageOptions[4]) : mcq.options;
+  const fact     = mcq.fact;
 
   const startCamera = async () => {
     if (!videoRef.current) return;
@@ -187,7 +208,7 @@ export default function TigerMission() {
               {question}
             </p>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.5rem' }}>
-              {TIGER_MCQ.options.map((opt, i) => (
+              {options.map((opt, i) => (
                 <button key={i} onClick={() => handleQuizAnswer(0, i, correctAnswerIndex)}
                   style={{ padding:'0.7rem 0.5rem', borderRadius:'var(--t-r-sm)', border:'2px solid transparent', background:'#f4f8f6', color:'var(--jungle-deep)', fontSize:'0.8rem', fontWeight:600, cursor:'pointer', textAlign:'left', transition:'all 0.15s', lineHeight:1.3 }}>
                   {opt}

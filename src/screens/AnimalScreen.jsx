@@ -12,8 +12,9 @@ import GiraffeMission  from './missions/GiraffeMission';
 import LemurMission    from './missions/LemurMission';
 import DingoMission    from './missions/DingoMission';
 import SeaLionMission  from './missions/SeaLionMission';
-import BushwalkMission from './missions/BushwalkMission';
-import BuffaloMission  from './missions/BuffaloMission';
+import BushwalkMission     from './missions/BushwalkMission';
+import BuffaloMission       from './missions/BuffaloMission';
+import ConcertLawnMission   from './missions/ConcertLawnMission';
 
 export default function AnimalScreen() {
   const { setCurrentScreen, classStage, classSubject } = useApp();
@@ -41,6 +42,7 @@ export default function AnimalScreen() {
   if (currentAnimal.id === 'sea-lion')                return <SeaLionMission />;
   if (currentAnimal.id === 'blue-mountains-bushwalk') return <BushwalkMission />;
   if (currentAnimal.id === 'asian-water-buffalo')     return <BuffaloMission />;
+  if (currentAnimal.id === 'concert-lawn' && classSubject === 'pdhpe') return <ConcertLawnMission />;
 
   // Standard quiz path (koala + concert-lawn)
   const questions = getStageQuestions(currentAnimal, classStage, classSubject);

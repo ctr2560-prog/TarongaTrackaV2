@@ -21,27 +21,54 @@ export default function BushwalkMission() {
   const [results,      setResults]      = useState([]); // boolean per clue
   const [miniKeyOpen,  setMiniKeyOpen]  = useState(false);
 
-  const CLUES = [
-    {
-      label: 'Clue 1 — Cipher',
-      clue: 'I am a mammal, but I lay eggs.\nI swim and hide near moving water.\n\nUse the mini key to solve where to find me.\n\nSecret location code:\n23 – 1 – 20 – 5 – 18 – 6 – 1 – 12 – 12',
-    },
-    {
-      label: 'Clue 2 — Ratio',
-      clue: 'Find the 4:1 Animal\n\nNow find the cold-blooded animal that is about 4 times larger than the real thing.',
-    },
-    classSubject === 'maths'
-      ? {
-          label: 'Clue 3 — Sequence',
-          clue: 'Find the Mimic Bird\n\nA bird starts with 20 sounds.\nIt learns 4 new sounds each month.\n\nAfter 5 months, how many sounds does it know?\n\n20 + (4 × 5) = ___\n\nNow find the forest bird famous for copying sounds.',
-        }
-      : {
-          label: classStage <= 2 ? 'Clue 3' : 'Clue 3 — Riddle',
+  const CLUES = classSubject === 'pdhpe'
+    ? [
+        {
+          label: 'Clue 1: Identity',
           clue: classStage <= 2
-            ? 'Which bird copies sounds?'
-            : 'I live in the forest, hidden from sight,\nMy voice can copy sounds day and night.\nChainsaws, cameras, even a call,\nI can mimic almost them all…',
+            ? 'Head to the waterfall and find the animal that doesn\'t quite fit in. It\'s a mammal that lays eggs and has a bill like a duck.\n\n\'Which animal at Taronga shows us that we don\'t have to fit into just one box?\''
+            : classStage === 3
+            ? 'Make your way to the waterfall. Find the animal that breaks all the rules: a mammal with a bill, webbed feet and venom.\n\n\'Which animal best shows that identity can be made up of many different, unexpected parts?\''
+            : 'Head to the waterfall and find the animal that defies every category: a venomous, egg-laying mammal that uses electroreception to hunt.\n\n\'Which animal demonstrates that a unique combination of traits can form a powerful and distinctive identity?\'',
         },
-  ];
+        {
+          label: 'Clue 2: Identity',
+          clue: classStage <= 2
+            ? 'I am a large statue and I represent a cold-blooded animal that needs the sun and warm ground to survive. Just like this animal, my wellbeing is shaped by my environment.\n\n\'What am I?\''
+            : classStage === 3
+            ? 'I am a large statue and I represent a reptile entirely shaped by its environment. Just like this animal, my wellbeing is shaped by my environment.\n\n\'What am I?\''
+            : 'I am a large statue. Just like this animal, my wellbeing is shaped by my environment.\n\n\'What am I?\'',
+        },
+        {
+          label: 'Clue 3: Identity',
+          clue: classStage <= 2
+            ? 'Find the bird that can copy almost any sound it hears: chainsaws, cameras, even other birds! But it still has its own unique call.\n\n\'Which bird teaches us that there\'s a difference between being inspired by others and being yourself?\''
+            : classStage === 3
+            ? 'Find the famous Australian bird that mimics almost every sound in its environment. Underneath all that mimicry, its own unique call still exists.\n\n\'Which bird shows that being influenced by others doesn\'t mean losing your true identity?\''
+            : 'Find the bird renowned for its extraordinary mimicry. It absorbs sounds from its environment, yet its own call remains. This is the challenge of identity.\n\n\'Which bird best represents the tension between social influence and your authentic self?\'',
+        },
+      ]
+    : [
+        {
+          label: 'Clue 1: Cipher',
+          clue: 'I am a mammal, but I lay eggs.\nI swim and hide near moving water.\n\nUse the mini key to solve where to find me.\n\nSecret location code:\n23 – 1 – 20 – 5 – 18 – 6 – 1 – 12 – 12',
+        },
+        {
+          label: 'Clue 2: Ratio',
+          clue: 'Find the 4:1 Animal\n\nNow find the cold-blooded animal that is about 4 times larger than the real thing.',
+        },
+        classSubject === 'maths'
+          ? {
+              label: 'Clue 3: Sequence',
+              clue: 'Find the Mimic Bird\n\nA bird starts with 20 sounds.\nIt learns 4 new sounds each month.\n\nAfter 5 months, how many sounds does it know?\n\n20 + (4 × 5) = ___\n\nNow find the forest bird famous for copying sounds.',
+            }
+          : {
+              label: classStage <= 2 ? 'Clue 3' : 'Clue 3: Riddle',
+              clue: classStage <= 2
+                ? 'Which bird copies sounds?'
+                : 'I live in the forest, hidden from sight,\nMy voice can copy sounds day and night.\nChainsaws, cameras, even a call,\nI can mimic almost them all…',
+            },
+      ];
 
   const questions      = getStageQuestions(currentAnimal, classStage, classSubject);
   const clue           = CLUES[clueIdx];
@@ -130,7 +157,7 @@ export default function BushwalkMission() {
               {clue?.clue.split('\n').map((line, i) => (
                 <p key={i} style={{ fontSize: clue.label.includes('Riddle') ? '0.95rem' : '1rem', color:'#333', margin: i === 0 ? 0 : '0.3rem 0 0', lineHeight:1.7, fontStyle: clue.label.includes('Riddle') ? 'italic' : 'normal', fontWeight: line.startsWith('Secret location') ? 700 : 'normal' }}>{line}</p>
               ))}
-              {clueIdx === 0 && (
+              {clueIdx === 0 && classSubject !== 'pdhpe' && (
                 <div style={{ marginTop:'0.85rem' }}>
                   <button onClick={() => setMiniKeyOpen(o => !o)} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', width:'100%', background:'#E3EEE3', border:'1px solid #5B8C5A', borderRadius:miniKeyOpen ? 'var(--t-r-xs) var(--t-r-xs) 0 0' : 'var(--t-r-xs)', padding:'0.38rem 0.8rem', cursor:'pointer', fontSize:'0.78rem', fontWeight:700, color:'#3d5c3c' }}>
                     <span>Mini Key (A → Z)</span>
@@ -151,7 +178,7 @@ export default function BushwalkMission() {
                 </div>
               )}
             </div>
-            <p style={{ fontSize:'0.9rem', fontWeight:600, color:'var(--jungle-deep)', margin:'0 0 0.75rem', textAlign:'center' }}>{q?.q}</p>
+            {classSubject !== 'pdhpe' && <p style={{ fontSize:'0.9rem', fontWeight:600, color:'var(--jungle-deep)', margin:'0 0 0.75rem', textAlign:'center' }}>{q?.q}</p>}
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.6rem' }}>
               {(q?.options || []).map((opt, oi) => (
                 <button key={oi} onClick={() => handleSelect(oi)} disabled={showFeedback}
