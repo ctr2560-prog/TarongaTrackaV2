@@ -156,14 +156,15 @@ export function stage1WritingScore(text) {
 
 export function stage3Score(hits, hasExplanation) {
   let b;
-  if (hits === 0) b = 1;
+  if (hits === 0 && !hasExplanation) b = 2;
+  else if (hits === 0 && hasExplanation) b = 3;
   else if (hits >= 1 && !hasExplanation) b = 3;
   else b = Math.min(hits + 2, 4);
   let d;
-  if (hits === 0) d = 1;
-  else if (hits === 1 && !hasExplanation) d = 3;
-  else if (hits === 1 && hasExplanation) d = 4;
-  else if (hits >= 2) d = Math.min(hits + 1, 4);
+  if (hits === 0 && !hasExplanation) d = 2;
+  else if (hits === 0 && hasExplanation) d = 3;
+  else if (hits >= 1 && !hasExplanation) d = 3;
+  else if (hits >= 1 && hasExplanation) d = 4;
   else d = 3;
   return { b, d };
 }
@@ -173,13 +174,13 @@ export function stage4Score(hits, hasExplanation, wc) {
   if (hits === 0 && wc < 3) b = 1;
   else if (hits === 0) b = 2;
   else if (hits >= 1 && !hasExplanation) b = 3;
-  else if (hits >= 1 && hasExplanation && wc < 12) b = 4;
-  else if (hits >= 1 && hasExplanation && wc >= 12) b = 5;
+  else if (hits >= 1 && hasExplanation && wc < 8) b = 4;
+  else if (hits >= 1 && hasExplanation && wc >= 8) b = 5;
   else b = Math.min(hits + 2, 5);
   let d;
-  if (hits === 0) d = 1;
-  else if (hits === 1) d = 3;
-  else if (hits >= 2 && !hasExplanation) d = 4;
+  if (hits === 0) d = 2;
+  else if (hits >= 1 && !hasExplanation) d = 3;
+  else if (hits >= 1 && hasExplanation) d = 4;
   else if (hits >= 2 && hasExplanation) d = Math.min(hits + 2, 5);
   else d = 3;
   return { b, d };
@@ -194,16 +195,15 @@ export function stage5Score(text, behaviourWords, detailWords, hasExplanation) {
   if (bHits === 0 && wc < 3) bScore = 1;
   else if (bHits === 0) bScore = 2;
   else if (bHits >= 1 && !hasExplanation) bScore = 3;
-  else if (bHits >= 1 && hasExplanation && wc < 8) bScore = 4;
+  else if (bHits >= 1 && hasExplanation && wc < 5) bScore = 4;
   else bScore = 5;
   const dHits = detailWords.filter(w => lower.includes(w)).length;
   let dScore;
   if (dHits === 0 && wc < 3) dScore = 1;
   else if (dHits === 0) dScore = 2;
-  else if (dHits === 1 && !hasExplanation) dScore = 3;
-  else if (dHits >= 1 && hasExplanation && dHits < 3) dScore = 4;
-  else if (dHits >= 3 && hasExplanation) dScore = 5;
-  else if (dHits >= 2 && !hasExplanation) dScore = 3;
+  else if (dHits >= 1 && !hasExplanation) dScore = 3;
+  else if (dHits >= 1 && hasExplanation) dScore = 4;
+  else if (dHits >= 2 && hasExplanation) dScore = 5;
   else dScore = 3;
   const hasSentence = /[A-Z].*[.!?]/.test(text.trim());
   const uniqueWords = new Set(words.map(w => w.toLowerCase()));
