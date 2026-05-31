@@ -48,13 +48,13 @@ export const animals =
                 5: 'Gorillas consume up to 18 kg of food daily. What role does this plant-based diet play in the rainforest ecosystem?',
               },
               stageOptions: {
-                1: ['Yes, lots of meat', 'No - only plants', 'Mostly fish', 'Grass and dirt'],
-                2: ['Meat and eggs', 'Leaves, bamboo & fruit', 'Seeds and nuts only', 'Insects only'],
-                5: ['They hunt prey to balance the food chain', 'As seed dispersers they help forests regenerate', 'They fertilise the soil with meat scraps', 'They compete with other primates for grass'],
+                1: ['Yes, lots of meat', 'Mostly fish', 'No - only plants', 'Grass and dirt'],
+                2: ['Meat and eggs', 'Seeds and nuts only', 'Leaves, bamboo & fruit', 'Insects only'],
+                5: ['They hunt prey to balance the food chain', 'They fertilise the soil with meat scraps', 'As seed dispersers they help forests regenerate', 'They compete with other primates for grass'],
               },
-              stageCorrect: { 1: 1, 2: 1, 5: 1 },
-              options: ['Meat & insects', 'Leaves, bamboo & fruit', 'Fish & berries', 'Grass only'],
-              correct: 1,
+              stageCorrect: { 1: 2, 2: 2, 5: 2 },
+              options: ['Meat & insects', 'Fish & berries', 'Leaves, bamboo & fruit', 'Grass only'],
+              correct: 2,
               stageFacts: {
                 1: 'Gorillas eat plants, not meat! They love leaves, fruit and bamboo.',
                 2: 'Gorillas are herbivores - they eat mainly leaves, fruit and bamboo.',
@@ -92,13 +92,13 @@ export const animals =
               stageOptions: {
                 1: ['A. It gets bigger', 'B. It gets smaller', 'C. It stays the same', 'D. It disappears'],
                 2: ['A. It gets bigger', 'B. It gets smaller', 'C. It disappears', 'D. Nothing changes'],
-                3: ['A. The image (10 mm)', 'B. The real lion (200 cm)', 'C. They are the same', 'D. Not sure'],
+                3: ['A. The image (10 mm)', 'B. They are the same', 'C. The real lion (200 cm)', 'D. Not sure'],
                 4: ['A', 'B', 'C', 'D'],
                 5: ['A', 'B', 'C', 'D'],
               },
-              stageCorrect: { 1: 0, 2: 0, 3: 1, 4: 1, 5: 1 },
+              stageCorrect: { 1: 0, 2: 0, 3: 2, 4: 1, 5: 1 },
               correct: 1,
-              fact: 'Lions are apex predators.' }
+              fact: 'Magnification is used in microscopes, cameras and telescopes to make objects appear larger than they really are. The same formula scientists use in a lab (Image size ÷ Actual size) applies every time you zoom in on a camera.' }
           ],
           observationPrompt: 'Watch the lions. Describe their behavior and social interactions.',
           pointValue: 50
@@ -230,8 +230,8 @@ export const animals =
                 4: 'Why are Sumatran tigers endangered?',
                 5: 'How do habitat loss and poaching combine to threaten Sumatran tiger survival?',
               },
-              options: ['Climate change only', 'Habitat loss and poaching', 'Disease', 'Natural predators'],
-              correct: 1, fact: 'Major threats include habitat loss and poaching.' }
+              options: ['Climate change only', 'Disease', 'Natural predators', 'Habitat loss and poaching'],
+              correct: 3, fact: 'Major threats include habitat loss and poaching.' }
           ],
           observationPrompt: "Watch the tiger's behavior. Describe how it moves.",
           pointValue: 50
@@ -278,8 +278,8 @@ export const animals =
                 1: ['A. Zoo lawn', 'B. City', 'C. Both the same', 'D. Neither'],
               },
               stageCorrect: { 1: 1 },
-              options: ['One has more sunlight', 'One is natural and the other is human-built', 'One has more water', 'There is no difference'],
-              correct: 1, fact: 'The Concert Lawn includes natural features, while the city is mostly human-built.' },
+              options: ['One has more sunlight', 'One has more water', 'One is natural and the other is human-built', 'There is no difference'],
+              correct: 2, fact: 'The Concert Lawn includes natural features, while the city is mostly human-built.' },
             { q: 'Why might the Concert Lawn support more living things than the city?',
               stageVariants: {
                 1: 'Which has more living things?',
@@ -292,8 +292,8 @@ export const animals =
                 1: ['A. Lawn', 'B. Road', 'C. The same', 'D. Not sure'],
               },
               stageCorrect: { 1: 0 },
-              options: ['It has more buildings', 'It has natural features like plants and soil', 'It is closer to the water', 'It is larger'],
-              correct: 1, fact: 'Plants, soil, and habitat features help support more living things in natural environments.' }
+              options: ['It has more buildings', 'It is closer to the water', 'It is larger', 'It has natural features like plants and soil'],
+              correct: 3, fact: 'Plants, soil, and habitat features help support more living things in natural environments.' }
           ],
           observationPrompt: 'Describe the environment around you. What can you see, hear, or notice about this space?',
           pointValue: 50
@@ -324,8 +324,8 @@ export const animals =
               },
               stageCorrect: { 1: 0, 2: 3 },
               stageFacts: { 2: 'The dingo\'s colour helps it blend into the Australian bush, making it harder to see.' },
-              options: ['They are herbivores that eat only plants', 'They are apex predators that help regulate prey populations', 'They have no ecological role', 'They are introduced pests'],
-              correct: 1, fact: 'Dingoes are apex predators in Australia and help regulate populations of kangaroos and other animals, supporting ecosystem balance.' }
+              options: ['They are herbivores that eat only plants', 'They have no ecological role', 'They are apex predators that help regulate prey populations', 'They are introduced pests'],
+              correct: 2, fact: 'Dingoes are apex predators in Australia and help regulate populations of kangaroos and other animals, supporting ecosystem balance.' }
           ],
           observationPrompt: 'Explain how the dingo\'s appearance helps it survive in its environment.',
           pointValue: 50
@@ -476,8 +476,8 @@ export const animals =
                 1: ['A. Big', 'B. Small', 'C. The same as a cat', 'D. No feet'],
               },
               stageCorrect: { 1: 0 },
-              options: ['A. It has small, narrow feet', 'B. It has wide hooves that spread its weight', 'C. It is very fast', 'D. It avoids muddy areas'],
-              correct: 1, fact: 'Wide hooves spread weight and reduce pressure on soft ground - an adaptation that helps buffalo move through wet, muddy environments.' }
+              options: ['It has small, narrow feet', 'It is very fast', 'It avoids muddy areas', 'It has wide hooves that spread its weight'],
+              correct: 3, fact: 'Wide hooves spread weight and reduce pressure on soft ground - an adaptation that helps buffalo move through wet, muddy environments.' }
           ],
           observationPrompt: 'Describe a relationship you can observe between the buffalo (or rhino) and another animal, and explain how it may help them.',
           pointValue: 50
