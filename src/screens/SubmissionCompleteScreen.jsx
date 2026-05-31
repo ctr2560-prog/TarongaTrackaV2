@@ -7,9 +7,10 @@ export default function SubmissionCompleteScreen() {
   const { setCurrentScreen, classCode } = useApp();
   const { badges, foundAnimals, animalsToRender, totalPoints, studentName, setCompletionCardDismissed } = useStudent();
 
-  const [showFeedback, setShowFeedback] = useState(false);
+  const [showFeedback,   setShowFeedback]   = useState(false);
+  const [feedbackDone,   setFeedbackDone]   = useState(false);
   useEffect(() => {
-    const t = setTimeout(() => setShowFeedback(true), 1400);
+    const t = setTimeout(() => setShowFeedback(true), 600);
     return () => clearTimeout(t);
   }, []);
 
@@ -59,18 +60,22 @@ export default function SubmissionCompleteScreen() {
           </p>
         </div>
 
-        <button onClick={() => { setCompletionCardDismissed(true); setCurrentScreen('map'); }}
-          style={{ background:'linear-gradient(135deg,var(--jungle-mid),var(--jungle-light))', color:'white', border:'none', padding:'0.85rem 2.5rem', fontSize:'1.05rem', fontWeight:700, borderRadius:'var(--t-r-pill)', cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.08em', boxShadow:'0 6px 18px rgba(26,82,56,0.4)' }}>
-          Done
-        </button>
+        {feedbackDone ? (
+          <button onClick={() => { setCompletionCardDismissed(true); setCurrentScreen('map'); }}
+            style={{ background:'linear-gradient(135deg,var(--jungle-mid),var(--jungle-light))', color:'white', border:'none', padding:'0.85rem 2.5rem', fontSize:'1.05rem', fontWeight:700, borderRadius:'var(--t-r-pill)', cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.08em', boxShadow:'0 6px 18px rgba(26,82,56,0.4)' }}>
+            Done
+          </button>
+        ) : (
+          <p style={{ color:'var(--t-ash)', fontSize:'0.82rem', margin:'0.5rem 0 0' }}>Rate your experience to continue…</p>
+        )}
       </div>
 
-      {showFeedback && (
+      {showFeedback && !feedbackDone && (
         <StudentFeedbackModal
           classCode={classCode}
           studentName={studentName}
           sessionType="standard"
-          onDone={() => { setCompletionCardDismissed(true); setCurrentScreen('map'); }}
+          onDone={() => { setShowFeedback(false); setFeedbackDone(true); }}
         />
       )}
     </div>

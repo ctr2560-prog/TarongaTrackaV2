@@ -610,6 +610,7 @@ function ReviewTab({ classes }) {
   const [expanded,        setExpanded]        = useState({});
   const [overrideOpen,    setOverrideOpen]    = useState(null);
   const [overrideVals,    setOverrideVals]    = useState({ b: 0, d: 0, w: 0 });
+  const [resetting,       setResetting]       = useState(false);
 
   useEffect(() => {
     if (!classes.length) { setLoading(false); return; }
@@ -695,6 +696,24 @@ function ReviewTab({ classes }) {
       }));
       setOverrideOpen(null);
     } catch (e) { alert('Failed to apply override: ' + e.message); }
+  };
+
+  const resetFeedback = async () => {
+    if (!window.confirm('Delete ALL teacher and student feedback? This cannot be undone.')) return;
+    setResetting(true);
+    try {
+      const batch = writeBatch(db);
+      const [tfSnap, sfSnap] = await Promise.all([
+        getDocs(collection(db, 'teacherFeedback')),
+        getDocs(collection(db, 'studentFeedback')),
+      ]);
+      tfSnap.docs.forEach(d => batch.delete(d.ref));
+      sfSnap.docs.forEach(d => batch.delete(d.ref));
+      await batch.commit();
+      setFeedback([]);
+      setStudentFeedback([]);
+    } catch (e) { alert('Reset failed: ' + e.message); }
+    setResetting(false);
   };
 
   if (loading) return (
@@ -834,8 +853,41 @@ function ReviewTab({ classes }) {
 
       {/* ── Teacher Feedback ── */}
       <div>
-        <h2 style={{ fontSize:'1.3rem', fontWeight:800, color:'var(--t-deep)', margin:'0 0 0.35rem' }}>Teacher Feedback</h2>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'1rem', marginBottom:'0.35rem', flexWrap:'wrap' }}>
+          <h2 style={{ fontSize:'1.3rem', fontWeight:800, color:'var(--t-deep)', margin:0 }}>Teacher Feedback</h2>
+          <button onClick={resetFeedback} disabled={resetting || (feedback.length === 0 && studentFeedback.length === 0)}
+            style={{ padding:'0.45rem 1rem', background:'#DC2626', color:'white', border:'none', borderRadius:'var(--t-r-pill)', fontSize:'0.78rem', fontWeight:700, cursor: resetting || (feedback.length === 0 && studentFeedback.length === 0) ? 'not-allowed' : 'pointer', opacity: resetting || (feedback.length === 0 && studentFeedback.length === 0) ? 0.5 : 1, textTransform:'uppercase', letterSpacing:'0.06em', whiteSpace:'nowrap' }}>
+            {resetting ? 'Resetting…' : '🗑 Reset All Feedback'}
+          </button>
+        </div>
         <p style={{ color:'var(--t-slate)', fontSize:'0.85rem', margin:'0 0 1.25rem' }}>Feedback submitted by teachers from the teacher portal.</p>
+
+        {feedback.length > 0 && (() => {
+          const avg = (feedback.reduce((s, f) => s + (f.rating || 0), 0) / feedback.length).toFixed(1);
+          const dist = [5,4,3,2,1].map(s => ({ star: s, count: feedback.filter(f => f.rating === s).length }));
+          return (
+            <div style={{ background:'white', borderRadius:'var(--t-r-md)', border:'1px solid var(--t-mist)', borderLeft:`4px solid ${GREEN}`, padding:'1.1rem 1.25rem', marginBottom:'1rem' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:'1rem', flexWrap:'wrap' }}>
+                <div style={{ textAlign:'center' }}>
+                  <div style={{ fontSize:'2.2rem', fontWeight:800, color:'var(--t-deep)', lineHeight:1 }}>{avg}</div>
+                  <div style={{ fontSize:'1rem', letterSpacing:'0.05em', margin:'0.2rem 0 0.15rem' }}>{'⭐'.repeat(Math.round(avg))}</div>
+                  <div style={{ fontSize:'0.7rem', color:'var(--t-ash)', fontWeight:600 }}>{feedback.length} response{feedback.length !== 1 ? 's' : ''}</div>
+                </div>
+                <div style={{ flex:1, minWidth:'160px', display:'flex', flexDirection:'column', gap:'0.3rem' }}>
+                  {dist.map(({ star, count }) => (
+                    <div key={star} style={{ display:'flex', alignItems:'center', gap:'0.5rem' }}>
+                      <span style={{ fontSize:'0.72rem', color:'var(--t-slate)', width:'28px', textAlign:'right', fontWeight:600 }}>{star}★</span>
+                      <div style={{ flex:1, background:'var(--t-foam)', borderRadius:999, height:'7px', overflow:'hidden' }}>
+                        <div style={{ height:'100%', width:`${feedback.length ? (count/feedback.length)*100 : 0}%`, background:GREEN, borderRadius:999, transition:'width 0.4s' }} />
+                      </div>
+                      <span style={{ fontSize:'0.72rem', color:'var(--t-ash)', width:'20px', fontWeight:600 }}>{count}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         {feedback.length === 0 && (
           <div style={{ background:'var(--t-chalk)', borderRadius:'var(--t-r-md)', border:'1px solid var(--t-mist)', padding:'1.5rem', textAlign:'center', color:'var(--t-ash)', fontSize:'0.88rem' }}>
