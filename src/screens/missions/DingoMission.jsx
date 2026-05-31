@@ -83,7 +83,7 @@ export default function DingoMission() {
         <Header />
         {showResult && <ResultCard feedbackText={null} factFallback={currentQuestion?.fact} />}
         {!showResult && (
-          <div style={{ flex:'1 1 auto', overflowY:'auto', padding:'1.5rem', maxWidth:'540px', margin:'0 auto', width:'100%' }}>
+          <div style={{ flex:'1 1 0', minHeight:0, overflowY:'auto', padding:'1.5rem', maxWidth:'540px', margin:'0 auto', width:'100%' }}>
             <div style={{ background:'white', borderRadius:'var(--t-r-md)', padding:'1.4rem', boxShadow:'var(--t-shadow-md)', marginBottom:'1rem', textAlign:'center' }}>
               <div style={{ fontSize:'3rem', marginBottom:'0.5rem' }}>🐕</div>
               <h2 style={{ fontSize:'1.3rem', fontWeight:700, color:'var(--jungle-deep)', marginBottom:'0.3rem' }}>Dingo Quiz</h2>
@@ -110,7 +110,7 @@ export default function DingoMission() {
       <Header />
       {showResult && <ResultCard feedbackText="You understand the dingo's place in the ecosystem!" factFallback={null} />}
       {!showResult && (
-        <div style={{ flex:'1 1 auto', overflowY:'auto', padding:'1rem', maxWidth:'560px', margin:'0 auto', width:'100%' }}>
+        <div style={{ flex:'1 1 0', minHeight:0, overflowY:'auto', padding:'1rem', maxWidth:'560px', margin:'0 auto', width:'100%' }}>
 
           <div style={{ background:'white', borderRadius:'var(--t-r-md)', padding:'1rem 1.2rem', boxShadow:'var(--t-shadow-md)', marginBottom:'1rem' }}>
             <h2 style={{ fontSize:'1.2rem', fontWeight:700, color:'var(--jungle-deep)', margin:'0 0 0.2rem' }}>Dingo Food Chain Builder</h2>

@@ -14,6 +14,12 @@ const BRAND = {
   mathsBlue:  '#0369a1',
   mathsBg:    '#EFF6FF',
   mathsBorder:'#BFDBFE',
+  pdhpePurple:'#7C3AED',
+  pdhpeBg:    '#F5F3FF',
+  pdhpeBorder:'#DDD6FE',
+  englishAmber:'#B45309',
+  englishBg:   '#FFFBEB',
+  englishBorder:'#FDE68A',
 };
 
 const EXHIBITS = {
@@ -435,6 +441,224 @@ const EXHIBITS = {
       },
     },
   ],
+  pdhpe: [
+    {
+      name: 'Chimpanzee',
+      obs:  'Lifestyle comparison chart - comparing physical activity, rest, social time and time outdoors between chimpanzees and students',
+      focusByStage: {
+        1: 'Recognising different types of physical activity; comparing animal and human daily habits',
+        2: 'Comparing categories of activity (physical, rest, social) between chimpanzees and themselves',
+        3: 'Analysing how physical activity, rest and social time each contribute to health and wellbeing',
+        4: 'Evaluating lifestyle factors affecting health; comparing energy expenditure and health behaviours across species',
+        5: 'Analysing the interrelationship between physical activity, rest and social connection and their impact on long-term wellbeing',
+      },
+      tagsByStage: {
+        1: ['Physical Activity', 'Health Behaviours', 'Comparison'],
+        2: ['Health Behaviours', 'Physical Activity', 'Comparison'],
+        3: ['Health Concepts', 'Physical Activity', 'Lifestyle'],
+        4: ['Health & Wellbeing', 'Lifestyle Factors', 'Movement'],
+        5: ['Wellbeing Frameworks', 'Lifestyle Analysis', 'Interrelationships'],
+      },
+    },
+    {
+      name: 'Western Lowland Gorilla',
+      obs:  'Diet challenge - identifying food groups in the gorilla\'s diet and connecting to human nutrition and health',
+      focusByStage: {
+        1: 'Identifying food groups; recognising healthy food choices and why food matters for our bodies',
+        2: 'Categorising foods into groups; understanding how a balanced diet supports health and growth',
+        3: 'Analysing how different food groups contribute to health; connecting dietary variety to physical performance',
+        4: 'Evaluating food choices and their impact on health; understanding macronutrients and energy balance',
+        5: 'Critically analysing dietary patterns and their relationship to long-term health, performance and wellbeing',
+      },
+      tagsByStage: {
+        1: ['Nutrition', 'Health Behaviours', 'Food Groups'],
+        2: ['Nutrition', 'Food Groups', 'Health Behaviours'],
+        3: ['Nutrition', 'Health Concepts', 'Dietary Analysis'],
+        4: ['Nutrition', 'Health & Wellbeing', 'Energy Balance'],
+        5: ['Nutrition', 'Health Analysis', 'Wellbeing'],
+      },
+    },
+    {
+      name: 'African Lion',
+      obs:  'Energy systems observation - noting rest vs. active time; connecting to ATP-PC system, BMR and human energy use',
+      focusByStage: {
+        1: 'Understanding that bodies need rest to recover; recognising rest and activity as part of a healthy day',
+        2: 'Comparing active and rest time; understanding why animals and humans need both activity and rest',
+        3: 'Understanding how energy systems work; rest as metabolic recovery; connecting to sport and exercise',
+        4: 'Analysing energy systems (ATP-PC and aerobic); understanding basal metabolic rate; rest-to-work ratios in sport',
+        5: 'Evaluating physiological principles of energy system demands; applying rest-to-work ratios to training and performance',
+      },
+      tagsByStage: {
+        1: ['Physical Activity', 'Rest & Recovery', 'Health Behaviours'],
+        2: ['Physical Activity', 'Rest & Recovery', 'Energy'],
+        3: ['Energy Systems', 'Movement', 'Sport & Exercise'],
+        4: ['Energy Systems', 'Exercise Physiology', 'Movement'],
+        5: ['Exercise Physiology', 'Performance', 'Training Principles'],
+      },
+    },
+    {
+      name: 'Giraffe',
+      obs:  'Cardiovascular comparison - observing the giraffe\'s neck and drinking posture; comparing giraffe heart to human heart',
+      focusByStage: {
+        1: 'Identifying the heart as a vital body part; understanding that the heart pumps blood around the body',
+        2: 'Comparing heart size and function across animals; understanding how exercise makes our heart beat faster',
+        3: 'Understanding how the heart and circulatory system work; measuring and interpreting changes in heart rate',
+        4: 'Analysing cardiovascular adaptations; understanding blood pressure, heart rate and the impact of exercise on the heart',
+        5: 'Evaluating cardiovascular health indicators and their relationship to lifelong physical activity and wellbeing',
+      },
+      tagsByStage: {
+        1: ['Body Systems', 'Heart Health', 'Physical Activity'],
+        2: ['Body Systems', 'Heart Health', 'Exercise'],
+        3: ['Body Systems', 'Cardiovascular Health', 'Exercise'],
+        4: ['Exercise Physiology', 'Cardiovascular Health', 'Movement'],
+        5: ['Exercise Physiology', 'Lifelong Activity', 'Cardiovascular Health'],
+      },
+    },
+    {
+      name: 'Sumatran Tiger',
+      obs:  'Movement observation - watching power, speed and patience; connecting animal movement qualities to sport and athletics',
+      focusByStage: {
+        1: 'Identifying movement qualities like speed and power; connecting animal movement to sport and play',
+        2: 'Comparing movement qualities in animals and athletes; understanding skill-based physical activity',
+        3: 'Analysing movement qualities of power, speed and patience as performance attributes in sport',
+        4: 'Evaluating the role of power, speed and composure as performance qualities; applying movement concepts to athletic training',
+        5: 'Analysing biomechanical principles of athletic movement; evaluating training principles using comparative observation',
+      },
+      tagsByStage: {
+        1: ['Movement', 'Physical Activity', 'Sport'],
+        2: ['Movement Skills', 'Sport', 'Physical Activity'],
+        3: ['Movement Skills', 'Sport & Performance', 'Athletics'],
+        4: ['Movement Concepts', 'Performance', 'Training Principles'],
+        5: ['Biomechanics', 'Performance Analysis', 'Training'],
+      },
+    },
+    {
+      name: 'Koala',
+      obs:  'Sleep and health observation - comparing 22 hours koala sleep to 8-10 hours human recommended sleep',
+      focusByStage: {
+        1: 'Understanding why sleep is important for our bodies; knowing how much sleep children need',
+        2: 'Comparing sleep needs across species; understanding sleep as a key health behaviour',
+        3: 'Analysing sleep as a health-promoting behaviour; understanding the consequences of sleep deprivation',
+        4: 'Evaluating the relationship between sleep quality, duration and physical and mental health outcomes',
+        5: 'Analysing the role of sleep in recovery, cognitive performance and long-term health and wellbeing',
+      },
+      tagsByStage: {
+        1: ['Sleep & Rest', 'Health Behaviours', 'Body Needs'],
+        2: ['Sleep & Rest', 'Health Behaviours', 'Wellbeing'],
+        3: ['Sleep & Rest', 'Health Concepts', 'Wellbeing'],
+        4: ['Sleep & Rest', 'Health & Wellbeing', 'Recovery'],
+        5: ['Sleep & Rest', 'Performance', 'Health Analysis'],
+      },
+    },
+    {
+      name: 'Dingo',
+      obs:  'Food as fuel - observing how dingoes hunt and move; connecting food choices to energy for activity',
+      focusByStage: {
+        1: 'Understanding food as fuel for the body; identifying healthy food choices that give us energy',
+        2: 'Connecting food choices to energy for physical activity; understanding food groups and their role in health',
+        3: 'Analysing how different foods provide energy for different activities; understanding nutrition for performance',
+        4: 'Evaluating dietary choices and their role in supporting physical activity, recovery and health',
+        5: 'Analysing the relationship between nutrition, energy systems and athletic performance',
+      },
+      tagsByStage: {
+        1: ['Nutrition', 'Physical Activity', 'Health Behaviours'],
+        2: ['Nutrition', 'Physical Activity', 'Health Behaviours'],
+        3: ['Nutrition', 'Energy', 'Performance'],
+        4: ['Nutrition', 'Performance', 'Health & Wellbeing'],
+        5: ['Nutrition', 'Energy Systems', 'Performance Analysis'],
+      },
+    },
+    {
+      name: 'Ring-tailed Lemur',
+      obs:  'Relationships and wellbeing - observing troop behaviour; connecting belonging and social connection to human wellbeing',
+      focusByStage: {
+        1: 'Identifying how friendships and belonging make us feel happy and healthy',
+        2: 'Understanding how relationships and belonging contribute to wellbeing; identifying qualities of positive relationships',
+        3: 'Analysing how social connection and belonging affect mental health and wellbeing',
+        4: 'Evaluating the impact of social relationships and sense of belonging on identity and wellbeing',
+        5: 'Analysing how identity, belonging and social connection contribute to individual and community health and wellbeing',
+      },
+      tagsByStage: {
+        1: ['Relationships', 'Belonging', 'Wellbeing'],
+        2: ['Relationships', 'Belonging', 'Wellbeing'],
+        3: ['Relationships', 'Mental Health', 'Social Connection'],
+        4: ['Identity & Belonging', 'Relationships', 'Wellbeing'],
+        5: ['Identity & Belonging', 'Community', 'Wellbeing Frameworks'],
+      },
+    },
+    {
+      name: 'Sea Lion',
+      obs:  'Human impacts and resilience - examining threats to sea lions and connecting to student strategies for positive action',
+      focusByStage: {
+        1: 'Recognising how people can help or harm animals; identifying actions we can take to protect living things',
+        2: 'Understanding human impacts on the environment; exploring ways communities can protect wildlife and their own health',
+        3: 'Analysing environmental threats and their impact on health; developing strategies for positive individual and community action',
+        4: 'Evaluating the influence of human behaviour on environmental and community health; proposing action strategies',
+        5: 'Analysing systemic environmental factors affecting health and wellbeing; evaluating individual and collective advocacy strategies',
+      },
+      tagsByStage: {
+        1: ['Community', 'Environment', 'Health Behaviours'],
+        2: ['Community', 'Environment', 'Health Behaviours'],
+        3: ['Community Health', 'Environment', 'Action Strategies'],
+        4: ['Community Health', 'Environment', 'Advocacy'],
+        5: ['Health & Wellbeing', 'Community', 'Systemic Factors'],
+      },
+    },
+    {
+      name: 'Asian Water Buffalo',
+      obs:  'Hydration and health - observing the buffalo\'s use of water for cooling; connecting to human hydration needs',
+      focusByStage: {
+        1: 'Understanding why the body needs water; identifying healthy hydration habits throughout the day',
+        2: 'Connecting hydration to physical performance and health; understanding the body\'s water needs during activity',
+        3: 'Analysing the role of hydration in health; understanding the effects of dehydration on physical and cognitive performance',
+        4: 'Evaluating hydration strategies for physical activity; understanding fluid balance and its impact on health outcomes',
+        5: 'Analysing the physiological mechanisms of hydration and thermoregulation; evaluating fluid intake recommendations across activity levels',
+      },
+      tagsByStage: {
+        1: ['Hydration', 'Health Behaviours', 'Body Needs'],
+        2: ['Hydration', 'Health Behaviours', 'Physical Activity'],
+        3: ['Hydration', 'Health Concepts', 'Performance'],
+        4: ['Hydration', 'Exercise Physiology', 'Health & Wellbeing'],
+        5: ['Hydration', 'Thermoregulation', 'Performance Analysis'],
+      },
+    },
+    {
+      name: 'Blue Mountains Bushwalk',
+      obs:  'Identity and environment - standing still and listening to the bush; writing about how the world around us shapes who we are',
+      focusByStage: {
+        1: 'Exploring identity through connection to place and nature; recognising features of personal identity',
+        2: 'Identifying ways the environment, family and community shape who we are; understanding sense of identity',
+        3: 'Analysing how environment, culture and experiences shape identity; connecting identity to health and wellbeing',
+        4: 'Evaluating how contextual factors (environment, culture, relationships) shape identity and sense of belonging',
+        5: 'Analysing the interrelationship between identity, belonging, environment and individual and community wellbeing',
+      },
+      tagsByStage: {
+        1: ['Identity', 'Belonging', 'Wellbeing'],
+        2: ['Identity', 'Belonging', 'Community'],
+        3: ['Identity', 'Wellbeing', 'Contextual Factors'],
+        4: ['Identity & Belonging', 'Contextual Factors', 'Wellbeing'],
+        5: ['Identity & Belonging', 'Wellbeing Frameworks', 'Community'],
+      },
+    },
+    {
+      name: 'Concert Lawn',
+      obs:  'Team challenge and outdoor reflection - participating in a group activity and reflecting on enjoyment of physical activity',
+      focusByStage: {
+        1: 'Participating in and reflecting on team activities; identifying what makes physical activity enjoyable',
+        2: 'Reflecting on experiences of physical activity; understanding how enjoyment and teamwork support lifelong participation',
+        3: 'Analysing factors that motivate participation in physical activity; understanding the role of enjoyment and social connection',
+        4: 'Evaluating strategies to promote participation in physical activity; understanding intrinsic and extrinsic motivation',
+        5: 'Analysing factors influencing lifelong physical activity participation; designing strategies to enhance motivation and enjoyment',
+      },
+      tagsByStage: {
+        1: ['Physical Activity', 'Teamwork', 'Enjoyment'],
+        2: ['Physical Activity', 'Teamwork', 'Motivation'],
+        3: ['Physical Activity', 'Motivation', 'Social Connection'],
+        4: ['Lifelong Activity', 'Motivation', 'Strategies'],
+        5: ['Lifelong Activity', 'Motivation', 'Health Promotion'],
+      },
+    },
+  ],
 };
 
 const SCORING = {
@@ -518,6 +742,46 @@ const SCORING = {
       },
     ],
   },
+  pdhpe: {
+    domains: [
+      {
+        label:'Comparison', color:'#7C3AED', lightBg:'#F5F3FF', lightBorder:'#DDD6FE', icon:'C',
+        what:'Did the student connect the animal\'s behaviour to their own life or a PDHPE health concept?',
+        criteria:[
+          'Explicitly links the observed animal behaviour to human health, identity or wellbeing',
+          'Makes a specific and relevant comparison (not just "we are similar")',
+          'Applies the animal example to their own life, body system or health behaviour',
+        ],
+        full:'5 pts - clear, specific comparison with strong PDHPE connection',
+        partial:'3 pts - comparison attempted but vague or incomplete',
+        minimal:'1 pt - response describes the animal without connecting to self or health',
+      },
+      {
+        label:'Understanding', color:'#0369a1', lightBg:'#EFF6FF', lightBorder:'#BFDBFE', icon:'U',
+        what:'Did the student demonstrate understanding of a PDHPE health concept?',
+        criteria:[
+          'Names or explains a relevant health concept (e.g. sleep, nutrition, cardiovascular, identity)',
+          'Shows understanding of why the health concept matters for human wellbeing',
+          'Uses accurate health or PDHPE vocabulary appropriate to their stage',
+        ],
+        full:'5 pts - accurate health concept with clear explanation of its importance',
+        partial:'3 pts - health concept mentioned but explanation is limited',
+        minimal:'1 pt - little or no health knowledge demonstrated',
+      },
+      {
+        label:'Communication', color:'#059669', lightBg:'#F0FDF4', lightBorder:'#A7F3D0', icon:'W',
+        what:'Did the student communicate their response clearly in complete sentences?',
+        criteria:[
+          'Writes in complete sentences with a capital letter and full stop',
+          'Ideas are logically sequenced and easy to follow',
+          'Uses appropriate vocabulary for their stage of learning',
+        ],
+        full:'5 pts - clear, well-structured response with correct punctuation',
+        partial:'3 pts - response communicates ideas but sentences are incomplete or unclear',
+        minimal:'1 pt - ideas present but difficult to understand or not in sentence form',
+      },
+    ],
+  },
 };
 
 const STAGE_EXPECTATIONS = {
@@ -534,6 +798,13 @@ const STAGE_EXPECTATIONS = {
     3: { label:'Stage 3 (Years 5–6)', minWords:8,  expectation:'Students apply fractions, decimals, percentages and measurement. Full working shown with mathematical vocabulary to explain reasoning.', starters:['I calculated…', 'The difference is…', 'To find this I…'] },
     4: { label:'Stage 4 (Years 7–8)', minWords:10, expectation:'Students use algebraic reasoning, ratios and statistical thinking. Full working shown with justification of the method chosen.', starters:['Using the equation…', 'The ratio shows…', 'I can prove this because…'] },
     5: { label:'Stage 5 (Years 9–10)', minWords:12, expectation:'Students apply advanced algebra, statistical reasoning and mathematical proof. Responses evaluate the validity of claims using data and communicate conclusions precisely.', starters:['The data indicates…', 'This is statistically significant because…', 'Applying the formula…'] },
+  },
+  pdhpe: {
+    1: { label:'Stage 1 (Years 1–2)', minWords:3,  expectation:'Students draw or write simple connections between the animal and a health habit or body need. Accept labelled drawings alongside written responses.', starters:['This animal…', 'I am like this animal because…', 'This makes me think about…'] },
+    2: { label:'Stage 2 (Years 3–4)', minWords:5,  expectation:'Students write 1–2 sentences linking the animal\'s behaviour to their own life, naming a specific health habit, body system or wellbeing concept.', starters:['I noticed that…', 'This reminds me of…', 'This connects to my health because…'] },
+    3: { label:'Stage 3 (Years 5–6)', minWords:8,  expectation:'Students describe what they observed, identify a health or wellbeing concept, and explain how it connects to human health or their own life.', starters:['I observed…', 'This connects to health because…', 'Just like this animal, I…'] },
+    4: { label:'Stage 4 (Years 7–8)', minWords:10, expectation:'Students write a clear comparison between the animal\'s behaviour and human health, reference a PDHPE concept, and explain the connection to their own wellbeing or identity.', starters:['Observing this animal shows…', 'This relates to the PDHPE concept of…', 'This impacts health because…'] },
+    5: { label:'Stage 5 (Years 9–10)', minWords:12, expectation:'Students apply PDHPE concepts using observation evidence, connect to health and wellbeing frameworks, and evaluate the implications for their own lifestyle or community health.', starters:['This observation demonstrates…', 'Applying the concept of…', 'This is significant for wellbeing because…'] },
   },
 };
 
@@ -599,6 +870,37 @@ const NSW_OUTCOMES = {
       { code:'MA5-STA-C-01', desc:'Interprets and critically analyses statistical data and evaluates the validity of claims and predictions' },
     ],
   },
+  pdhpe: {
+    1: [
+      { code:'PH1-MSP-01', desc:'Demonstrates fundamental movement skills and fair play in physical activities' },
+      { code:'PH1-IHW-01', desc:'Describes factors that contribute to identity, health and wellbeing' },
+      { code:'PH1-SMI-01', desc:'Describes and demonstrates self-management and interpersonal skills in a range of contexts' },
+    ],
+    2: [
+      { code:'PH2-MSP-01', desc:'Applies movement skills, strategies and teamwork in physical activities' },
+      { code:'PH2-IHW-01', desc:'Explains how related factors influence identity, health and wellbeing' },
+      { code:'PH2-SMI-01', desc:'Explains and applies self-management and interpersonal skills in a range of contexts' },
+    ],
+    3: [
+      { code:'PH3-MSP-01', desc:'Refines and applies movement skills, strategies and collaboration in physical activities' },
+      { code:'PH3-IHW-01', desc:'Analyses how health behaviours and contextual factors influence health, wellbeing and participation in physical activity' },
+      { code:'PH3-SMI-01', desc:'Applies self-management and interpersonal skills to manage situations and promote health, safety and wellbeing' },
+    ],
+    4: [
+      { code:'PH4-MSS-01', desc:'Transfers movement skills and concepts for use in a range of dynamic movement environments' },
+      { code:'PH4-SHP-01', desc:'Plans for and uses strategies to participate in activities that encourage safety, health and lifelong physical activity' },
+      { code:'PH4-SHW-01', desc:'Assesses the influence of contextual factors on attitudes and behaviours to propose strategies that enhance safety, health and wellbeing' },
+      { code:'PH4-IBC-01', desc:'Investigates and explains factors that shape identity and sense of belonging' },
+      { code:'PH4-SMI-01', desc:'Refines and applies self-management and interpersonal skills to manage complex situations' },
+    ],
+    5: [
+      { code:'PH5-MSS-01', desc:'Refines and transfers movement skills and concepts for adaptation in a range of dynamic movement environments' },
+      { code:'PH5-SHP-01', desc:'Designs, implements and evaluates plans to enhance safety, health and participation in lifelong physical activity' },
+      { code:'PH5-SHW-01', desc:'Analyses the interrelationship between contextual factors, attitudes and behaviours to promote safety, health and wellbeing' },
+      { code:'PH5-IBC-01', desc:'Analyses how identity and a sense of belonging contribute to the health and wellbeing of individuals and communities' },
+      { code:'PH5-SMI-01', desc:'Evaluates and adapts self-management and interpersonal skills to manage complex situations' },
+    ],
+  },
 };
 
 const PORTAL_GUIDE = [
@@ -615,11 +917,14 @@ function svgDownloadIcon() {
 
 export function openTeacherInfoSheet(subject, stage, outcomes) {
   const resolvedOutcomes = outcomes || NSW_OUTCOMES[subject]?.[parseInt(stage, 10)] || [];
-  const isScience    = subject === 'science';
-  const subjectLabel = isScience ? 'Science' : 'Mathematics';
-  const accentColor  = isScience ? BRAND.mid       : BRAND.mathsBlue;
-  const accentLight  = isScience ? BRAND.foam       : BRAND.mathsBg;
-  const accentBorder = isScience ? BRAND.mist       : BRAND.mathsBorder;
+  const isScience  = subject === 'science';
+  const isMaths    = subject === 'maths';
+  const isPdhpe    = subject === 'pdhpe';
+  const isEnglish  = subject === 'english';
+  const subjectLabel = isScience ? 'Science' : isMaths ? 'Mathematics' : isPdhpe ? 'PDHPE' : 'English';
+  const accentColor  = isScience ? BRAND.mid          : isMaths ? BRAND.mathsBlue   : isPdhpe ? BRAND.pdhpePurple  : BRAND.englishAmber;
+  const accentLight  = isScience ? BRAND.foam         : isMaths ? BRAND.mathsBg     : isPdhpe ? BRAND.pdhpeBg     : BRAND.englishBg;
+  const accentBorder = isScience ? BRAND.mist         : isMaths ? BRAND.mathsBorder : isPdhpe ? BRAND.pdhpeBorder : BRAND.englishBorder;
   const stageNum     = parseInt(stage, 10);
   const stageMeta    = STAGE_EXPECTATIONS[subject]?.[stageNum] || STAGE_EXPECTATIONS[subject]?.[4];
   const exhibits     = EXHIBITS[subject]  || EXHIBITS.science;
@@ -715,7 +1020,7 @@ body{
 /* ── TOP STRIPE ── */
 .top-stripe{
   height:5px;
-  background:linear-gradient(90deg, ${accentColor} 0%, ${isScience ? BRAND.eucalyptus : '#0ea5e9'} 100%);
+  background:linear-gradient(90deg, ${accentColor} 0%, ${isScience ? BRAND.eucalyptus : isMaths ? '#0ea5e9' : isPdhpe ? '#a855f7' : '#d97706'} 100%);
 }
 
 /* ── HEADER ── */
@@ -1091,7 +1396,7 @@ body{
   <!-- Meta bar -->
   <div class="meta-bar">
     <div class="meta-item"><span class="meta-dot"></span> ${subjectLabel} · Stage ${stage} · ${stageMeta?.label || ''}</div>
-    <div class="meta-item"><span class="meta-dot"></span> NSW Curriculum Aligned · ${isScience ? 'Science 7–10 (2023) / Science & Technology K–6 (2017)' : 'Mathematics K–10 (2022)'}</div>
+    <div class="meta-item"><span class="meta-dot"></span> NSW Curriculum Aligned · ${isScience ? 'Science 7–10 (2023) / Science & Technology K–6 (2017)' : isMaths ? 'Mathematics K–10 (2022)' : isPdhpe ? 'PDHPE K–6 (2024) / PDHPE 7–10 (2024)' : 'English K–10 (2022)'}</div>
     <div class="meta-item"><span class="meta-dot"></span> Prepared ${today}</div>
   </div>
 
@@ -1121,13 +1426,21 @@ body{
           <div class="ov-label">Subject Focus</div>
           <div class="ov-val">${isScience
             ? 'Science - animal biology, ecology, adaptations and scientific investigation skills applied in a live field setting.'
-            : 'Mathematics - real-world numeracy: data collection, operations, algebraic reasoning and statistical thinking in zoo context.'}</div>
+            : isMaths
+            ? 'Mathematics - real-world numeracy: data collection, operations, algebraic reasoning and statistical thinking in zoo context.'
+            : isPdhpe
+            ? 'PDHPE - health behaviours, body systems, identity, wellbeing and physical activity applied through animal observation in a real-world field setting.'
+            : 'English - language analysis, vocabulary, literary devices and text response skills applied through structured animal observation.'}</div>
         </div>
         <div class="ov-card">
           <div class="ov-label">At Each Exhibit</div>
           <div class="ov-val">${isScience
             ? '① Students complete a written observation task scored across 3 domains. ② Students answer a 3-question multiple choice quiz on animal biology and ecology.'
-            : '① Students solve a maths clue or puzzle linking to the next exhibit. ② Students complete a 3-question maths quiz using animal data. ③ At Blue Mountains: data collection (sound tally) + written response.'}</div>
+            : isMaths
+            ? '① Students solve a maths clue or puzzle linking to the next exhibit. ② Students complete a 3-question maths quiz using animal data. ③ At Blue Mountains: data collection (sound tally) + written response.'
+            : isPdhpe
+            ? '① Students complete a written observation task connecting the animal to a PDHPE health concept, scored across 3 domains. ② Students answer a 3-question multiple choice quiz on health, physical activity and wellbeing.'
+            : '① Students complete a written observation task applying language and literacy skills, scored across 3 domains. ② Students answer a 3-question multiple choice quiz on vocabulary, language devices and text analysis.'}</div>
         </div>
         <div class="ov-card">
           <div class="ov-label">Assessment &amp; Scoring</div>

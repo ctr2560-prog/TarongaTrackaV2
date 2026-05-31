@@ -556,7 +556,7 @@ export default function TeacherDashboardScreen() {
                         </div>
                       ))}
                     </div>
-                    {(newSubject === 'science' || newSubject === 'maths') && (
+                    {(newSubject === 'science' || newSubject === 'maths' || newSubject === 'pdhpe' || newSubject === 'english') && (
                       <button
                         onClick={() => openTeacherInfoSheet(newSubject, newClassStage, outcomes)}
                         style={{ marginTop:'0.75rem', display:'flex', alignItems:'center', gap:'0.5rem', background:'none', border:`1px solid ${accentColor}`, color:accentColor, fontSize:'0.75rem', fontWeight:700, padding:'0.4rem 0.85rem', borderRadius:'40px', cursor:'pointer', letterSpacing:'0.04em', transition:'all 0.18s', width:'100%', justifyContent:'center' }}

@@ -231,7 +231,7 @@ export default function LemurMission() {
             <div style={{ width:'70px' }} />
           </div>
         </div>
-        <div style={{ flex:'1 1 auto', overflowY:'auto', padding:'1rem', maxWidth:'560px', margin:'0 auto', width:'100%' }}>
+        <div style={{ flex:'1 1 0', minHeight:0, overflowY:'auto', padding:'1rem', maxWidth:'560px', margin:'0 auto', width:'100%' }}>
           <div style={{ background:'white', borderRadius:'var(--t-r-md)', padding:'1rem 1.2rem', boxShadow:'var(--t-shadow-md)', marginBottom:'1rem', textAlign:'center' }}>
             <h2 style={{ fontSize:'1.25rem', fontWeight:700, color:'var(--jungle-deep)', margin:'0 0 0.2rem' }}>Lemur Activity Tracker</h2>
             <p style={{ fontSize:'0.82rem', color:'#666', margin:0 }}>
@@ -487,7 +487,7 @@ export default function LemurMission() {
         </div>
       )}
       {!showResult && (
-        <div style={{ flex:'1 1 auto', overflowY:'auto', padding:'1rem', maxWidth:'600px', margin:'0 auto', width:'100%' }}>
+        <div style={{ flex:'1 1 0', minHeight:0, overflowY:'auto', padding:'1rem', maxWidth:'600px', margin:'0 auto', width:'100%' }}>
           <div style={{ background:'white', borderRadius:'var(--t-r-md)', padding:'1rem 1.2rem', boxShadow:'0 8px 32px rgba(0,0,0,0.08)', marginBottom:'1rem' }}>
             <p style={{ fontSize:'0.72rem', fontWeight:800, color:'#7A6E8A', textTransform:'uppercase', letterSpacing:'0.08em', margin:'0 0 0.75rem' }}>Your Observation vs Real-World Data</p>
             <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'0.5rem', alignItems:'end', marginBottom:'0.5rem' }}>

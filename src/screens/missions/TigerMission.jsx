@@ -215,7 +215,7 @@ export default function TigerMission() {
                 </button>
               ))}
             </div>
-            <MathsCalculator />
+            {classSubject === 'maths' && <MathsCalculator />}
           </div>
         </div>
       )}

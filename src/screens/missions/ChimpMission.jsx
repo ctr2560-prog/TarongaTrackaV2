@@ -12,6 +12,7 @@ const BAR_DATA = [
 
 export default function ChimpMission() {
   const { setCurrentScreen, classStage, classSubject } = useApp();
+  const isEnglish = classSubject === 'english';
   const {
     currentAnimal, showResult, setShowResult, isCorrect,
     setIsProcessingAnswer, handleQuizAnswer, handleNextQuestion,
@@ -31,10 +32,21 @@ export default function ChimpMission() {
   const submitAnswer = (answerIndex) => {
     if (!isValid) return;
     const { resting, feeding, moving } = graph;
+    if (isEnglish) {
+      const min = Math.min(resting, feeding, moving);
+      const bottoms = [resting, feeding, moving].filter(v => v === min);
+      let correctIndex;
+      if (bottoms.length > 1) correctIndex = 3;
+      else if (resting === min) correctIndex = 0;
+      else if (feeding === min) correctIndex = 1;
+      else correctIndex = 2;
+      handleQuizAnswer(0, answerIndex, correctIndex);
+      return;
+    }
     const max = Math.max(resting, feeding, moving);
     const tops = [resting, feeding, moving].filter(v => v === max);
     let correctIndex;
-    if (tops.length > 1) correctIndex = 3; // All equal
+    if (tops.length > 1) correctIndex = 3;
     else if (resting === max) correctIndex = 0;
     else if (feeding === max) correctIndex = 1;
     else correctIndex = 2;
@@ -43,6 +55,8 @@ export default function ChimpMission() {
 
   const stageQ = getStageQuestions(currentAnimal, classStage, classSubject)[0];
   const fact = stageQ?.stageFacts?.[classStage] || stageQ?.fact;
+  const englishQuestion = stageQ?.stageVariants?.[classStage] || stageQ?.q || '';
+  const englishOptions  = stageQ?.stageOptions?.[classStage]  || stageQ?.options || [];
 
   return (
     <div style={{ position:'fixed', inset:0, background: showResult ? (isCorrect ? 'linear-gradient(135deg,#10b981 0%,#059669 100%)' : 'linear-gradient(135deg,#ef4444 0%,#dc2626 100%)') : 'linear-gradient(160deg,#071A0C 0%,#0D3320 55%,#0A1F0E 100%)', transition:'background 0.5s ease', display:'flex', flexDirection:'column' }}>
@@ -61,7 +75,7 @@ export default function ChimpMission() {
         <div className="animate-scale-in" style={{ textAlign:'center', padding:'clamp(1.5rem,3vh,2rem)', background:'rgba(255,255,255,0.95)', borderRadius:'var(--t-r-xl)', boxShadow:'var(--t-shadow-lg)', margin:'clamp(1rem,2vh,1.5rem)', maxWidth:'90%', marginLeft:'auto', marginRight:'auto', marginTop:'clamp(1rem,3vh,2rem)', position:'relative', zIndex:1 }}>
           <div style={{ fontSize:'clamp(3rem,8vh,4.5rem)', marginBottom:'0.5rem' }}>{isCorrect ? '✓' : '✗'}</div>
           <h2 className="heading-display" style={{ fontSize:'clamp(2rem,5vh,3rem)', color: isCorrect ? '#10b981' : '#ef4444', marginBottom:'0.4rem', lineHeight:1.1 }}>{isCorrect ? 'Correct!' : 'Try Again'}</h2>
-          {isCorrect && <p style={{ fontSize:'clamp(0.95rem,2.2vh,1.1rem)', color:'#555', marginBottom:'0.8rem', fontStyle:'italic' }}>Great data interpretation!</p>}
+          {isCorrect && <p style={{ fontSize:'clamp(0.95rem,2.2vh,1.1rem)', color:'#555', marginBottom:'0.8rem', fontStyle:'italic' }}>{isEnglish ? 'Great story planning!' : 'Great data interpretation!'}</p>}
           {isCorrect && fact && classSubject !== 'maths' && (
             <div style={{ background:'linear-gradient(135deg,#FFF9E6 0%,#FFE6B3 100%)', borderRadius:'var(--t-r-md)', padding:'clamp(1rem,2vh,1.5rem)', marginTop:'0.8rem', marginBottom:'1rem' }}>
               <p style={{ color:'#333', fontSize:'clamp(0.9rem,2vh,1.1rem)', lineHeight:1.5, fontWeight:500 }}>💡 {fact}</p>
@@ -75,7 +89,7 @@ export default function ChimpMission() {
       )}
 
       {!showResult && (
-        <div style={{ flex:'1 1 auto', overflowY:'auto', padding:'1rem 1rem 2rem', maxWidth:'600px', margin:'0 auto', width:'100%', position:'relative', zIndex:1 }}>
+        <div style={{ flex:'1 1 0', minHeight:0, overflowY:'auto', padding:'1rem 1rem 2rem', maxWidth:'600px', margin:'0 auto', width:'100%', position:'relative', zIndex:1 }}>
 
           <div style={{ background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.13)', borderRadius:'16px', padding:'1.25rem 1.3rem', marginBottom:'1rem', backdropFilter:'blur(8px)' }}>
             <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', marginBottom:'0.5rem' }}>
@@ -87,7 +101,7 @@ export default function ChimpMission() {
             </div>
             {classStage <= 2 ? (
               <div style={{ display:'flex', flexDirection:'column', gap:'0.3rem' }}>
-                {[['1','Watch the chimpanzees 🔍'],['2','Adjust the sliders to match what you see 📊'],['3','Pick which behaviour is most common ✅']].map(([n,s]) => (
+                {[['1','Watch the chimpanzees 🔍'],['2','Adjust the sliders to match what you see 📊'],[isEnglish ? '3' : '3', isEnglish ? 'Pick the lowest behaviour - that\'s your story conflict ✅' : 'Pick which behaviour is most common ✅']].map(([n,s]) => (
                   <div key={n} style={{ display:'flex', gap:'0.5rem', alignItems:'flex-start' }}>
                     <span style={{ background:'rgba(100,220,140,0.25)', color:'rgba(100,220,140,0.9)', borderRadius:'50%', width:'18px', height:'18px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'0.7rem', fontWeight:800, flexShrink:0 }}>{n}</span>
                     <span style={{ fontSize:'0.82rem', color:'rgba(255,255,255,0.75)', lineHeight:1.4 }}>{s}</span>
@@ -96,7 +110,10 @@ export default function ChimpMission() {
               </div>
             ) : (
               <p style={{ fontSize:'0.82rem', color:'rgba(255,255,255,0.65)', margin:0, lineHeight:1.55 }}>
-                Scientists collect <strong style={{ color:'rgba(255,255,255,0.9)' }}>ethogram data</strong> to understand how animals spend their time. Observe the chimps and build a graph that reflects their behaviour.
+                {isEnglish
+                  ? <>Observe the chimps and build a graph. The behaviour they do <strong style={{ color:'rgba(255,255,255,0.9)' }}>least</strong> becomes the conflict in your chimpanzee story - the problem that drives the narrative.</>
+                  : <>Scientists collect <strong style={{ color:'rgba(255,255,255,0.9)' }}>ethogram data</strong> to understand how animals spend their time. Observe the chimps and build a graph that reflects their behaviour.</>
+                }
               </p>
             )}
           </div>
@@ -144,22 +161,34 @@ export default function ChimpMission() {
 
           <div style={{ background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.13)', borderRadius:'16px', padding:'1.25rem', backdropFilter:'blur(8px)' }}>
             <p style={{ fontSize:'0.9rem', fontWeight:700, color:'white', marginBottom:'0.75rem', textAlign:'center', lineHeight:1.4 }}>
-              Based on your graph, which behaviour did the chimpanzees spend the <span style={{ color:'rgba(100,220,140,0.9)' }}>MOST</span> time doing?
+              {isEnglish
+                ? englishQuestion
+                : <>Based on your graph, which behaviour did the chimpanzees spend the <span style={{ color:'rgba(100,220,140,0.9)' }}>MOST</span> time doing?</>
+              }
             </p>
             {!isValid && <p style={{ fontSize:'0.8rem', color:'#FBBF24', textAlign:'center', marginBottom:'0.75rem', fontStyle:'italic' }}>Adjust sliders until total equals 100% to answer.</p>}
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.75rem' }}>
-              {[
-                { label:'Resting',   emoji:'😴', colour:'#2E7D55' },
-                { label:'Feeding',   emoji:'🍌', colour:'#D97706' },
-                { label:'Moving',    emoji:'🌿', colour:'#0284C7' },
-                { label:'All equal', emoji:'⚖️', colour:'#2E7D55' },
-              ].map((ans, i) => (
-                <button key={i} onClick={() => submitAnswer(i)} disabled={!isValid}
-                  style={{ padding:'0.9rem 0.75rem', borderRadius:'12px', border:`2px solid ${isValid ? `${ans.colour}55` : 'rgba(255,255,255,0.08)'}`, background: isValid ? `${ans.colour}18` : 'rgba(255,255,255,0.04)', color: isValid ? 'white' : 'rgba(255,255,255,0.3)', fontSize:'0.88rem', fontWeight:700, cursor: isValid ? 'pointer' : 'not-allowed', textAlign:'center', transition:'all 0.2s', display:'flex', flexDirection:'column', alignItems:'center', gap:'0.3rem' }}>
-                  <span style={{ fontSize:'1.4rem' }}>{ans.emoji}</span>
-                  <span>{ans.label}</span>
-                </button>
-              ))}
+              {isEnglish ? (
+                englishOptions.map((opt, i) => (
+                  <button key={i} onClick={() => submitAnswer(i)} disabled={!isValid}
+                    style={{ padding:'0.75rem 0.6rem', borderRadius:'12px', border:`2px solid ${isValid ? 'rgba(100,220,140,0.35)' : 'rgba(255,255,255,0.08)'}`, background: isValid ? 'rgba(100,220,140,0.1)' : 'rgba(255,255,255,0.04)', color: isValid ? 'white' : 'rgba(255,255,255,0.3)', fontSize:'0.8rem', fontWeight:600, cursor: isValid ? 'pointer' : 'not-allowed', textAlign:'left', lineHeight:1.35, transition:'all 0.2s' }}>
+                    {opt}
+                  </button>
+                ))
+              ) : (
+                [
+                  { label:'Resting',   emoji:'😴', colour:'#2E7D55' },
+                  { label:'Feeding',   emoji:'🍌', colour:'#D97706' },
+                  { label:'Moving',    emoji:'🌿', colour:'#0284C7' },
+                  { label:'All equal', emoji:'⚖️', colour:'#2E7D55' },
+                ].map((ans, i) => (
+                  <button key={i} onClick={() => submitAnswer(i)} disabled={!isValid}
+                    style={{ padding:'0.9rem 0.75rem', borderRadius:'12px', border:`2px solid ${isValid ? `${ans.colour}55` : 'rgba(255,255,255,0.08)'}`, background: isValid ? `${ans.colour}18` : 'rgba(255,255,255,0.04)', color: isValid ? 'white' : 'rgba(255,255,255,0.3)', fontSize:'0.88rem', fontWeight:700, cursor: isValid ? 'pointer' : 'not-allowed', textAlign:'center', transition:'all 0.2s', display:'flex', flexDirection:'column', alignItems:'center', gap:'0.3rem' }}>
+                    <span style={{ fontSize:'1.4rem' }}>{ans.emoji}</span>
+                    <span>{ans.label}</span>
+                  </button>
+                ))
+              )}
             </div>
           </div>
 

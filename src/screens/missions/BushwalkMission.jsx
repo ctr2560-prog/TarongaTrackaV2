@@ -49,14 +49,26 @@ export default function BushwalkMission() {
         },
       ]
     : [
-        {
-          label: 'Clue 1: Cipher',
-          clue: 'I am a mammal, but I lay eggs.\nI swim and hide near moving water.\n\nUse the mini key to solve where to find me.\n\nSecret location code:\n23 – 1 – 20 – 5 – 18 – 6 – 1 – 12 – 12',
-        },
-        {
-          label: 'Clue 2: Ratio',
-          clue: 'Find the 4:1 Animal\n\nNow find the cold-blooded animal that is about 4 times larger than the real thing.',
-        },
+        classSubject === 'maths'
+          ? {
+              label: 'Clue 1: Cipher',
+              clue: 'I am a mammal, but I lay eggs.\nI swim and hide near moving water.\n\nUse the mini key to solve where to find me.\n\nSecret location code:\n23 – 1 – 20 – 5 – 18 – 6 – 1 – 12 – 12',
+            }
+          : {
+              label: classStage <= 2 ? 'Clue 1: Riddle' : 'Clue 1: Riddle',
+              clue: classStage <= 2
+                ? 'Head to the waterfall.\n\nFind the shy animal hiding near the water.\nIt\'s a mammal that lays eggs and has a bill like a duck.\n\nWhich animal is it?'
+                : 'I am a mammal, but I break the rules.\nI lay eggs, have webbed feet, and a bill that can sense electric fields underwater.\n\nHead to the waterfall to find me.\n\nWhich animal am I?',
+            },
+        classSubject === 'maths'
+          ? {
+              label: 'Clue 2: Ratio',
+              clue: 'Find the 4:1 Animal\n\nNow find the cold-blooded animal that is about 4 times larger than the real thing.',
+            }
+          : {
+              label: 'Clue 2: Scale',
+              clue: 'Find the large statue of a cold-blooded reptile.\n\nThe statue is much bigger than the real animal. Which reptile does it represent?',
+            },
         classSubject === 'maths'
           ? {
               label: 'Clue 3: Sequence',
@@ -138,7 +150,7 @@ export default function BushwalkMission() {
       )}
 
       {!showResult && (
-        <div style={{ flex:'1 1 auto', overflowY:'auto', padding:'1rem', maxWidth:'560px', margin:'0 auto', width:'100%' }}>
+        <div style={{ flex:'1 1 0', minHeight:0, overflowY:'auto', padding:'1rem', maxWidth:'560px', margin:'0 auto', width:'100%' }}>
 
           <div style={{ background:'white', borderRadius:'var(--t-r-md)', padding:'1rem 1.2rem', boxShadow:'var(--t-shadow-md)', marginBottom:'1rem' }}>
             <h2 style={{ fontSize:'1.2rem', fontWeight:700, color:'var(--jungle-deep)', margin:'0 0 0.15rem' }}>Bushwalk Scavenger Hunt</h2>
@@ -157,7 +169,7 @@ export default function BushwalkMission() {
               {clue?.clue.split('\n').map((line, i) => (
                 <p key={i} style={{ fontSize: clue.label.includes('Riddle') ? '0.95rem' : '1rem', color:'#333', margin: i === 0 ? 0 : '0.3rem 0 0', lineHeight:1.7, fontStyle: clue.label.includes('Riddle') ? 'italic' : 'normal', fontWeight: line.startsWith('Secret location') ? 700 : 'normal' }}>{line}</p>
               ))}
-              {clueIdx === 0 && classSubject !== 'pdhpe' && (
+              {clueIdx === 0 && classSubject === 'maths' && (
                 <div style={{ marginTop:'0.85rem' }}>
                   <button onClick={() => setMiniKeyOpen(o => !o)} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', width:'100%', background:'#E3EEE3', border:'1px solid #5B8C5A', borderRadius:miniKeyOpen ? 'var(--t-r-xs) var(--t-r-xs) 0 0' : 'var(--t-r-xs)', padding:'0.38rem 0.8rem', cursor:'pointer', fontSize:'0.78rem', fontWeight:700, color:'#3d5c3c' }}>
                     <span>Mini Key (A → Z)</span>
@@ -197,7 +209,7 @@ export default function BushwalkMission() {
             </div>
           )}
 
-          <MathsCalculator />
+          {classSubject === 'maths' && <MathsCalculator />}
 
           {!showFeedback ? (
             <button onClick={handleSubmit} disabled={selected === null}

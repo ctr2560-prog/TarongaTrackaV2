@@ -150,7 +150,7 @@ export default function ConcertLawnMission() {
       )}
 
       {!showResult && (
-        <div style={{ flex:'1 1 auto', overflowY:'auto', padding:'1rem', maxWidth:'560px', margin:'0 auto', width:'100%' }}>
+        <div style={{ flex:'1 1 0', minHeight:0, overflowY:'auto', padding:'1rem', maxWidth:'560px', margin:'0 auto', width:'100%' }}>
           <div style={{ background:'white', borderRadius:'var(--t-r-md)', padding:'clamp(0.8rem,2vh,1.2rem)', boxShadow:'0 8px 32px rgba(0,0,0,0.1)', marginBottom:'1rem' }}>
             <p style={{ fontSize:'0.7rem', fontWeight:800, color:'var(--jungle-mid)', textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:'0.75rem', textAlign:'center' }}>Reflection Question</p>
             <p style={{ fontSize:'clamp(0.9rem,2vh,1.1rem)', fontWeight:600, color:'var(--jungle-deep)', marginBottom:'clamp(0.8rem,1.5vh,1rem)', lineHeight:1.4, textAlign:'center' }}>{questionText}</p>
