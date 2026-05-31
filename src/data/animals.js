@@ -48,13 +48,13 @@ export const animals =
                 5: 'Gorillas consume up to 18 kg of food daily. What role does this plant-based diet play in the rainforest ecosystem?',
               },
               stageOptions: {
-                1: ['Yes, lots of meat', 'Mostly fish', 'No - only plants', 'Grass and dirt'],
-                2: ['Meat and eggs', 'Seeds and nuts only', 'Leaves, bamboo & fruit', 'Insects only'],
-                5: ['They hunt prey to balance the food chain', 'They fertilise the soil with meat scraps', 'As seed dispersers they help forests regenerate', 'They compete with other primates for grass'],
+                1: ['Yes, lots of meat', 'No - only plants', 'Mostly fish', 'Grass and dirt'],
+                2: ['Meat and eggs', 'Leaves, bamboo & fruit', 'Seeds and nuts only', 'Insects only'],
+                5: ['They hunt prey to balance the food chain', 'As seed dispersers they help forests regenerate', 'They fertilise the soil with meat scraps', 'They compete with other primates for grass'],
               },
-              stageCorrect: { 1: 2, 2: 2, 5: 2 },
-              options: ['Meat & insects', 'Fish & berries', 'Leaves, bamboo & fruit', 'Grass only'],
-              correct: 2,
+              stageCorrect: { 1: 1, 2: 1, 5: 1 },
+              options: ['Meat & insects', 'Leaves, bamboo & fruit', 'Fish & berries', 'Grass only'],
+              correct: 1,
               stageFacts: {
                 1: 'Gorillas eat plants, not meat! They love leaves, fruit and bamboo.',
                 2: 'Gorillas are herbivores - they eat mainly leaves, fruit and bamboo.',
@@ -324,8 +324,8 @@ export const animals =
               },
               stageCorrect: { 1: 0, 2: 3 },
               stageFacts: { 2: 'The dingo\'s colour helps it blend into the Australian bush, making it harder to see.' },
-              options: ['They are herbivores that eat only plants', 'They have no ecological role', 'They are apex predators that help regulate prey populations', 'They are introduced pests'],
-              correct: 2, fact: 'Dingoes are apex predators in Australia and help regulate populations of kangaroos and other animals, supporting ecosystem balance.' }
+              options: ['They are herbivores that eat only plants', 'They are apex predators that help regulate prey populations', 'They have no ecological role', 'They are introduced pests'],
+              correct: 1, fact: 'Dingoes are apex predators in Australia and help regulate populations of kangaroos and other animals, supporting ecosystem balance.' }
           ],
           observationPrompt: 'Explain how the dingo\'s appearance helps it survive in its environment.',
           pointValue: 50
