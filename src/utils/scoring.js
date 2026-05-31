@@ -453,6 +453,126 @@ export function scoreObservation(text, animalId, classStage) {
       behaviourBonus = Math.max(behaviourBonus, s4.b); detailBonus = s4.d;
     }
     if (stage !== 5) literacyBonus = calculateWritingScore(text, stage);
+  } else if (animalId === 'koala') {
+    const behaviourWords = ['sleep','rest','sit','hang','cling','grip','climb','eat','feed','move','look','curl','hold','position'];
+    const detailWords = ['tree','branch','eucalyptus','gum','leaf','leaves','fur','grey','gray','claw','tail','pouch','joey','high','still','quiet','fork','sleeping','resting','gripping','hanging','clinging','koala'];
+    const behaviourHits = behaviourWords.filter(w => lower.includes(w)).length;
+    const detailHits = detailWords.filter(w => lower.includes(w)).length;
+    const hasExplanation = ['because','so','helps','allows','leads','since','therefore','means','so that','in order'].some(p => lower.includes(p));
+    const wc = text.trim().split(/\s+/).filter(Boolean).length;
+    behaviourBonus = Math.min(behaviourHits + 1, 5);
+    if (stage <= 2) {
+      const s1words = ['koala','tree','sleep','grey','fluffy','branch','fur','claw','leaves','hang','sitting','cute'];
+      behaviourBonus = stage1BehaviourScore(text, s1words);
+      detailBonus = stage1DetailScore(text, s1words);
+      literacyBonus = stage1WritingScore(text);
+    } else if (stage === 3) {
+      const s3 = stage3Score(detailHits, hasExplanation);
+      behaviourBonus = s3.b; detailBonus = s3.d;
+    } else if (stage === 5) {
+      const s5 = stage5Score(text, behaviourWords, detailWords, hasExplanation);
+      behaviourBonus = s5.b; detailBonus = s5.d; literacyBonus = s5.w;
+    } else {
+      const s4 = stage4Score(detailHits, hasExplanation, wc);
+      behaviourBonus = Math.max(behaviourBonus, s4.b); detailBonus = s4.d;
+    }
+    if (stage !== 5) literacyBonus = calculateWritingScore(text, stage);
+  } else if (animalId === 'lemur') {
+    const behaviourWords = ['feed','eat','rest','move','jump','climb','groom','sit','watch','interact','together','group','play','social'];
+    const detailWords = ['enclosure','platform','tree','branch','tail','ring','stripe','black','white','fur','pattern','ground','high','low','space','area','corner','resting','feeding','moving','playing','grooming','lemur','ring-tailed'];
+    const behaviourHits = behaviourWords.filter(w => lower.includes(w)).length;
+    const detailHits = detailWords.filter(w => lower.includes(w)).length;
+    const hasExplanation = ['because','so','helps','allows','leads','since','therefore','means','most','mainly','often','frequently'].some(p => lower.includes(p));
+    const wc = text.trim().split(/\s+/).filter(Boolean).length;
+    behaviourBonus = Math.min(behaviourHits + 1, 5);
+    if (stage <= 2) {
+      const s1words = ['lemur','tail','ring','black','white','grey','jump','eat','sit','branch','tree','together'];
+      behaviourBonus = stage1BehaviourScore(text, s1words);
+      detailBonus = stage1DetailScore(text, s1words);
+      literacyBonus = stage1WritingScore(text);
+    } else if (stage === 3) {
+      const s3 = stage3Score(detailHits, hasExplanation);
+      behaviourBonus = s3.b; detailBonus = s3.d;
+    } else if (stage === 5) {
+      const s5 = stage5Score(text, behaviourWords, detailWords, hasExplanation);
+      behaviourBonus = s5.b; detailBonus = s5.d; literacyBonus = s5.w;
+    } else {
+      const s4 = stage4Score(detailHits, hasExplanation, wc);
+      behaviourBonus = Math.max(behaviourBonus, s4.b); detailBonus = s4.d;
+    }
+    if (stage !== 5) literacyBonus = calculateWritingScore(text, stage);
+  } else if (animalId === 'sea-lion') {
+    const behaviourWords = ['swim','dive','float','rest','bark','play','move','eat','feed','jump','balance','slide','splash','spin','flip'];
+    const detailWords = ['plastic','pollution','rubbish','trash','litter','ocean','water','human','people','fishing','overfishing','habitat','environment','impact','harm','hurt','affect','sick','kill','die','marine','flipper','whisker','fish','food','sea','conservation','protect','clean','net','entangle','tangle','swallow','ingest','mistake','mistake'];
+    const behaviourHits = behaviourWords.filter(w => lower.includes(w)).length;
+    const detailHits = detailWords.filter(w => lower.includes(w)).length;
+    const hasExplanation = ['because','so','helps','allows','leads','since','therefore','means','so that','in order','which','can','could','would'].some(p => lower.includes(p));
+    const wc = text.trim().split(/\s+/).filter(Boolean).length;
+    behaviourBonus = Math.min(behaviourHits + 1, 5);
+    if (stage <= 2) {
+      const s1words = ['sea','lion','water','swim','fish','ocean','clean','rubbish','plastic','flipper','bark','play'];
+      behaviourBonus = stage1BehaviourScore(text, s1words);
+      detailBonus = stage1DetailScore(text, s1words);
+      literacyBonus = stage1WritingScore(text);
+    } else if (stage === 3) {
+      const s3 = stage3Score(detailHits, hasExplanation);
+      behaviourBonus = s3.b; detailBonus = s3.d;
+    } else if (stage === 5) {
+      const s5 = stage5Score(text, behaviourWords, detailWords, hasExplanation);
+      behaviourBonus = s5.b; detailBonus = s5.d; literacyBonus = s5.w;
+    } else {
+      const s4 = stage4Score(detailHits, hasExplanation, wc);
+      behaviourBonus = Math.max(behaviourBonus, s4.b); detailBonus = s4.d;
+    }
+    if (stage !== 5) literacyBonus = calculateWritingScore(text, stage);
+  } else if (animalId === 'asian-water-buffalo') {
+    const behaviourWords = ['stand','walk','eat','graze','move','rest','feed','sit','drink','wade','interact'];
+    const detailWords = ['bird','oxpecker','tick','insect','bug','fly','relationship','symbiosis','symbiotic','help','benefit','together','hooves','hoof','wide','water','mud','muddy','wetland','horn','horns','rhino','egret','clean','back','skin','fur','coat','buffalo','large','big','heavy','both','each','mutual'];
+    const behaviourHits = behaviourWords.filter(w => lower.includes(w)).length;
+    const detailHits = detailWords.filter(w => lower.includes(w)).length;
+    const hasExplanation = ['because','so','helps','allows','leads','since','therefore','means','so that','in order','both','each other','mutual','benefit'].some(p => lower.includes(p));
+    const wc = text.trim().split(/\s+/).filter(Boolean).length;
+    behaviourBonus = Math.min(behaviourHits + 1, 5);
+    if (stage <= 2) {
+      const s1words = ['buffalo','bird','big','large','horn','horns','water','mud','brown','black','eating','standing','walking'];
+      behaviourBonus = stage1BehaviourScore(text, s1words);
+      detailBonus = stage1DetailScore(text, s1words);
+      literacyBonus = stage1WritingScore(text);
+    } else if (stage === 3) {
+      const s3 = stage3Score(detailHits, hasExplanation);
+      behaviourBonus = s3.b; detailBonus = s3.d;
+    } else if (stage === 5) {
+      const s5 = stage5Score(text, behaviourWords, detailWords, hasExplanation);
+      behaviourBonus = s5.b; detailBonus = s5.d; literacyBonus = s5.w;
+    } else {
+      const s4 = stage4Score(detailHits, hasExplanation, wc);
+      behaviourBonus = Math.max(behaviourBonus, s4.b); detailBonus = s4.d;
+    }
+    if (stage !== 5) literacyBonus = calculateWritingScore(text, stage);
+  } else if (animalId === 'blue-mountains-bushwalk') {
+    const behaviourWords = ['hear','heard','listen','feel','felt','notice','noticed','saw','see','smell','smelt','sensed'];
+    const detailWords = ['bird','water','wind','rain','leaf','leaves','tree','nature','peaceful','quiet','loud','calm','rush','splash','chirp','song','call','noise','echo','waterfall','bush','natural','human','relaxed','serene','still','flow','rock','stream','fresh','air','breeze'];
+    const behaviourHits = behaviourWords.filter(w => lower.includes(w)).length;
+    const detailHits = detailWords.filter(w => lower.includes(w)).length;
+    const hasExplanation = ['because','so','helps','allows','since','means','made me','makes me','it felt','which made'].some(p => lower.includes(p));
+    const wc = text.trim().split(/\s+/).filter(Boolean).length;
+    behaviourBonus = Math.min(behaviourHits + 1, 5);
+    if (stage <= 2) {
+      const s1words = ['hear','bird','water','quiet','loud','nice','calm','sound','wind','tree','feel'];
+      behaviourBonus = stage1BehaviourScore(text, s1words);
+      detailBonus = stage1DetailScore(text, s1words);
+      literacyBonus = stage1WritingScore(text);
+    } else if (stage === 3) {
+      const s3 = stage3Score(detailHits, hasExplanation);
+      behaviourBonus = s3.b; detailBonus = s3.d;
+    } else if (stage === 5) {
+      const s5 = stage5Score(text, behaviourWords, detailWords, hasExplanation);
+      behaviourBonus = s5.b; detailBonus = s5.d; literacyBonus = s5.w;
+    } else {
+      const s4 = stage4Score(detailHits, hasExplanation, wc);
+      behaviourBonus = Math.max(behaviourBonus, s4.b); detailBonus = s4.d;
+    }
+    if (stage !== 5) literacyBonus = calculateWritingScore(text, stage);
   } else {
     const zzAnimalIds = new Set(['tiger','rhino','binturong','sun-bear']);
     behaviourBonus = zzAnimalIds.has(animalId) ? calculateZzBehaviourScore(text) : calculateBehaviourScore(text);
