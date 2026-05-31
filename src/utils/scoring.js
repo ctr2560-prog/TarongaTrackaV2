@@ -91,9 +91,11 @@ export function calculateBehaviourScore(text) {
     'walk','run','jump','climb','pace','rest','sleep',
     'eat','drink','move','look','watch','sit','stand',
     'stretch','play','hunt','feed',
+    'reach','graze','swim','forage','browse','roam',
+    'groom','scratch','interact','survive','adapt',
   ];
   const matches = behaviourRoots.filter(root => lower.includes(root));
-  if (matches.length === 0) return 1;
+  if (matches.length === 0) return 2;
   return Math.min(matches.length + 1, 5);
 }
 
@@ -240,7 +242,8 @@ export function normaliseScores({ behaviourScore, detailScore, writingScore, evi
     if (wordCount >= 5 && !isLowQuality && evidence?.hasPunctuation) w = Math.max(w, 3);
   }
   if (s === 4) {
-    if (behaviourDetected && !isLowQuality) b = Math.max(b, 3); else b = Math.min(b, 2);
+    if (!isLowQuality) b = Math.max(b, 2);
+    if (behaviourDetected && !isLowQuality) b = Math.max(b, 3);
     if (detailCount >= 1 && !isLowQuality) d = Math.max(d, 3);
     if (wordCount >= 8 && !isLowQuality && evidence?.hasPunctuation) w = Math.max(w, 3);
   }
@@ -426,13 +429,43 @@ export function scoreObservation(text, animalId, classStage) {
       behaviourBonus = s4b.b; detailBonus = s4d.d;
       literacyBonus  = calculateWritingScore(text, stage);
     }
+  } else if (animalId === 'giraffe') {
+    const behaviourWords = ['eat','reach','feed','graze','walk','stretch','run','move','stand','drink','look','watch','browse','forage'];
+    const detailWords = ['height','tall','neck','tongue','leaves','leaf','tree','acacia','spots','pattern','long','legs','hooves','fur','coat','adaptation','adapt','survive','survival','food','predator','prey','advantage','animals','competition','reach','high','colour','color','stripes','yellow','brown'];
+    const behaviourHits = behaviourWords.filter(w => lower.includes(w)).length;
+    const detailHits = detailWords.filter(w => lower.includes(w)).length;
+    const hasExplanation = ['because','so','helps','allows','leads','since','therefore','means','so that','in order'].some(p => lower.includes(p));
+    const wc = text.trim().split(/\s+/).filter(Boolean).length;
+    behaviourBonus = Math.min(behaviourHits + 1, 5);
+    if (stage <= 2) {
+      const s1words = ['giraffe','tall','long','neck','spots','yellow','brown','leaves','tree','high','eating','walking','running','drinking','reaching'];
+      behaviourBonus = stage1BehaviourScore(text, s1words);
+      detailBonus = stage1DetailScore(text, s1words);
+      literacyBonus = stage1WritingScore(text);
+    } else if (stage === 3) {
+      const s3 = stage3Score(detailHits, hasExplanation);
+      behaviourBonus = s3.b; detailBonus = s3.d;
+    } else if (stage === 5) {
+      const s5 = stage5Score(text, behaviourWords, detailWords, hasExplanation);
+      behaviourBonus = s5.b; detailBonus = s5.d; literacyBonus = s5.w;
+    } else {
+      const s4 = stage4Score(detailHits, hasExplanation, wc);
+      behaviourBonus = Math.max(behaviourBonus, s4.b); detailBonus = s4.d;
+    }
+    if (stage !== 5) literacyBonus = calculateWritingScore(text, stage);
   } else {
     const zzAnimalIds = new Set(['tiger','rhino','binturong','sun-bear']);
     behaviourBonus = zzAnimalIds.has(animalId) ? calculateZzBehaviourScore(text) : calculateBehaviourScore(text);
     literacyBonus = calculateWritingScore(text, stage);
-    const detailRoots = ['tree','rock','water','grass','shade','log','branch','leaf','fence','platform','ground','enclosure','bird','wind','sound','noise','smell','stripe','fur','tail','claw'];
+    const detailRoots = [
+      'tree','rock','water','grass','shade','log','branch','leaf','leaves','fence','platform','ground','enclosure',
+      'bird','wind','sound','noise','smell','stripe','fur','tail','claw',
+      'height','tall','neck','long','colour','color','pattern','skin','coat','horn','feather',
+      'adaptation','adapt','survive','survival','predator','prey','habitat','food','hunt','feed',
+      'camouflage','protect','advantage','conservation','species','ecosystem',
+    ];
     const detailHits = detailRoots.filter(root => lower.includes(root)).length;
-    const hasExp = ['because','so','helps','allows','leads','since','therefore'].some(p => lower.includes(p));
+    const hasExp = ['because','so','helps','allows','leads','since','therefore','means','so that','in order'].some(p => lower.includes(p));
     if (stage <= 2) {
       detailBonus = Math.min(detailHits + 1, 5);
     } else {
