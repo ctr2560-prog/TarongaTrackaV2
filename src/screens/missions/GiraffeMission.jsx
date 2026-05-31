@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useStudent } from '../../context/StudentContext';
+import { getStageQuestions } from '../../utils/helpers';
 import MathsCalculator from '../../components/MathsCalculator';
 
 const GIRAFFE_MCQ = {
@@ -38,9 +39,11 @@ const GIRAFFE_PDHPE_MCQ = {
 export default function GiraffeMission() {
   const { setCurrentScreen, classStage, classSubject } = useApp();
   const {
-    showResult, setShowResult, isCorrect,
+    currentAnimal, showResult, setShowResult, isCorrect,
     setIsProcessingAnswer, handleQuizAnswer, handleNextQuestion,
   } = useStudent();
+
+  const isEnglish = classSubject === 'english';
 
   const [photo, setPhoto]           = useState(null);
   const [measurement, setMeasurement] = useState(5.0);
@@ -50,11 +53,13 @@ export default function GiraffeMission() {
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
 
+  const englishMcq = isEnglish ? getStageQuestions(currentAnimal, classStage, 'english')[0] : null;
+
   const mcq = classSubject === 'pdhpe' ? GIRAFFE_PDHPE_MCQ : GIRAFFE_MCQ;
-  const correctAnswerIndex = mcq.correct;
-  const question = mcq.stageQ[classStage] || mcq.stageQ[4];
-  const options  = mcq.stageOptions ? (mcq.stageOptions[classStage] || mcq.stageOptions[4]) : mcq.options;
-  const fact     = mcq.fact;
+  const correctAnswerIndex = isEnglish ? (englishMcq?.correct ?? 1) : mcq.correct;
+  const question = isEnglish ? (englishMcq?.q || '') : (mcq.stageQ[classStage] || mcq.stageQ[4]);
+  const options  = isEnglish ? (englishMcq?.options || []) : (mcq.stageOptions ? (mcq.stageOptions[classStage] || mcq.stageOptions[4]) : mcq.options);
+  const fact     = isEnglish ? (englishMcq?.fact || '') : mcq.fact;
 
   const startCamera = async () => {
     if (!videoRef.current) return;
@@ -127,9 +132,9 @@ export default function GiraffeMission() {
           <h2 className="heading-display" style={{ fontSize:'clamp(2rem,5vh,3rem)', color: isCorrect ? '#10b981' : '#ef4444', marginBottom:'0.4rem', lineHeight:1.1 }}>
             {isCorrect ? 'Correct!' : 'Not Quite'}
           </h2>
-          {isCorrect && <p style={{ fontSize:'clamp(0.95rem,2.2vh,1.1rem)', color:'#555', marginBottom:'0.8rem', fontStyle:'italic' }}>Great estimation!</p>}
-          {!isCorrect && <p style={{ fontSize:'clamp(0.9rem,2vh,1rem)', color:'#555', marginBottom:'0.8rem', lineHeight:1.6 }}>Look carefully at the scale - giraffes are much taller than most animals!</p>}
-          {isCorrect && fact && (
+          {!isEnglish && isCorrect && <p style={{ fontSize:'clamp(0.95rem,2.2vh,1.1rem)', color:'#555', marginBottom:'0.8rem', fontStyle:'italic' }}>Great estimation!</p>}
+          {!isEnglish && !isCorrect && <p style={{ fontSize:'clamp(0.9rem,2vh,1rem)', color:'#555', marginBottom:'0.8rem', lineHeight:1.6 }}>Look carefully at the scale - giraffes are much taller than most animals!</p>}
+          {!isEnglish && isCorrect && fact && (
             <div style={{ background:'linear-gradient(135deg,#FFF9E6 0%,#FFE6B3 100%)', borderRadius:'var(--t-r-md)', padding:'clamp(1rem,2vh,1.5rem)', marginTop:'0.8rem', marginBottom:'1rem' }}>
               <p style={{ color:'#333', fontSize:'clamp(0.9rem,2vh,1.1rem)', lineHeight:1.5, fontWeight:500 }}>💡 {fact}</p>
             </div>
@@ -213,7 +218,7 @@ export default function GiraffeMission() {
                 </button>
               ))}
             </div>
-            <MathsCalculator />
+            {!isEnglish && <MathsCalculator />}
           </div>
         </div>
       )}

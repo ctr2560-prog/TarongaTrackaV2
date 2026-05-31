@@ -40,6 +40,37 @@ const SLOTS = {
   sustainability: [{ x:70, y:16, w:9  },{ x:79, y:16, w:9  },{ x:86, y:20, w:9  }],
 };
 
+// Per-item justification data for English dynamic MCQ
+const ITEM_JUSTIFICATIONS = {
+  'pool-small':    { name:'Small Pool',      correct:'More swimming space helps sea lions stay active and physically healthy.',                                                         wrong:['Small pools look neater and take up less space in the design.','Small pools are cheaper and easier for keepers to maintain.','Small pools let visitors see the sea lions more clearly.'] },
+  'pool-large':    { name:'Large Pool',      correct:'A large, deep pool allows sea lions to dive and swim naturally — essential for their physical health.',                           wrong:['Large pools are popular because visitors enjoy watching sea lions swim.','Large pools use less water overall than having multiple small ones.','Large pools make the enclosure look more impressive from a distance.'] },
+  'stone':         { name:'Stone',           correct:'Natural rocks give sea lions places to haul out, rest and thermoregulate — just as they would in the wild.',                     wrong:['Stones look natural and make the enclosure more attractive to visitors.','Stones are one of the cheapest features in the whole design.','Stones help filter the pool water when it rains.'] },
+  'stone-wall':    { name:'Stone Wall',      correct:'A defined habitat edge gives sea lions a sense of territory and security in their enclosure.',                                   wrong:['Stone walls are easy to build and rarely need maintenance.','Stone walls keep visitors at a safe distance from the animals.','Stone walls stop pool water from splashing onto the path.'] },
+  'pier':          { name:'Pier',            correct:'A pier gives sea lions a raised platform to rest on and helps keepers safely observe and interact with them.',                   wrong:['Piers look impressive and are popular with visitors who want photos.','Piers are cheaper than building extra pools or land areas.','Piers help shade the pool from direct sunlight.'] },
+  'beach-ball':    { name:'Beach Ball',      correct:'Play items like beach balls provide enrichment — mental stimulation that prevents boredom and reduces stress in sea lions.',     wrong:['Beach balls are cheap and easy to replace when worn out.','Beach balls keep visitors entertained during sea lion feeding sessions.','Beach balls help sea lions strengthen their flippers.'] },
+  'buoy-toy':      { name:'Buoy Toy',        correct:'A buoy toy encourages active swimming and play, supporting both physical and mental wellbeing in sea lions.',                   wrong:['Buoy toys are colourful and look good in visitor photos.','Buoy toys are the most affordable enrichment item available.','Buoy toys help sea lions practise balancing for demonstrations.'] },
+  'slide':         { name:'Slide',           correct:'A slide encourages movement and play, mimicking natural behaviour and keeping sea lions physically and mentally healthy.',        wrong:['Slides are popular with visitors who enjoy watching sea lions use them.','Slides are easy to install and can be removed quickly if needed.','Slides help sea lions dry off faster after swimming.'] },
+  'fish-box':      { name:'Food Station',    correct:'A dedicated food station supports regular, controlled feeding — essential for sea lion health and keeper–animal bonding.',       wrong:['Food stations look professional and tidy in the enclosure layout.','Food stations keep the sea lions in one spot during feeding.','Food stations help the zoo reduce how much fish it purchases.'] },
+  'feed-bucket':   { name:'Feed Bucket',     correct:'Keeper feeding tools allow positive reinforcement training, which supports sea lion health and mental wellbeing.',               wrong:['Feed buckets are the cheapest wellbeing item in the whole design.','Feed buckets keep fish away from the pool water.','Feed buckets help visitors understand how sea lions are fed.'] },
+  'canopy':        { name:'Canopy',          correct:'A canopy provides shade that reduces heat stress for the sea lions and lowers the energy needed to cool the enclosure.',        wrong:['Canopies make the enclosure look more modern and well-designed.','Canopies are the most affordable sustainability feature available.','Canopies keep rain out of the pool to reduce overflow.'] },
+  'solar-panel':   { name:'Solar Panel',     correct:'Solar panels generate clean energy for the enclosure, reducing the zoo\'s carbon footprint and long-term running costs.',       wrong:['Solar panels look high-tech and show visitors the zoo is modern.','Solar panels keep the pool water warm on cold days.','Solar panels are cheaper to run than all other power sources.'] },
+  'solar-canopy':  { name:'Solar Canopy',    correct:'A solar canopy provides shade for the sea lions AND generates clean energy — a dual benefit for wellbeing and sustainability.', wrong:['Solar canopies look impressive and attract environmentally minded visitors.','Solar canopies are cheaper than buying separate panels and a canopy.','Solar canopies keep leaves and debris out of the pool.'] },
+  'wind-turbine':  { name:'Wind Turbine',    correct:'A wind turbine generates renewable energy, making the enclosure more sustainable and reducing the zoo\'s environmental impact.',wrong:['Wind turbines look exciting and attract attention from zoo visitors.','Wind turbines help cool the sea lions on hot summer days.','Wind turbines are the cheapest energy source for outdoor enclosures.'] },
+  'waterfilter':   { name:'Water Filter',    correct:'A water filter keeps the pool clean and safe, directly protecting the sea lions\' health and reducing water waste.',            wrong:['Water filters make the pool look clearer for visitors watching the sea lions.','Water filters are cheaper than replacing pool water regularly.','Water filters help sea lions swim faster through cleaner water.'] },
+  'natural-filter':{ name:'Natural Filter',  correct:'A natural filter cleans water using eco-friendly methods, supporting sea lion health and environmental sustainability together.',  wrong:['Natural filters look more attractive than mechanical filter systems.','Natural filters are cheaper than all other filtering options.','Natural filters help grow aquatic plants inside the enclosure.'] },
+  'water-tank':    { name:'Water Tank',      correct:'A water tank stores and reuses water, reducing waste and making the enclosure more sustainable over time.',                     wrong:['Water tanks are relatively cheap and easy to install anywhere.','Water tanks provide drinking water for zoo visitors and staff.','Water tanks make the pool much deeper for the sea lions to dive.'] },
+  'recycling-bin': { name:'Recycling Bin',   correct:'A recycling bin reduces waste in the enclosure and demonstrates environmental responsibility to both staff and visitors.',       wrong:['Recycling bins are the cheapest single item in the whole design.','Recycling bins keep the enclosure neat and tidy for visitor photos.','Recycling bins help keepers store extra fish for feeding time.'] },
+  'native-garden': { name:'Native Garden',   correct:'Native plants create a more natural habitat, support local biodiversity, and require less water to maintain long-term.',        wrong:['Native gardens look beautiful and make the enclosure more attractive.','Native gardens are one of the cheapest sustainability choices.','Native gardens give the sea lions a shaded area to hide and rest.'] },
+};
+
+const STAGE_Q_STEM = {
+  1: (n) => `You added a ${n} to your design. Which sentence gives the BEST reason for including it?`,
+  2: (n) => `You chose to include a ${n}. Which sentence best justifies this choice to the Taronga directors?`,
+  3: (n) => `Your enclosure design includes a ${n}. Which sentence would most persuade the directors this was the right choice?`,
+  4: (n) => `You included a ${n} in your design. Which argument best justifies this using evidence about sea lion needs?`,
+  5: (n) => `You chose a ${n} for your enclosure. Which sentence provides the most logical, evidence-based justification for this design choice?`,
+};
+
 function getZone(item) {
   if (item.id.startsWith('pool')) return 'pool';
   if (item.id === 'stone') return 'rocks';
@@ -61,6 +92,8 @@ export default function SeaLionMission() {
     currentAnimal, showResult, setShowResult, isCorrect,
     setIsProcessingAnswer, handleQuizAnswer, handleNextQuestion,
   } = useStudent();
+
+  const isEnglish = classSubject === 'english';
 
   const [assetsLoaded,  setAssetsLoaded]  = useState(false);
   const [loadProgress,  setLoadProgress]  = useState(0);
@@ -100,10 +133,15 @@ export default function SeaLionMission() {
   const [budget,     setBudget]     = useState(BUDGET);
   const [scoreOpen,  setScoreOpen]  = useState(false);
   const [slsScore,   setSlsScore]   = useState(0);
+  const [englishQ,   setEnglishQ]   = useState(null);
 
   const q = getStageQuestions(currentAnimal, classStage, classSubject)[0];
   const correctAnswerIndex = q?.correct ?? 0;
   const fact = q?.stageFacts?.[classStage] || q?.fact;
+
+  const displayQ = (isEnglish && englishQ) ? englishQ : q;
+  const displayCorrectIdx = (isEnglish && englishQ) ? englishQ.correct : correctAnswerIndex;
+  const displayFact = (isEnglish && englishQ) ? englishQ.fact : fact;
 
   // Seal animation
   const sealRef     = useRef(null);
@@ -212,6 +250,41 @@ export default function SeaLionMission() {
   const finishBuilding = () => {
     const sc = calcScore(counts);
     setSlsScore(Math.round(sc.E + sc.W + sc.S * 1.5));
+
+    if (isEnglish) {
+      // Pick the highest-scoring item they actually placed (by total score contribution)
+      const placed = ITEMS.filter(it => (counts[it.id] || 0) > 0);
+      const sorted = [...placed].sort((a, b) =>
+        ((b.E + b.W + b.S) * (counts[b.id] || 0)) - ((a.E + a.W + a.S) * (counts[a.id] || 0))
+      );
+      const chosenItem = sorted.find(it => ITEM_JUSTIFICATIONS[it.id]);
+      const just = chosenItem ? ITEM_JUSTIFICATIONS[chosenItem.id] : null;
+
+      if (just) {
+        const stem = (STAGE_Q_STEM[classStage] || STAGE_Q_STEM[3])(just.name);
+        // correct answer always at index 2 (option C)
+        const [w1, w2, w3] = just.wrong;
+        setEnglishQ({
+          q: stem,
+          options: [w1, w2, just.correct, w3],
+          correct: 2,
+          fact: `${just.correct} When writing to directors, linking your design choice directly to a sea lion need is what makes an argument persuasive.`,
+        });
+      } else {
+        setEnglishQ({
+          q: 'Which sentence best justifies building a new sea lion enclosure to the Taronga directors?',
+          options: [
+            'Sea lions are interesting animals that many people enjoy watching.',
+            'Building a new enclosure is something zoos do from time to time.',
+            'The new enclosure gives sea lions the space, enrichment and sustainable features they need to thrive.',
+            'The enclosure will help the zoo attract more visitors each year.',
+          ],
+          correct: 2,
+          fact: 'The strongest argument connects design choices directly to what the sea lions need. Specific evidence is always more persuasive than a general statement.',
+        });
+      }
+    }
+
     setPhase('done');
   };
 
@@ -525,10 +598,10 @@ export default function SeaLionMission() {
         <div className="animate-scale-in" style={{ textAlign:'center', padding:'clamp(1.5rem,3vh,2rem)', background:'rgba(255,255,255,0.95)', borderRadius:'var(--t-r-xl)', boxShadow:'var(--t-shadow-lg)', margin:'clamp(1rem,2vh,1.5rem)', maxWidth:'90%', marginLeft:'auto', marginRight:'auto', marginTop:'clamp(1rem,3vh,2rem)' }}>
           <div style={{ fontSize:'clamp(3rem,8vh,4.5rem)', marginBottom:'0.5rem' }}>{isCorrect ? '✓' : '✗'}</div>
           <h2 className="heading-display" style={{ fontSize:'clamp(2rem,5vh,3rem)', color:isCorrect?'#10b981':'#ef4444', marginBottom:'0.4rem', lineHeight:1.1 }}>{isCorrect ? 'Correct!' : 'Try Again'}</h2>
-          {isCorrect && <p style={{ fontSize:'clamp(0.95rem,2.2vh,1.1rem)', color:'#555', marginBottom:'0.8rem', fontStyle:'italic' }}>Great thinking about sea lion conservation!</p>}
-          {isCorrect && fact && (
+          {isCorrect && <p style={{ fontSize:'clamp(0.95rem,2.2vh,1.1rem)', color:'#555', marginBottom:'0.8rem', fontStyle:'italic' }}>{isEnglish ? 'Great argument for the new enclosure!' : 'Great thinking about sea lion conservation!'}</p>}
+          {isCorrect && displayFact && (
             <div style={{ background:'linear-gradient(135deg,#EAF3F8 0%,#C8E0EE 100%)', borderRadius:'var(--t-r-md)', padding:'clamp(1rem,2vh,1.5rem)', marginTop:'0.8rem', marginBottom:'1rem' }}>
-              <p style={{ color:'#333', fontSize:'clamp(0.9rem,2vh,1.1rem)', lineHeight:1.5, fontWeight:500 }}>💡 {fact}</p>
+              <p style={{ color:'#333', fontSize:'clamp(0.9rem,2vh,1.1rem)', lineHeight:1.5, fontWeight:500 }}>💡 {displayFact}</p>
             </div>
           )}
           <button onClick={() => { if (isCorrect) { handleNextQuestion(1); } else { setIsProcessingAnswer(false); setShowResult(false); } }}
@@ -539,22 +612,22 @@ export default function SeaLionMission() {
       )}
 
       {!showResult && (
-        <div style={{ flex:'1 1 auto', overflowY:'auto', padding:'1rem', maxWidth:'600px', margin:'0 auto', width:'100%' }}>
+        <div style={{ flex:'1 1 0', minHeight:0, overflowY:'auto', padding:'1rem', maxWidth:'600px', margin:'0 auto', width:'100%' }}>
           <div style={{ background:'white', borderRadius:'var(--t-r-md)', padding:'1.2rem', boxShadow:'0 8px 32px rgba(0,0,0,0.08)', marginBottom:'1rem' }}>
-            <h2 style={{ fontSize:'1.2rem', fontWeight:700, color:'var(--jungle-deep)', marginBottom:'0.3rem' }}>Sea Lion Sustainability</h2>
-            <p style={{ fontSize:'0.85rem', color:'#555', margin:0 }}>Use what you've observed to answer the question below.</p>
+            <h2 style={{ fontSize:'1.2rem', fontWeight:700, color:'var(--jungle-deep)', marginBottom:'0.3rem' }}>{isEnglish ? 'Enclosure Design Question' : 'Sea Lion Sustainability'}</h2>
+            <p style={{ fontSize:'0.85rem', color:'#555', margin:0 }}>{isEnglish ? 'Think about your enclosure design and answer the question below.' : 'Use what you\'ve observed to answer the question below.'}</p>
           </div>
           <div style={{ background:'white', borderRadius:'var(--t-r-md)', padding:'1.2rem', boxShadow:'0 8px 32px rgba(0,0,0,0.08)', marginBottom:'1rem' }}>
-            <p style={{ fontSize:'clamp(0.9rem,2vh,1.1rem)', fontWeight:600, color:'var(--jungle-deep)', marginBottom:'1rem', lineHeight:1.4 }}>{q?.q}</p>
+            <p style={{ fontSize:'clamp(0.9rem,2vh,1.1rem)', fontWeight:600, color:'var(--jungle-deep)', marginBottom:'1rem', lineHeight:1.4 }}>{displayQ?.q}</p>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.75rem' }}>
-              {(q?.options || []).map((opt, i) => (
-                <button key={i} onClick={() => handleQuizAnswer(0, i, correctAnswerIndex)}
+              {(displayQ?.options || []).map((opt, i) => (
+                <button key={i} onClick={() => handleQuizAnswer(0, i, displayCorrectIdx)}
                   style={{ textAlign:'center', padding:'clamp(1rem,2.5vh,1.5rem) clamp(0.5rem,1vh,0.8rem)', borderRadius:'var(--t-r-md)', border:'3px solid #AACFE0', background:'white', cursor:'pointer', transition:'all 0.2s ease', fontSize:'clamp(0.85rem,1.8vh,1rem)', fontWeight:600, color:'var(--jungle-deep)', lineHeight:1.2, minHeight:'clamp(70px,12vh,90px)', display:'flex', alignItems:'center', justifyContent:'center', touchAction:'manipulation', WebkitTapHighlightColor:'transparent' }}>
                   {opt}
                 </button>
               ))}
             </div>
-            <MathsCalculator />
+            {!isEnglish && <MathsCalculator />}
           </div>
         </div>
       )}

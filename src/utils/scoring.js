@@ -912,18 +912,18 @@ function buildEnglishObservationScore(text, animalId, classStage) {
 
   // Vocabulary (behaviour slot) - did they engage with the language task?
   let vocabulary = 1;
-  if (wc >= 4 && (deviceHits >= 1 || hasAnimalRef))                      vocabulary = 2;
-  if (wc >= 5 && (deviceHits >= 1 || hasAnimalRef))                      vocabulary = 3;
-  if (deviceHits >= 1 && (hasExplanation || hasAnimalRef))               vocabulary = Math.max(vocabulary, 3);
-  if (deviceHits >= 2 && (hasExplanation || hasAnimalRef))               vocabulary = Math.max(vocabulary, 4);
-  if (deviceHits >= 3 && hasExplanation && multiSentence)                vocabulary = 5;
+  if (wc >= 4 && (deviceHits >= 1 || hasAnimalRef))                           vocabulary = 2;
+  if (wc >= 5 && (deviceHits >= 1 || hasAnimalRef))                           vocabulary = 3;
+  if (hasAnimalRef && hasExplanation)                                          vocabulary = Math.max(vocabulary, 3);
+  if (deviceHits >= 1 || (hasAnimalRef && hasExplanation))                     vocabulary = Math.max(vocabulary, 4);
+  if (deviceHits >= 1 && hasExplanation)                                       vocabulary = 5;
 
   // Understanding (detail slot) - did they demonstrate literacy understanding?
   let understanding = 1;
-  if (wc >= 4 && (deviceHits >= 1 || hasAnimalRef))                      understanding = 2;
-  if (deviceHits >= 1 || hasAnimalRef)                                   understanding = Math.max(understanding, 3);
-  if (deviceHits >= 2 && hasExplanation)                                 understanding = Math.max(understanding, 4);
-  if (deviceHits >= 3 && hasExplanation && multiSentence)                understanding = 5;
+  if (wc >= 4 && (deviceHits >= 1 || hasAnimalRef))                           understanding = 2;
+  if (deviceHits >= 1 || hasAnimalRef)                                        understanding = Math.max(understanding, 3);
+  if (hasAnimalRef && hasExplanation)                                          understanding = Math.max(understanding, 4);
+  if (deviceHits >= 1 && hasExplanation)                                       understanding = 5;
 
   // Expression (writing slot) - sentence structure and punctuation
   let expression = 1;

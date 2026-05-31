@@ -38,6 +38,7 @@ export default function GorillaMission() {
   const { setCurrentScreen, classStage, classSubject } = useApp();
   const { currentAnimal, showResult, setShowResult, isCorrect, isProcessingAnswer,
           setIsProcessingAnswer, handleQuizAnswer, handleNextQuestion } = useStudent();
+  const isEnglish = classSubject === 'english';
 
   const [schlPhase, setSchlPhase] = useState('game');
   const [phase,     setPhase]     = useState('intro');
@@ -336,7 +337,7 @@ export default function GorillaMission() {
 
           <button onClick={() => { setSchlPhase('mcq'); setShowResult(false); setIsProcessingAnswer(false); }}
             style={{ width:'100%', padding:'1.05rem', borderRadius:'40px', border:'none', background:'linear-gradient(to right,#2A8A40,#1E6A30)', color:'white', fontSize:'1.05rem', fontWeight:700, cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.12em', marginBottom:'0.55rem' }}>
-            Answer the Diet Question →
+            {isEnglish ? 'Read the Story →' : 'Answer the Diet Question →'}
           </button>
           <button onClick={startGame}
             style={{ width:'100%', padding:'0.8rem', borderRadius:'40px', border:'1px solid rgba(255,255,255,0.14)', background:'rgba(255,255,255,0.06)', color:'rgba(255,255,255,0.75)', fontSize:'0.9rem', fontWeight:700, cursor:'pointer' }}>
@@ -375,23 +376,40 @@ export default function GorillaMission() {
           </div>
         )}
         {!showResult && mcqQ && (
-          <div style={{ flex:'1 1 auto', overflowY:'auto', padding:'1rem', maxWidth:'600px', margin:'0 auto', width:'100%', position:'relative', zIndex:1 }}>
+          <div style={{ flex:'1 1 0', minHeight:0, overflowY:'auto', padding:'1rem', maxWidth:'600px', margin:'0 auto', width:'100%', position:'relative', zIndex:1 }}>
             <div style={{ background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.15)', borderRadius:'var(--t-r-md)', padding:'1.2rem', marginBottom:'1rem', backdropFilter:'blur(8px)' }}>
-              <p style={{ fontSize:'0.65rem', fontWeight:800, color:'rgba(100,220,140,0.85)', textTransform:'uppercase', letterSpacing:'0.12em', margin:'0 0 0.35rem' }}>{classSubject === 'maths' ? 'Gorilla Maths Challenge' : 'Gorilla Diet Challenge'}</p>
-              <h2 style={{ fontSize:'1.15rem', fontWeight:700, color:'white', marginBottom:'0.25rem' }}>{classSubject === 'maths' ? mcqQ?.q : 'What do gorillas mainly eat?'}</h2>
-              <p style={{ fontSize:'0.82rem', color:'rgba(255,255,255,0.6)', margin:0 }}>{classSubject === 'maths' ? 'Use what you recorded in the game to answer.' : 'Use what you learned in the game to answer.'}</p>
+              <p style={{ fontSize:'0.65rem', fontWeight:800, color:'rgba(100,220,140,0.85)', textTransform:'uppercase', letterSpacing:'0.12em', margin:'0 0 0.35rem' }}>
+                {isEnglish ? 'Reading Comprehension' : classSubject === 'maths' ? 'Gorilla Maths Challenge' : 'Gorilla Diet Challenge'}
+              </p>
+              <h2 style={{ fontSize:'1.15rem', fontWeight:700, color:'white', marginBottom:'0.25rem' }}>
+                {isEnglish ? 'The Big Serve 🍔' : classSubject === 'maths' ? mcqQ?.q : 'What do gorillas mainly eat?'}
+              </h2>
+              <p style={{ fontSize:'0.82rem', color:'rgba(255,255,255,0.6)', margin:0 }}>
+                {isEnglish ? 'Read the story, then answer the question.' : classSubject === 'maths' ? 'Use what you recorded in the game to answer.' : 'Use what you learned in the game to answer.'}
+              </p>
             </div>
+
+            {isEnglish && mcqQ.passage && (
+              <div style={{ background:'rgba(255,255,255,0.95)', borderRadius:'var(--t-r-md)', padding:'1.2rem 1.4rem', marginBottom:'1rem' }}>
+                {mcqQ.passage.split('\n').map((line, i) => (
+                  <p key={i} style={{ fontSize: i === 0 ? '1rem' : '0.92rem', color: i === 0 ? '#1a1a1a' : '#333', margin: i === 0 ? '0 0 0.75rem' : '0.35rem 0 0', lineHeight:1.65, fontWeight: i === 0 ? 700 : 400, fontStyle: i > 0 ? 'italic' : 'normal' }}>{line}</p>
+                ))}
+              </div>
+            )}
+
             <div style={{ background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.15)', borderRadius:'var(--t-r-md)', padding:'1.2rem', backdropFilter:'blur(8px)' }}>
-              <p style={{ fontSize:'clamp(0.9rem,2vh,1.05rem)', fontWeight:600, color:'white', marginBottom:'1rem', lineHeight:1.4 }}>{classSubject === 'maths' ? 'Choose the correct answer:' : mcqQ.q}</p>
+              <p style={{ fontSize:'clamp(0.9rem,2vh,1.05rem)', fontWeight:600, color:'white', marginBottom:'1rem', lineHeight:1.4 }}>
+                {isEnglish ? mcqQ.stageVariants?.[classStage] : classSubject === 'maths' ? 'Choose the correct answer:' : mcqQ.q}
+              </p>
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.75rem' }}>
-                {mcqQ.options?.map((opt, i) => (
-                  <button key={i} onClick={() => !isProcessingAnswer && handleQuizAnswer(0, i, mcqQ.correct)}
-                    style={{ textAlign:'center', padding:'clamp(1rem,2.5vh,1.5rem) clamp(0.5rem,1vh,0.8rem)', borderRadius:'var(--t-r-md)', border:'2px solid rgba(100,220,140,0.35)', background:'rgba(255,255,255,0.07)', cursor:'pointer', fontSize:'clamp(0.85rem,1.8vh,1rem)', fontWeight:600, color:'white', lineHeight:1.2, minHeight:'clamp(70px,12vh,90px)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                {(isEnglish ? mcqQ.stageOptions?.[classStage] : mcqQ.options)?.map((opt, i) => (
+                  <button key={i} onClick={() => !isProcessingAnswer && handleQuizAnswer(0, i, isEnglish ? mcqQ.stageCorrect?.[classStage] : mcqQ.correct)}
+                    style={{ textAlign:'left', padding:'clamp(0.75rem,2vh,1.1rem) clamp(0.5rem,1vh,0.8rem)', borderRadius:'var(--t-r-md)', border:'2px solid rgba(100,220,140,0.35)', background:'rgba(255,255,255,0.07)', cursor:'pointer', fontSize:'clamp(0.82rem,1.7vh,0.95rem)', fontWeight:600, color:'white', lineHeight:1.3, minHeight:'clamp(60px,10vh,80px)', display:'flex', alignItems:'center' }}>
                     {opt}
                   </button>
                 ))}
               </div>
-              <div style={{ marginTop:'0.5rem' }}><MathsCalculator /></div>
+              {!isEnglish && <div style={{ marginTop:'0.5rem' }}><MathsCalculator /></div>}
             </div>
           </div>
         )}
