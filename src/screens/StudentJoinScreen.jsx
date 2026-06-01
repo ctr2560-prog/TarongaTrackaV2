@@ -19,11 +19,12 @@ export default function StudentJoinScreen() {
 
   const { resetProgress } = useStudent();
 
-  const [step,         setStep]         = useState('code');   // 'code' | 'animal'
-  const [joinError,    setJoinError]    = useState('');
-  const [lookedUpClass, setLookedUpClass] = useState(null);
-  const [loading,      setLoading]      = useState(false);
-  const [takenAnimals, setTakenAnimals] = useState([]);
+  const [step,           setStep]           = useState('code');   // 'code' | 'animal'
+  const [joinError,      setJoinError]      = useState('');
+  const [lookedUpClass,  setLookedUpClass]  = useState(null);
+  const [loading,        setLoading]        = useState(false);
+  const [takenAnimals,   setTakenAnimals]   = useState([]);
+  const [restoredAnimals,setRestoredAnimals]= useState([]);
   const [selectedAnimal, setSelectedAnimal] = useState('');
 
   // Live class-code preview as student types
@@ -54,8 +55,15 @@ export default function StudentJoinScreen() {
     setJoinError('');
     try {
       const studentsSnap = await getDocs(collection(db, 'classes', code, 'students'));
-      const taken = studentsSnap.docs.map(d => d.data().name).filter(Boolean);
+      const taken = [], restored = [];
+      studentsSnap.docs.forEach(d => {
+        const data = d.data();
+        if (!data.name) return;
+        if (data.restored) restored.push(data.name);
+        else taken.push(data.name);
+      });
       setTakenAnimals(taken);
+      setRestoredAnimals(restored);
       setSelectedAnimal('');
       setStep('animal');
     } catch {
@@ -91,16 +99,28 @@ export default function StudentJoinScreen() {
       setZzScreen('map');
       localStorage.setItem('tarongaClassStage',   JSON.stringify(joinedStage));
       localStorage.setItem('tarongaClassSubject', JSON.stringify(joinedSubject));
+      localStorage.setItem('tarongaSessionType',  JSON.stringify(joinedSession));
 
       // Check again whether animal is still available (race condition guard)
       const studentsRef  = collection(db, 'classes', code, 'students');
       const existingQ    = query(studentsRef, where('name', '==', selectedAnimal));
       const existingSnap = await getDocs(existingQ);
 
-      if (!existingSnap.empty) {
+      const existingDoc  = existingSnap.empty ? null : existingSnap.docs[0].data();
+      const isRestored   = existingDoc?.restored === true;
+
+      if (!existingSnap.empty && !isRestored) {
         // Someone else grabbed it - refresh taken list and stay on animal screen
         const allSnap = await getDocs(studentsRef);
-        setTakenAnimals(allSnap.docs.map(d => d.data().name).filter(Boolean));
+        const taken = [], restored = [];
+        allSnap.docs.forEach(d => {
+          const data = d.data();
+          if (!data.name) return;
+          if (data.restored) restored.push(data.name);
+          else taken.push(data.name);
+        });
+        setTakenAnimals(taken);
+        setRestoredAnimals(restored);
         setSelectedAnimal('');
         setJoinError(`${selectedAnimal} was just taken by a classmate - please choose another.`);
         setLoading(false);
@@ -108,15 +128,26 @@ export default function StudentJoinScreen() {
       }
 
       const safeId = safeStudentId(selectedAnimal);
-      await setDoc(doc(db, 'classes', code, 'students', safeId), {
-        name:        selectedAnimal,
-        classCode:   code,
-        totalPoints: 0,
-        badges:      [],
-        completed:   false,
-        status:      'incomplete',
-        createdAt:   serverTimestamp(),
-      });
+      if (isRestored) {
+        // Rejoin — preserve all badges/progress, just clear the restored flag
+        await setDoc(doc(db, 'classes', code, 'students', safeId), {
+          completed:   false,
+          status:      'incomplete',
+          restored:    false,
+          completedAt: null,
+        }, { merge: true });
+      } else {
+        // Fresh join
+        await setDoc(doc(db, 'classes', code, 'students', safeId), {
+          name:        selectedAnimal,
+          classCode:   code,
+          totalPoints: 0,
+          badges:      [],
+          completed:   false,
+          status:      'incomplete',
+          createdAt:   serverTimestamp(),
+        });
+      }
 
       setStudentName(selectedAnimal);
       localStorage.setItem('tarongaStudentName', JSON.stringify(selectedAnimal));
@@ -229,6 +260,7 @@ export default function StudentJoinScreen() {
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(130px, 1fr))', gap:'0.5rem', marginBottom:'1.25rem', maxHeight:'52vh', overflowY:'auto', padding:'0.25rem' }}>
             {ANIMAL_ALIASES.map(animal => {
               const taken    = takenAnimals.includes(animal);
+              const restored = restoredAnimals.includes(animal);
               const selected = selectedAnimal === animal;
               return (
                 <button
@@ -238,8 +270,8 @@ export default function StudentJoinScreen() {
                   style={{
                     padding:'0.6rem 0.5rem',
                     borderRadius:'var(--t-r-sm)',
-                    border: selected ? '2.5px solid var(--t-mid)' : taken ? '1.5px solid #e5e7eb' : '1.5px solid var(--t-stone)',
-                    background: selected ? 'linear-gradient(135deg, #e8f5ed, #d0edd9)' : taken ? '#f3f4f6' : 'var(--t-parchment)',
+                    border: selected ? '2.5px solid var(--t-mid)' : taken ? '1.5px solid #e5e7eb' : restored ? '1.5px solid #FCD34D' : '1.5px solid var(--t-stone)',
+                    background: selected ? 'linear-gradient(135deg, #e8f5ed, #d0edd9)' : taken ? '#f3f4f6' : restored ? '#FFFBEB' : 'var(--t-parchment)',
                     color: selected ? 'var(--t-deep)' : taken ? '#bbb' : 'var(--t-ink)',
                     fontSize:'0.8rem',
                     fontWeight: selected ? 700 : taken ? 400 : 600,
@@ -253,7 +285,8 @@ export default function StudentJoinScreen() {
                     position:'relative',
                   }}>
                   {animal}
-                  {taken && <span style={{ display:'block', fontSize:'0.65rem', color:'#ccc', fontWeight:400, textDecoration:'none', marginTop:'0.1rem' }}>taken</span>}
+                  {taken    && <span style={{ display:'block', fontSize:'0.65rem', color:'#ccc', fontWeight:400, textDecoration:'none', marginTop:'0.1rem' }}>taken</span>}
+                  {restored && !selected && <span style={{ display:'block', fontSize:'0.65rem', color:'#D97706', fontWeight:700, marginTop:'0.1rem' }}>↺ continue</span>}
                   {selected && <span style={{ display:'block', fontSize:'0.65rem', color:'var(--t-mid)', fontWeight:700, marginTop:'0.1rem' }}>selected ✓</span>}
                 </button>
               );

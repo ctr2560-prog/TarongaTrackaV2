@@ -4,7 +4,7 @@ import { useStudent } from '../context/StudentContext';
 import StudentFeedbackModal from '../components/StudentFeedbackModal';
 
 export default function SubmissionCompleteScreen() {
-  const { setCurrentScreen, classCode } = useApp();
+  const { setCurrentScreen, classCode, clearStudentSession } = useApp();
   const { badges, foundAnimals, animalsToRender, totalPoints, studentName, setCompletionCardDismissed } = useStudent();
 
   const [showFeedback,   setShowFeedback]   = useState(false);
@@ -61,7 +61,7 @@ export default function SubmissionCompleteScreen() {
         </div>
 
         {feedbackDone ? (
-          <button onClick={() => { setCompletionCardDismissed(true); setCurrentScreen('map'); }}
+          <button onClick={() => { clearStudentSession(); setCompletionCardDismissed(true); setCurrentScreen('home'); }}
             style={{ background:'linear-gradient(135deg,var(--jungle-mid),var(--jungle-light))', color:'white', border:'none', padding:'0.85rem 2.5rem', fontSize:'1.05rem', fontWeight:700, borderRadius:'var(--t-r-pill)', cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.08em', boxShadow:'0 6px 18px rgba(26,82,56,0.4)' }}>
             Done
           </button>

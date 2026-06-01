@@ -4,24 +4,38 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 
 const AppContext = createContext(null);
 
+function readLocal(key, fallback) {
+  try { return JSON.parse(localStorage.getItem(key)) ?? fallback; }
+  catch { return fallback; }
+}
+
 export function AppProvider({ children }) {
+  // ── Saved student session ─────────────────────────────────────────────────
+  const _savedName    = readLocal('tarongaStudentName', '');
+  const _savedCode    = readLocal('tarongaClassCode', '');
+  const _hasSavedSession = !!((_savedName) && (_savedCode));
+  const _savedSession = readLocal('tarongaSessionType', 'standard');
+
   // ── Navigation ────────────────────────────────────────────────────────────
-  const [currentScreen, setCurrentScreen] = useState('home');
-  const [sessionType,   setSessionType]   = useState('standard'); // 'standard' | 'zoosnooz'
+  const [currentScreen, setCurrentScreen] = useState(() => {
+    if (_hasSavedSession) return _savedSession === 'zoosnooz' ? 'zoosnooz' : 'map';
+    return 'home';
+  });
+  const [sessionType,   setSessionType]   = useState(_savedSession);
   const [zzScreen,      setZzScreen]      = useState('map');      // ZooSnooz sub-router
   const [appMode,       setAppMode]       = useState(() => localStorage.getItem('tarongaAppMode') || 'school');
 
   // ── Student identity ──────────────────────────────────────────────────────
-  const [studentName,   setStudentName]   = useState('');
-  const [classCode,     setClassCode]     = useState('');
+  const [studentName,   setStudentName]   = useState(_savedName);
+  const [classCode,     setClassCode]     = useState(_savedCode);
 
   // ── Teacher / Admin identity ─────────────────────────────────────────────
   const [teacherEmail,    setTeacherEmail]    = useState('');
   const [adminAccessCode, setAdminAccessCode] = useState('');
   const [selectedClass,  setSelectedClass]  = useState(null);
   const [selectedAdminClass, setSelectedAdminClass] = useState(null);
-  const [classStage,   setClassStage]   = useState(4);
-  const [classSubject, setClassSubject] = useState('science');
+  const [classStage,   setClassStage]   = useState(() => readLocal('tarongaClassStage', 4));
+  const [classSubject, setClassSubject] = useState(() => readLocal('tarongaClassSubject', 'science'));
 
   // ── Firebase Auth ─────────────────────────────────────────────────────────
   const [teacher,     setTeacher]     = useState(null);   // Firebase User | null
@@ -36,6 +50,11 @@ export function AppProvider({ children }) {
     });
     return unsubscribe;
   }, []);
+
+  const clearStudentSession = () => {
+    ['tarongaStudentName','tarongaClassCode','tarongaClassStage','tarongaClassSubject',
+     'tarongaSessionType','tarongaTrackaProgress','studentEssentialCache'].forEach(k => localStorage.removeItem(k));
+  };
 
   const signOutTeacher = () => {
     setDemoMode(false);
@@ -67,6 +86,7 @@ export function AppProvider({ children }) {
       selectedClass,     setSelectedClass,
       selectedAdminClass, setSelectedAdminClass,
       teacher,       signOutTeacher, authLoading, demoMode, setDemoMode,
+      clearStudentSession,
       docViewCode,   setDocViewCode,
     }}>
       {children}

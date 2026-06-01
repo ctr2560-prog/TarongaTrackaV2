@@ -99,23 +99,17 @@ export default function ClassDetailsScreen() {
   };
 
   const resetStudent = async (s) => {
-    if (!window.confirm(`Reset ${s.name}'s session? This will clear all their badges and progress.`)) return;
+    if (!window.confirm(`Restore ${s.name} to the animal list? Their existing badges and progress will be kept.`)) return;
     setStudentActionBusy(p => ({ ...p, [s.id]: 'resetting' }));
     try {
       await setDoc(doc(db, 'classes', normaliseCode(selectedClass), 'students', s.id), {
-        name: s.name,
-        classCode: normaliseCode(selectedClass),
-        badges: [],
-        totalPoints: 0,
-        quizCorrect: 0,
-        quizTotal: 0,
-        quizPercentage: 0,
-        quizPercent: 0,
-        conservationStatement: '',
         completed: false,
         status: 'incomplete',
-      });
-    } catch (e) { alert('Reset failed: ' + e.message); }
+        completedAt: null,
+        conservationStatement: '',
+        restored: true,
+      }, { merge: true });
+    } catch (e) { alert('Restore failed: ' + e.message); }
     setStudentActionBusy(p => ({ ...p, [s.id]: null }));
   };
 
@@ -1039,11 +1033,11 @@ export default function ClassDetailsScreen() {
                           <button
                             onClick={() => resetStudent(s)}
                             disabled={!!busy}
-                            title="Reset session"
+                            title="Restore to animal list (keeps badges)"
                             style={{ display:'flex', alignItems:'center', gap:'0.25rem', background:'none', color:'#D97706', border:'1.5px solid #FCD34D', padding:'0.28rem 0.55rem', borderRadius:'7px', fontSize:'0.72rem', fontWeight:700, cursor:busy?'not-allowed':'pointer', opacity:busy?0.4:1, transition:'background 0.15s, color 0.15s', whiteSpace:'nowrap' }}
                             onMouseEnter={e=>{ if(!busy){e.currentTarget.style.background='#FFFBEB';e.currentTarget.style.color='#B45309';} }}
                             onMouseLeave={e=>{ e.currentTarget.style.background='none';e.currentTarget.style.color='#D97706'; }}>
-                            {busy==='resetting' ? <span style={{ fontSize:'0.85rem' }}>…</span> : <><span style={{ fontSize:'0.9rem', lineHeight:1 }}>↺</span> <span>Reset</span></>}
+                            {busy==='resetting' ? <span style={{ fontSize:'0.85rem' }}>…</span> : <><span style={{ fontSize:'0.9rem', lineHeight:1 }}>↺</span> <span>Restore</span></>}
                           </button>
                           <button
                             onClick={() => deleteStudent(s)}

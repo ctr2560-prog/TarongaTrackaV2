@@ -41,7 +41,7 @@ function ZzDoneScreen({ classCode, studentName, onDone }) {
 }
 
 export default function ZooSnoozScreen() {
-  const { zzScreen, setZzScreen, setSessionType, setCurrentScreen, studentName, classCode, classStage } = useApp();
+  const { zzScreen, setZzScreen, setSessionType, setCurrentScreen, studentName, classCode, classStage, clearStudentSession } = useApp();
   const { userLocation, locationEnabled, enableLocation, gpsRequired, checkAnimalProximity, setCompletionCardDismissed } = useStudent();
 
   // ── Session state ─────────────────────────────────────────────────────────
@@ -1051,7 +1051,7 @@ export default function ZooSnoozScreen() {
         <ZzDoneScreen
           classCode={classCode}
           studentName={studentName}
-          onDone={() => { setCompletionCardDismissed(true); setCurrentScreen('home'); setSessionType('standard'); }}
+          onDone={() => { clearStudentSession(); setCompletionCardDismissed(true); setCurrentScreen('home'); setSessionType('standard'); }}
         />
       );
     }

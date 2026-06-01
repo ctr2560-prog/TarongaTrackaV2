@@ -21,6 +21,9 @@ export function StudentProvider({ children }) {
 
   const savedProgress = useMemo(() => loadProgress(), []);
 
+  // ── Session key — incremented by resetProgress to force Firestore reload ──
+  const [sessionKey, setSessionKey] = useState(0);
+
   // ── Core student state ─────────────────────────────────────────────────────
   const [foundAnimals,   setFoundAnimals]   = useState(() => new Set(savedProgress?.foundAnimals || []));
   const [badges,         setBadges]         = useState(savedProgress?.badges || []);
@@ -49,6 +52,14 @@ export function StudentProvider({ children }) {
 
   // ── Mission context (data from mission to carry into observation) ──────────
   const [missionContext, setMissionContext] = useState(null);
+
+  // ── Warn before reload / back while session is active ────────────────────
+  useEffect(() => {
+    if (!studentName || !classCode || activityCompleted) return;
+    const handler = (e) => { e.preventDefault(); e.returnValue = ''; };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [studentName, classCode, activityCompleted]);
 
   // ── GPS override setting ───────────────────────────────────────────────────
   const [gpsRequired, setGpsRequired] = useState(true); // false = admin has turned GPS off
@@ -115,7 +126,7 @@ export function StudentProvider({ children }) {
       setStatusLoaded(true);
     }, () => setStatusLoaded(true));
     return unsub;
-  }, [studentName, classCode]);
+  }, [studentName, classCode, sessionKey]);
 
   // ── Geolocation ────────────────────────────────────────────────────────────
   const [locationError, setLocationError] = useState(null);
@@ -212,6 +223,7 @@ export function StudentProvider({ children }) {
 
   // ── Reset in-memory progress for a new student session ────────────────────
   const resetProgress = useCallback(() => {
+    setSessionKey(k => k + 1);
     setFoundAnimals(new Set());
     setBadges([]);
     setActivityCompleted(false);
@@ -236,16 +248,46 @@ export function StudentProvider({ children }) {
     setFoundAnimals(prev => new Set([...prev, badgeData.animalId]));
     setBadges(prev => {
       const existingIndex = prev.findIndex(b => b.animalId === badgeData.animalId);
-      if (existingIndex === -1) return [...prev, badgeData];
-      const updated = [...prev];
-      updated[existingIndex] = {
-        ...updated[existingIndex],
-        ...badgeData,
-        quizResults: badgeData.quizResults?.length > 0 ? badgeData.quizResults : updated[existingIndex].quizResults,
-      };
-      return updated;
+      const newBadges = existingIndex === -1
+        ? [...prev, badgeData]
+        : prev.map((b, i) => i !== existingIndex ? b : {
+            ...b, ...badgeData,
+            quizResults: badgeData.quizResults?.length > 0 ? badgeData.quizResults : b.quizResults,
+          });
+
+      // Save progress to Firestore so teachers see it live and it survives reloads
+      if (studentName && classCode) {
+        const code = normaliseCode(classCode);
+        const sid  = safeStudentId(studentName);
+        const cleanBadges = newBadges.map(b => ({
+          animalId:         b.animalId || '',
+          animal:           b.animal || '',
+          quizResults:      (b.quizResults || []).map(qr => ({
+            question:              qr.question || '',
+            correctOnFirstAttempt: qr.correctOnFirstAttempt === true,
+            missionType:           qr.missionType || 'knowledge',
+          })),
+          observation:      b.observation || '',
+          observationScore: (b.observationScore && typeof b.observationScore === 'object') ? b.observationScore : null,
+          timestamp:        b.timestamp || '',
+          gamePoints:       b.gamePoints || 0,
+        }));
+        const pts = newBadges.reduce((sum, b) => {
+          const obs = b.observationScore || {};
+          return sum
+            + Math.round(((obs.behaviour || 0) + (obs.detail || 0) + (obs.writing || 0)) / 15 * 100)
+            + (b.quizResults || []).filter(q => q.correctOnFirstAttempt).length * 20
+            + (b.gamePoints || 0);
+        }, 0);
+        setDoc(doc(db, 'classes', code, 'students', sid), {
+          badges:      cleanBadges,
+          totalPoints: pts,
+        }, { merge: true }).catch(e => console.warn('badge save:', e));
+      }
+
+      return newBadges;
     });
-  }, []);
+  }, [studentName, classCode]);
 
   // ── Quiz answer handler (shared by standard + mission screens) ────────────
   const handleQuizAnswer = useCallback((questionIndex, answerIndex, correctIndex) => {
