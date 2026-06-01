@@ -166,9 +166,9 @@ export default function TigerMission() {
               <span style={{ fontSize:'0.72rem', color:'rgba(255,255,255,0.85)', fontWeight:600 }}>Zoom in so the tiger fills the frame, then capture</span>
             </div>
             {!cameraError && (
-              <button onClick={flipCamera} style={{ position:'absolute', bottom:'0.6rem', right:'0.65rem', display:'flex', alignItems:'center', gap:'0.3rem', padding:'0.28rem 0.65rem', borderRadius:'999px', border:'1.5px solid rgba(255,255,255,0.3)', background:'rgba(0,0,0,0.55)', backdropFilter:'blur(6px)', cursor:'pointer', zIndex:5 }}>
-                <span style={{ fontSize:'0.95rem', color:'rgba(255,255,255,0.85)' }}>⟳</span>
-                <span style={{ fontSize:'0.65rem', fontWeight:700, color:'rgba(255,255,255,0.75)', textTransform:'uppercase', letterSpacing:'0.08em' }}>Flip</span>
+              <button onClick={flipCamera} style={{ position:'absolute', bottom:'1rem', right:'1rem', width:'60px', height:'60px', borderRadius:'50%', border:'2.5px solid rgba(255,255,255,0.75)', background:'rgba(0,0,0,0.6)', backdropFilter:'blur(10px)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'0.05rem', cursor:'pointer', zIndex:5, boxShadow:'0 4px 16px rgba(0,0,0,0.4)' }}>
+                <span style={{ fontSize:'1.8rem', color:'white', lineHeight:1 }}>⟳</span>
+                <span style={{ fontSize:'0.55rem', fontWeight:800, color:'rgba(255,255,255,0.9)', textTransform:'uppercase', letterSpacing:'0.1em' }}>Flip</span>
               </button>
             )}
           </div>

@@ -2440,9 +2440,9 @@ export default function ZooSnoozScreen() {
                       </span>
                     </button>
                     {!zzRecording && (
-                      <button onClick={flipZzCamera} style={{ display:'flex', alignItems:'center', gap:'0.3rem', padding:'0.28rem 0.65rem', borderRadius:'999px', border:'1.5px solid rgba(255,255,255,0.3)', background:'rgba(0,0,0,0.55)', backdropFilter:'blur(6px)', cursor:'pointer' }}>
-                        <span style={{ fontSize:'0.95rem', color:'rgba(255,255,255,0.85)' }}>⟳</span>
-                        <span style={{ fontSize:'0.62rem', fontWeight:700, color:'rgba(255,255,255,0.75)', textTransform:'uppercase', letterSpacing:'0.1em', whiteSpace:'nowrap' }}>Flip</span>
+                      <button onClick={flipZzCamera} style={{ width:'52px', height:'52px', borderRadius:'50%', border:'2.5px solid rgba(255,255,255,0.75)', background:'rgba(0,0,0,0.6)', backdropFilter:'blur(10px)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'0.05rem', cursor:'pointer', boxShadow:'0 4px 16px rgba(0,0,0,0.4)', flexShrink:0 }}>
+                        <span style={{ fontSize:'1.6rem', color:'white', lineHeight:1 }}>⟳</span>
+                        <span style={{ fontSize:'0.5rem', fontWeight:800, color:'rgba(255,255,255,0.9)', textTransform:'uppercase', letterSpacing:'0.1em' }}>Flip</span>
                       </button>
                     )}
                   </div>

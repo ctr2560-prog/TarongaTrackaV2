@@ -1709,10 +1709,10 @@
     .gwr-layer.termites{ height:11px; background:radial-gradient(circle at 8% 50%,#efca91 0 7%,transparent 8%),radial-gradient(circle at 57% 30%,#c98447 0 7%,transparent 8%),linear-gradient(180deg,#efcf98,#c98846); }
     .gwr-plate { width:170px; height:25px; border-radius:50%; background:radial-gradient(circle at 50% 30%,#b27045 0 58%,#86512f 59% 76%,#5f371f 77%); box-shadow:0 8px 12px rgba(0,0,0,.22); }
     .gwr-counter { position:absolute; left:0; right:0; bottom:0; height:115px; background:radial-gradient(circle at 50% -80%,rgba(255,255,255,.18),transparent 45%),linear-gradient(180deg,#a86d40 0%,#764225 30%,#5b321c 100%); border-top:6px solid #432313; }
-    .gwr-serveRow { display:grid; grid-template-columns:1fr 88px; gap:8px; margin-bottom:-8px; }
+    .gwr-serveRow { display:grid; grid-template-columns:1fr 88px; gap:8px; margin-bottom:0; }
     .gwr-serveBtn { min-height:54px; border-radius:18px; border:4px solid #174f8d; background:linear-gradient(180deg,rgba(255,255,255,.32),transparent 36%),linear-gradient(180deg,#80dbff,#2b91e6); color:#fff; font-size:28px; font-weight:900; font-family:"Courier New",monospace; cursor:pointer; text-shadow:2px 2px 0 rgba(0,0,0,.22); box-shadow:0 6px 0 rgba(48,24,12,.28); }
     .gwr-miniBtn { min-height:54px; border-radius:16px; border:4px solid #7d4d29; background:linear-gradient(180deg,rgba(255,255,255,.28),transparent 36%),linear-gradient(180deg,#ffe7b2,#f0b75e); color:#492614; font-size:13px; font-weight:900; font-family:"Courier New",monospace; cursor:pointer; box-shadow:0 6px 0 rgba(48,24,12,.28); }
-    .gwr-controls { display:grid; grid-template-columns:repeat(4,1fr); gap:4px; margin-top:-22px; overflow:visible; }
+    .gwr-controls { display:grid; grid-template-columns:repeat(4,1fr); gap:4px; margin-top:6px; overflow:visible; }
     .gwr-ingredientBtn { border:none; background:transparent; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:0; gap:0; overflow:visible; -webkit-tap-highlight-color:transparent; }
     .gwr-ingredientBtn img { width:clamp(66px,17vw,104px); height:clamp(66px,17vw,104px); object-fit:contain; display:block; filter:drop-shadow(0 2px 2px rgba(0,0,0,.12)); }
     .gwr-serveBtn:active,.gwr-miniBtn:active,.gwr-ingredientBtn:active { transform:translateY(2px); }

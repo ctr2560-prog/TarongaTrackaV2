@@ -3,6 +3,7 @@ import { collection, doc, onSnapshot, getDocs, getDoc, runTransaction, serverTim
 import { db } from '../firebase';
 import { useApp } from '../context/AppContext';
 import LegalModal from '../components/LegalModal';
+import TeacherHelpBot from '../components/TeacherHelpBot';
 import { openTeacherInfoSheet } from '../utils/teacherInfoSheet';
 
 const WILDLY_PHRASES = ['Wildly by Taronga', 'Continue the learning', 'Resources', 'Programs', 'Assessments'];
@@ -735,6 +736,8 @@ export default function TeacherDashboardScreen() {
           </div>
         </div>
       )}
+
+      <TeacherHelpBot />
     </>
   );
 }

@@ -205,14 +205,22 @@ export default function TeacherLoginScreen() {
           ) : isLogin ? 'Sign In' : 'Create Account'}
         </button>
 
-        <p style={{ textAlign:'center', marginTop:'1.1rem', marginBottom:0, fontSize:'0.85rem', color:'#666' }}>
-          {isLogin ? "Don't have an account? " : 'Already have an account? '}
+        {isLogin ? (
           <button
-            onClick={() => switchMode(isLogin ? 'register' : 'login')}
-            style={{ background:'none', border:'none', color:'var(--t-mid)', fontWeight:700, fontSize:'0.85rem', cursor:'pointer', padding:0 }}>
-            {isLogin ? 'Create one now' : 'Sign in'}
+            onClick={() => switchMode('register')}
+            style={{ display:'block', width:'100%', marginTop:'1rem', padding:'0.75rem', borderRadius:'var(--t-r-pill)', border:'2px solid var(--t-mid)', background:'transparent', color:'var(--t-mid)', fontSize:'0.95rem', fontWeight:700, cursor:'pointer', textAlign:'center', transition:'all 0.18s' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--t-mid)'; e.currentTarget.style.color = 'white'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--t-mid)'; }}>
+            No account yet? Create one free →
           </button>
-        </p>
+        ) : (
+          <p style={{ textAlign:'center', marginTop:'1rem', marginBottom:0, fontSize:'0.85rem', color:'#666' }}>
+            Already have an account?{' '}
+            <button onClick={() => switchMode('login')} style={{ background:'none', border:'none', color:'var(--t-mid)', fontWeight:700, fontSize:'0.85rem', cursor:'pointer', padding:0 }}>
+              Sign in
+            </button>
+          </p>
+        )}
 
         <button
           onClick={() => setCurrentScreen('schoolEntry')}
