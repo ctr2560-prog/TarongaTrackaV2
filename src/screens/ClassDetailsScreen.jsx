@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   collection, doc, getDoc, getDocs, onSnapshot,
-  writeBatch, setDoc, updateDoc, query, where, serverTimestamp,
+  writeBatch, setDoc, updateDoc, deleteDoc, query, where, serverTimestamp,
 } from 'firebase/firestore';
 import { db, storage } from '../firebase';
 import { ref as storageRef, getDownloadURL } from 'firebase/storage';
@@ -86,6 +86,38 @@ export default function ClassDetailsScreen() {
   const [markingCardOpen,   setMarkingCardOpen]   = useState(false);
   const [classCodeModal,    setClassCodeModal]    = useState(null);
   const [classCodeFS,       setClassCodeFS]       = useState(false);
+
+  const [studentActionBusy, setStudentActionBusy] = useState({});
+
+  const deleteStudent = async (s) => {
+    if (!window.confirm(`Delete ${s.name}'s session? This cannot be undone.`)) return;
+    setStudentActionBusy(p => ({ ...p, [s.id]: 'deleting' }));
+    try {
+      await deleteDoc(doc(db, 'classes', normaliseCode(selectedClass), 'students', s.id));
+    } catch (e) { alert('Delete failed: ' + e.message); }
+    setStudentActionBusy(p => ({ ...p, [s.id]: null }));
+  };
+
+  const resetStudent = async (s) => {
+    if (!window.confirm(`Reset ${s.name}'s session? This will clear all their badges and progress.`)) return;
+    setStudentActionBusy(p => ({ ...p, [s.id]: 'resetting' }));
+    try {
+      await setDoc(doc(db, 'classes', normaliseCode(selectedClass), 'students', s.id), {
+        name: s.name,
+        classCode: normaliseCode(selectedClass),
+        badges: [],
+        totalPoints: 0,
+        quizCorrect: 0,
+        quizTotal: 0,
+        quizPercentage: 0,
+        quizPercent: 0,
+        conservationStatement: '',
+        completed: false,
+        status: 'incomplete',
+      });
+    } catch (e) { alert('Reset failed: ' + e.message); }
+    setStudentActionBusy(p => ({ ...p, [s.id]: null }));
+  };
 
   // Modals
   const [obsModal,          setObsModal]          = useState(null);
@@ -181,7 +213,14 @@ export default function ClassDetailsScreen() {
   const totalBadges    = students.reduce((s,st)=>s+(st.badges?.length||0),0);
   const completedCount = students.filter(s=>s.completed).length;
   const completedStuds = students.filter(s=>s.completed);
-  const avgQuizPct     = completedStuds.length > 0 ? Math.round(completedStuds.reduce((s,st)=>s+(st.quizPercentage||0),0)/completedStuds.length) : 0;
+  const avgQuizPct     = (() => {
+    const withData = students.filter(s => (s.badges||[]).some(b => (b.quizResults||[]).length > 0));
+    if (!withData.length) return 0;
+    return Math.round(withData.reduce((sum, s) => {
+      const allQR = (s.badges||[]).flatMap(b => b.quizResults||[]);
+      return sum + Math.round(allQR.filter(r => r.correctOnFirstAttempt === true).length / allQR.length * 100);
+    }, 0) / withData.length);
+  })();
 
   // ── CSV Export ──────────────────────────────────────────────────────────────
   const downloadCSV = () => {
@@ -671,7 +710,12 @@ export default function ClassDetailsScreen() {
                 const topAnimals = Object.entries(animalCounts).sort((a,b)=>b[1]-a[1]).slice(0,6);
                 const maxAnimal  = topAnimals[0]?.[1] || 1;
                 const quizBuckets = {'0–25':0,'26–50':0,'51–75':0,'76–100':0};
-                students.forEach(s => { const q=s.quizPercentage||0; if(q<=25) quizBuckets['0–25']++; else if(q<=50) quizBuckets['26–50']++; else if(q<=75) quizBuckets['51–75']++; else quizBuckets['76–100']++; });
+                students.forEach(s => {
+                  const allQR = (s.badges||[]).flatMap(b => b.quizResults||[]);
+                  if (!allQR.length) return;
+                  const q = Math.round(allQR.filter(r => r.correctOnFirstAttempt === true).length / allQR.length * 100);
+                  if(q<=25) quizBuckets['0–25']++; else if(q<=50) quizBuckets['26–50']++; else if(q<=75) quizBuckets['51–75']++; else quizBuckets['76–100']++;
+                });
                 const maxBucket = Math.max(...Object.values(quizBuckets),1);
                 const domainList = isMaths ? [
                   { key:'behaviour', label:'Method',        icon:'M', avg:avgB, color:'#059669' },
@@ -965,8 +1009,8 @@ export default function ClassDetailsScreen() {
                 </div>
               ) : (
                 <div style={{ background:'var(--t-chalk)', borderRadius:'var(--t-r-lg)', boxShadow:'var(--t-shadow-sm)', overflow:'hidden', border:'1px solid var(--t-stone)' }}>
-                  <div style={{ display:'grid', gridTemplateColumns:'1.4fr 0.6fr 0.6fr 0.6fr 0.85fr 1.4fr 0.85fr', background:'var(--t-forest)', padding:'0.6rem 1rem' }}>
-                    {['Student','Points','Badges','Quiz %','Observations','Conservation Statement','Status'].map(h => (
+                  <div style={{ display:'grid', gridTemplateColumns:'1.4fr 0.6fr 0.6fr 0.6fr 0.85fr 1.4fr 0.75fr 0.9fr', background:'var(--t-forest)', padding:'0.6rem 1rem' }}>
+                    {['Student','Points','Badges','Quiz %','Observations','Conservation Statement','Status','Actions'].map(h => (
                       <div key={h} style={{ color:'rgba(255,255,255,0.8)', fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em' }}>{h}</div>
                     ))}
                   </div>
@@ -975,8 +1019,9 @@ export default function ClassDetailsScreen() {
                   ) : students.map((s,i) => {
                     const badgeCount   = Array.isArray(s.badges) ? new Set(s.badges.map(b=>b.animalId).filter(Boolean)).size : 0;
                     const hasObs       = (s.badges||[]).some(b=>b.observation);
+                    const busy = studentActionBusy[s.id];
                     return (
-                      <div key={s.name} style={{ display:'grid', gridTemplateColumns:'1.4fr 0.6fr 0.6fr 0.6fr 0.85fr 1.4fr 0.85fr', padding:'0.7rem 1rem', borderTop:'1px solid var(--t-stone)', alignItems:'center', background: i%2===0 ? 'var(--t-chalk)' : 'var(--t-parchment)' }}>
+                      <div key={s.name} style={{ display:'grid', gridTemplateColumns:'1.4fr 0.6fr 0.6fr 0.6fr 0.85fr 1.4fr 0.75fr 0.9fr', padding:'0.7rem 1rem', borderTop:'1px solid var(--t-stone)', alignItems:'center', background: i%2===0 ? 'var(--t-chalk)' : 'var(--t-parchment)' }}>
                         <div style={{ display:'flex', alignItems:'center', gap:'0.55rem' }}>
                           <div style={{ width:'28px', height:'28px', borderRadius:'50%', background: s.completed ? 'linear-gradient(135deg,var(--t-mid),var(--t-eucalyptus))' : 'linear-gradient(135deg,#aaa,#ccc)', display:'flex', alignItems:'center', justifyContent:'center', color:'white', fontSize:'0.72rem', fontWeight:700, flexShrink:0 }}>{s.name.charAt(0).toUpperCase()}</div>
                           <span style={{ fontWeight:600, color:'var(--t-deep)', fontSize:'0.88rem' }}>{s.name}</span>
@@ -989,6 +1034,16 @@ export default function ClassDetailsScreen() {
                         <div style={{ display:'flex', alignItems:'center', gap:'0.35rem' }}>
                           <div style={{ width:'8px', height:'8px', borderRadius:'50%', background: s.status==='complete'?'#16A34A':'#CA8A04' }} />
                           <span style={{ fontSize:'0.72rem', fontWeight:700, color: s.status==='complete'?'#16A34A':'#CA8A04' }}>{s.status==='complete'?'Complete':'Incomplete'}</span>
+                        </div>
+                        <div style={{ display:'flex', alignItems:'center', gap:'0.3rem' }}>
+                          <button onClick={() => resetStudent(s)} disabled={!!busy} title="Reset session"
+                            style={{ background:'#F59E0B', color:'white', border:'none', padding:'0.22rem 0.45rem', borderRadius:'5px', fontSize:'0.68rem', fontWeight:700, cursor:busy?'not-allowed':'pointer', opacity:busy?0.5:1 }}>
+                            {busy==='resetting' ? '…' : '↺'}
+                          </button>
+                          <button onClick={() => deleteStudent(s)} disabled={!!busy} title="Delete student"
+                            style={{ background:'#DC2626', color:'white', border:'none', padding:'0.22rem 0.45rem', borderRadius:'5px', fontSize:'0.68rem', fontWeight:700, cursor:busy?'not-allowed':'pointer', opacity:busy?0.5:1 }}>
+                            {busy==='deleting' ? '…' : '🗑'}
+                          </button>
                         </div>
                       </div>
                     );
