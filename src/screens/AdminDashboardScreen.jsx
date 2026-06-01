@@ -1254,6 +1254,21 @@ function ZooSnoozAdminTab({ classes }) {
 function OverviewTab({ classes, loading, onClassClick }) {
   const [dateFilter,    setDateFilter]    = useState('all');
   const [subjectFilter, setSubjectFilter] = useState('all');
+  const [deletingClass, setDeletingClass] = useState(null);
+
+  const deleteClass = async (e, cls) => {
+    e.stopPropagation();
+    if (!window.confirm(`Delete class "${cls.className}" (${cls.classCode}) and all ${cls.studentCount} student records? This cannot be undone.`)) return;
+    setDeletingClass(cls.classCode);
+    try {
+      const studentsSnap = await getDocs(collection(db, 'classes', cls.classCode, 'students'));
+      const batch = writeBatch(db);
+      studentsSnap.docs.forEach(d => batch.delete(d.ref));
+      batch.delete(doc(db, 'classes', cls.classCode));
+      await batch.commit();
+    } catch (e) { alert('Delete failed: ' + e.message); }
+    setDeletingClass(null);
+  };
 
   const filtered = classes.filter(cls => {
     if (subjectFilter !== 'all' && cls.subject !== subjectFilter) return false;
@@ -1350,8 +1365,19 @@ function OverviewTab({ classes, loading, onClassClick }) {
                       </p>
                     )}
                   </div>
-                  <div style={{ background: cls.completionPercent===100 ? 'var(--t-success-bg)' : 'var(--t-warning-bg)', color: cls.completionPercent===100 ? 'var(--t-success)' : 'var(--t-warning)', border:`1px solid ${cls.completionPercent===100?'#BBF7D0':'#FED7AA'}`, padding:'0.2rem 0.55rem', borderRadius:'var(--t-r-pill)', fontSize:'0.7rem', fontWeight:700 }}>
-                    {cls.completionPercent}%
+                  <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:'0.4rem', flexShrink:0 }}>
+                    <div style={{ background: cls.completionPercent===100 ? 'var(--t-success-bg)' : 'var(--t-warning-bg)', color: cls.completionPercent===100 ? 'var(--t-success)' : 'var(--t-warning)', border:`1px solid ${cls.completionPercent===100?'#BBF7D0':'#FED7AA'}`, padding:'0.2rem 0.55rem', borderRadius:'var(--t-r-pill)', fontSize:'0.7rem', fontWeight:700 }}>
+                      {cls.completionPercent}%
+                    </div>
+                    <button
+                      onClick={e => deleteClass(e, cls)}
+                      disabled={deletingClass === cls.classCode}
+                      title="Delete class and all student data"
+                      style={{ background:'none', border:'1px solid #FECACA', color:'#DC2626', width:'26px', height:'26px', borderRadius:'6px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'0.78rem', cursor: deletingClass === cls.classCode ? 'not-allowed' : 'pointer', opacity: deletingClass === cls.classCode ? 0.5 : 0.7, transition:'opacity 0.15s, background 0.15s', flexShrink:0 }}
+                      onMouseEnter={e=>{e.currentTarget.style.opacity='1';e.currentTarget.style.background='#FEE2E2';}}
+                      onMouseLeave={e=>{e.currentTarget.style.opacity='0.7';e.currentTarget.style.background='none';}}>
+                      {deletingClass === cls.classCode ? '…' : '🗑'}
+                    </button>
                   </div>
                 </div>
 
@@ -1370,7 +1396,7 @@ function OverviewTab({ classes, loading, onClassClick }) {
                   </div>
                 </div>
 
-                <div style={{ marginTop:'0.75rem', fontSize:'0.8rem', color:'#888' }}>{cls.teacherEmail}</div>
+                <div style={{ marginTop:'0.75rem', fontSize:'0.8rem', color:'#888', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{cls.teacherEmail}</div>
               </div>
             ))}
           </div>
