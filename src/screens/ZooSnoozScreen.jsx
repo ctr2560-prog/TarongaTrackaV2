@@ -130,11 +130,13 @@ export default function ZooSnoozScreen() {
   const [zzUploadProgress, setZzUploadProgress] = useState({});
   const [zzVideoURLs,   setZzVideoURLs]   = useState({});    // { [animalId]: blobURL }
   const [nightVision,   setNightVision]   = useState(false);
+  const [zzFrontCam,    setZzFrontCam]    = useState(false);
   const zzVideoRef    = useRef(null);  // camera <video> element
   const zzCamRef      = useRef(null);  // camera stream
   const zzMediaRef    = useRef(null);  // MediaRecorder
   const zzChunksRef   = useRef([]);
   const zzCountdownRef = useRef(null);
+  const zzFacingModeRef = useRef('environment');
 
   // ── Documentary stitching ─────────────────────────────────────────────────
   const [zzStitchPhase,    setZzStitchPhase]    = useState(null); // 'stitching'|'preview'|'submitting'|'done'
@@ -260,7 +262,7 @@ export default function ZooSnoozScreen() {
     let stopped = false;
     (async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: true });
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: zzFacingModeRef.current, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: true });
         if (stopped) { stream.getTracks().forEach(t => t.stop()); return; }
         zzCamRef.current = stream;
         if (zzVideoRef.current) {
@@ -280,6 +282,24 @@ export default function ZooSnoozScreen() {
       zzCamRef.current = null;
     };
   }, [zzPhase]);
+
+  // ── Video phase: flip camera ──────────────────────────────────────────────
+  const flipZzCamera = () => {
+    if (zzRecording) return;
+    const newFront = !zzFrontCam;
+    zzFacingModeRef.current = newFront ? 'user' : 'environment';
+    setZzFrontCam(newFront);
+    zzCamRef.current?.getTracks().forEach(t => t.stop());
+    zzCamRef.current = null;
+    if (zzVideoRef.current) zzVideoRef.current.srcObject = null;
+    navigator.mediaDevices.getUserMedia({
+      video: { facingMode: newFront ? 'user' : 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+      audio: true,
+    }).then(stream => {
+      zzCamRef.current = stream;
+      if (zzVideoRef.current) { zzVideoRef.current.srcObject = stream; zzVideoRef.current.play().catch(() => {}); }
+    }).catch(() => {});
+  };
 
   // ── Start mission ─────────────────────────────────────────────────────────
   const startMission = useCallback((animal) => {
@@ -2387,7 +2407,8 @@ export default function ZooSnoozScreen() {
                 {/* Camera feed */}
                 <div style={{ position:'relative', width:'100%', aspectRatio:'3/4', maxHeight:'28vh', overflow:'hidden', background:'#000' }}>
                   <video ref={zzVideoRef} muted playsInline style={{ width:'100%', height:'100%', objectFit:'cover', display:'block', transition:'filter 0.35s ease',
-                    filter: nightVision ? 'grayscale(1) brightness(1.6) contrast(1.9) sepia(1) hue-rotate(80deg) saturate(3)' : 'none'
+                    filter: nightVision ? 'grayscale(1) brightness(1.6) contrast(1.9) sepia(1) hue-rotate(80deg) saturate(3)' : 'none',
+                    transform: zzFrontCam ? 'scaleX(-1)' : 'none',
                   }} />
                   {nightVision && (
                     <div style={{ position:'absolute', inset:0, background:'rgba(0,230,60,0.08)', mixBlendMode:'screen', pointerEvents:'none', transition:'opacity 0.3s' }} />
@@ -2405,8 +2426,8 @@ export default function ZooSnoozScreen() {
                       REC {zzCountdown}s
                     </div>
                   )}
-                  {/* Night vision toggle */}
-                  <div style={{ position:'absolute', bottom:'0.6rem', left:'0.65rem', display:'flex', alignItems:'center', gap:'0.5rem', zIndex:5 }}>
+                  {/* Night vision toggle + flip button */}
+                  <div style={{ position:'absolute', bottom:'0.6rem', left:'0.65rem', right:'0.65rem', display:'flex', alignItems:'center', justifyContent:'space-between', zIndex:5 }}>
                     <button
                       onClick={() => setNightVision(v => !v)}
                       style={{ display:'flex', alignItems:'center', gap:'0.4rem', padding:'0.28rem 0.7rem 0.28rem 0.4rem', borderRadius:'999px', border: nightVision ? '1.5px solid rgba(0,230,60,0.6)' : '1.5px solid rgba(255,255,255,0.25)', background: nightVision ? 'rgba(0,230,60,0.18)' : 'rgba(0,0,0,0.55)', backdropFilter:'blur(6px)', cursor:'pointer', transition:'all 0.25s' }}
@@ -2418,6 +2439,12 @@ export default function ZooSnoozScreen() {
                         {nightVision ? '🟢 Night Vision' : 'Night Vision'}
                       </span>
                     </button>
+                    {!zzRecording && (
+                      <button onClick={flipZzCamera} style={{ display:'flex', alignItems:'center', gap:'0.3rem', padding:'0.28rem 0.65rem', borderRadius:'999px', border:'1.5px solid rgba(255,255,255,0.3)', background:'rgba(0,0,0,0.55)', backdropFilter:'blur(6px)', cursor:'pointer' }}>
+                        <span style={{ fontSize:'0.95rem', color:'rgba(255,255,255,0.85)' }}>⟳</span>
+                        <span style={{ fontSize:'0.62rem', fontWeight:700, color:'rgba(255,255,255,0.75)', textTransform:'uppercase', letterSpacing:'0.1em', whiteSpace:'nowrap' }}>Flip</span>
+                      </button>
+                    )}
                   </div>
                 </div>
 

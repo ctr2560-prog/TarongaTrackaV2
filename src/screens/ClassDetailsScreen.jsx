@@ -1009,7 +1009,7 @@ export default function ClassDetailsScreen() {
                 </div>
               ) : (
                 <div style={{ background:'var(--t-chalk)', borderRadius:'var(--t-r-lg)', boxShadow:'var(--t-shadow-sm)', overflow:'hidden', border:'1px solid var(--t-stone)' }}>
-                  <div style={{ display:'grid', gridTemplateColumns:'1.4fr 0.6fr 0.6fr 0.6fr 0.85fr 1.4fr 0.75fr 0.9fr', background:'var(--t-forest)', padding:'0.6rem 1rem' }}>
+                  <div style={{ display:'grid', gridTemplateColumns:'1.4fr 0.6fr 0.6fr 0.6fr 0.85fr 1.4fr 0.75fr 1.1fr', background:'var(--t-forest)', padding:'0.6rem 1rem' }}>
                     {['Student','Points','Badges','Quiz %','Observations','Conservation Statement','Status','Actions'].map(h => (
                       <div key={h} style={{ color:'rgba(255,255,255,0.8)', fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em' }}>{h}</div>
                     ))}
@@ -1021,7 +1021,7 @@ export default function ClassDetailsScreen() {
                     const hasObs       = (s.badges||[]).some(b=>b.observation);
                     const busy = studentActionBusy[s.id];
                     return (
-                      <div key={s.name} style={{ display:'grid', gridTemplateColumns:'1.4fr 0.6fr 0.6fr 0.6fr 0.85fr 1.4fr 0.75fr 0.9fr', padding:'0.7rem 1rem', borderTop:'1px solid var(--t-stone)', alignItems:'center', background: i%2===0 ? 'var(--t-chalk)' : 'var(--t-parchment)' }}>
+                      <div key={s.name} style={{ display:'grid', gridTemplateColumns:'1.4fr 0.6fr 0.6fr 0.6fr 0.85fr 1.4fr 0.75fr 1.1fr', padding:'0.7rem 1rem', borderTop:'1px solid var(--t-stone)', alignItems:'center', background: i%2===0 ? 'var(--t-chalk)' : 'var(--t-parchment)' }}>
                         <div style={{ display:'flex', alignItems:'center', gap:'0.55rem' }}>
                           <div style={{ width:'28px', height:'28px', borderRadius:'50%', background: s.completed ? 'linear-gradient(135deg,var(--t-mid),var(--t-eucalyptus))' : 'linear-gradient(135deg,#aaa,#ccc)', display:'flex', alignItems:'center', justifyContent:'center', color:'white', fontSize:'0.72rem', fontWeight:700, flexShrink:0 }}>{s.name.charAt(0).toUpperCase()}</div>
                           <span style={{ fontWeight:600, color:'var(--t-deep)', fontSize:'0.88rem' }}>{s.name}</span>
@@ -1035,14 +1035,24 @@ export default function ClassDetailsScreen() {
                           <div style={{ width:'8px', height:'8px', borderRadius:'50%', background: s.status==='complete'?'#16A34A':'#CA8A04' }} />
                           <span style={{ fontSize:'0.72rem', fontWeight:700, color: s.status==='complete'?'#16A34A':'#CA8A04' }}>{s.status==='complete'?'Complete':'Incomplete'}</span>
                         </div>
-                        <div style={{ display:'flex', alignItems:'center', gap:'0.3rem' }}>
-                          <button onClick={() => resetStudent(s)} disabled={!!busy} title="Reset session"
-                            style={{ background:'#F59E0B', color:'white', border:'none', padding:'0.22rem 0.45rem', borderRadius:'5px', fontSize:'0.68rem', fontWeight:700, cursor:busy?'not-allowed':'pointer', opacity:busy?0.5:1 }}>
-                            {busy==='resetting' ? '…' : '↺'}
+                        <div style={{ display:'flex', alignItems:'center', gap:'0.35rem' }}>
+                          <button
+                            onClick={() => resetStudent(s)}
+                            disabled={!!busy}
+                            title="Reset session"
+                            style={{ display:'flex', alignItems:'center', gap:'0.25rem', background:'none', color:'#D97706', border:'1.5px solid #FCD34D', padding:'0.28rem 0.55rem', borderRadius:'7px', fontSize:'0.72rem', fontWeight:700, cursor:busy?'not-allowed':'pointer', opacity:busy?0.4:1, transition:'background 0.15s, color 0.15s', whiteSpace:'nowrap' }}
+                            onMouseEnter={e=>{ if(!busy){e.currentTarget.style.background='#FFFBEB';e.currentTarget.style.color='#B45309';} }}
+                            onMouseLeave={e=>{ e.currentTarget.style.background='none';e.currentTarget.style.color='#D97706'; }}>
+                            {busy==='resetting' ? <span style={{ fontSize:'0.85rem' }}>…</span> : <><span style={{ fontSize:'0.9rem', lineHeight:1 }}>↺</span> <span>Reset</span></>}
                           </button>
-                          <button onClick={() => deleteStudent(s)} disabled={!!busy} title="Delete student"
-                            style={{ background:'#DC2626', color:'white', border:'none', padding:'0.22rem 0.45rem', borderRadius:'5px', fontSize:'0.68rem', fontWeight:700, cursor:busy?'not-allowed':'pointer', opacity:busy?0.5:1 }}>
-                            {busy==='deleting' ? '…' : '🗑'}
+                          <button
+                            onClick={() => deleteStudent(s)}
+                            disabled={!!busy}
+                            title="Delete student"
+                            style={{ display:'flex', alignItems:'center', gap:'0.25rem', background:'none', color:'#DC2626', border:'1.5px solid #FECACA', padding:'0.28rem 0.55rem', borderRadius:'7px', fontSize:'0.72rem', fontWeight:700, cursor:busy?'not-allowed':'pointer', opacity:busy?0.4:1, transition:'background 0.15s, color 0.15s', whiteSpace:'nowrap' }}
+                            onMouseEnter={e=>{ if(!busy){e.currentTarget.style.background='#FEF2F2';e.currentTarget.style.color='#B91C1C';} }}
+                            onMouseLeave={e=>{ e.currentTarget.style.background='none';e.currentTarget.style.color='#DC2626'; }}>
+                            {busy==='deleting' ? <span style={{ fontSize:'0.85rem' }}>…</span> : <><span style={{ fontSize:'0.85rem', lineHeight:1 }}>🗑</span> <span>Delete</span></>}
                           </button>
                         </div>
                       </div>

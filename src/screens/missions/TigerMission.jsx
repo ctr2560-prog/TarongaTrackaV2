@@ -45,10 +45,12 @@ export default function TigerMission() {
   const [photo, setPhoto]           = useState(null);
   const [measurement, setMeasurement] = useState(2.5);
   const [cameraError, setCameraError] = useState(false);
+  const [frontCam, setFrontCam]       = useState(false);
 
-  const videoRef  = useRef(null);
-  const canvasRef = useRef(null);
-  const streamRef = useRef(null);
+  const videoRef       = useRef(null);
+  const canvasRef      = useRef(null);
+  const streamRef      = useRef(null);
+  const facingModeRef  = useRef('environment');
 
   const mcq = classSubject === 'pdhpe' ? TIGER_PDHPE_MCQ : TIGER_MCQ;
   const correctAnswerIndex = mcq.correct;
@@ -60,7 +62,7 @@ export default function TigerMission() {
     if (!videoRef.current) return;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+        video: { facingMode: facingModeRef.current, width: { ideal: 1280 }, height: { ideal: 720 } },
       });
       streamRef.current = stream;
       videoRef.current.srcObject = stream;
@@ -74,6 +76,14 @@ export default function TigerMission() {
       streamRef.current.getTracks().forEach(t => t.stop());
       streamRef.current = null;
     }
+  };
+
+  const flipCamera = () => {
+    const newFront = !frontCam;
+    facingModeRef.current = newFront ? 'user' : 'environment';
+    setFrontCam(newFront);
+    stopCamera();
+    setTimeout(() => startCamera(), 80);
   };
 
   useEffect(() => {
@@ -150,11 +160,17 @@ export default function TigerMission() {
                 <p style={{ fontSize:'0.9rem', textAlign:'center', padding:'0 2rem', lineHeight:1.6 }}>Camera unavailable - tap Capture to proceed to the measuring and quiz step.</p>
               </div>
             ) : (
-              <video ref={videoRef} autoPlay playsInline muted style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
+              <video ref={videoRef} autoPlay playsInline muted style={{ width:'100%', height:'100%', objectFit:'cover', display:'block', transform: frontCam ? 'scaleX(-1)' : 'none' }} />
             )}
             <div style={{ position:'absolute', top:'0.75rem', left:'50%', transform:'translateX(-50%)', background:'rgba(0,0,0,0.65)', borderRadius:'40px', padding:'0.35rem 1rem', whiteSpace:'nowrap', backdropFilter:'blur(4px)' }}>
               <span style={{ fontSize:'0.72rem', color:'rgba(255,255,255,0.85)', fontWeight:600 }}>Zoom in so the tiger fills the frame, then capture</span>
             </div>
+            {!cameraError && (
+              <button onClick={flipCamera} style={{ position:'absolute', bottom:'0.6rem', right:'0.65rem', display:'flex', alignItems:'center', gap:'0.3rem', padding:'0.28rem 0.65rem', borderRadius:'999px', border:'1.5px solid rgba(255,255,255,0.3)', background:'rgba(0,0,0,0.55)', backdropFilter:'blur(6px)', cursor:'pointer', zIndex:5 }}>
+                <span style={{ fontSize:'0.95rem', color:'rgba(255,255,255,0.85)' }}>⟳</span>
+                <span style={{ fontSize:'0.65rem', fontWeight:700, color:'rgba(255,255,255,0.75)', textTransform:'uppercase', letterSpacing:'0.08em' }}>Flip</span>
+              </button>
+            )}
           </div>
           <div style={{ flexShrink:0, background:'#0F0500', padding:'1rem 1.5rem 1.5rem', borderTop:'1px solid rgba(255,160,50,0.15)' }}>
             <button onClick={capturePhoto}

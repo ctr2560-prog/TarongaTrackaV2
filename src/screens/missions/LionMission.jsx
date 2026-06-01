@@ -116,17 +116,19 @@ export default function LionMission() {
   const [holdSeconds,     setHoldSeconds]     = useState(0);
   const [hintsOpen,       setHintsOpen]       = useState(false);
   const [cameraError,     setCameraError]     = useState(false);
+  const [frontCam,        setFrontCam]        = useState(false);
 
   const videoRef       = useRef(null);
   const streamRef      = useRef(null);
   const holdTimerRef   = useRef(null);
+  const facingModeRef  = useRef('environment');
   const selectedIdxRef = useRef(null);
 
   const startCamera = async () => {
     if (!videoRef.current) return;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode:'environment', width:{ ideal:1280 }, height:{ ideal:720 } },
+        video: { facingMode: facingModeRef.current, width:{ ideal:1280 }, height:{ ideal:720 } },
       });
       streamRef.current = stream;
       videoRef.current.srcObject = stream;
@@ -141,6 +143,14 @@ export default function LionMission() {
       streamRef.current.getTracks().forEach(t => t.stop());
       streamRef.current = null;
     }
+  };
+
+  const flipCamera = () => {
+    const newFront = !frontCam;
+    facingModeRef.current = newFront ? 'user' : 'environment';
+    setFrontCam(newFront);
+    stopCamera();
+    setTimeout(() => startCamera(), 80);
   };
 
   useEffect(() => { startCamera(); return () => stopCamera(); }, []);
@@ -237,7 +247,7 @@ export default function LionMission() {
               </div>
             ) : (
               <video ref={videoRef} autoPlay playsInline muted
-                style={{ width:'100%', height:'100%', objectFit:'cover', transform:`scale(${scale})`, transformOrigin:'center', transition:'transform 0.3s ease', display:'block' }} />
+                style={{ width:'100%', height:'100%', objectFit:'cover', transform:`scale(${scale}) scaleX(${frontCam ? -1 : 1})`, transformOrigin:'center', transition:'transform 0.3s ease', display:'block' }} />
             )}
 
             {/* Instruction banner */}
@@ -279,6 +289,13 @@ export default function LionMission() {
                   Hold steady…
                 </span>
               </div>
+            )}
+
+            {!cameraError && (
+              <button onClick={flipCamera} style={{ position:'absolute', bottom:'0.6rem', right:'0.65rem', display:'flex', alignItems:'center', gap:'0.3rem', padding:'0.28rem 0.65rem', borderRadius:'999px', border:'1.5px solid rgba(255,255,255,0.3)', background:'rgba(0,0,0,0.55)', backdropFilter:'blur(6px)', cursor:'pointer', zIndex:5 }}>
+                <span style={{ fontSize:'0.95rem', color:'rgba(255,255,255,0.85)' }}>⟳</span>
+                <span style={{ fontSize:'0.65rem', fontWeight:700, color:'rgba(255,255,255,0.75)', textTransform:'uppercase', letterSpacing:'0.08em' }}>Flip</span>
+              </button>
             )}
 
             {/* Zoom buttons */}
