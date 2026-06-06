@@ -35,11 +35,58 @@ const TIGER_PDHPE_MCQ = {
   fact: 'A tiger\'s power comes from its gluteals, hamstrings, quadriceps and powerful shoulder muscles working together - driving the explosive acceleration, leaping and grappling needed to bring down prey.',
 };
 
+const TIGER_ENGLISH_PASSAGE = `Your grandparents grew up in a world with thousands of Sumatran tigers. You are growing up in one with fewer than 400.\n\nThe forest that held them, layered and ancient and breathing, has been cleared, strip by strip, for palm oil. The tigers did not leave. They were erased.\n\nNow look at the animal in front of you. This is what the world is losing.`;
+
+const TIGER_ENGLISH_MCQ = {
+  stageQ: {
+    1: 'Which word from the passage makes you feel sad or worried?',
+    2: "Why does the writer choose 'erased' instead of 'gone'?",
+    3: "What technique is used in 'the forest… breathing'?",
+    4: 'How does the writer use contrast to convey loss?',
+    5: "The passage calls the tiger 'what the world is losing.' What does this framing do to the reader?",
+  },
+  stageOptions: {
+    1: ['layered', 'ancient', 'erased', 'breathing'],
+    2: [
+      'Because it is a shorter, punchier word',
+      "'Erased' suggests the tigers were deliberately removed, making the loss feel like a human choice, not an accident",
+      "'Erased' and 'gone' mean exactly the same thing",
+      'Because the letter E sounds powerful',
+    ],
+    3: [
+      "Simile: comparing the forest to a person using 'like' or 'as'",
+      'Alliteration: repeating the same letter at the start of words',
+      'Personification: giving the forest a human quality (breathing)',
+      'Onomatopoeia: a word that sounds like the noise it describes',
+    ],
+    4: [
+      'By describing the forest as beautiful and the tigers as dangerous',
+      'By using long sentences followed by short ones to slow the reader down',
+      "By placing 'thousands' against 'fewer than 400', showing the gap between those numbers and what has already been lost",
+      'By comparing Sumatran tigers to other endangered animals',
+    ],
+    5: [
+      'It uses a rhetorical question to make the reader think',
+      'It creates a simile that compares the tiger to something disappearing',
+      'It positions the reader to feel grief rather than just admiration, making the tiger evidence of loss, not just a living animal',
+      'It uses alliteration to draw the reader\'s attention to the key idea',
+    ],
+  },
+  stageCorrect: { 1: 2, 2: 1, 3: 2, 4: 2, 5: 2 },
+  stageFacts: {
+    1: '"Erased" is the most powerful word in this passage. It suggests the tigers were deliberately removed, not that they simply disappeared. Writers choose words carefully to shape how the reader feels.',
+    2: 'Word choice (diction) controls the reader\'s emotional response. "Erased" implies deliberate action and positions the reader to feel responsible, not just sad. Writers choose words for the exact connotations they carry, not just their basic meaning.',
+    3: 'Personification gives human qualities to non-human things. "Breathing" makes the forest feel alive and vital, which makes its destruction feel like a death. Naming the technique helps you use it in your own writing.',
+    4: 'Contrast is one of the most powerful tools a writer has. Placing "thousands" next to "fewer than 400" forces the reader to feel the scale of loss. It makes the abstract (extinction) concrete and urgent. Now use this technique in your own writing.',
+    5: 'Positioning is how writers shape the reader\'s relationship to their subject. By framing the tiger as "what the world is losing," the writer makes the reader feel responsible, not just an observer. Skilled writers always consider how their language positions the reader to think, feel and act.',
+  },
+};
+
 export default function TigerMission() {
   const { setCurrentScreen, classStage, classSubject } = useApp();
   const {
     showResult, setShowResult, isCorrect,
-    setIsProcessingAnswer, handleQuizAnswer, handleNextQuestion,
+    setIsProcessingAnswer, handleQuizAnswer, handleNextQuestion, setMissionContext,
   } = useStudent();
 
   const [photo, setPhoto]           = useState(null);
@@ -52,11 +99,12 @@ export default function TigerMission() {
   const streamRef      = useRef(null);
   const facingModeRef  = useRef('environment');
 
-  const mcq = classSubject === 'pdhpe' ? TIGER_PDHPE_MCQ : TIGER_MCQ;
-  const correctAnswerIndex = mcq.correct;
+  const isEnglish = classSubject === 'english';
+  const mcq = classSubject === 'pdhpe' ? TIGER_PDHPE_MCQ : isEnglish ? TIGER_ENGLISH_MCQ : TIGER_MCQ;
+  const correctAnswerIndex = mcq.stageCorrect ? (mcq.stageCorrect[classStage] ?? 0) : mcq.correct;
   const question = mcq.stageQ[classStage] || mcq.stageQ[4];
   const options  = mcq.stageOptions ? (mcq.stageOptions[classStage] || mcq.stageOptions[4]) : mcq.options;
-  const fact     = mcq.fact;
+  const fact     = mcq.stageFacts?.[classStage] || mcq.fact;
 
   const startCamera = async () => {
     if (!videoRef.current) return;
@@ -143,7 +191,7 @@ export default function TigerMission() {
               <p style={{ color:'#333', fontSize:'clamp(0.9rem,2vh,1.1rem)', lineHeight:1.5, fontWeight:500 }}>💡 {fact}</p>
             </div>
           )}
-          <button onClick={() => { if (isCorrect) { stopCamera(); handleNextQuestion(1); } else { setIsProcessingAnswer(false); setShowResult(false); setPhoto(null); setTimeout(() => startCamera(), 80); } }}
+          <button onClick={() => { if (isCorrect) { stopCamera(); if (isEnglish && photo) setMissionContext({ type: 'tiger-english', photo }); handleNextQuestion(1); } else { setIsProcessingAnswer(false); setShowResult(false); setPhoto(null); setTimeout(() => startCamera(), 80); } }}
             style={{ background: isCorrect ? 'linear-gradient(135deg,var(--t-eucalyptus),var(--t-mid))' : 'linear-gradient(135deg,#DC2626,#991B1B)', color:'white', border:'none', padding:'clamp(0.8rem,2vh,1.2rem) clamp(2rem,5vw,3rem)', fontSize:'clamp(1rem,2.5vh,1.3rem)', fontWeight:700, borderRadius:'var(--t-r-pill)', cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.05em', boxShadow:'0 4px 12px rgba(0,0,0,0.2)', marginTop:'0.5rem' }}>
             {isCorrect ? 'Continue to Observation →' : 'Try Again'}
           </button>
@@ -162,8 +210,13 @@ export default function TigerMission() {
             ) : (
               <video ref={videoRef} autoPlay playsInline muted style={{ width:'100%', height:'100%', objectFit:'cover', display:'block', transform: frontCam ? 'scaleX(-1)' : 'none' }} />
             )}
-            <div style={{ position:'absolute', top:'0.75rem', left:'50%', transform:'translateX(-50%)', background:'rgba(0,0,0,0.65)', borderRadius:'40px', padding:'0.35rem 1rem', whiteSpace:'nowrap', backdropFilter:'blur(4px)' }}>
-              <span style={{ fontSize:'0.72rem', color:'rgba(255,255,255,0.85)', fontWeight:600 }}>Zoom in so the tiger fills the frame, then capture</span>
+            <div style={{ position:'absolute', top:'0.75rem', left:'50%', transform:'translateX(-50%)', background:'rgba(0,0,0,0.65)', borderRadius:'40px', padding:'0.35rem 1rem', backdropFilter:'blur(4px)', maxWidth:'85%', textAlign:'center' }}>
+              <span style={{ fontSize:'0.72rem', color:'rgba(255,255,255,0.85)', fontWeight:600 }}>
+                {isEnglish
+                  ? "You're a wildlife journalist. Photograph the tiger for your article about what the world is losing"
+                  : 'Zoom in so the tiger fills the frame, then capture'
+                }
+              </span>
             </div>
             {!cameraError && (
               <button onClick={flipCamera} style={{ position:'absolute', bottom:'1rem', right:'1rem', width:'60px', height:'60px', borderRadius:'50%', border:'2.5px solid rgba(255,255,255,0.75)', background:'rgba(0,0,0,0.6)', backdropFilter:'blur(10px)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'0.05rem', cursor:'pointer', zIndex:5, boxShadow:'0 4px 16px rgba(0,0,0,0.4)' }}>
@@ -181,8 +234,44 @@ export default function TigerMission() {
         </div>
       )}
 
-      {/* Photo + measure + MCQ phase */}
-      {!showResult && photo && (
+      {/* Photo + passage + MCQ phase — English only */}
+      {!showResult && photo && isEnglish && (
+        <div style={{ flex:'1 1 auto', overflowY:'auto', display:'flex', flexDirection:'column' }}>
+          <div style={{ position:'relative', background:'#0A0600', height:'32vh', flexShrink:0 }}>
+            {photo !== 'camera-error'
+              ? <img src={photo} alt="Your tiger" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
+              : <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', color:'rgba(255,255,255,0.5)', fontSize:'0.9rem' }}>📷 Your tiger photo</div>
+            }
+            <div style={{ position:'absolute', bottom:'0.6rem', right:'0.75rem', background:'rgba(0,0,0,0.65)', borderRadius:'20px', padding:'0.2rem 0.6rem', backdropFilter:'blur(4px)' }}>
+              <span style={{ fontSize:'0.65rem', color:'rgba(255,160,50,0.9)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em' }}>Your photo</span>
+            </div>
+          </div>
+
+          <div style={{ flexShrink:0, background:'#150800', borderTop:'1px solid rgba(255,160,50,0.2)', padding:'1rem 1.25rem' }}>
+            <p style={{ fontSize:'0.6rem', fontWeight:800, color:'rgba(255,160,50,0.8)', textTransform:'uppercase', letterSpacing:'0.14em', margin:'0 0 0.6rem' }}>The Last 400 - Model Text</p>
+            {TIGER_ENGLISH_PASSAGE.split('\n\n').map((para, i) => (
+              <p key={i} style={{ fontSize:'0.88rem', color:'rgba(255,255,255,0.88)', lineHeight:1.7, margin: i > 0 ? '0.65rem 0 0' : 0 }}>{para}</p>
+            ))}
+          </div>
+
+          <div style={{ flexShrink:0, background:'white', borderTop:'1px solid #eee', padding:'0.85rem 1rem 1.25rem' }}>
+            <p style={{ fontSize:'0.8rem', fontWeight:700, color:'var(--jungle-deep)', marginBottom:'0.6rem', textAlign:'center', lineHeight:1.4 }}>
+              {question}
+            </p>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.5rem' }}>
+              {options.map((opt, i) => (
+                <button key={i} onClick={() => handleQuizAnswer(0, i, correctAnswerIndex)}
+                  style={{ padding:'0.65rem 0.5rem', borderRadius:'var(--t-r-sm)', border:'2px solid transparent', background:'#f4f8f6', color:'var(--jungle-deep)', fontSize:'0.78rem', fontWeight:600, cursor:'pointer', textAlign:'left', transition:'all 0.15s', lineHeight:1.35 }}>
+                  {opt}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Photo + measure + MCQ phase — Science / Maths / PDHPE */}
+      {!showResult && photo && !isEnglish && (
         <div style={{ flex:'1 1 auto', display:'flex', flexDirection:'column', overflow:'hidden' }}>
           <div style={{ flex:'1 1 auto', position:'relative', background:'#0A0600', overflow:'hidden', minHeight:0 }}>
             {photo !== 'camera-error'

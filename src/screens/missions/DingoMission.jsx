@@ -4,6 +4,82 @@ import { useStudent } from '../../context/StudentContext';
 import { getStageQuestions } from '../../utils/helpers';
 import MathsCalculator from '../../components/MathsCalculator';
 
+const DREAMING_PASSAGE = [
+  'Warrigal, the old dingo, crept towards the black wallaby. Tired and hungry, he moved with great care, because he was much too old to run down the bunderra if it spotted him. He was almost within striking distance when the wallaby raised its head sharply, spun on its hind legs, and was gone.',
+  'Warrigal wondered what had startled the bunderra, so he kept low and watched. He did not have long to wait. An old mundurra, a hunter, appeared out of the scrub. Warrigal growled angrily to himself, then sighed and decided to remain hidden till the old man had gone.',
+  'The old man was just as angry, because he too had been tracking the bunderra. He too was wondering what had startled it, when out of the corner of his eye he noticed the crouching Warrigal. "You\'re not as good to eat as a bunderra," he muttered, "but I am so hungry that even a skinny warrigal will do."',
+  'When Warrigal saw the old mundurra raise his tura - his spear - he sprang to his feet and trotted away. The mundurra gave chase but the pace was slow. Neither was swift because of their age. Both were weary from hunger.',
+  'When Warrigal could run no further, he turned on the mundurra. "Why do you chase me, old brother?" he panted.',
+  'The mundurra, who was also relieved to stop, stood over Warrigal with his spear still raised, though unsteadily. "I want to kill you and eat you," he replied. "And you are not my brother," he added scornfully.',
+  '"Yet we are surely brothers of a sort," said Warrigal. "We are both lonely hunters, and our old age unites us more."',
+  'The old mundurra scratched his beard as he considered this. Then he rested his tura on the ground and sat down to get his breath back.',
+  '"Perhaps we are brothers, at least in spirit," he said.',
+  '"That\'s my point," said Warrigal. "So, what shall we do? Brothers may not kill each other, yet we both must eat."',
+  '"And neither of us eats well any more," grumbled the old mundurra, who was as thin and bony as the dingo.',
+  'Warrigal nodded and sighed, watching the old man closely. The mundurra sighed too, then scratched his beard again as he thought about their problem.',
+  '"If we are brothers," he said finally, "and perhaps we are, then we should hunt together, and share what we catch. We might both eat better together than separately."',
+  'And so they did. The old man and the old dingo hunted together, shared food and campfires together, and became close friends. So did all their descendants - men and dogs - who can be seen together in any baanya, or camp.',
+];
+
+const DINGO_ENGLISH_MCQ = {
+  stageQ: {
+    1: 'Why does Warrigal stop running away from the hunter?',
+    2: 'Why does the old mundurra lower his spear and sit down?',
+    3: 'Warrigal calls the hunter "old brother." How does this change the situation?',
+    4: 'What does the writer suggest is more powerful than the urge to survive alone?',
+    5: 'The story ends: "So did all their descendants - men and dogs." What kind of story is this, and what does that ending do?',
+  },
+  stageOptions: {
+    1: [
+      'He is too fast for the hunter and stops to rest',
+      'He cannot run any further - he is too old and tired',
+      'He decides he wants to fight',
+      'He wants to make friends straight away',
+    ],
+    2: [
+      'He has caught Warrigal and is resting before eating him',
+      'He thinks Warrigal is too skinny to bother with',
+      'He is also exhausted from the chase, and Warrigal\'s words give him a reason to stop',
+      'He has spotted another animal to hunt',
+    ],
+    3: [
+      'It insults the hunter and makes him more angry',
+      'It reminds the hunter they are enemies',
+      'It reframes their relationship - instead of predator and prey, they share something in common',
+      'It confuses the hunter who does not understand dingoes',
+    ],
+    4: [
+      'Youth and physical strength',
+      'The hunter\'s skill with the spear',
+      'Recognising a shared struggle and choosing to cooperate',
+      'The dingo\'s speed and cunning',
+    ],
+    5: [
+      'It is an adventure story - the ending shows what happened to the main characters',
+      'It is an informative text - the ending summarises facts about dingoes',
+      'It is a Dreaming story - the ending extends meaning beyond two characters to explain the origin of the bond between humans and dogs across all time',
+      'It is a persuasive text trying to convince readers to respect dingoes',
+    ],
+  },
+  stageCorrect: { 1: 1, 2: 2, 3: 2, 4: 2, 5: 2 },
+  stageFacts: {
+    1: 'Age and exhaustion level the playing field. When neither hunter can keep going, both must find another way. Warrigal uses words instead of speed - that is how the story turns.',
+    2: 'Warrigal uses words as tools. By naming a shared identity - "old brother" - he gives the hunter a reason to stop. This is the story\'s turning point: language, not strength, changes everything.',
+    3: 'In this story, shared vulnerability is stronger than rivalry. The moment Warrigal names what they have in common, the hunter stops thinking of him as prey. Connection comes from recognising what we share.',
+    4: 'The story suggests that cooperation, born from recognising a shared struggle, is more powerful than competing alone. Both hunter and dingo eat better together than separately.',
+    5: 'This is a Dreaming story - a form of Aboriginal storytelling that carries cultural knowledge and explains how the world came to be. The ending moves from a single event to a universal truth: the bond between humans and dogs began with one act of choosing partnership over predation.',
+  },
+};
+
+const STORY_SEQUENCE = [
+  { id:'hunt',    emoji:'🦘', label:'Warrigal stalks the bunderra',           desc:'Both are hungry hunters' },
+  { id:'scare',   emoji:'🏹', label:'The mundurra scares the wallaby away',   desc:'Both miss out on food' },
+  { id:'chase',   emoji:'🏃', label:'The mundurra chases Warrigal',           desc:'Both exhausted, neither fast' },
+  { id:'brother', emoji:'💬', label:'"Why do you chase me, old brother?"',    desc:'Warrigal uses words, not speed' },
+  { id:'agree',   emoji:'🤝', label:'They agree to hunt together',            desc:'Shared struggle becomes partnership' },
+  { id:'friends', emoji:'🔥', label:'They share food and campfires for life', desc:'The beginning of all their kind' },
+];
+
 const CORRECT_SEQUENCE = [
   { id:'sun',        label:'☀️ Sun',       desc:'Energy source' },
   { id:'grass',      label:'🌿 Grass',      desc:'Producer' },
@@ -28,12 +104,22 @@ export default function DingoMission() {
     setIsProcessingAnswer, handleQuizAnswer, handleNextQuestion,
   } = useStudent();
 
-  const [chainItems, setChainItems] = useState([]);
-  const [wrongTap,   setWrongTap]   = useState(null);
-  const shuffled = useMemo(() => shuffle(CORRECT_SEQUENCE), []);
+  const isEnglish = classSubject === 'english';
+
+  const [chainItems,    setChainItems]    = useState([]);
+  const [wrongTap,      setWrongTap]      = useState(null);
+  const [storyItems,    setStoryItems]    = useState([]);
+  const [storyWrong,    setStoryWrong]    = useState(null);
+  const [englishPhase,  setEnglishPhase]  = useState(0);
+  const shuffled      = useMemo(() => shuffle(CORRECT_SEQUENCE), []);
+  const storyShuffled = useMemo(() => shuffle(STORY_SEQUENCE), []);
   const currentQuestion = getStageQuestions(currentAnimal, classStage, classSubject)[0];
-  const correctAnswerIndex = currentQuestion?.correct ?? 0;
-  const fact = currentQuestion?.stageFacts?.[classStage] || currentQuestion?.fact;
+  const correctAnswerIndex = isEnglish
+    ? (DINGO_ENGLISH_MCQ.stageCorrect[classStage] ?? 1)
+    : (currentQuestion?.correct ?? 0);
+  const fact = isEnglish
+    ? DINGO_ENGLISH_MCQ.stageFacts[classStage]
+    : (currentQuestion?.stageFacts?.[classStage] || currentQuestion?.fact);
 
   const nextExpected   = CORRECT_SEQUENCE[chainItems.length];
   const isCompleteChain = chainItems.length === CORRECT_SEQUENCE.length;
@@ -75,6 +161,135 @@ export default function DingoMission() {
       </button>
     </div>
   );
+
+  // ── English phase 0: Dreaming story ─────────────────────────────────────
+  if (isEnglish && englishPhase === 0) {
+    return (
+      <div style={{ position:'fixed', inset:0, background:'#2C1A0E', display:'flex', flexDirection:'column' }}>
+        <Header />
+        <div style={{ flex:'1 1 0', minHeight:0, overflowY:'auto', padding:'1rem', maxWidth:'560px', margin:'0 auto', width:'100%' }}>
+
+          <div style={{ background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,220,150,0.2)', borderRadius:'14px', padding:'1rem 1.2rem', marginBottom:'0.85rem' }}>
+            <p style={{ fontSize:'0.6rem', fontWeight:800, color:'rgba(255,200,100,0.8)', textTransform:'uppercase', letterSpacing:'0.14em', margin:'0 0 0.35rem' }}>Aboriginal Dreaming Story</p>
+            <h2 style={{ fontSize:'1.15rem', fontWeight:700, color:'white', margin:'0 0 0.15rem', lineHeight:1.3 }}>Warrigal and the Mundurra</h2>
+            <p style={{ fontSize:'0.75rem', color:'rgba(255,255,255,0.5)', margin:0 }}>Read the full story before moving on.</p>
+          </div>
+
+          <div style={{ background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,220,150,0.15)', borderRadius:'14px', padding:'1rem 1.2rem', marginBottom:'0.85rem' }}>
+            {DREAMING_PASSAGE.map((para, i) => (
+              <p key={i} style={{ fontSize:'0.9rem', color:'rgba(255,255,255,0.88)', lineHeight:1.8, margin: i === 0 ? '0' : '0.7rem 0 0', fontStyle: para.startsWith('"') || para.startsWith("'") ? 'italic' : 'normal' }}>{para}</p>
+            ))}
+            <p style={{ fontSize:'0.65rem', color:'rgba(255,255,255,0.3)', marginTop:'1.1rem', marginBottom:0 }}>Source: dingoden.net</p>
+          </div>
+
+          <button onClick={() => setEnglishPhase(1)}
+            style={{ width:'100%', background:'linear-gradient(135deg,#C4873A,#9B5E1E)', color:'white', border:'none', padding:'1rem', borderRadius:'14px', fontSize:'1rem', fontWeight:700, cursor:'pointer', marginBottom:'1.5rem' }}>
+            Put the events in order →
+          </button>
+
+        </div>
+      </div>
+    );
+  }
+
+  // ── English phase 1: story sequencing ────────────────────────────────────
+  if (isEnglish && englishPhase === 1) {
+    const nextStoryExpected = STORY_SEQUENCE[storyItems.length];
+    const isCompleteStory   = storyItems.length === STORY_SEQUENCE.length;
+
+    const tapStoryItem = (id) => {
+      if (isCompleteStory) return;
+      if (!nextStoryExpected || id !== nextStoryExpected.id) {
+        setStoryWrong(id);
+        setTimeout(() => setStoryWrong(null), 700);
+        return;
+      }
+      setStoryItems(prev => [...prev, id]);
+      setStoryWrong(null);
+    };
+
+    if (showResult) {
+      return (
+        <div style={{ position:'fixed', inset:0, background:'linear-gradient(135deg,#10b981 0%,#059669 100%)', display:'flex', flexDirection:'column' }}>
+          <Header />
+          <ResultCard feedbackText="You know this story." factFallback={null} />
+        </div>
+      );
+    }
+
+    return (
+      <div style={{ position:'fixed', inset:0, background:'#2C1A0E', display:'flex', flexDirection:'column' }}>
+        <Header />
+        <div style={{ flex:'1 1 0', minHeight:0, overflowY:'auto', padding:'1rem', maxWidth:'560px', margin:'0 auto', width:'100%' }}>
+
+          <div style={{ background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,220,150,0.2)', borderRadius:'14px', padding:'0.85rem 1.1rem', marginBottom:'0.85rem' }}>
+            <p style={{ fontSize:'0.6rem', fontWeight:800, color:'rgba(255,200,100,0.8)', textTransform:'uppercase', letterSpacing:'0.14em', margin:'0 0 0.25rem' }}>Reading comprehension</p>
+            <h2 style={{ fontSize:'1.1rem', fontWeight:700, color:'white', margin:'0 0 0.15rem', lineHeight:1.3 }}>Put the events in order</h2>
+            <p style={{ fontSize:'0.75rem', color:'rgba(255,255,255,0.5)', margin:0 }}>Tap the events in the order they happen in the story.</p>
+          </div>
+
+          <div style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,220,150,0.15)', borderRadius:'14px', padding:'1rem 1.1rem', marginBottom:'0.85rem' }}>
+
+            <div style={{ display:'flex', gap:'0.3rem', marginBottom:'1rem' }}>
+              {STORY_SEQUENCE.map((item, i) => (
+                <div key={item.id} style={{ flex:1, height:'6px', borderRadius:'3px', background: i < storyItems.length ? 'rgba(255,200,100,0.85)' : 'rgba(255,255,255,0.15)', transition:'background 0.3s' }} />
+              ))}
+            </div>
+
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.55rem', marginBottom:'0.75rem' }}>
+              {storyShuffled.map((item) => {
+                const placed  = storyItems.includes(item.id);
+                const isNext  = !placed && item.id === nextStoryExpected?.id && classStage < 5;
+                const isWrong = storyWrong === item.id;
+                return (
+                  <button key={item.id} onClick={() => tapStoryItem(item.id)} disabled={placed}
+                    style={{ padding:'0.7rem 0.6rem', borderRadius:'12px', border:`2px solid ${isWrong?'#ef4444':placed?'rgba(255,200,100,0.7)':isNext?'rgba(255,200,100,0.4)':'rgba(255,255,255,0.12)'}`, background:isWrong?'rgba(239,68,68,0.15)':placed?'rgba(255,200,100,0.1)':isNext?'rgba(255,200,100,0.06)':'rgba(255,255,255,0.04)', cursor:placed?'default':'pointer', textAlign:'left', transition:'all 0.15s', display:'flex', alignItems:'center', gap:'0.5rem', opacity:placed?0.7:1 }}>
+                    <span style={{ fontSize:'1.3rem', flexShrink:0 }}>{item.emoji}</span>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:'0.78rem', fontWeight:700, color:isWrong?'#ef4444':'rgba(255,255,255,0.9)', lineHeight:1.3 }}>{item.label}</div>
+                      <div style={{ fontSize:'0.65rem', color:'rgba(255,255,255,0.45)' }}>{item.desc}</div>
+                    </div>
+                    {placed  && <span style={{ fontSize:'0.8rem', color:'rgba(255,200,100,0.8)', fontWeight:700, flexShrink:0 }}>✓</span>}
+                    {isWrong && <span style={{ fontSize:'0.8rem', color:'#ef4444', fontWeight:700, flexShrink:0 }}>✗</span>}
+                  </button>
+                );
+              })}
+            </div>
+
+            {storyWrong && (
+              <div style={{ background:'rgba(239,68,68,0.15)', border:'1px solid rgba(239,68,68,0.4)', borderRadius:'8px', padding:'0.45rem 0.75rem', marginBottom:'0.5rem', textAlign:'center' }}>
+                <p style={{ fontSize:'0.78rem', color:'#f87171', fontWeight:600, margin:0 }}>Try again - what happens next in the story?</p>
+              </div>
+            )}
+
+            {storyItems.length > 0 && !isCompleteStory && (
+              <div style={{ background:'rgba(255,200,100,0.07)', borderRadius:'8px', padding:'0.5rem 0.75rem', border:'1px solid rgba(255,200,100,0.2)' }}>
+                <p style={{ fontSize:'0.68rem', fontWeight:700, color:'rgba(255,200,100,0.8)', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:'0.25rem' }}>Story so far:</p>
+                <p style={{ fontSize:'0.78rem', color:'rgba(255,255,255,0.75)', margin:0, lineHeight:1.5 }}>
+                  {storyItems.map(id => STORY_SEQUENCE.find(o => o.id === id)?.label).join(' → ')}
+                  <span style={{ color:'rgba(255,255,255,0.3)' }}> → ?</span>
+                </p>
+              </div>
+            )}
+          </div>
+
+          {!isCompleteStory ? (
+            <div style={{ background:'rgba(255,200,100,0.06)', border:'1.5px dashed rgba(255,200,100,0.3)', borderRadius:'14px', padding:'1rem', textAlign:'center', marginBottom:'1rem' }}>
+              <p style={{ fontSize:'0.88rem', color:'rgba(255,200,100,0.8)', fontWeight:600, margin:0 }}>
+                {storyItems.length === 0 ? 'Start with the first event in the story' : `${STORY_SEQUENCE.length - storyItems.length} more event${STORY_SEQUENCE.length - storyItems.length !== 1 ? 's' : ''} to go`}
+              </p>
+            </div>
+          ) : (
+            <button onClick={() => handleQuizAnswer(0, correctAnswerIndex, correctAnswerIndex)}
+              style={{ width:'100%', background:'linear-gradient(135deg,var(--t-eucalyptus),var(--t-mid))', color:'white', border:'none', padding:'1rem', borderRadius:'14px', fontSize:'1rem', fontWeight:700, cursor:'pointer', marginBottom:'1.5rem' }}>
+              Continue to Writing →
+            </button>
+          )}
+
+        </div>
+      </div>
+    );
+  }
 
   // ── Stage 1-2: simple quiz ────────────────────────────────────────────────
   if (classStage <= 2) {

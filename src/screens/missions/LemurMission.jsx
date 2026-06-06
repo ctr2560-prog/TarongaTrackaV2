@@ -142,6 +142,8 @@ export default function LemurMission() {
   const gameRef    = useRef(null);
   const intervalRef = useRef(null);
 
+  const isEnglish = classSubject === 'english';
+
   const q = getStageQuestions(currentAnimal, classStage, classSubject)[0];
   const maxCount = Math.max(...BEHAVIOURS.map(b => counts[b.key]));
   const computedCorrect = BEHAVIOURS.findIndex(b => counts[b.key] === maxCount);
@@ -158,6 +160,11 @@ export default function LemurMission() {
   useEffect(() => {
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, []);
+
+  // ── Skip observe phase for English ────────────────────────────────────────
+  useEffect(() => {
+    if (isEnglish) { setGamePhase('intro'); setSchlPhase('game'); }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const tapBehaviour = (key) => {
     if (!timerOn || timerDone) return;
@@ -219,6 +226,24 @@ export default function LemurMission() {
     setFeedback(prev => [...prev.slice(-6), { id: fid, label, labelColor, lane: laneIdx, pts: pts * mult }]);
     setTimeout(() => setFeedback(prev => prev.filter(f => f.id !== fid)), 900);
   }, []);
+
+  const handleWriteStory = useCallback(() => {
+    const BEAT_STORY = {
+      sunbathing: 'basked in the warm sun',
+      foraging:   'searched for food',
+      leaping:    'leapt between branches',
+      calling:    'called out across the trees',
+      resting:    'curled up to rest',
+    };
+    const moments = LEMUR_BEATS
+      .filter(b => (hits[b.id] || 0) > 0)
+      .sort((a, b) => (hits[b.id] || 0) - (hits[a.id] || 0))
+      .slice(0, 3)
+      .map(b => ({ label: b.label, color: b.color, story: BEAT_STORY[b.id] }));
+    localStorage.setItem('lemurDanceMoments', JSON.stringify(moments));
+    handleQuizAnswer(0, 0, 0);
+    handleNextQuestion(1);
+  }, [hits, handleQuizAnswer, handleNextQuestion]);
 
   // ── PHASE: OBSERVE ────────────────────────────────────────────────────────
   if (schlPhase === 'observe') {
@@ -399,6 +424,48 @@ export default function LemurMission() {
     );
   }
 
+  // ── PHASE: GAME RESULTS (ENGLISH) ────────────────────────────────────────
+  if (schlPhase === 'game' && gamePhase === 'results' && isEnglish) {
+    const BEAT_STORY = {
+      sunbathing: 'basked in the warm sun',
+      foraging:   'searched for food',
+      leaping:    'leapt between branches',
+      calling:    'called out across the trees',
+      resting:    'curled up to rest',
+    };
+    const topBeats = LEMUR_BEATS
+      .filter(b => (hits[b.id] || 0) > 0)
+      .sort((a, b) => (hits[b.id] || 0) - (hits[a.id] || 0))
+      .slice(0, 3);
+    return (
+      <div style={{ position:'fixed', inset:0, background:'linear-gradient(160deg,#020D06 0%,#0A2F1F 55%,#020D06 100%)', display:'flex', flexDirection:'column', overflowY:'auto' }}>
+        <div style={{ flex:'1 1 auto', display:'flex', flexDirection:'column', alignItems:'center', padding:'1.5rem', maxWidth:'440px', margin:'0 auto', width:'100%' }}>
+          <LemurDancer anim="jump" size={100} />
+          <h1 style={{ fontSize:'clamp(1.8rem,7vw,2.5rem)', color:'white', letterSpacing:'0.08em', margin:'0.3rem 0 0.2rem', textAlign:'center' }}>Dance Complete!</h1>
+          <p style={{ fontSize:'0.82rem', color:'rgba(255,255,255,0.6)', margin:'0 0 1.2rem', textAlign:'center' }}>Here is what your lemur got up to...</p>
+          <div style={{ width:'100%', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(155,48,255,0.3)', borderRadius:'18px', padding:'1rem 1.1rem', marginBottom:'1.2rem' }}>
+            <p style={{ fontSize:'0.65rem', fontWeight:800, color:'rgba(155,48,255,0.85)', textTransform:'uppercase', letterSpacing:'0.12em', margin:'0 0 0.7rem' }}>Your story moments</p>
+            {topBeats.length > 0 ? topBeats.map(b => (
+              <div key={b.id} style={{ display:'flex', alignItems:'center', gap:'0.7rem', marginBottom:'0.55rem' }}>
+                <div style={{ width:'10px', height:'10px', borderRadius:'50%', background:b.color, flexShrink:0 }} />
+                <span style={{ fontSize:'0.9rem', color:'white', fontWeight:500 }}>I <span style={{ color:b.color, fontWeight:700 }}>{BEAT_STORY[b.id]}</span></span>
+              </div>
+            )) : (
+              <p style={{ fontSize:'0.85rem', color:'rgba(255,255,255,0.5)', margin:0 }}>The lemur danced through all its moves.</p>
+            )}
+          </div>
+          <div style={{ width:'100%', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(103,216,247,0.2)', borderRadius:'14px', padding:'0.75rem 1rem', marginBottom:'1.2rem' }}>
+            <p style={{ fontSize:'0.82rem', color:'rgba(255,255,255,0.7)', lineHeight:1.55, margin:0 }}>Now look at the real lemurs and use these moments to write your story in first person.</p>
+          </div>
+          <button onClick={handleWriteStory}
+            style={{ width:'100%', padding:'1.1rem', borderRadius:'40px', border:'none', background:'linear-gradient(135deg,#9B30FF,#F87FD6)', color:'white', fontSize:'1.05rem', fontWeight:800, cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.12em', boxShadow:'0 8px 32px rgba(155,48,255,0.5)' }}>
+            Write the story →
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // ── PHASE: GAME RESULTS ───────────────────────────────────────────────────
   if (schlPhase === 'game' && gamePhase === 'results') {
     const totalH = Object.values(hits).reduce((a, b) => a + b, 0) || 1;
@@ -454,6 +521,8 @@ export default function LemurMission() {
   }
 
   // ── PHASE: QUESTION ───────────────────────────────────────────────────────
+  if (isEnglish) return null; // English path navigates directly to observation via handlePerspectiveChoice
+
   const totalObs = BEHAVIOURS.reduce((s, b) => s + counts[b.key], 0);
   const gamePct  = { feeding: LEMUR_REAL_PCT.foraging, resting: LEMUR_REAL_PCT.sunbathing + LEMUR_REAL_PCT.resting, moving: LEMUR_REAL_PCT.leaping, social: LEMUR_REAL_PCT.calling };
   const obsMax   = Math.max(...BEHAVIOURS.map(b => counts[b.key]), 1);

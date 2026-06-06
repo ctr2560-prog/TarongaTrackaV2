@@ -627,40 +627,40 @@ const ENGLISH_OBS_CONFIG = {
     starters: ['Koalas are…', 'According to the sign,…', 'One important fact about koalas is…'],
   },
   'tiger': {
-    heading: 'Sensory Imagery',
-    chips: [{ label:'Sight', color:'#B45309' },{ label:'Sound', color:'#059669' },{ label:'Touch', color:'#0284C7' },{ label:'Imagery', color:'#DC2626' }],
+    heading: 'Loss Writing',
+    chips: [{ label:'Loss', color:'#B45309' },{ label:'Sumatran tiger', color:'#DC2626' },{ label:'Contrast', color:'#059669' },{ label:'Personification', color:'#0284C7' }],
     hintsByStage: {
-      1: ['Write one thing you can see, one thing you can hear', 'Use describing words for what your senses notice', 'Write two sentences about the tiger\'s habitat'],
-      2: ['Describe the habitat using two different senses', 'Use adjectives - what words describe exactly what you see, hear or feel?', 'Write three sentences using sensory language'],
-      3: ['Use at least three senses in your description of the habitat', 'Choose precise words for each sensation', 'Explain how your sensory language creates a mood or atmosphere'],
-      4: ['Describe the tiger\'s habitat using imagery from at least three senses', 'How does sensory language create atmosphere for the reader?', 'Which sense creates the strongest effect - and why?'],
-      5: ['Analyse how sensory imagery positions the reader inside the scene', 'Discuss which sensory details you chose and why', 'How does your sensory language construct a particular mood or point of view?'],
+      1: ['Look at your photo — what do you see?', 'Write one sentence about the tiger, one sentence about what the world is losing', 'Use a powerful word from the passage if it helps'],
+      2: ['Use your photo as your evidence', 'Try to use one technique from the passage — a powerful word, contrast, or personification', 'Write two sentences that make the reader feel the weight of loss'],
+      3: ['Use your photo as evidence and write a paragraph about loss', 'Include at least one technique from the passage (contrast, personification, or powerful word choice)', 'Name the technique you used and explain what it does'],
+      4: ['Choose two techniques from the passage: contrast, personification, or powerful word choice', 'Write about the Sumatran tiger specifically — use what you know: fewer than 400 remain, the forest was cleared, they were erased', 'After you write, note which two techniques you used'],
+      5: ['Write a loss piece using your photo as your central evidence', 'Use techniques from the passage deliberately: contrast, diction, positioning', 'Analyse how your language choices position the reader to feel the weight of what is being lost'],
     },
-    starters: ['I could see…', 'The sound of…', 'The atmosphere of the tiger\'s habitat is…'],
+    starters: ['This tiger is…', 'What the world is losing is…', 'In my photograph…', 'Fewer than 400…'],
   },
   'dingo': {
-    heading: 'Informative Texts',
-    chips: [{ label:'Topic sentence', color:'#B45309' },{ label:'Facts', color:'#059669' },{ label:'Text features', color:'#0284C7' },{ label:'Informative', color:'#DC2626' }],
+    heading: 'Warrigal\'s Story',
+    chips: [{ label:'Describe the dingo', color:'#B45309' },{ label:'Warrigal', color:'#DC2626' },{ label:'Feelings', color:'#059669' },{ label:'Partnership', color:'#0284C7' }],
     hintsByStage: {
-      1: ['Write one true fact about the dingo', 'A fact is something that is true and can be checked', 'Write your fact in a full sentence'],
-      2: ['An informative text has a topic sentence that says what it is about', 'Write a topic sentence about the dingo, then add two facts', 'How is an informative text different from a story?'],
-      3: ['Write an informative paragraph with a topic sentence, two facts and a concluding sentence', 'Use specific vocabulary related to your topic', 'How do informative texts use language differently from narratives?'],
-      4: ['Identify the features of an effective informative text (topic sentence, evidence, technical vocabulary)', 'How does language in an informative text differ from a persuasive text?', 'Analyse the purpose and audience of your informative writing'],
-      5: ['Analyse the structural and language features of informative texts', 'Compare how informative and persuasive texts use evidence differently', 'Discuss how the intended audience shapes language choices in informative writing'],
+      1: ['Look at the dingo - describe its colour, size or how it moves', 'Think about Warrigal - what did he want? What did he find instead?', 'Write one sentence about the dingo you see, one sentence about Warrigal'],
+      2: ['Look carefully at the dingo in front of you', 'What does it remind you of from the story? Its movement, its eyes, how it holds itself?', 'Write about the dingo and connect it to Warrigal in a few sentences'],
+      3: ['Look at the dingo, then write as Warrigal using "I"', 'What is he feeling? Tired, hungry, nervous?', 'Start with where he is right now - facing the hunter'],
+      4: ['Look at the dingo to picture what Warrigal looks like', 'Write as Warrigal - what does he see, hear, feel in this moment?', 'Show his decision: why does he speak instead of run?'],
+      5: ['Observe the dingo, then write from Warrigal\'s perspective at the turning point', 'Use first person deliberately - what effect does it create for the reader?', 'After writing, reflect on how perspective shapes the theme of partnership'],
     },
-    starters: ['The dingo is…', 'One important fact about dingoes is…', 'An informative text about the dingo would include…'],
+    starters: ['The dingo in front of me…', 'I could run no further…', 'Looking at this animal, I think of Warrigal…', 'When I turned to face him…'],
   },
   'lemur': {
-    heading: 'Point of View',
-    chips: [{ label:'First person', color:'#B45309' },{ label:'Third person', color:'#059669' },{ label:'Perspective', color:'#0284C7' },{ label:'Narrator', color:'#DC2626' }],
+    heading: 'Creative Story',
+    chips: [{ label:'First person', color:'#B45309' },{ label:'Third person', color:'#059669' },{ label:'Story language', color:'#9B30FF' },{ label:'Detail', color:'#DC2626' }],
     hintsByStage: {
-      1: ['First person uses "I" - third person uses "he", "she", "it" or "they"', 'Write one sentence from the lemur\'s point of view using "I"', 'How would the lemur describe its day?'],
-      2: ['First person ("I") puts the reader inside the story', 'Write two sentences from the lemur\'s point of view', 'How does the story feel different when told by the character?'],
-      3: ['Write a paragraph from the lemur\'s first-person perspective', 'How does first person create a different effect from third person?', 'What does the narrator know or not know in each perspective?'],
-      4: ['Analyse how first and third person perspectives create different effects on the reader', 'How does the choice of perspective shape what information the reader receives?', 'Write from two different perspectives and compare the effect'],
-      5: ['Discuss how narrative perspective constructs reader positioning', 'Analyse how an unreliable or limited narrator creates particular effects', 'How does the choice of narrator shape the themes and meaning of a text?'],
+      1: ['Look at the lemurs now — what are they doing?', 'Think about the moments in the game: leaping, foraging, calling', 'Use "I" if you are the lemur, or "the lemur" if you are the narrator'],
+      2: ['Describe one thing you can see the lemurs doing right now', 'Add a moment from the dance game — leaping, foraging, calling or resting', 'Choose first person ("I leapt...") or third person ("the lemur leapt...") and stick to it'],
+      3: ['Combine what you see now with the game behaviours as your story events', 'Choose a perspective and use it consistently throughout', 'Add sensory details from both what you see and what you experienced in the game'],
+      4: ['Use specific observations from the enclosure AND game moments as your raw material', 'Maintain a consistent perspective and use it deliberately', 'Analyse in one sentence how your perspective choice affects the reader'],
+      5: ['Blend your direct observation with game-inspired moments to create a layered narrative', 'Use your perspective to shape what the reader knows and feels', 'Analyse how narrative perspective constructs reader positioning in your text'],
     },
-    starters: ['From the lemur\'s point of view, "I…"', 'First person perspective makes the reader feel…', 'The narrative perspective creates the effect of…'],
+    starters: ['I leapt into the branches and…', 'The lemur stretched its ringed tail and…', 'Looking at the lemur now, I…', 'As the afternoon light shifted…'],
   },
   'sea-lion': {
     heading: 'Persuasive Techniques',
@@ -699,18 +699,25 @@ const ENGLISH_OBS_CONFIG = {
     starters: ['For a hundred years, I have stood here and watched…', 'The tree remembered the day when…', 'If the old tree could speak, it would say…'],
   },
   'blue-mountains-bushwalk': {
-    heading: 'Recount Text',
-    chips: [{ label:'Time connectives', color:'#B45309' },{ label:'Past tense', color:'#059669' },{ label:'First person', color:'#0284C7' },{ label:'Recount', color:'#DC2626' }],
+    heading: 'Listening Recount',
+    chips: [{ label:'What you heard', color:'#B45309' },{ label:'First person', color:'#059669' },{ label:'Past tense', color:'#0284C7' },{ label:'Sensory language', color:'#DC2626' }],
     hintsByStage: {
-      1: ['A recount tells us what happened in order', 'Use time words like "first", "then", "next", "finally"', 'Write two sentences about the walk in order'],
-      2: ['A recount uses first person ("I") and past tense (e.g. "I walked", "I saw")', 'Include time connectives to sequence events', 'Write three sentences about what happened on the walk'],
-      3: ['Write a recount paragraph using first person, past tense and time connectives', 'Include descriptive language to make the recount more engaging', 'How does a recount text differ from a narrative?'],
-      4: ['Identify the key features of an effective recount (orientation, sequence, reorientation)', 'How does descriptive language improve a recount?', 'Analyse how the choice of details shapes the reader\'s understanding of events'],
-      5: ['Analyse the structural and language features that make a recount effective', 'How does the writer\'s selection of events and details shape the reader\'s experience?', 'Compare the purpose and language features of a recount with a narrative'],
+      1: ['Think about what you heard on the walk', 'Start with "I heard..." and write what it sounded like', 'Write two or three sentences in the order things happened'],
+      2: ['Use "I" and past tense - "I heard", "I noticed", "I saw"', 'Use time words: first, then, next, finally', 'Look at the model text to see how sensory language works'],
+      3: ['Write a recount using first person, past tense and sensory language', 'Look at the model text - how does the writer describe sound and place?', 'Try to capture one specific moment: the waterfall, the lizard, or the lyrebird'],
+      4: ['Use the model text to help structure your recount: orientation, sequence, reorientation', 'Choose two techniques from the model text and use them in your own writing', 'After writing, name the techniques you used and explain their effect'],
+      5: ['Write a recount that shows control of structure and language', 'Analyse how the model text uses person, tense and sensory detail to position the reader', 'How do your own language choices shape the reader\'s experience of the walk?'],
     },
-    starters: ['First, we…', 'I noticed that…', 'A recount uses… to retell events because…'],
+    starters: ['I heard…', 'The first thing I noticed was…', 'By the time we reached…', 'The sound I remember most was…'],
   },
 };
+
+const BUSHWALK_PASSAGE = [
+  'We set off along the track and the city disappeared behind us, tree by tree. The air changed first - cooler, heavier, carrying the smell of damp bark and eucalyptus.',
+  'At the waterfall, we stopped. The sound was everywhere at once, a rush and a hiss that filled all the space around us. Something moved at the water\'s edge and vanished before I could be sure of it. A platypus, someone said quietly. We stood still for a long time after that.',
+  'Further along, a flat sandstone slab lay warm in the sun. A blue-tongued lizard occupied the centre and did not move for us. One amber eye considered us briefly, then looked away.',
+  'The lyrebird we heard before we saw it. A click. A mechanical whirr. Then something close to a voice, though no one was near. We found it eventually in the ferns, but by then it had already moved on. The forest kept producing sounds long after we had stopped expecting them.',
+];
 
 export default function ObservationScreen() {
   const { classStage, classSubject } = useApp();
@@ -1066,6 +1073,8 @@ export default function ObservationScreen() {
               ? 'Stop. Look closely at the tiger. Think about what athletes could learn from this animal.'
               : isMaths
               ? 'Stop. Look closely. The zoo is full of hidden maths.'
+              : isEnglish
+              ? 'Stop. Look at the tiger through your journalist\'s eye. What do you see that carries the weight of what is being lost?'
               : 'Stop. Look closely at the tiger. What behaviours, features and adaptations can you observe?'}
           </p>
           <h3 style={{ fontSize:'5rem', fontWeight:800, marginBottom:'1.5rem', fontVariantNumeric:'tabular-nums', color: tigerTimerSeconds <= 10 ? '#FFEB3B' : 'white' }}>
@@ -1077,7 +1086,7 @@ export default function ObservationScreen() {
                 Start Observing
               </button>
             : <p style={{ fontSize:'0.9rem', opacity:0.85, fontWeight:600 }}>
-                {isPdhpe ? 'Observe now… what can sport learn from this animal?' : isMaths ? 'Observe now… find the hidden maths.' : 'Observe now… look for adaptations and behaviours.'}
+                {isPdhpe ? 'Observe now… what can sport learn from this animal?' : isMaths ? 'Observe now… find the hidden maths.' : isEnglish ? 'Look closely… what details will you put in your writing?' : 'Observe now… look for adaptations and behaviours.'}
               </p>
           }
         </div>
@@ -1115,7 +1124,6 @@ export default function ObservationScreen() {
                   <div key={i} style={{ background:`${chip.color}12`, border:`1.5px solid ${chip.color}35`, borderRadius:'var(--t-r-pill)', padding:'0.35rem 0.8rem', fontSize:'0.8rem', fontWeight:600, color:chip.color }}>{chip.label}</div>
                 ))}
               </div>
-              {classStage >= 4 && <p style={{ fontSize:'0.82rem', color:'#aaa', marginBottom:'1rem', textAlign:'center', fontStyle:'italic' }}>{isMaths ? 'Show your full working and include units.' : isPdhpe ? 'Use PDHPE terminology and connect your observation to a body system or health concept.' : isEnglish ? 'Name the language technique you are using and explain its effect on the reader.' : 'Use specific evidence from your observation.'}</p>}
               {animalId === 'blue-mountains-bushwalk' && bushwalkTimerDone && isMaths && (() => {
                 const maxCount = Math.max(...SOUND_CATEGORIES.map(c => soundTally[c.key]));
                 return (
@@ -1199,6 +1207,69 @@ export default function ObservationScreen() {
                     ))}
                   </div>
                 )}
+              </div>
+            );
+          })()}
+
+          {/* Photo + passage reference (English tiger only) */}
+          {isEnglish && animalId === 'tiger' && missionContext?.type === 'tiger-english' && (
+            <div style={{ marginBottom:'0.85rem' }}>
+              <button onClick={() => setStoryOpen(o => !o)}
+                style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', background: storyOpen ? '#1a3a2a' : '#f0f7f0', border:`1.5px solid ${storyOpen ? '#2A8A40' : 'rgba(46,125,85,0.35)'}`, borderRadius: storyOpen ? '10px 10px 0 0' : '10px', padding:'0.65rem 1rem', cursor:'pointer', transition:'all 0.2s' }}>
+                <span style={{ fontSize:'0.82rem', fontWeight:700, color: storyOpen ? 'rgba(100,220,140,0.9)' : '#2E7D55', letterSpacing:'0.05em' }}>📷 Your photo and model text</span>
+                <span style={{ fontSize:'0.75rem', color: storyOpen ? 'rgba(255,255,255,0.6)' : '#666' }}>{storyOpen ? '▴ Hide' : '▾ Show'}</span>
+              </button>
+              {storyOpen && (
+                <div style={{ background:'white', border:'1.5px solid rgba(46,125,85,0.35)', borderTop:'none', borderRadius:'0 0 10px 10px', overflow:'hidden' }}>
+                  {missionContext.photo && missionContext.photo !== 'camera-error' && (
+                    <img src={missionContext.photo} alt="Your tiger" style={{ width:'100%', maxHeight:'220px', objectFit:'cover', display:'block' }} />
+                  )}
+                  <div style={{ padding:'1rem 1.2rem' }}>
+                    <p style={{ fontSize:'0.6rem', fontWeight:800, color:'#B45309', textTransform:'uppercase', letterSpacing:'0.12em', margin:'0 0 0.6rem' }}>The Last 400 - Model Text</p>
+                    {[
+                      'Your grandparents grew up in a world with thousands of Sumatran tigers. You are growing up in one with fewer than 400.',
+                      'The forest that held them, layered and ancient and breathing, has been cleared, strip by strip, for palm oil. The tigers did not leave. They were erased.',
+                      'Now look at the animal in front of you. This is what the world is losing.',
+                    ].map((para, i) => (
+                      <p key={i} style={{ fontSize:'0.85rem', color:'#333', lineHeight:1.7, margin: i > 0 ? '0.6rem 0 0' : 0, fontStyle:'italic' }}>{para}</p>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Model recount passage (English bushwalk only) */}
+          {isEnglish && animalId === 'blue-mountains-bushwalk' && (
+            <div style={{ marginBottom:'0.85rem' }}>
+              <button onClick={() => setStoryOpen(o => !o)}
+                style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', background: storyOpen ? '#1a3a2a' : '#f0f7f0', border:`1.5px solid ${storyOpen ? '#2A8A40' : 'rgba(46,125,85,0.35)'}`, borderRadius: storyOpen ? '10px 10px 0 0' : '10px', padding:'0.65rem 1rem', cursor:'pointer', transition:'all 0.2s' }}>
+                <span style={{ fontSize:'0.82rem', fontWeight:700, color: storyOpen ? 'rgba(100,220,140,0.9)' : '#2E7D55', letterSpacing:'0.05em' }}>📖 Model Recount — A Walk Through the Blue Mountains</span>
+                <span style={{ fontSize:'0.75rem', color: storyOpen ? 'rgba(255,255,255,0.6)' : '#666' }}>{storyOpen ? '▴ Hide' : '▾ Show'}</span>
+              </button>
+              {storyOpen && (
+                <div style={{ background:'white', border:'1.5px solid rgba(46,125,85,0.35)', borderTop:'none', borderRadius:'0 0 10px 10px', padding:'1rem 1.2rem' }}>
+                  <p style={{ fontSize:'0.6rem', fontWeight:800, color:'#5B8C5A', textTransform:'uppercase', letterSpacing:'0.12em', margin:'0 0 0.75rem' }}>Model Recount Text</p>
+                  {BUSHWALK_PASSAGE.map((para, i) => (
+                    <p key={i} style={{ fontSize:'0.88rem', color:'#333', lineHeight:1.75, margin: i > 0 ? '0.65rem 0 0' : 0, fontStyle:'italic' }}>{para}</p>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Lemur dance moments reference */}
+          {isEnglish && animalId === 'lemur' && (() => {
+            const moments = JSON.parse(localStorage.getItem('lemurDanceMoments') || '[]');
+            if (!moments.length) return null;
+            return (
+              <div style={{ background:'rgba(155,48,255,0.06)', border:'1px solid rgba(155,48,255,0.2)', borderRadius:'var(--t-r-md)', padding:'0.75rem 1rem', marginBottom:'0.85rem' }}>
+                <p style={{ fontSize:'0.65rem', fontWeight:800, color:'#7C3AED', textTransform:'uppercase', letterSpacing:'0.1em', margin:'0 0 0.5rem' }}>Your dance moments</p>
+                <div style={{ display:'flex', flexWrap:'wrap', gap:'0.4rem' }}>
+                  {moments.map((m, i) => (
+                    <span key={i} style={{ background:`${m.color}22`, border:`1.5px solid ${m.color}80`, borderRadius:'var(--t-r-pill)', padding:'0.25rem 0.65rem', fontSize:'0.78rem', fontWeight:600, color:'#222' }}>I {m.story}</span>
+                  ))}
+                </div>
               </div>
             );
           })()}

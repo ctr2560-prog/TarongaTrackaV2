@@ -18,8 +18,45 @@ export default function BushwalkMission() {
   const [clueIdx,      setClueIdx]      = useState(0);
   const [selected,     setSelected]     = useState(null);
   const [showFeedback, setShowFeedback] = useState(false);
-  const [results,      setResults]      = useState([]); // boolean per clue
+  const [results,      setResults]      = useState([]);
   const [miniKeyOpen,  setMiniKeyOpen]  = useState(false);
+  const [typedAnswer,  setTypedAnswer]  = useState('');
+  const [spellingWrong,setSpellingWrong]= useState(false);
+
+  const isEnglish = classSubject === 'english';
+  const SPELLING_ANSWERS = ['platypus', 'lizard', 'lyrebird'];
+
+  const getSpellingHint = (word) => {
+    if (classStage >= 4) return null;
+    if (classStage <= 2) return word[0].toUpperCase() + ' ' + Array(word.length - 1).fill('_').join(' ');
+    return `${word.length} letters`;
+  };
+
+  const handleSpellingSubmit = () => {
+    if (!typedAnswer.trim()) return;
+    const given = typedAnswer.trim().toLowerCase();
+    if (given === SPELLING_ANSWERS[clueIdx]) {
+      setResults(prev => [...prev, true]);
+      setShowFeedback(true);
+    } else {
+      setSpellingWrong(true);
+      setTimeout(() => setSpellingWrong(false), 900);
+    }
+  };
+
+  const handleSpellingContinue = () => {
+    const nextIdx = clueIdx + 1;
+    setTypedAnswer('');
+    setShowFeedback(false);
+    if (nextIdx >= CLUES.length) {
+      setFirstAttemptResults({ 0: true, 1: true, 2: true });
+      setIsProcessingAnswer(true);
+      setIsCorrect(true);
+      setShowResult(true);
+    } else {
+      setClueIdx(nextIdx);
+    }
+  };
 
   const CLUES = classSubject === 'pdhpe'
     ? [
@@ -122,6 +159,99 @@ export default function BushwalkMission() {
       setShowFeedback(false);
     }
   };
+
+  // ── English: riddle + spelling input ─────────────────────────────────────
+  if (isEnglish) {
+    const hint = getSpellingHint(SPELLING_ANSWERS[clueIdx]);
+    return (
+      <div style={{ position:'fixed', inset:0, background: showResult ? 'linear-gradient(135deg,#10b981 0%,#059669 100%)' : 'var(--mist-light)', transition:'background 0.5s ease', display:'flex', flexDirection:'column' }}>
+        <div style={{ background:'linear-gradient(135deg,var(--jungle-deep) 0%,var(--jungle-mid) 100%)', padding:'0.6rem 1rem', flex:'0 0 auto', zIndex:100 }}>
+          <div style={{ maxWidth:'900px', margin:'0 auto', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+            <button onClick={() => setCurrentScreen('map')} style={{ background:'rgba(255,255,255,0.15)', border:'none', color:'white', padding:'0.5rem 1rem', borderRadius:'var(--t-r-pill)', cursor:'pointer', fontSize:'0.85rem', fontWeight:600 }}>← Back</button>
+            <img src="images/logo.png" alt="Taronga Tracka" style={{ height:'45px', width:'auto' }} onError={e => e.target.style.display='none'} />
+            <div style={{ width:'70px' }} />
+          </div>
+        </div>
+
+        {showResult && (
+          <div className="animate-scale-in" style={{ textAlign:'center', padding:'clamp(1.5rem,3vh,2rem)', background:'rgba(255,255,255,0.95)', borderRadius:'var(--t-r-xl)', boxShadow:'var(--t-shadow-lg)', margin:'clamp(1rem,2vh,1.5rem)', maxWidth:'90%', marginLeft:'auto', marginRight:'auto', marginTop:'clamp(1rem,3vh,2rem)' }}>
+            <div style={{ fontSize:'clamp(3rem,8vh,4rem)', marginBottom:'0.5rem' }}>✓</div>
+            <h2 className="heading-display" style={{ fontSize:'clamp(1.8rem,4.5vh,2.8rem)', color:'#10b981', marginBottom:'0.4rem', lineHeight:1.1 }}>Spelling Complete!</h2>
+            <p style={{ fontSize:'clamp(0.85rem,2vh,1rem)', color:'#555', marginBottom:'1rem', lineHeight:1.6 }}>You spelled all {CLUES.length} words correctly.</p>
+            <button onClick={() => handleNextQuestion(1)} style={{ background:'linear-gradient(135deg,#5B8C5A,#3d6b3c)', color:'white', border:'none', padding:'1rem 2.5rem', fontSize:'1.1rem', fontWeight:700, borderRadius:'var(--t-r-pill)', cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.05em', boxShadow:'0 4px 12px rgba(0,0,0,0.2)' }}>
+              Continue to Observation →
+            </button>
+          </div>
+        )}
+
+        {!showResult && (
+          <div style={{ flex:'1 1 0', minHeight:0, overflowY:'auto', padding:'1rem', maxWidth:'560px', margin:'0 auto', width:'100%' }}>
+
+            <div style={{ background:'white', borderRadius:'var(--t-r-md)', padding:'1rem 1.2rem', boxShadow:'var(--t-shadow-md)', marginBottom:'1rem' }}>
+              <h2 style={{ fontSize:'1.2rem', fontWeight:700, color:'var(--jungle-deep)', margin:'0 0 0.15rem' }}>Bushwalk Spelling</h2>
+              <p style={{ fontSize:'0.82rem', color:'#666', margin:'0 0 0.6rem' }}>Solve the riddle, then spell the answer</p>
+              <div style={{ display:'flex', gap:'0.4rem' }}>
+                {CLUES.map((_, i) => (
+                  <div key={i} style={{ flex:1, height:'6px', borderRadius:'3px', transition:'background 0.3s', background: i < clueIdx ? '#5B8C5A' : i === clueIdx ? (showFeedback ? '#10b981' : '#C4873A') : '#E5E5E5' }} />
+                ))}
+              </div>
+              <p style={{ fontSize:'0.72rem', color:'#888', margin:'0.4rem 0 0', textAlign:'right' }}>Word {clueIdx + 1} of {CLUES.length}</p>
+            </div>
+
+            <div style={{ background:'white', borderRadius:'var(--t-r-md)', padding:'1.4rem', boxShadow:'var(--t-shadow-md)', marginBottom:'1rem' }}>
+              <p style={{ fontSize:'0.72rem', fontWeight:700, color:'#5B8C5A', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:'0.6rem' }}>{clue?.label}</p>
+              <div style={{ background:'#F4F8F4', borderRadius:'var(--t-r-sm)', padding:'1rem', marginBottom:'1.1rem', borderLeft:'3px solid #5B8C5A' }}>
+                {clue?.clue.split('\n').map((line, i) => (
+                  <p key={i} style={{ fontSize:'0.95rem', color:'#333', margin: i === 0 ? 0 : '0.3rem 0 0', lineHeight:1.7, fontStyle: clue.label.includes('Riddle') ? 'italic' : 'normal' }}>{line}</p>
+                ))}
+              </div>
+
+              {!showFeedback ? (
+                <>
+                  <p style={{ fontSize:'0.82rem', fontWeight:700, color:'var(--jungle-deep)', textAlign:'center', margin:'0 0 0.5rem' }}>What animal is it? Spell your answer:</p>
+                  {hint && (
+                    <p style={{ fontSize:'1rem', fontWeight:700, color:'#5B8C5A', textAlign:'center', letterSpacing:'0.25em', margin:'0 0 0.6rem', fontFamily:'monospace' }}>{hint}</p>
+                  )}
+                  <input
+                    type="text"
+                    value={typedAnswer}
+                    onChange={e => { setTypedAnswer(e.target.value); setSpellingWrong(false); }}
+                    onKeyDown={e => e.key === 'Enter' && handleSpellingSubmit()}
+                    placeholder="Type your answer..."
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    style={{ width:'100%', padding:'0.9rem 1rem', fontSize:'1.2rem', fontWeight:600, textAlign:'center', border:`2px solid ${spellingWrong ? '#ef4444' : '#D1D5DB'}`, borderRadius:'var(--t-r-md)', outline:'none', boxSizing:'border-box', color:'var(--jungle-deep)', background: spellingWrong ? '#FEF2F2' : 'white', transition:'border-color 0.2s, background 0.2s', letterSpacing:'0.05em' }}
+                  />
+                  {spellingWrong && (
+                    <p style={{ fontSize:'0.78rem', color:'#ef4444', fontWeight:600, textAlign:'center', margin:'0.4rem 0 0' }}>Not quite - check your spelling and try again</p>
+                  )}
+                </>
+              ) : (
+                <div style={{ background:'#D1FAE5', border:'1px solid #6EE7B7', borderRadius:'var(--t-r-md)', padding:'0.85rem', textAlign:'center' }}>
+                  <p style={{ fontSize:'1rem', fontWeight:700, color:'#065F46', margin:'0 0 0.25rem' }}>✓ Correct!</p>
+                  <p style={{ fontSize:'1rem', color:'#065F46', margin:0, fontStyle:'italic', letterSpacing:'0.05em' }}>{SPELLING_ANSWERS[clueIdx]}</p>
+                </div>
+              )}
+            </div>
+
+            {!showFeedback ? (
+              <button onClick={handleSpellingSubmit} disabled={!typedAnswer.trim()}
+                style={{ width:'100%', padding:'1rem', borderRadius:'var(--t-r-pill)', border:'none', background: typedAnswer.trim() ? 'linear-gradient(135deg,#5B8C5A,#3d6b3c)' : '#CCC', color:'white', fontSize:'1rem', fontWeight:700, cursor: typedAnswer.trim() ? 'pointer' : 'not-allowed', textTransform:'uppercase', letterSpacing:'0.08em', transition:'all 0.2s', boxShadow: typedAnswer.trim() ? '0 4px 12px rgba(91,140,90,0.4)' : 'none' }}>
+                Check Spelling
+              </button>
+            ) : (
+              <button onClick={handleSpellingContinue}
+                style={{ width:'100%', padding:'1rem', borderRadius:'var(--t-r-pill)', border:'none', background:'linear-gradient(135deg,var(--sunset-orange),var(--earth-clay))', color:'white', fontSize:'1rem', fontWeight:700, cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.08em', boxShadow:'0 4px 12px rgba(232,106,51,0.4)' }}>
+                {clueIdx < CLUES.length - 1 ? 'Next Clue →' : 'Complete Mission ✓'}
+              </button>
+            )}
+
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div style={{ position:'fixed', inset:0, background: showResult ? 'linear-gradient(135deg,#10b981 0%,#059669 100%)' : 'var(--mist-light)', transition:'background 0.5s ease', display:'flex', flexDirection:'column' }}>
