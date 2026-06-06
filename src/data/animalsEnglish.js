@@ -181,7 +181,7 @@ export const ENGLISH_ANIMALS = {
     },
     questions: [
       {
-        q: 'Imagery in Descriptive Writing',
+        q: 'Identifying Strong Imagery',
         stageVariants: {
           1: 'Which sentence uses imagery to describe the lion?',
           2: 'Which sentence creates the STRONGEST image of the lion?',
@@ -387,7 +387,7 @@ export const ENGLISH_ANIMALS = {
     },
     questions: [
       {
-        q: 'Language Techniques and Loss Writing',
+        q: 'Language Techniques in a Conservation Passage',
         stageVariants: {
           1: 'Which word from the passage makes you feel sad or worried?',
           2: "Why does the writer choose 'erased' instead of 'gone'?",

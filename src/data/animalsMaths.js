@@ -101,34 +101,6 @@ export const MATHS_ANIMALS = {
         correct: 2,
         fact: 'Gorillas eat up to 18 kg per day - mostly leaves and bamboo, with some fruit and protein from termites.',
       },
-      {
-        q: 'Gorilla Whopper Rush - Diet Maths',
-        stageVariants: {
-          1: 'A gorilla eats 3 servings of leaves, 2 of bamboo, and 1 of fruit. How many servings altogether?',
-          2: 'A gorilla eats 6 kg of leaves, 8 kg of bamboo, and 4 kg of fruit per day. How much food total?',
-          3: 'Leaves make up 12 kg of a gorilla\'s 18 kg daily diet. What fraction of the diet is leaves?',
-          4: 'Leaves make up 12 kg of a gorilla\'s 18 kg daily diet. What is the ratio of leaves to the remaining food? Give your answer in simplest form.',
-          5: 'Gorilla diet ratio - leaves:bamboo:fruit:termites = 5:4:2:1. Total 18 kg per day. How many kg of leaves?',
-        },
-        stageOptions: {
-          1: ['4', '5', '6', '7'],
-          2: ['14 kg', '16 kg', '18 kg', '20 kg'],
-          3: ['1/3', '1/2', '2/3', '3/4'],
-          4: ['1:1', '2:1', '3:1', '4:1'],
-          5: ['5 kg', '6 kg', '7.5 kg', '9 kg'],
-        },
-        stageCorrect: { 1: 2, 2: 2, 3: 2, 4: 1, 5: 2 },
-        stageFacts: {
-          1: '3 + 2 + 1 = 6 servings. Adding all groups gives the total.',
-          2: '6 + 8 + 4 = 18 kg total food per day.',
-          3: '12 ÷ 18 = 2/3. Simplify 12/18 by dividing both by 6.',
-          4: 'Leaves : rest = 12 : (18 − 12) = 12 : 6. Divide both by 6 → 2 : 1. Gorillas eat twice as much leaf matter as everything else combined.',
-          5: 'Total parts = 12. Each part = 1.5 kg. Leaves = 5 × 1.5 = 7.5 kg.',
-        },
-        options: ['6', '18 kg', '2/3', '2:1'],
-        correct: 2,
-        fact: 'Gorillas eat up to 18 kg per day - mostly leaves and bamboo. Use ratios and fractions to understand their diet.',
-      },
     ],
   },
 
@@ -202,7 +174,7 @@ export const MATHS_ANIMALS = {
     },
     questions: [
       {
-        q: 'Giraffe Height Estimation',
+        q: 'Giraffe Height',
         stageVariants: {
           1: 'A giraffe is 4 m tall. How many half-metres (0.5 m) make up its full height?',
           2: 'Your slider showed 5.0 m. The actual giraffe is 4.5 m tall. By how many metres were you off?',
@@ -302,7 +274,7 @@ export const MATHS_ANIMALS = {
     },
     questions: [
       {
-        q: 'Tiger Measurement - Scale and Length',
+        q: 'Sumatran Tiger Length',
         stageVariants: {
           1: 'An adult tiger is between 2 and 3 metres long. Which measurement could be a Sumatran tiger\'s length?',
           2: 'A tiger is 2.5 m long. A dachshund is 50 cm long. How many dachshunds laid end-to-end equal the tiger?',

@@ -255,7 +255,7 @@ export const PDHPE_ANIMALS = {
     },
     questions: [
       {
-        q: 'Heart Rate and Cardiovascular Response',
+        q: 'Giraffe Heart and Blood Pressure',
         stageVariants: {
           1: 'What happens to your heart rate when you run fast?',
           2: 'Which of these will make your heart beat FASTER?',
@@ -310,7 +310,7 @@ export const PDHPE_ANIMALS = {
     },
     questions: [
       {
-        q: 'Muscle Fibre Types and Physical Performance',
+        q: 'Tiger Muscle Groups',
         stageVariants: {
           1: 'Which muscles help you jump as HIGH and as FAST as possible?',
           2: 'Which activity mainly uses fast-twitch muscle fibres?',
