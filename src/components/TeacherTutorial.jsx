@@ -12,7 +12,7 @@ const STEPS = [
   },
   {
     title: 'Create a New Class',
-    text: 'Fill in your location, subject, school name, NSW stage, and class name — then enter your Taronga access code and hit Create Class to generate a unique join code for your students.',
+    text: 'Fill in your location, subject, school name, NSW stage, and class name. Enter your Taronga access code and hit Create Class to generate a unique join code for your students.',
     image: '/images/teacher-tutorial/dashboard-create-class.png',
     highlights: [
       { x: 0.15, y: 0.73, width: 0.83, height: 0.21 },
@@ -28,12 +28,12 @@ const STEPS = [
   },
   {
     title: 'Access Code & Your Classes',
-    text: 'Once your class is created it appears in the My Classes list. Each class shows the unique code your students use to join — tap any class to start a live session or view analytics.',
+    text: 'Once your class is created it appears in the My Classes list. Each class shows the unique code your students use to join. Tap any class to start a live session or view analytics.',
     image: '/images/teacher-tutorial/dashboard-code-classes.png',
     highlights: [
       { x: 0.15, y: 0.63, width: 0.83, height: 0.35 },
-      { x: 0.89, y: 0.68, width: 0.09, height: 0.09 },
-      { x: 0.89, y: 0.82, width: 0.09, height: 0.09 },
+      { x: 0.89, y: 0.72, width: 0.09, height: 0.09 },
+      { x: 0.89, y: 0.85, width: 0.09, height: 0.09 },
     ],
   },
   {
@@ -47,7 +47,7 @@ const STEPS = [
       },
       {
         title: 'Writing & Insights',
-        text: 'The radar chart breaks down writing quality across six domains. Teaching Takeaways highlight where your class excelled and where they need support — generated automatically from their work.',
+        text: 'The radar chart breaks down writing quality across six domains. Teaching Takeaways highlight where your class excelled and where they need support, generated automatically from their work.',
         image: '/images/teacher-tutorial/analytics-writing.png',
       },
       {
@@ -62,12 +62,12 @@ const STEPS = [
       },
       {
         title: 'Marking & Review',
-        text: 'Override any automatically-generated score here. Use the dropdowns to adjust marks for quiz, writing, and engagement — changes update instantly.',
+        text: 'Override any automatically-generated score here. Use the dropdowns to adjust marks for quiz, writing, and engagement. Changes update instantly.',
         image: '/images/teacher-tutorial/analytics-marking.png',
       },
       {
         title: 'Conservation Statements',
-        text: "Each student writes a personal conservation commitment at the end of their visit. Read them here — they're often the most meaningful part of the whole experience.",
+        text: "Each student writes a personal conservation commitment at the end of their visit. Read them here. Often the most meaningful part of the whole experience.",
         image: '/images/teacher-tutorial/analytics-conservation.png',
       },
     ],
@@ -237,7 +237,7 @@ function ScreenshotModal({ step, totalSteps, title, text, image, highlights, bad
 
       {/* Bottom bar */}
       <div style={{ padding: '0.9rem 1.25rem 1rem', flexShrink: 0, borderTop: '1px solid #eee' }}>
-        <p style={{ margin: '0 0 0.8rem', fontSize: '1rem', color: '#333', lineHeight: 1.6, fontWeight: 500 }}>{text}</p>
+        <p style={{ margin: '0 0 0.8rem', fontSize: '1.1rem', color: '#333', lineHeight: 1.6, fontWeight: 500, textAlign: 'center' }}>{text}</p>
 
         {slideCount !== null && (
           <div style={{ display: 'flex', gap: '4px', justifyContent: 'center', marginBottom: '0.5rem' }}>
