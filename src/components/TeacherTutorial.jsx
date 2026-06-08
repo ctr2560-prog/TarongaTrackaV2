@@ -85,29 +85,18 @@ function getRect(selector) {
   return { x: r.left - PADDING, y: r.top - PADDING, w: r.width + PADDING * 2, h: r.height + PADDING * 2 };
 }
 
+function shouldShow(email, demo) {
+  if (!email) return false;
+  if (demo || email === 'demo@zoo') return true;
+  return localStorage.getItem(`teacherTutorial_${email}`) !== 'true';
+}
+
 export default function TeacherTutorial() {
   const { teacherEmail, demoMode } = useApp();
-  const [done, setDone] = useState(true);
+  const [done, setDone] = useState(() => !shouldShow(teacherEmail, demoMode));
   const [step, setStep] = useState(0);
   const [slide, setSlide] = useState(0);
   const [rect, setRect] = useState(null);
-
-  const STORAGE_KEY = teacherEmail ? `teacherTutorial_${teacherEmail}` : null;
-
-  useEffect(() => {
-    if (!teacherEmail) { setDone(true); return; }
-    const isDemo = demoMode || teacherEmail === 'demo@zoo';
-    if (isDemo) {
-      setDone(false);
-      setStep(0);
-      setSlide(0);
-      return;
-    }
-    const seen = localStorage.getItem(STORAGE_KEY) === 'true';
-    setDone(seen);
-    setStep(0);
-    setSlide(0);
-  }, [teacherEmail, demoMode]);
 
   const current = STEPS[step];
   const isFirst = step === 0;
