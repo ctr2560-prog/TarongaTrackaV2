@@ -145,6 +145,10 @@ export default function TeacherTutorial() {
 
       <style>{`
         @keyframes ttFadeIn {
+          from { opacity: 0; }
+          to   { opacity: 1; }
+        }
+        @keyframes ttFadeInCenter {
           from { opacity: 0; transform: translate(-50%, -46%); }
           to   { opacity: 1; transform: translate(-50%, -50%); }
         }
@@ -162,7 +166,7 @@ function WelcomeCard({ title, text, totalSteps, onNext }) {
       width: 'min(420px, calc(100vw - 2rem))',
       background: 'white', borderRadius: '20px', padding: '2rem 2rem 1.6rem',
       boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
-      animation: 'ttFadeIn 0.3s ease',
+      animation: 'ttFadeInCenter 0.3s ease',
       textAlign: 'center',
     }}>
       <div style={{
@@ -195,18 +199,13 @@ function WelcomeCard({ title, text, totalSteps, onNext }) {
 function ScreenshotModal({ step, totalSteps, title, text, image, badge, isLast, onBack, onNext, slideIndex, slideCount }) {
   return (
     <div style={{
-      position: 'fixed', zIndex: 3002, left: '50%', top: '50%',
-      transform: 'translate(-50%, -50%)',
-      width: 'min(580px, calc(100vw - 2rem))',
-      maxHeight: 'calc(100vh - 3rem)',
-      background: 'white', borderRadius: '20px',
-      boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
+      position: 'fixed', zIndex: 3002, inset: 0,
+      background: 'white',
       display: 'flex', flexDirection: 'column',
-      overflow: 'hidden',
       animation: 'ttFadeIn 0.25s ease',
     }}>
       {/* Header */}
-      <div style={{ background: 'linear-gradient(135deg, #1A5238, #2E7D32)', padding: '0.9rem 1.25rem', flexShrink: 0 }}>
+      <div style={{ background: 'linear-gradient(135deg, #1A5238, #2E7D32)', padding: '0.85rem 1.25rem', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.2rem' }}>
           <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: '6px', padding: '2px 8px', fontSize: '0.7rem', fontWeight: 700, color: 'white', letterSpacing: '0.05em' }}>
             {badge ? `ANALYTICS · ${badge}` : `STEP ${step} OF ${totalSteps - 1}`}
@@ -215,18 +214,18 @@ function ScreenshotModal({ step, totalSteps, title, text, image, badge, isLast, 
         <div style={{ fontWeight: 800, fontSize: '1rem', color: 'white', lineHeight: 1.2 }}>{title}</div>
       </div>
 
-      {/* Screenshot */}
-      <div style={{ background: '#f0f2f4', flexShrink: 0, maxHeight: '45vh', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <img src={image} alt={title} style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'contain', maxHeight: '45vh' }} />
+      {/* Screenshot — fills all remaining space */}
+      <div style={{ flex: 1, background: '#f0f2f4', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 0 }}>
+        <img src={image} alt={title} style={{ width: '100%', height: '100%', display: 'block', objectFit: 'contain' }} />
       </div>
 
       {/* Text + nav */}
-      <div style={{ padding: '1rem 1.25rem 1.1rem', flexShrink: 0 }}>
-        <p style={{ margin: '0 0 0.9rem', fontSize: '0.83rem', color: '#444', lineHeight: 1.6 }}>{text}</p>
+      <div style={{ padding: '0.85rem 1.25rem 1rem', flexShrink: 0, borderTop: '1px solid #eee' }}>
+        <p style={{ margin: '0 0 0.75rem', fontSize: '0.83rem', color: '#444', lineHeight: 1.55 }}>{text}</p>
 
         {/* Slide dots (analytics only) */}
         {slideCount !== null && (
-          <div style={{ display: 'flex', gap: '4px', justifyContent: 'center', marginBottom: '0.6rem' }}>
+          <div style={{ display: 'flex', gap: '4px', justifyContent: 'center', marginBottom: '0.5rem' }}>
             {Array.from({ length: slideCount }).map((_, i) => (
               <div key={i} style={{ width: i === slideIndex ? '14px' : '6px', height: '6px', borderRadius: '999px', background: i === slideIndex ? '#2E7D32' : '#D1D5DB', transition: 'all 0.2s' }} />
             ))}
@@ -234,22 +233,22 @@ function ScreenshotModal({ step, totalSteps, title, text, image, badge, isLast, 
         )}
 
         {/* Step dots */}
-        <div style={{ display: 'flex', gap: '4px', justifyContent: 'center', marginBottom: '0.85rem' }}>
+        <div style={{ display: 'flex', gap: '4px', justifyContent: 'center', marginBottom: '0.75rem' }}>
           {Array.from({ length: totalSteps }).map((_, i) => (
             <div key={i} style={{ width: i === step ? '14px' : '6px', height: '6px', borderRadius: '999px', background: i === step ? '#2E7D32' : '#D1D5DB', transition: 'all 0.2s' }} />
           ))}
         </div>
 
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', maxWidth: '480px', margin: '0 auto' }}>
           <button onClick={onBack} style={{
-            flex: 1, padding: '0.55rem', borderRadius: '999px',
+            flex: 1, padding: '0.6rem', borderRadius: '999px',
             border: '1.5px solid #E5E5E5', background: 'white', color: '#555',
-            fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer',
+            fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer',
           }}>Back</button>
           <button onClick={onNext} style={{
-            flex: 2, padding: '0.55rem', borderRadius: '999px', border: 'none',
+            flex: 2, padding: '0.6rem', borderRadius: '999px', border: 'none',
             background: 'linear-gradient(135deg, #1A5238, #2E7D32)', color: 'white',
-            fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer',
+            fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer',
           }}>{isLast ? 'Done' : 'Next'}</button>
         </div>
       </div>
