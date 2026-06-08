@@ -472,6 +472,10 @@ export default function TeacherDashboardScreen() {
                     <option value="geography" disabled>Geography (Coming Soon)</option>
                     <option value="pdhpe">PDHPE</option>
                     <option value="ngara-nura" disabled>Ngara Nura (Coming Soon)</option>
+                    <option value="technology" disabled>Technology (Coming Soon)</option>
+                    <option value="visual-arts" disabled>Visual Arts (Coming Soon)</option>
+                    <option value="commerce" disabled>Commerce (Coming Soon)</option>
+                    <option value="history" disabled>History (Coming Soon)</option>
                   </select>
                 </>
               )}

@@ -2,6 +2,12 @@ import { useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { useStudent } from '../context/StudentContext';
 import { getBearing, getDistance } from '../utils/helpers';
+import StudentGuide from '../components/StudentGuide';
+import TutorialOverlay from '../components/TutorialOverlay';
+
+
+const CARDINALS = ['N','NE','E','SE','S','SW','W','NW'];
+const toCardinal = (deg) => CARDINALS[Math.round(deg / 45) % 8];
 
 export default function MapScreen() {
   const { setCurrentScreen, studentName, classCode } = useApp();
@@ -19,7 +25,7 @@ export default function MapScreen() {
 
   useEffect(() => {
     if (gpsRequired) enableLocation();
-  }, [gpsRequired]);
+  }, [gpsRequired, enableLocation]);
 
   // Session already submitted - show completion card
   if (studentStatus === 'complete' && !completionCardDismissed) {
@@ -121,7 +127,7 @@ export default function MapScreen() {
             </button>
           )}
 
-          <button onClick={() => setShowZooMap(true)}
+          <button id="t-zoo-map-btn" onClick={() => setShowZooMap(true)}
             style={{ padding:'6px 12px', background:'#2E7D32', color:'#fff', border:'none', borderRadius:'6px', cursor:'pointer', marginLeft:'10px', fontSize:'0.82rem', fontWeight:600 }}>
             Zoo Map
           </button>
@@ -158,6 +164,9 @@ export default function MapScreen() {
             .map((animal, index) => {
               const { nearby, distance } = animal;
               const alreadyFound = foundAnimals.has(animal.id);
+              const bearing = (!alreadyFound && !nearby && userLocation && distance !== null)
+                ? getBearing(userLocation.latitude, userLocation.longitude, animal.latitude, animal.longitude)
+                : null;
               return (
                 <div key={animal.id}
                   onClick={e => { if (!alreadyFound) discoverAnimal(animal, e); }}
@@ -165,6 +174,14 @@ export default function MapScreen() {
                   style={{ animationDelay:`${index * 0.08}s` }}>
                   <div className="discovery-card-img" style={{ backgroundImage:`url(${animal.image})` }} />
                   <div className="discovery-card-overlay" />
+                  {bearing !== null && (
+                    <div style={{ position:'absolute', top:'8px', right:'8px', width:'44px', height:'44px', borderRadius:'50%', background:'rgba(0,0,0,0.55)', backdropFilter:'blur(4px)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'1px', zIndex:5, border:'1px solid rgba(255,255,255,0.25)', boxShadow:'0 2px 8px rgba(0,0,0,0.4)' }}>
+                      <svg viewBox="0 0 24 24" width="20" height="20" style={{ transform:`rotate(${bearing}deg)`, filter:'drop-shadow(0 0 3px rgba(0,0,0,0.7))' }}>
+                        <polygon points="12,2 19,20 12,16 5,20" fill="#FCD34D" />
+                      </svg>
+                      <div style={{ fontSize:'8px', fontWeight:700, color:'white', letterSpacing:'0.04em', lineHeight:1 }}>{toCardinal(bearing)}</div>
+                    </div>
+                  )}
                   <div className="discovery-card-body">
                     <h3 className="dc-name">{animal.name}</h3>
                     <p className="dc-scientific">{animal.scientificName}</p>
@@ -184,6 +201,9 @@ export default function MapScreen() {
             })}
         </div>
       </div>
+
+      <StudentGuide />
+      <TutorialOverlay />
 
       {/* Zoo map modal */}
       {showZooMap && (
