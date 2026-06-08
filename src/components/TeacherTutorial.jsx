@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useApp } from '../context/AppContext';
 
+// Highlight coordinates are fractions (0–1) of the natural image dimensions.
+// { x, y, width, height } — all relative to the image, not the container.
 const STEPS = [
   {
     type: 'welcome',
@@ -10,18 +12,29 @@ const STEPS = [
   },
   {
     title: 'Create a New Class',
-    text: 'Start here. Choose your location, subject, school name, NSW stage, and class name — then enter your Taronga access code to generate a unique join code for your students.',
+    text: 'Fill in your location, subject, school name, NSW stage, and class name — then enter your Taronga access code and hit Create Class to generate a unique join code for your students.',
     image: '/images/teacher-tutorial/dashboard-create-class.png',
+    highlights: [
+      { x: 0.15, y: 0.73, width: 0.83, height: 0.21 },
+    ],
   },
   {
     title: 'Teacher Documents',
-    text: 'Below the form you\'ll find the NSW Curriculum Outcomes mapped to your chosen subject and stage. Download the Teacher Information Sheet for a printable overview to use before and after your visit.',
+    text: 'Below the form you\'ll find the NSW Curriculum Outcomes mapped to your subject and stage. Download the Teacher Information Sheet for a printable overview to use before and after your visit.',
     image: '/images/teacher-tutorial/dashboard-teacher-docs.png',
+    highlights: [
+      { x: 0.15, y: 0.38, width: 0.83, height: 0.40 },
+    ],
   },
   {
     title: 'Access Code & Your Classes',
-    text: 'Your Taronga access code is provided when you book your visit — it activates the app for your students. Once your class is created it appears below, showing each class code students use to join.',
+    text: 'Once your class is created it appears in the My Classes list. Each class shows the unique code your students use to join — tap any class to start a live session or view analytics.',
     image: '/images/teacher-tutorial/dashboard-code-classes.png',
+    highlights: [
+      { x: 0.15, y: 0.63, width: 0.83, height: 0.35 },
+      { x: 0.82, y: 0.68, width: 0.13, height: 0.09 },
+      { x: 0.82, y: 0.82, width: 0.13, height: 0.09 },
+    ],
   },
   {
     title: 'Class Analytics',
@@ -61,8 +74,11 @@ const STEPS = [
   },
   {
     title: 'Need Help?',
-    text: "See the green question mark button in the bottom-right corner? Tap it any time to ask the Teacher Help Bot questions about using the dashboard, reading analytics, or running a session.",
+    text: "See the green question mark button in the bottom-right corner? Tap it any time to get answers about using the dashboard, reading analytics, or running a session.",
     image: '/images/teacher-tutorial/dashboard-code-classes.png',
+    highlights: [
+      { x: 0.90, y: 0.86, width: 0.07, height: 0.12 },
+    ],
   },
 ];
 
@@ -115,7 +131,7 @@ export default function TeacherTutorial() {
           position: 'fixed', top: '1rem', right: '1rem', zIndex: 3003,
           background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.25)',
           color: 'rgba(255,255,255,0.85)', borderRadius: '999px', padding: '0.3rem 0.9rem',
-          fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', backdropFilter: 'blur(6px)',
+          fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', backdropFilter: 'blur(6px)',
         }}>Skip tour</button>
       )}
 
@@ -130,12 +146,12 @@ export default function TeacherTutorial() {
         <ScreenshotModal
           step={step}
           totalSteps={STEPS.length}
-          title={hasSlides ? (slides[slide].title) : current.title}
-          text={hasSlides ? (slides[slide].text) : current.text}
+          title={hasSlides ? slides[slide].title : current.title}
+          text={hasSlides ? slides[slide].text : current.text}
           image={hasSlides ? slides[slide].image : current.image}
+          highlights={hasSlides ? (slides[slide].highlights || []) : (current.highlights || [])}
           badge={hasSlides ? `${slide + 1} of ${slides.length}` : null}
           isLast={isLast && (!hasSlides || isLastSlide)}
-          isFirst={isFirst}
           onBack={back}
           onNext={next}
           slideIndex={hasSlides ? slide : null}
@@ -144,13 +160,14 @@ export default function TeacherTutorial() {
       )}
 
       <style>{`
-        @keyframes ttFadeIn {
-          from { opacity: 0; }
-          to   { opacity: 1; }
-        }
         @keyframes ttFadeInCenter {
           from { opacity: 0; transform: translate(-50%, -46%); }
           to   { opacity: 1; transform: translate(-50%, -50%); }
+        }
+        @keyframes ttFadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes ttHighlight {
+          0%, 100% { stroke-opacity: 0.9; fill-opacity: 0.12; }
+          50%       { stroke-opacity: 0.5; fill-opacity: 0.04; }
         }
       `}</style>
     </>,
@@ -180,7 +197,7 @@ function WelcomeCard({ title, text, totalSteps, onNext }) {
         </svg>
       </div>
       <div style={{ fontWeight: 800, fontSize: '1.4rem', color: '#1A5238', marginBottom: '0.6rem', lineHeight: 1.2 }}>{title}</div>
-      <p style={{ margin: '0 0 1.5rem', fontSize: '0.9rem', color: '#555', lineHeight: 1.65 }}>{text}</p>
+      <p style={{ margin: '0 0 1.5rem', fontSize: '1rem', color: '#555', lineHeight: 1.65 }}>{text}</p>
       <div style={{ display: 'flex', gap: '4px', justifyContent: 'center', marginBottom: '1.25rem' }}>
         {Array.from({ length: totalSteps }).map((_, i) => (
           <div key={i} style={{ width: i === 0 ? '20px' : '7px', height: '7px', borderRadius: '999px', background: i === 0 ? '#2E7D32' : '#D1D5DB', transition: 'all 0.25s' }} />
@@ -196,34 +213,32 @@ function WelcomeCard({ title, text, totalSteps, onNext }) {
   );
 }
 
-function ScreenshotModal({ step, totalSteps, title, text, image, badge, isLast, onBack, onNext, slideIndex, slideCount }) {
+function ScreenshotModal({ step, totalSteps, title, text, image, highlights, badge, isLast, onBack, onNext, slideIndex, slideCount }) {
   return (
     <div style={{
       position: 'fixed', zIndex: 3002, inset: 0,
-      background: 'white',
-      display: 'flex', flexDirection: 'column',
+      background: 'white', display: 'flex', flexDirection: 'column',
       animation: 'ttFadeIn 0.25s ease',
     }}>
       {/* Header */}
       <div style={{ background: 'linear-gradient(135deg, #1A5238, #2E7D32)', padding: '0.85rem 1.25rem', flexShrink: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.2rem' }}>
-          <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: '6px', padding: '2px 8px', fontSize: '0.7rem', fontWeight: 700, color: 'white', letterSpacing: '0.05em' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.25rem' }}>
+          <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: '6px', padding: '2px 8px', fontSize: '0.72rem', fontWeight: 700, color: 'white', letterSpacing: '0.05em' }}>
             {badge ? `ANALYTICS · ${badge}` : `STEP ${step} OF ${totalSteps - 1}`}
           </div>
         </div>
-        <div style={{ fontWeight: 800, fontSize: '1rem', color: 'white', lineHeight: 1.2 }}>{title}</div>
+        <div style={{ fontWeight: 800, fontSize: '1.1rem', color: 'white', lineHeight: 1.2 }}>{title}</div>
       </div>
 
-      {/* Screenshot — fills all remaining space */}
-      <div style={{ flex: 1, background: '#f0f2f4', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 0 }}>
-        <img src={image} alt={title} style={{ width: '100%', height: '100%', display: 'block', objectFit: 'contain' }} />
+      {/* Screenshot — fills all remaining vertical space */}
+      <div style={{ flex: 1, background: '#f0f2f4', overflow: 'hidden', minHeight: 0 }}>
+        <ImageWithHighlights src={image} alt={title} highlights={highlights} />
       </div>
 
-      {/* Text + nav */}
-      <div style={{ padding: '0.85rem 1.25rem 1rem', flexShrink: 0, borderTop: '1px solid #eee' }}>
-        <p style={{ margin: '0 0 0.75rem', fontSize: '0.83rem', color: '#444', lineHeight: 1.55 }}>{text}</p>
+      {/* Bottom bar */}
+      <div style={{ padding: '0.9rem 1.25rem 1rem', flexShrink: 0, borderTop: '1px solid #eee' }}>
+        <p style={{ margin: '0 0 0.8rem', fontSize: '1rem', color: '#333', lineHeight: 1.6, fontWeight: 500 }}>{text}</p>
 
-        {/* Slide dots (analytics only) */}
         {slideCount !== null && (
           <div style={{ display: 'flex', gap: '4px', justifyContent: 'center', marginBottom: '0.5rem' }}>
             {Array.from({ length: slideCount }).map((_, i) => (
@@ -232,8 +247,7 @@ function ScreenshotModal({ step, totalSteps, title, text, image, badge, isLast, 
           </div>
         )}
 
-        {/* Step dots */}
-        <div style={{ display: 'flex', gap: '4px', justifyContent: 'center', marginBottom: '0.75rem' }}>
+        <div style={{ display: 'flex', gap: '4px', justifyContent: 'center', marginBottom: '0.8rem' }}>
           {Array.from({ length: totalSteps }).map((_, i) => (
             <div key={i} style={{ width: i === step ? '14px' : '6px', height: '6px', borderRadius: '999px', background: i === step ? '#2E7D32' : '#D1D5DB', transition: 'all 0.2s' }} />
           ))}
@@ -241,17 +255,79 @@ function ScreenshotModal({ step, totalSteps, title, text, image, badge, isLast, 
 
         <div style={{ display: 'flex', gap: '0.5rem', maxWidth: '480px', margin: '0 auto' }}>
           <button onClick={onBack} style={{
-            flex: 1, padding: '0.6rem', borderRadius: '999px',
+            flex: 1, padding: '0.65rem', borderRadius: '999px',
             border: '1.5px solid #E5E5E5', background: 'white', color: '#555',
-            fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer',
+            fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer',
           }}>Back</button>
           <button onClick={onNext} style={{
-            flex: 2, padding: '0.6rem', borderRadius: '999px', border: 'none',
+            flex: 2, padding: '0.65rem', borderRadius: '999px', border: 'none',
             background: 'linear-gradient(135deg, #1A5238, #2E7D32)', color: 'white',
-            fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer',
+            fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer',
           }}>{isLast ? 'Done' : 'Next'}</button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function ImageWithHighlights({ src, alt, highlights = [] }) {
+  const containerRef = useRef(null);
+  const imgRef = useRef(null);
+  const [bounds, setBounds] = useState(null);
+
+  const calcBounds = useCallback(() => {
+    const img = imgRef.current;
+    const container = containerRef.current;
+    if (!img || !container || !img.naturalWidth) return;
+    const cw = container.clientWidth;
+    const ch = container.clientHeight;
+    const iw = img.naturalWidth;
+    const ih = img.naturalHeight;
+    const scale = Math.min(cw / iw, ch / ih);
+    const rw = iw * scale;
+    const rh = ih * scale;
+    setBounds({ x: (cw - rw) / 2, y: (ch - rh) / 2, w: rw, h: rh });
+  }, []);
+
+  useEffect(() => {
+    const img = imgRef.current;
+    if (!img) return;
+    if (img.complete && img.naturalWidth) calcBounds();
+    img.addEventListener('load', calcBounds);
+    window.addEventListener('resize', calcBounds);
+    return () => {
+      img.removeEventListener('load', calcBounds);
+      window.removeEventListener('resize', calcBounds);
+    };
+  }, [src, calcBounds]);
+
+  return (
+    <div ref={containerRef} style={{ position: 'relative', width: '100%', height: '100%' }}>
+      <img
+        ref={imgRef}
+        src={src}
+        alt={alt}
+        onLoad={calcBounds}
+        style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+      />
+      {bounds && highlights.length > 0 && (
+        <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', overflow: 'visible' }}>
+          {highlights.map((h, i) => (
+            <rect
+              key={i}
+              x={bounds.x + h.x * bounds.w}
+              y={bounds.y + h.y * bounds.h}
+              width={h.width * bounds.w}
+              height={h.height * bounds.h}
+              rx="8" ry="8"
+              fill="rgba(252,211,77,0.18)"
+              stroke="#FCD34D"
+              strokeWidth="3"
+              style={{ animation: 'ttHighlight 2s ease-in-out infinite', filter: 'drop-shadow(0 0 6px rgba(252,211,77,0.7))' }}
+            />
+          ))}
+        </svg>
+      )}
     </div>
   );
 }
