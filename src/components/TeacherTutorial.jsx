@@ -77,7 +77,7 @@ const STEPS = [
     text: "See the green question mark button in the bottom-right corner? Tap it any time to get answers about using the dashboard, reading analytics, or running a session.",
     image: '/images/teacher-tutorial/dashboard-code-classes.png',
     highlights: [
-      { x: 0.92, y: 0.85, width: 0.06, height: 0.12 },
+      { x: 0.96, y: 0.87, width: 0.05, height: 0.10 },
     ],
   },
 ];
