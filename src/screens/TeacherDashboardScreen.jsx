@@ -345,7 +345,7 @@ export default function TeacherDashboardScreen() {
 
   const inputStyle = { width:'100%', padding:'0.65rem 0.9rem', borderRadius:'var(--t-r-sm)', border:'1.5px solid var(--t-stone)', fontSize:'0.88rem', fontFamily:'DM Sans, sans-serif', marginBottom:'0.85rem', boxSizing:'border-box', background:'var(--t-parchment)', color:'var(--t-ink)', outline:'none', transition:'border-color 0.2s' };
 
-  if (authLoading || classesLoading) return (
+  if (!demoMode && (authLoading || classesLoading)) return (
     <div style={{ position:'fixed', inset:0, background:'linear-gradient(135deg, var(--t-deep) 0%, var(--t-mid) 60%, var(--t-eucalyptus) 100%)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'1.5rem' }}>
       <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'1rem' }}>
         <div style={{ width:'72px', height:'72px', borderRadius:'50%', background:'rgba(255,255,255,0.12)', border:'1px solid rgba(255,255,255,0.2)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 8px 32px rgba(0,0,0,0.2)' }}>
