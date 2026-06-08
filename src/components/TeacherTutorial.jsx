@@ -32,8 +32,8 @@ const STEPS = [
     image: '/images/teacher-tutorial/dashboard-code-classes.png',
     highlights: [
       { x: 0.15, y: 0.63, width: 0.83, height: 0.35 },
-      { x: 0.82, y: 0.68, width: 0.13, height: 0.09 },
-      { x: 0.82, y: 0.82, width: 0.13, height: 0.09 },
+      { x: 0.89, y: 0.68, width: 0.09, height: 0.09 },
+      { x: 0.89, y: 0.82, width: 0.09, height: 0.09 },
     ],
   },
   {
@@ -77,7 +77,7 @@ const STEPS = [
     text: "See the green question mark button in the bottom-right corner? Tap it any time to get answers about using the dashboard, reading analytics, or running a session.",
     image: '/images/teacher-tutorial/dashboard-code-classes.png',
     highlights: [
-      { x: 0.90, y: 0.86, width: 0.07, height: 0.12 },
+      { x: 0.92, y: 0.85, width: 0.06, height: 0.12 },
     ],
   },
 ];
