@@ -4,6 +4,7 @@ import { db } from '../firebase';
 import { useApp } from '../context/AppContext';
 import LegalModal from '../components/LegalModal';
 import TeacherHelpBot from '../components/TeacherHelpBot';
+import TeacherTutorial from '../components/TeacherTutorial';
 import { openTeacherInfoSheet } from '../utils/teacherInfoSheet';
 
 const WILDLY_PHRASES = ['Wildly by Taronga', 'Continue the learning', 'Resources', 'Programs', 'Assessments'];
@@ -406,7 +407,7 @@ export default function TeacherDashboardScreen() {
           </nav>
           <p className="lms-nav-group-label" style={{ marginTop:'1rem' }}>Account</p>
           <nav className="lms-nav">
-            <button className="lms-nav-item" onClick={() => { setFeedbackRating(0); setFeedbackComment(''); setShowFeedback(true); }}>
+            <button id="t-feedback-btn" className="lms-nav-item" onClick={() => { setFeedbackRating(0); setFeedbackComment(''); setShowFeedback(true); }}>
               <span className="lms-nav-icon">&#9786;</span> Feedback
             </button>
             <button className="lms-nav-item" onClick={() => setCurrentScreen('home')}>
@@ -444,7 +445,7 @@ export default function TeacherDashboardScreen() {
             </div>
 
             {/* Create a Class */}
-            <div className="animate-scale-in" style={{ background:'white', borderRadius:'var(--t-r-lg)', padding:'1.5rem', boxShadow:'var(--t-shadow-sm)', marginBottom:'1.5rem', border:'1px solid var(--t-stone)' }}>
+            <div id="t-create-class-section" className="animate-scale-in" style={{ background:'white', borderRadius:'var(--t-r-lg)', padding:'1.5rem', boxShadow:'var(--t-shadow-sm)', marginBottom:'1.5rem', border:'1px solid var(--t-stone)' }}>
               <h3 className="lms-section-heading">Create a New Class</h3>
               <p style={{ color:'var(--t-slate)', fontSize:'0.8rem', marginBottom:'1.1rem', marginTop:'-0.5rem' }}>Students join using the generated class code.</p>
 
@@ -500,7 +501,7 @@ export default function TeacherDashboardScreen() {
                 style={inputStyle} onFocus={e => e.target.style.borderColor='var(--t-mid)'} onBlur={e => e.target.style.borderColor='var(--t-stone)'} />
 
               <label style={{ display:'block', fontSize:'0.78rem', fontWeight:700, color:'var(--t-deep)', marginBottom:'0.3rem', textTransform:'uppercase', letterSpacing:'0.05em' }}>Taronga Access Code</label>
-              <input type="password" value={accessCodeInput} onChange={e => setAccessCodeInput(e.target.value)} placeholder="Enter access code" autoComplete="off"
+              <input id="t-access-code-input" type="password" value={accessCodeInput} onChange={e => setAccessCodeInput(e.target.value)} placeholder="Enter access code" autoComplete="off"
                 style={{ ...inputStyle, marginBottom:'1rem' }} onFocus={e => e.target.style.borderColor='var(--t-mid)'} onBlur={e => e.target.style.borderColor='var(--t-stone)'} />
 
               {(codeSessionType === 'zoosnooz' || newLocation === 'zoosnooz-sydney') && (
@@ -742,6 +743,7 @@ export default function TeacherDashboardScreen() {
       )}
 
       <TeacherHelpBot />
+      <TeacherTutorial />
     </>
   );
 }
