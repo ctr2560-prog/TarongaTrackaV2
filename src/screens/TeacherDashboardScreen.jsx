@@ -175,7 +175,7 @@ export default function TeacherDashboardScreen() {
   // Auth guard - redirect if not signed in once Firebase has resolved
   useEffect(() => {
     if (!authLoading && !teacher && !demoMode) setCurrentScreen('teacherLogin');
-  }, [teacher, authLoading, demoMode]);
+  }, [teacher, authLoading, demoMode, setCurrentScreen]);
 
   // Classes + student counts
   const [teacherClasses,  setTeacherClasses]  = useState([]);

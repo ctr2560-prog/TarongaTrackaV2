@@ -85,7 +85,8 @@ const STEPS = [
 function shouldShow(email, demo) {
   if (!email) return false;
   if (demo || email === 'demo@zoo') return true;
-  return localStorage.getItem(`teacherTutorial_${email}`) !== 'true';
+  try { return localStorage.getItem(`teacherTutorial_${email}`) !== 'true'; }
+  catch { return true; }
 }
 
 export default function TeacherTutorial() {
@@ -103,7 +104,9 @@ export default function TeacherTutorial() {
 
   const complete = () => {
     const isDemo = demoMode || teacherEmail === 'demo@zoo';
-    if (!isDemo && teacherEmail) localStorage.setItem(`teacherTutorial_${teacherEmail}`, 'true');
+    if (!isDemo && teacherEmail) {
+      try { localStorage.setItem(`teacherTutorial_${teacherEmail}`, 'true'); } catch { /* storage blocked */ }
+    }
     setDone(true);
   };
 
@@ -307,7 +310,6 @@ function ImageWithHighlights({ src, alt, highlights = [] }) {
         ref={imgRef}
         src={src}
         alt={alt}
-        onLoad={calcBounds}
         style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
       />
       {bounds && highlights.length > 0 && (
