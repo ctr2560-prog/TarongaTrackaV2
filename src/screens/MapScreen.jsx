@@ -1,13 +1,41 @@
-import { useEffect } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { useStudent } from '../context/StudentContext';
 import { getBearing, getDistance } from '../utils/helpers';
 import StudentGuide from '../components/StudentGuide';
 import TutorialOverlay from '../components/TutorialOverlay';
 
-
 const CARDINALS = ['N','NE','E','SE','S','SW','W','NW'];
 const toCardinal = (deg) => CARDINALS[Math.round(deg / 45) % 8];
+
+// Map is SOUTH-UP and X-AXIS INVERTED (east is left, west is right).
+// MAP_BOUNDS used only for the live student-dot overlay.
+const MAP_BOUNDS = {
+  north: -33.8385,  // bottom edge of image
+  south: -33.8492,  // top edge of image (harbour side)
+  west:  151.2342,  // left edge
+  east:  151.2462,  // right edge
+};
+
+// ── Hardcoded exhibit positions (% of image width/height) ─────────────────────
+// Map image: 2465×2339px rendered from the MAP ONLY PDF at 200 DPI.
+// The bottom ~12% of the image is the KEY legend strip (not geographical).
+const MAP_CONTENT_HEIGHT = 0.88; // fraction of image height that is map (rest = legend)
+
+const ANIMAL_MAP_POSITIONS = {
+  'sea-lion':                { x: 62.1, y: 25.0, label: 'Sea Lions'     },
+  'concert-lawn':            { x: 28.6, y: 24.4, label: 'Concert Lawn'  },
+  'gorilla':                 { x: 57.8, y: 43.2, label: 'Gorillas'      },
+  'asian-water-buffalo':     { x: 70.3, y: 35.9, label: 'Water Buffalo' },
+  'lemur':                   { x: 63.5, y: 61.5, label: 'Lemurs'        },
+  'tiger':                   { x: 91.3, y: 57.8, label: 'Tiger Trek'    },
+  'giraffe':                 { x: 75.5, y: 63.4, label: 'Giraffes'      },
+  'lion':                    { x: 94.2, y: 71.3, label: 'Lions'         },
+  'chimpanzee':              { x: 78.7, y: 72.9, label: 'Chimps'        },
+  'blue-mountains-bushwalk': { x: 28.2, y: 47.5, label: 'Bushwalk'     },
+  'dingo':                   { x: 21.2, y: 62.7, label: 'Dingoes'       },
+  'koala':                   { x: 60.2, y: 72.1, label: 'Koalas'        },
+};
 
 export default function MapScreen() {
   const { setCurrentScreen, studentName, classCode } = useApp();
@@ -22,6 +50,56 @@ export default function MapScreen() {
     showConservationScreen, setShowConservationScreen,
     completionCardDismissed, setCompletionCardDismissed,
   } = useStudent();
+
+  const [mapLoaded, setMapLoaded] = useState(false);
+
+  // Zoom & pan — start at 0.85 so the full map is visible with room to scroll right
+  const [mapScale,    setMapScale]    = useState(0.85);
+  const outerScrollRef = useRef(null);
+  const pinchRef       = useRef({ active:false, startDist:0, startScale:1 });
+  const panRef         = useRef({ active:false, startX:0, startY:0, scrollX:0, scrollY:0 });
+
+  const clampScale = (s) => Math.min(4, Math.max(0.4, s));
+
+  const handleWheel = (e) => {
+    if (!e.ctrlKey && !e.metaKey) return;
+    e.preventDefault();
+    setMapScale(s => clampScale(s * (e.deltaY < 0 ? 1.12 : 0.9)));
+  };
+
+  const pinchDist = (touches) => {
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+
+  const handleTouchStart = (e) => {
+    if (e.touches.length === 2) {
+      pinchRef.current = { active:true, startDist: pinchDist(e.touches), startScale: mapScale };
+      panRef.current.active = false;
+    } else if (e.touches.length === 1) {
+      panRef.current = { active:true, startX: e.touches[0].clientX, startY: e.touches[0].clientY, scrollX: outerScrollRef.current?.scrollLeft ?? 0, scrollY: outerScrollRef.current?.scrollTop ?? 0 };
+      pinchRef.current.active = false;
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    if (pinchRef.current.active && e.touches.length === 2) {
+      e.preventDefault();
+      const ratio = pinchDist(e.touches) / pinchRef.current.startDist;
+      setMapScale(clampScale(pinchRef.current.startScale * ratio));
+    } else if (panRef.current.active && e.touches.length === 1 && outerScrollRef.current) {
+      e.preventDefault();
+      outerScrollRef.current.scrollLeft = panRef.current.scrollX + (panRef.current.startX - e.touches[0].clientX);
+      outerScrollRef.current.scrollTop  = panRef.current.scrollY + (panRef.current.startY - e.touches[0].clientY);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    pinchRef.current.active = false;
+    panRef.current.active   = false;
+  };
+
 
   useEffect(() => {
     if (gpsRequired) enableLocation();
@@ -207,18 +285,228 @@ export default function MapScreen() {
 
       {/* Zoo map modal */}
       {showZooMap && (
-        <div style={{ position:'fixed', top:0, left:0, width:'100%', height:'100%', background:'rgba(0,0,0,0.7)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:9999 }}>
-          <div style={{ background:'#fff', padding:'20px', borderRadius:'var(--t-r-sm)', maxWidth:'90%', maxHeight:'90%', textAlign:'center' }}>
-            <div style={{ overflow:'auto', maxHeight:'70vh' }}>
-              <img src="images/taronga-map.png" style={{ width:'100%' }} alt="Zoo Map" />
-            </div>
-            <div style={{ marginTop:'15px' }}>
-              <button onClick={() => setShowZooMap(false)}
-                style={{ padding:'8px 16px', background:'#444', color:'#fff', border:'none', borderRadius:'6px', cursor:'pointer' }}>
-                Close Map
+        <div style={{ position:'fixed', inset:0, zIndex:9999, background:'rgba(0,0,0,0.82)', display:'flex', flexDirection:'column', animation:'sgSlideUp 0.22s ease' }}>
+
+          <style>{`
+            @keyframes pulse-ring {
+              0%   { transform: scale(0.8); opacity: 0.8; }
+              100% { transform: scale(2.2); opacity: 0; }
+            }
+            @keyframes marker-nearby-pill {
+              0%, 100% { box-shadow: 0 3px 14px rgba(0,0,0,0.55), 0 0 0 0 rgba(251,191,36,0.7); }
+              50%       { box-shadow: 0 3px 14px rgba(0,0,0,0.55), 0 0 0 9px rgba(251,191,36,0); }
+            }
+            @keyframes bar-shimmer {
+              0%   { transform: translateX(-100%); }
+              100% { transform: translateX(200%); }
+            }
+            @keyframes glow-pulse {
+              0%, 100% { box-shadow: 0 0 0 3px rgba(134,239,172,0.25), 0 0 14px rgba(74,222,128,0.9); }
+              50%       { box-shadow: 0 0 0 6px rgba(134,239,172,0.1), 0 0 28px rgba(74,222,128,0.4); }
+            }
+          `}</style>
+
+          {/* Header */}
+          {(() => {
+            const pct = animalsToRender.length > 0 ? (foundAnimals.size / animalsToRender.length) * 100 : 0;
+            const done = foundAnimals.size === animalsToRender.length && animalsToRender.length > 0;
+            return (
+              <div style={{ background:'linear-gradient(160deg, #0d2818 0%, #1A5238 55%, #2E7D32 100%)', padding:'0.9rem 1.2rem 0.85rem', flexShrink:0, boxShadow:'0 4px 20px rgba(0,0,0,0.45)' }}>
+                {/* Title row */}
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'0.75rem' }}>
+                  <div>
+                    <div style={{ color:'white', fontWeight:800, fontSize:'1.05rem', lineHeight:1.2, letterSpacing:'0.01em' }}>Taronga Zoo Map</div>
+                    <div style={{ color: done ? '#4ADE80' : 'rgba(255,255,255,0.6)', fontSize:'0.72rem', marginTop:'0.15rem', fontWeight:600, transition:'color 0.4s' }}>
+                      {done ? '🎉 All animals discovered!' : `${foundAnimals.size} of ${animalsToRender.length} animals found`}
+                    </div>
+                  </div>
+                  <button onClick={() => setShowZooMap(false)}
+                    style={{ width:'34px', height:'34px', borderRadius:'50%', background:'rgba(255,255,255,0.14)', border:'1px solid rgba(255,255,255,0.22)', color:'white', fontSize:'0.95rem', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700, flexShrink:0 }}>✕</button>
+                </div>
+
+                {/* Progress bar */}
+                <div style={{ position:'relative', height:'13px', borderRadius:'999px', background:'rgba(0,0,0,0.45)', border:'1px solid rgba(255,255,255,0.08)', boxShadow:'inset 0 2px 5px rgba(0,0,0,0.4)', overflow:'hidden' }}>
+                  {/* Fill */}
+                  <div style={{
+                    position:'absolute', inset:0, right:`${100 - pct}%`,
+                    background: done
+                      ? 'linear-gradient(90deg, #15803d, #22C55E, #FFD700)'
+                      : 'linear-gradient(90deg, #15803d 0%, #22C55E 70%, #4ADE80 100%)',
+                    borderRadius:'999px',
+                    transition:'right 0.8s cubic-bezier(0.34,1.56,0.64,1)',
+                    overflow:'hidden',
+                  }}>
+                    {/* Shimmer */}
+                    <div style={{
+                      position:'absolute', top:0, bottom:0, width:'40%',
+                      background:'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)',
+                      animation:'bar-shimmer 2s ease-in-out infinite',
+                    }} />
+                  </div>
+                  {/* Glow dot at leading edge */}
+                  {pct > 2 && !done && (
+                    <div style={{
+                      position:'absolute', top:'50%', left:`${pct}%`,
+                      transform:'translate(-50%, -50%)',
+                      width:'17px', height:'17px', borderRadius:'50%',
+                      background:'#86EFAC',
+                      border:'2.5px solid white',
+                      animation:'glow-pulse 1.6s ease-in-out infinite',
+                      zIndex:2,
+                    }} />
+                  )}
+                </div>
+
+                {/* Sub-labels */}
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:'0.35rem' }}>
+                  <span style={{ fontSize:'0.62rem', color:'rgba(255,255,255,0.38)', fontWeight:600, letterSpacing:'0.04em', textTransform:'uppercase' }}>Progress</span>
+                  <span style={{ fontSize:'0.65rem', fontWeight:800, color: done ? '#4ADE80' : pct > 0 ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.38)', letterSpacing:'0.02em', transition:'color 0.4s' }}>
+                    {done ? 'Complete! ⭐' : pct > 0 ? `${Math.round(pct)}%` : 'Find your first animal!'}
+                  </span>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Location permission banner */}
+          {!locationEnabled && (
+            <div style={{ background:'#FEF9C3', borderBottom:'1px solid #FDE047', padding:'0.55rem 1rem', display:'flex', alignItems:'center', gap:'0.6rem', flexShrink:0 }}>
+              <span style={{ fontSize:'1rem', flexShrink:0 }}>📍</span>
+              <p style={{ margin:0, fontSize:'0.78rem', color:'#713F12', lineHeight:1.3, flex:1 }}>
+                Allow location permissions to see where you are on the map
+              </p>
+              <button onClick={enableLocation} style={{ flexShrink:0, padding:'0.3rem 0.75rem', background:'#CA8A04', color:'white', border:'none', borderRadius:'20px', fontSize:'0.72rem', fontWeight:700, cursor:'pointer' }}>
+                Enable
               </button>
             </div>
+          )}
+
+
+          {/* Map with overlaid markers */}
+          <div
+            ref={outerScrollRef}
+            style={{ flex:1, overflow:'auto', WebkitOverflowScrolling:'touch', background:'#0a1a0a', textAlign:'center' }}
+          >
+            {/* inline-block wrapper = exactly image size → marker % positions are correct */}
+            <div
+              style={{ position:'relative', display:'inline-block', width:`${Math.round(mapScale * 100)}%`, minWidth:'100%', touchAction:'none', cursor:'grab' }}
+              onWheel={handleWheel}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
+              <img
+                src="images/taronga-map.png"
+                alt="Taronga Zoo Map"
+                style={{ width:'100%', display:'block' }}
+                onLoad={() => setMapLoaded(true)}
+              />
+
+              {mapLoaded && animalsToRender.map(animal => {
+                const pos = ANIMAL_MAP_POSITIONS[animal.id];
+                if (!pos) return null;
+                const found  = foundAnimals.has(animal.id);
+                const { nearby } = checkAnimalProximity(animal);
+
+                const pillBg     = found ? 'linear-gradient(135deg,#166534,#15803d)' : nearby ? 'linear-gradient(135deg,#78350F,#92400E)' : 'linear-gradient(135deg,#1a2e1a,#1e3a1e)';
+                const borderCol  = found ? '#22C55E' : nearby ? '#FBBF24' : 'rgba(255,255,255,0.25)';
+                const labelColor = found ? '#86EFAC' : nearby ? '#FDE68A' : 'rgba(255,255,255,0.88)';
+                const thumbFilter = found || nearby ? 'none' : 'grayscale(0.45)';
+
+                return (
+                  <div key={animal.id}
+                    style={{ position:'absolute', left:`${pos.x}%`, top:`${pos.y}%`, transform:'translate(-50%,-100%)', zIndex:5, display:'flex', flexDirection:'column', alignItems:'center' }}>
+                    {/* Pill badge */}
+                    <div style={{
+                      display:'flex', alignItems:'center', gap:'6px',
+                      background: pillBg,
+                      border:`2px solid ${borderCol}`,
+                      borderRadius:'999px',
+                      padding:'4px 10px 4px 4px',
+                      boxShadow:'0 4px 16px rgba(0,0,0,0.6)',
+                      animation: nearby && !found ? 'marker-nearby-pill 1.8s ease-in-out infinite' : 'none',
+                    }}>
+                      {/* Thumbnail */}
+                      <div style={{
+                        width:'34px', height:'34px', borderRadius:'50%',
+                        backgroundImage:`url(${animal.image})`,
+                        backgroundSize:'cover', backgroundPosition:'center',
+                        flexShrink:0,
+                        border:`1.5px solid ${borderCol}`,
+                        filter: thumbFilter,
+                        position:'relative',
+                      }}>
+                        {found && (
+                          <div style={{ position:'absolute', bottom:'-2px', right:'-2px', width:'14px', height:'14px', borderRadius:'50%', background:'#22C55E', border:'2px solid #166534', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'7px', color:'white', fontWeight:900, lineHeight:1 }}>✓</div>
+                        )}
+                      </div>
+                      {/* Label */}
+                      <div>
+                        <div style={{ fontSize:'0.66rem', fontWeight:800, color: labelColor, lineHeight:1.2, whiteSpace:'nowrap' }}>
+                          {pos.label}
+                        </div>
+                        {nearby && !found && (
+                          <div style={{ fontSize:'0.56rem', fontWeight:700, color:'#FCD34D', lineHeight:1.1 }}>Tap to unlock!</div>
+                        )}
+                        {found && (
+                          <div style={{ fontSize:'0.56rem', fontWeight:700, color:'#4ADE80', lineHeight:1.1 }}>Discovered</div>
+                        )}
+                      </div>
+                    </div>
+                    {/* Pointer tail */}
+                    <div style={{ width:0, height:0, borderLeft:'6px solid transparent', borderRight:'6px solid transparent', borderTop:`8px solid ${borderCol}` }} />
+                  </div>
+                );
+              })}
+
+              {/* Student location dot */}
+              {mapLoaded && locationEnabled && userLocation && (() => {
+                const x = (MAP_BOUNDS.east - userLocation.longitude) / (MAP_BOUNDS.east - MAP_BOUNDS.west) * 100;
+                const y = (userLocation.latitude - MAP_BOUNDS.south) / (MAP_BOUNDS.north - MAP_BOUNDS.south) * 100 * MAP_CONTENT_HEIGHT;
+                if (x < 0 || x > 100 || y < 0 || y > MAP_CONTENT_HEIGHT * 100) return null;
+                return (
+                  <div style={{ position:'absolute', left:`${x}%`, top:`${y}%`, transform:'translate(-50%,-50%)', zIndex:10 }}>
+                    <div style={{ position:'absolute', inset:'-8px', borderRadius:'50%', border:'2px solid rgba(59,130,246,0.45)', animation:'pulse-ring 1.8s ease-out infinite' }} />
+                    <div style={{ width:'14px', height:'14px', borderRadius:'50%', background:'#3B82F6', border:'2.5px solid white', boxShadow:'0 2px 8px rgba(59,130,246,0.6)', position:'relative' }} />
+                  </div>
+                );
+              })()}
+            </div>
           </div>
+
+          {/* Bottom legend bar */}
+          <div style={{ background:'rgba(15,15,15,0.9)', backdropFilter:'blur(10px)', padding:'0.55rem 1rem', display:'flex', alignItems:'center', gap:'0.85rem', flexShrink:0, borderTop:'1px solid rgba(255,255,255,0.08)' }}>
+              {[
+                { color:'#22C55E', label:'Found' },
+                { color:'#FBBF24', label:'Nearby' },
+                { color:'white',   label:'Not yet' },
+                ...(locationEnabled && userLocation ? [{ color:'#3B82F6', label:'You' }] : []),
+              ].map(item => (
+                <div key={item.label} style={{ display:'flex', alignItems:'center', gap:'0.4rem' }}>
+                  <div style={{ width:'9px', height:'9px', borderRadius:'50%', background:item.color, flexShrink:0 }} />
+                  <span style={{ color:'rgba(255,255,255,0.7)', fontSize:'0.72rem', fontWeight:600 }}>{item.label}</span>
+                </div>
+              ))}
+              {/* Zoom controls */}
+              <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:'4px' }}>
+                <button
+                  onClick={() => setMapScale(s => clampScale(s / 1.3))}
+                  style={{ width:'28px', height:'28px', borderRadius:'6px', background:'rgba(255,255,255,0.12)', border:'1px solid rgba(255,255,255,0.2)', color:'white', fontSize:'1rem', fontWeight:700, cursor:'pointer', lineHeight:1, flexShrink:0 }}>−</button>
+                <span style={{ color:'rgba(255,255,255,0.55)', fontSize:'0.65rem', fontWeight:700, minWidth:'2.6rem', textAlign:'center' }}>
+                  {Math.round(mapScale * 100)}%
+                </span>
+                <button
+                  onClick={() => setMapScale(s => clampScale(s * 1.3))}
+                  style={{ width:'28px', height:'28px', borderRadius:'6px', background:'rgba(255,255,255,0.12)', border:'1px solid rgba(255,255,255,0.2)', color:'white', fontSize:'1rem', fontWeight:700, cursor:'pointer', lineHeight:1, flexShrink:0 }}>+</button>
+                {mapScale !== 1 && (
+                  <button
+                    onClick={() => setMapScale(1)}
+                    title="Reset zoom"
+                    style={{ width:'28px', height:'28px', borderRadius:'6px', background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.15)', color:'rgba(255,255,255,0.6)', fontSize:'0.7rem', cursor:'pointer', lineHeight:1, flexShrink:0 }}>↺</button>
+                )}
+              </div>
+            </div>
+
         </div>
       )}
     </div>

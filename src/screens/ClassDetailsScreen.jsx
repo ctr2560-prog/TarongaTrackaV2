@@ -150,7 +150,7 @@ export default function ClassDetailsScreen() {
       .then(snap => {
         if (snap.exists()) {
           const d = snap.data();
-          setCls({ classCode: d.classCode || selectedClass, className: d.className || '', schoolName: d.schoolName || '', stage: d.stage || 4, yearGroup: d.yearGroup || '', sessionType: d.sessionType || 'standard', sessionClosed: d.sessionClosed || false, location: d.location || null, subject: d.subject || null });
+          setCls({ classCode: d.classCode || selectedClass, className: d.className || '', schoolName: d.schoolName || '', stage: d.stage || 4, yearGroup: d.yearGroup || '', sessionType: d.sessionType || 'standard', sessionClosed: d.sessionClosed || false, location: d.location || null, subject: d.subject || null, gpsEnabled: d.gpsEnabled !== false });
         } else {
           setCurrentScreen('teacherDashboard');
         }
@@ -450,7 +450,62 @@ export default function ClassDetailsScreen() {
             )}
           </div>
 
-          <p className="lms-nav-group-label" style={{ marginTop:'1.25rem' }}>Actions</p>
+          <p className="lms-nav-group-label" style={{ marginTop:'1.25rem' }}>Settings</p>
+          <div style={{ padding:'0 0.75rem 0.5rem' }}>
+            <div style={{
+              borderRadius:'var(--t-r-md)',
+              border: cls.gpsEnabled ? '1.5px solid rgba(34,197,94,0.3)' : '1.5px solid #F59E0B',
+              background: cls.gpsEnabled ? 'rgba(34,197,94,0.07)' : 'rgba(245,158,11,0.1)',
+              padding:'0.75rem',
+            }}>
+              {/* Header row */}
+              <div style={{ display:'flex', alignItems:'center', gap:'0.4rem', marginBottom:'0.5rem' }}>
+                <span style={{ fontSize:'1rem' }}>{cls.gpsEnabled ? '📍' : '🔓'}</span>
+                <span style={{ fontSize:'0.75rem', fontWeight:800, color: cls.gpsEnabled ? '#16A34A' : '#B45309', textTransform:'uppercase', letterSpacing:'0.05em' }}>
+                  {cls.gpsEnabled ? 'GPS On' : 'GPS Off'}
+                </span>
+              </div>
+
+              {/* Description */}
+              <p style={{ margin:'0 0 0.35rem', fontSize:'0.78rem', fontWeight:700, color: isZZ ? 'rgba(212,237,224,0.9)' : 'rgba(255,255,255,0.85)', lineHeight:1.45 }}>
+                {cls.gpsEnabled
+                  ? 'Students must be near an exhibit to discover it.'
+                  : 'Students can discover animals without being nearby.'}
+              </p>
+              <p style={{ margin:'0 0 0.65rem', fontSize:'0.72rem', color: isZZ ? 'rgba(184,212,192,0.6)' : 'rgba(255,255,255,0.5)', lineHeight:1.5 }}>
+                {cls.gpsEnabled
+                  ? 'For GPS-enabled devices, e.g. Taronga hire phones.'
+                  : 'Use this for NSW Department devices — GPS is blocked.'}
+              </p>
+
+              {/* Toggle button */}
+              <button
+                onClick={async () => {
+                  const next = !cls.gpsEnabled;
+                  setCls(c => ({ ...c, gpsEnabled: next }));
+                  try {
+                    await Promise.all([
+                      updateDoc(doc(db, 'classes', selectedClass), { gpsEnabled: next }),
+                      updateDoc(doc(db, 'teachers', teacherEmail, 'classes', selectedClass), { gpsEnabled: next }),
+                    ]);
+                  } catch {
+                    setCls(c => ({ ...c, gpsEnabled: !next }));
+                  }
+                }}
+                style={{
+                  width:'100%', padding:'0.5rem 0.6rem',
+                  borderRadius:'var(--t-r-md)', border:'none',
+                  cursor:'pointer', fontWeight:700, fontSize:'0.75rem',
+                  background: cls.gpsEnabled ? '#DC2626' : '#16A34A',
+                  color:'white', transition:'background 0.2s',
+                }}
+              >
+                {cls.gpsEnabled ? '🔓 Disable GPS (Dept Devices)' : '📍 Enable GPS (GPS Devices)'}
+              </button>
+            </div>
+          </div>
+
+          <p className="lms-nav-group-label" style={{ marginTop:'1rem' }}>Actions</p>
           <nav className="lms-nav">
             <button className="lms-nav-item" onClick={downloadCSV} disabled={loading} style={{ opacity: loading ? 0.5 : 1 }}><span className="lms-nav-icon">&#8615;</span> Export CSV</button>
             {!loading && (

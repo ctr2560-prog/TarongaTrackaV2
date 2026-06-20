@@ -61,15 +61,27 @@ export function StudentProvider({ children }) {
     return () => window.removeEventListener('beforeunload', handler);
   }, [studentName, classCode, activityCompleted]);
 
-  // ── GPS override setting ───────────────────────────────────────────────────
-  const [gpsRequired, setGpsRequired] = useState(true); // false = admin has turned GPS off
+  // ── GPS required — global admin setting AND per-class teacher setting ────────
+  // Both must be true for GPS to be enforced. Either can disable it independently.
+  const [globalGpsEnabled, setGlobalGpsEnabled] = useState(true);
+  const [classGpsEnabled,  setClassGpsEnabled]  = useState(true);
+  const gpsRequired = globalGpsEnabled && classGpsEnabled;
 
   useEffect(() => {
     const unsub = onSnapshot(doc(db, 'settings', 'app'), snap => {
-      if (snap.exists()) setGpsRequired(snap.data().gpsEnabled !== false);
+      if (snap.exists()) setGlobalGpsEnabled(snap.data().gpsEnabled !== false);
     }, () => {});
     return unsub;
   }, []);
+
+  useEffect(() => {
+    if (!classCode) return;
+    const code = normaliseCode(classCode);
+    const unsub = onSnapshot(doc(db, 'classes', code), snap => {
+      setClassGpsEnabled(snap.exists() ? snap.data().gpsEnabled !== false : true);
+    }, () => {});
+    return unsub;
+  }, [classCode]);
 
   // ── Geolocation ────────────────────────────────────────────────────────────
   const [userLocation,    setUserLocation]    = useState(null);
