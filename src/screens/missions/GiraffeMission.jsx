@@ -3,6 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { useStudent } from '../../context/StudentContext';
 import { getStageQuestions } from '../../utils/helpers';
 import MathsCalculator from '../../components/MathsCalculator';
+import StudentGuide from '../../components/StudentGuide';
 
 const GIRAFFE_MCQ = {
   stageQ: {
@@ -238,6 +239,7 @@ export default function GiraffeMission() {
           </div>
         </div>
       )}
+      <StudentGuide screen="mission-giraffe" />
     </div>
   );
 }

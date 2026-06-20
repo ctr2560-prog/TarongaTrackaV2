@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useStudent } from '../../context/StudentContext';
 import MathsCalculator from '../../components/MathsCalculator';
+import StudentGuide from '../../components/StudentGuide';
 
 const TIGER_MCQ = {
   stageQ: {
@@ -324,6 +325,7 @@ export default function TigerMission() {
           </div>
         </div>
       )}
+      <StudentGuide screen="mission-tiger" />
     </div>
   );
 }

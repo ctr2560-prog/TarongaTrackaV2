@@ -3,6 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { useStudent } from '../../context/StudentContext';
 import { getStageQuestions } from '../../utils/helpers';
 import MathsCalculator from '../../components/MathsCalculator';
+import StudentGuide from '../../components/StudentGuide';
 
 const GATE_SEQUENCE = [
   // 1–10: warmup, centre
@@ -322,6 +323,7 @@ export default function BuffaloMission() {
             </div>
           </div>
         )}
+        <StudentGuide screen="mission-buffalo" />
       </div>
     );
   }
@@ -501,6 +503,7 @@ export default function BuffaloMission() {
           </div>
         </div>
       )}
+      <StudentGuide screen="mission-buffalo" />
     </div>
   );
 }

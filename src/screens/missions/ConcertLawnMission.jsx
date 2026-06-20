@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useStudent } from '../../context/StudentContext';
 import { getStageQuestions } from '../../utils/helpers';
+import StudentGuide from '../../components/StudentGuide';
 
 const STAGE_CHALLENGES = {
   1: 'Do a relay race across the lawn, everyone must run and finish together! Every single team member must cross the line before you\'re done.',
@@ -105,6 +106,7 @@ export default function ConcertLawnMission() {
             ✅ Done, Answer the Question
           </button>
         </div>
+        <StudentGuide screen="mission-concertlawn" />
       </div>
     );
   }
@@ -165,6 +167,7 @@ export default function ConcertLawnMission() {
           </div>
         </div>
       )}
+      <StudentGuide screen="mission-concertlawn" />
     </div>
   );
 }

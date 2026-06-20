@@ -3,6 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { useStudent } from '../../context/StudentContext';
 import { getStageQuestions } from '../../utils/helpers';
 import MathsCalculator from '../../components/MathsCalculator';
+import StudentGuide from '../../components/StudentGuide';
 
 // ── Game data ──────────────────────────────────────────────────────────────
 const BUDGET = 320;
@@ -300,6 +301,7 @@ export default function SeaLionMission() {
         <div style={{ width:'220px', height:'6px', background:'rgba(255,255,255,0.12)', borderRadius:'99px', overflow:'hidden' }}>
           <div style={{ height:'100%', width:`${loadProgress}%`, background:'linear-gradient(to right,#2b9c46,#67D8F7)', borderRadius:'99px', transition:'width 0.25s ease' }} />
         </div>
+        <StudentGuide screen="mission-sealion" />
       </div>
     );
   }
@@ -337,6 +339,7 @@ export default function SeaLionMission() {
             Start Building! 🏗️
           </button>
         </div>
+        <StudentGuide screen="mission-sealion" />
       </div>
     );
   }
@@ -550,6 +553,7 @@ export default function SeaLionMission() {
             </div>
           </div>
         </div>
+        <StudentGuide screen="mission-sealion" />
       </div>
     );
   }
@@ -579,6 +583,7 @@ export default function SeaLionMission() {
           style={{ padding:'1rem 2.5rem', borderRadius:30, border:'3px solid rgba(255,255,255,0.5)', background:'rgba(255,255,255,0.15)', color:'white', fontSize:'1.05rem', fontWeight:700, cursor:'pointer', letterSpacing:'0.05em', backdropFilter:'blur(6px)' }}>
           Answer the Question →
         </button>
+        <StudentGuide screen="mission-sealion" />
       </div>
     );
   }
@@ -631,6 +636,7 @@ export default function SeaLionMission() {
           </div>
         </div>
       )}
+      <StudentGuide screen="mission-sealion" />
     </div>
   );
 }

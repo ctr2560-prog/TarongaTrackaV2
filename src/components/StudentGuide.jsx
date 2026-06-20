@@ -1,5 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
+import { useApp } from '../context/AppContext';
+import { getGuideContent } from '../utils/studentGuideContent';
 
 const AVATAR = (
   <div style={{ width: '28px', height: '28px', borderRadius: '50%', overflow: 'hidden', border: '1.5px solid #4A9E6B', flexShrink: 0, background: '#e8f5e9', alignSelf: 'flex-end' }}>
@@ -8,30 +10,20 @@ const AVATAR = (
   </div>
 );
 
-const MAIN_OPTIONS = [
-  { label: '🧭 Finding an animal',   key: 'navigate' },
-  { label: '📏 What distance means', key: 'distance' },
-  { label: '✋ How to unlock',        key: 'unlock'   },
-  { label: '🏆 Getting a badge',     key: 'badge'    },
-  { label: '🗺️ Where to start',      key: 'start'    },
-];
+export default function StudentGuide({ screen = 'map', animal = null }) {
+  const { classStage, classSubject } = useApp();
+  const content = useMemo(
+    () => getGuideContent(screen, classStage, classSubject, animal),
+    [screen, classStage, classSubject, animal]
+  );
 
-const RESPONSES = {
-  navigate: "See the yellow arrow on each animal card? It shows you which direction to walk! Follow the arrow and watch the distance number shrink. 🧭",
-  distance: "That number shows how many metres away the animal is. Keep walking and you'll see it get smaller and smaller! 👟",
-  unlock:   "When you're close enough, the card will glow and say 'Tap to Discover.' Just give it a tap and you've found it! 🎉",
-  badge:    "Complete the activity at each animal — answer the quiz and write your observation — and you'll earn a badge! 🏆",
-  start:    "Look at the list — the closest animal is at the top! That's your first stop. Follow the yellow arrow and you're on your way! 🌿",
-};
-
-export default function StudentGuide() {
   const [open, setOpen]           = useState(false);
   const [imgFailed, setImgFailed] = useState(false);
   const [showBubble, setShowBubble] = useState(true);
-  const [messages, setMessages]   = useState([
-    { from: 'bot', text: "Hey there! 👋 I'm Dr. Cam, your Taronga Zoo guide. What do you need help with?" },
+  const [messages, setMessages]   = useState(() => [
+    { from: 'bot', text: content.greeting },
   ]);
-  const [options, setOptions]     = useState(MAIN_OPTIONS);
+  const [options, setOptions]     = useState(() => content.options);
   const [typing, setTyping]       = useState(false);
   const bottomRef  = useRef(null);
   const replyTimer = useRef(null);
@@ -51,7 +43,7 @@ export default function StudentGuide() {
 
   const handleOption = (opt) => {
     if (opt.key === 'back') {
-      setOptions(MAIN_OPTIONS);
+      setOptions(content.options);
       return;
     }
     setMessages(m => [...m, { from: 'user', text: opt.label }]);
@@ -60,7 +52,7 @@ export default function StudentGuide() {
     clearTimeout(replyTimer.current);
     replyTimer.current = setTimeout(() => {
       setTyping(false);
-      setMessages(m => [...m, { from: 'bot', text: RESPONSES[opt.key] }]);
+      setMessages(m => [...m, { from: 'bot', text: content.responses[opt.key] }]);
       setOptions([{ label: '← Ask something else', key: 'back' }]);
     }, 700);
   };

@@ -3,6 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { useStudent } from '../../context/StudentContext';
 import { getStageQuestions } from '../../utils/helpers';
 import MathsCalculator from '../../components/MathsCalculator';
+import StudentGuide from '../../components/StudentGuide';
 
 const ZOOM_OPTIONS_SCIENCE = ['2×', '5×', '10×'];
 const ZOOM_OPTIONS_OTHER   = ['1×', '2×', '3×', '4×'];
@@ -374,6 +375,7 @@ export default function LionMission() {
 
         </div>
       )}
+      <StudentGuide screen="mission-lion" />
     </div>
   );
 }

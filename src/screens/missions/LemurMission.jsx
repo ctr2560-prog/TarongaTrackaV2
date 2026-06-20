@@ -3,6 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { useStudent } from '../../context/StudentContext';
 import { getStageQuestions } from '../../utils/helpers';
 import MathsCalculator from '../../components/MathsCalculator';
+import StudentGuide from '../../components/StudentGuide';
 
 const BEHAVIOURS = [
   { key:'feeding', label:'Feeding', index:0, color:'#6EE7A0' },
@@ -314,6 +315,7 @@ export default function LemurMission() {
             </>
           )}
         </div>
+        <StudentGuide screen="mission-lemur" />
       </div>
     );
   }
@@ -354,6 +356,7 @@ export default function LemurMission() {
             💃 Start Dancing!
           </button>
         </div>
+        <StudentGuide screen="mission-lemur" />
       </div>
     );
   }
@@ -420,6 +423,7 @@ export default function LemurMission() {
             );
           })}
         </div>
+        <StudentGuide screen="mission-lemur" />
       </div>
     );
   }
@@ -462,6 +466,7 @@ export default function LemurMission() {
             Write the story →
           </button>
         </div>
+        <StudentGuide screen="mission-lemur" />
       </div>
     );
   }
@@ -516,6 +521,7 @@ export default function LemurMission() {
             Answer the Question →
           </button>
         </div>
+        <StudentGuide screen="mission-lemur" />
       </div>
     );
   }
@@ -599,6 +605,7 @@ export default function LemurMission() {
           </div>
         </div>
       )}
+      <StudentGuide screen="mission-lemur" />
     </div>
   );
 }

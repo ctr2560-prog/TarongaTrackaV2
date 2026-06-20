@@ -3,6 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { useStudent } from '../../context/StudentContext';
 import { getStageQuestions } from '../../utils/helpers';
 import MathsCalculator from '../../components/MathsCalculator';
+import StudentGuide from '../../components/StudentGuide';
 
 export default function BushwalkMission() {
   const { setCurrentScreen, classStage, classSubject } = useApp();
@@ -249,6 +250,7 @@ export default function BushwalkMission() {
 
           </div>
         )}
+        <StudentGuide screen="mission-bushwalk" />
       </div>
     );
   }
@@ -355,6 +357,7 @@ export default function BushwalkMission() {
 
         </div>
       )}
+      <StudentGuide screen="mission-bushwalk" />
     </div>
   );
 }

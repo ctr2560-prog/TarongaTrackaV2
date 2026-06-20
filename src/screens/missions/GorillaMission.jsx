@@ -3,6 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { useStudent } from '../../context/StudentContext';
 import { getStageQuestions } from '../../utils/helpers';
 import MathsCalculator from '../../components/MathsCalculator';
+import StudentGuide from '../../components/StudentGuide';
 
 const INGREDIENTS = [
   { id:'leaves',   emoji:'🍃', label:'Leaves',   icon:'Gorilla Game/icon-leaves.png' },
@@ -191,6 +192,7 @@ export default function GorillaMission() {
             <div style={{ height:'100%', width:`${loadProgress}%`, background:'linear-gradient(to right,#2b9c46,#4CAF50)', borderRadius:'999px', transition:'width 0.25s ease' }} />
           </div>
         </div>
+        <StudentGuide screen="mission-gorilla" />
       </div>
     );
   }
@@ -227,6 +229,7 @@ export default function GorillaMission() {
             Start Serving! 🦍
           </button>
         </div>
+        <StudentGuide screen="mission-gorilla" />
       </div>
     );
   }
@@ -306,6 +309,7 @@ export default function GorillaMission() {
             ))}
           </div>
         </div>
+        <StudentGuide screen="mission-gorilla" />
       </div>
     );
   }
@@ -344,6 +348,7 @@ export default function GorillaMission() {
             Play Again
           </button>
         </div>
+        <StudentGuide screen="mission-gorilla" />
       </div>
     );
   }
@@ -413,6 +418,7 @@ export default function GorillaMission() {
             </div>
           </div>
         )}
+        <StudentGuide screen={isEnglish ? 'gorilla-reading' : 'mission-gorilla'} />
       </div>
     );
   }

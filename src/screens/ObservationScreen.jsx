@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import { useStudent } from '../context/StudentContext';
 import { getStageScaffoldTip, getMinWords, getMathsObservationData, getPdhpeObservationData, getEnglishObservationData, getStageQuestions } from '../utils/helpers';
 import MathsCalculator from '../components/MathsCalculator';
+import StudentGuide from '../components/StudentGuide';
 
 // Per-animal heading / chip / bullet config for stage 3+
 const OBS_CONFIG = {
@@ -1429,6 +1430,7 @@ export default function ObservationScreen() {
           </button>
         </div>
       </div>
+      <StudentGuide screen="observation" animal={animalId} />
     </div>
   );
 }

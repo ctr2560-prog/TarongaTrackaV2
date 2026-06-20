@@ -3,6 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { useStudent } from '../../context/StudentContext';
 import { getStageQuestions } from '../../utils/helpers';
 import MathsCalculator from '../../components/MathsCalculator';
+import StudentGuide from '../../components/StudentGuide';
 
 const BAR_DATA = [
   { key:'resting', label:'Resting', emoji:'😴', colour:'#2E7D55' },
@@ -60,7 +61,6 @@ export default function ChimpMission() {
 
   return (
     <div style={{ position:'fixed', inset:0, background: showResult ? (isCorrect ? 'linear-gradient(135deg,#10b981 0%,#059669 100%)' : 'linear-gradient(135deg,#ef4444 0%,#dc2626 100%)') : 'linear-gradient(160deg,#071A0C 0%,#0D3320 55%,#0A1F0E 100%)', transition:'background 0.5s ease', display:'flex', flexDirection:'column' }}>
-
       {!showResult && <img src="images/chimpanzee.jpg" alt="" style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover', objectPosition:'center top', opacity:0.1, pointerEvents:'none' }} />}
 
       <div style={{ background:'rgba(0,0,0,0.3)', backdropFilter:'blur(4px)', padding:'0.6rem 1rem', flex:'0 0 auto', zIndex:100, borderBottom:'1px solid rgba(255,255,255,0.07)' }}>
@@ -194,6 +194,7 @@ export default function ChimpMission() {
 
         </div>
       )}
+      <StudentGuide screen="mission-chimp" />
     </div>
   );
 }

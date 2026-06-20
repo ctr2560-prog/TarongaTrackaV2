@@ -3,6 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { useStudent } from '../../context/StudentContext';
 import { getStageQuestions } from '../../utils/helpers';
 import MathsCalculator from '../../components/MathsCalculator';
+import StudentGuide from '../../components/StudentGuide';
 
 const DREAMING_PASSAGE = [
   'Warrigal, the old dingo, crept towards the black wallaby. Tired and hungry, he moved with great care, because he was much too old to run down the bunderra if it spotted him. He was almost within striking distance when the wallaby raised its head sharply, spun on its hind legs, and was gone.',
@@ -188,6 +189,7 @@ export default function DingoMission() {
           </button>
 
         </div>
+        <StudentGuide screen="dingo-reading" />
       </div>
     );
   }
@@ -213,6 +215,7 @@ export default function DingoMission() {
         <div style={{ position:'fixed', inset:0, background:'linear-gradient(135deg,#10b981 0%,#059669 100%)', display:'flex', flexDirection:'column' }}>
           <Header />
           <ResultCard feedbackText="You know this story." factFallback={null} />
+          <StudentGuide screen="mission-dingo" />
         </div>
       );
     }
@@ -287,6 +290,7 @@ export default function DingoMission() {
           )}
 
         </div>
+        <StudentGuide screen="mission-dingo" />
       </div>
     );
   }
@@ -315,6 +319,7 @@ export default function DingoMission() {
             <MathsCalculator />
           </div>
         )}
+        <StudentGuide screen="mission-dingo" />
       </div>
     );
   }
@@ -403,6 +408,7 @@ export default function DingoMission() {
 
         </div>
       )}
+      <StudentGuide screen="mission-dingo" />
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { useApp } from '../context/AppContext';
 import { useStudent } from '../context/StudentContext';
 import { getStageQuestions } from '../utils/helpers';
 import MathsCalculator from '../components/MathsCalculator';
+import StudentGuide from '../components/StudentGuide';
 
 // Special mission dispatch - each returns a screen component if it applies
 import ChimpMission    from './missions/ChimpMission';
@@ -151,6 +152,7 @@ export default function AnimalScreen() {
           </div>
         )}
       </div>
+      <StudentGuide screen="quiz" />
     </div>
   );
 }
