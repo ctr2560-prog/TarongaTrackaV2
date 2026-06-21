@@ -735,7 +735,7 @@ function scoreMathsObservation(text, classStage, expectedAnswers) {
   const hasLabels = /[A-Za-z][a-z ]+:/.test(text);
 
   // Units present alongside numbers
-  const hasUnits = /\d+\s*(m|cm|km|kg|g|%|hours?|minutes?|seconds?|steps?|\$|kJ|km²|m²)/i.test(text)
+  const hasUnits = /\d+\s*(rings?|m|cm|km|kg|g|%|hours?|minutes?|seconds?|steps?|\$|kJ|km²|m²)/i.test(text)
     || ['hours', 'minutes', 'metres', 'kilograms', 'dollars', 'percent', 'steps', 'kilojoules'].some(u => lower.includes(u));
 
   // Written maths vocabulary (beyond symbols)

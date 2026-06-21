@@ -135,6 +135,7 @@ export default function SeaLionMission() {
   const [scoreOpen,  setScoreOpen]  = useState(false);
   const [slsScore,   setSlsScore]   = useState(0);
   const [englishQ,   setEnglishQ]   = useState(null);
+  const [hintsOpen,  setHintsOpen]  = useState(false);
 
   const q = getStageQuestions(currentAnimal, classStage, classSubject)[0];
   const correctAnswerIndex = q?.correct ?? 0;
@@ -624,6 +625,27 @@ export default function SeaLionMission() {
           </div>
           <div style={{ background:'white', borderRadius:'var(--t-r-md)', padding:'1.2rem', boxShadow:'0 8px 32px rgba(0,0,0,0.08)', marginBottom:'1rem' }}>
             <p style={{ fontSize:'clamp(0.9rem,2vh,1.1rem)', fontWeight:600, color:'var(--jungle-deep)', marginBottom:'1rem', lineHeight:1.4 }}>{displayQ?.q}</p>
+            {!isEnglish && (() => {
+              const hints = q?.stageHints?.[classStage];
+              if (!hints?.length) return null;
+              return (
+                <div style={{ marginBottom:'1rem' }}>
+                  <button onClick={() => setHintsOpen(o => !o)} style={{ width:'100%', display:'flex', justifyContent:'space-between', alignItems:'center', background:'#F0F9F4', border:'1px solid #D4E8DC', borderRadius: hintsOpen ? '8px 8px 0 0' : '8px', padding:'0.55rem 0.85rem', cursor:'pointer', color:'#059669', fontWeight:700, fontSize:'0.8rem', textAlign:'left' }}>
+                    <span>💡 Need a hint?</span>
+                    <span style={{ fontSize:'0.65rem' }}>{hintsOpen ? '▲' : '▼'}</span>
+                  </button>
+                  {hintsOpen && (
+                    <div style={{ background:'#F7FAF8', border:'1px solid #D4E8DC', borderTop:'none', borderRadius:'0 0 8px 8px', padding:'0.6rem 0.85rem' }}>
+                      {hints.map((h, i) => (
+                        <p key={i} style={{ fontSize:'0.8rem', color:'#555', margin: i === 0 ? 0 : '0.25rem 0 0', lineHeight:1.5 }}>
+                          <span style={{ color:'#059669', fontWeight:700 }}>{i + 1}. </span>{h}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.75rem' }}>
               {(displayQ?.options || []).map((opt, i) => (
                 <button key={i} onClick={() => handleQuizAnswer(0, i, displayCorrectIdx)}

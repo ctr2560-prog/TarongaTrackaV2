@@ -119,8 +119,20 @@ const ANIMAL_OBS_HINTS = {
       start: `Start with "The gorilla showed..." and pick the most human-like thing you noticed about its body language or behaviour.`,
     },
     maths: {
-      what:  `Write your ratio and scale working — state your estimated mass, write the ratio to a gorilla's 200 kg, simplify it by finding the HCF, and show all working clearly.`,
-      start: `Start with "My estimated mass is ...kg, so the ratio of my mass to a gorilla's is ..." then show how you simplify it.`,
+      what: {
+        1: `Write the ratio of leaves to fruit using a colon (:). Name both foods you are comparing and write which one the gorilla eats more of.`,
+        2: `Write how many times heavier the gorilla is than a student, then write the comparison as a ratio (student : gorilla). Show the division you used to find "how many times heavier".`,
+        3: `Write your ratio in 3 steps: (1) write the ratio 12 : 6, (2) find the number that divides evenly into both, (3) write the simplified ratio. Show your working clearly.`,
+        4: `Write your ratio in 3 steps: (1) write your estimated mass as a ratio to 200 kg, (2) find the highest common factor (the biggest number that divides evenly into both numbers), (3) divide both sides and write the simplified ratio. Show all working.`,
+        5: `Write your 3-step working: Step 1 — add the ratio parts (5+4+2+1). Step 2 — divide 18 kg by the total parts to find what 1 part equals. Step 3 — multiply by 5 to find the kg of leaves. Show each calculation.`,
+      },
+      start: {
+        1: `Start with "The gorilla eats ___ servings of leaves and ___ serving of fruit, so the ratio of leaves to fruit is __ : __."`,
+        2: `Start with "A silverback weighs 200 kg and a student weighs 40 kg. 200 ÷ 40 = ___, so the gorilla is ___ times heavier. The ratio student : gorilla is __ : __."`,
+        3: `Start with "Leaves : other food = 12 : 6. The number that divides evenly into both is ___. 12 ÷ ___ = ___ and 6 ÷ ___ = ___, so the simplified ratio is __ : __."`,
+        4: `Start with "My estimated mass is ___ kg. Ratio: ___ : 200. The highest common factor is ___. Dividing both sides by ___ gives me __ : __."`,
+        5: `Start with "Total ratio parts: 5 + 4 + 2 + 1 = ___. One part = 18 ÷ ___ = ___ kg. Leaves = ___ × 5 = ___ kg."`,
+      },
     },
     pdhpe: {
       what:  `Write about nutrition and healthy eating — name two types of food the gorilla eats, link them to food groups, and explain why eating a variety of foods matters for health.`,
@@ -155,8 +167,20 @@ const ANIMAL_OBS_HINTS = {
       start: `Start with "The giraffe's [feature] helps it to..." and name a specific physical feature — neck, tongue, legs, colouring — that you can actually see.`,
     },
     maths: {
-      what:  `Write your height and ratio working — state your own height, write the ratio of your height to the giraffe's (approx. 550 cm), simplify it by finding the HCF, and include units throughout.`,
-      start: `Start with "My height is ...cm, and the giraffe is approximately ...cm tall, so the ratio is ..." then show your simplification with working.`,
+      what: {
+        1: `Write two comparisons about the giraffe's height. Use numbers — is it taller than the fence? About how many times taller than you? Include the unit (metres or cm) in your comparisons.`,
+        2: `Write your arm-span estimate. How many arm spans did you count? What is your arm span in cm? Show the multiplication to get your total height estimate.`,
+        3: `Write your ratio in 3 steps: (1) write your height and 550 cm as a ratio ( __ : 550 ), (2) find the number that divides evenly into both, (3) write the simplified ratio. Show all working.`,
+        4: `Write the comparison: how many times longer is the giraffe's neck than yours? Show the division: 180 ÷ 15 = ___. Then write a sentence explaining what that number means.`,
+        5: `Write your 3-part working: (1) total growth (540 − 180 = ___ cm), (2) average growth per year (___ ÷ 4 = ___ cm/year), (3) the fraction of adult height at birth (180/540) and simplify it. Show each calculation.`,
+      },
+      start: {
+        1: `Start with "The giraffe is taller than the fence because..." then add one more comparison with a number: "It looks about ___ times taller than..."`,
+        2: `Start with "My arm span is about ___ cm. I estimated the giraffe is about ___ arm spans tall, so ___ × ___ = ___ cm."`,
+        3: `Start with "My height is ___ cm. Ratio: ___ : 550. The number that divides evenly into both is ___." Then show each division step.`,
+        4: `Start with "The giraffe's neck is 180 cm and my neck is about 15 cm. 180 ÷ 15 = ___, so the giraffe's neck is ___ times longer than mine."`,
+        5: `Start with "Total growth: 540 − 180 = ___ cm. Average per year: ___ ÷ 4 = ___ cm/year. Fraction at birth: 180/540 = ..." then show your simplification.`,
+      },
     },
     pdhpe: {
       what:  `Write about the cardiovascular system — compare the giraffe's heart (11 kg, very high pressure) to a human heart in size, rate and function, and connect this to how exercise affects heart health.`,
@@ -209,8 +233,20 @@ const ANIMAL_OBS_HINTS = {
       start: `Start with "The lemurs are using the [ground/trees/platform] to..." and describe what specific need that area meets for them.`,
     },
     maths: {
-      what:  `Write your pattern and number working — record your count of black and white rings on a tail, write the ratio (black : white), simplify it, and show all working clearly.`,
-      start: `Start with "I counted ...black rings and ...white rings, so the ratio is ..." then show how you simplify it.`,
+      what: {
+        1: `Count all the rings on the lemur's tail and write the total. A ring-tailed lemur usually has 25 rings.`,
+        2: `Count the rings on one lemur's tail. Then multiply by 4 (the number of lemurs in the group) to find the total. Write: ___ × 4 = ___.`,
+        3: `Count the rings on one lemur and use it as the average. Multiply by 6 to find the total for the group. Show your working: ___ × 6 = ___.`,
+        4: `Count the rings on the lemur — this is the average per lemur. Multiply by 20 (the Taronga troop size) to find the total. Write the full multiplication with units.`,
+        5: `Count the rings and calculate the total for 20 lemurs. Then explain whether sampling just 1 lemur gives a reliable average — what would make the estimate more accurate?`,
+      },
+      start: {
+        1: `Start with "I counted ___ rings on the lemur's tail..."`,
+        2: `Start with "I counted ___ rings on one lemur. Multiplied by 4 lemurs: ___ × 4 = ___"`,
+        3: `Start with "I counted ___ rings. For 6 lemurs: ___ × 6 = ___ rings altogether"`,
+        4: `Start with "I counted ___ rings per lemur. For 20 lemurs: ___ × 20 = ___ rings total"`,
+        5: `Start with "I counted ___ rings on one lemur. For the whole troop of 20: ___ × 20 = ___. Sampling just 1 lemur..."`,
+      },
     },
     pdhpe: {
       what:  `Compare lemur social bonds to human relationships — describe how the troop looks after each other, then explain how your own relationships with others affect your physical and mental health.`,
@@ -227,8 +263,20 @@ const ANIMAL_OBS_HINTS = {
       start: `Start with "Humans affect sea lions by..." and give a specific example from what you observed in the enclosure.`,
     },
     maths: {
-      what:  `Write your rates and financial maths working — calculate the weekly and annual fish consumption and cost, or use the simple interest formula I = P × r × t to find the total donation amount. Show all working.`,
-      start: `Start with "The sea lion eats 8 kg of fish per day, so in one week..." or "Using I = P × r × t, I calculated..." and show every step.`,
+      what: {
+        1: `Work out the total cost over 4 days. Write: daily cost × number of days = total. Show the number sentence.`,
+        2: `Multiply kg per day by cost per kg to find the daily food cost. Write your number sentence and include units ($).`,
+        3: `Two steps: (1) find the daily cost (4 kg × $8), then (2) multiply by 7 to find the weekly cost. Show both calculations clearly.`,
+        4: `Use Interest = P × r × t. P = $500, r = 0.10 (10% as a decimal), t = 1 year. Multiply to find the interest, then add it to $500 to find the total. Show every step.`,
+        5: `Three steps: (1) weekly cost at $6/kg, (2) weekly cost at $4/kg, (3) the weekly saving. Show every calculation with units.`,
+      },
+      start: {
+        1: `Start with "The zoo spends $5 per day, so in 4 days: $5 × 4 = ___"`,
+        2: `Start with "Fish costs $8 per kg. The sea lion eats 4 kg per day, so: 4 × $8 = ___"`,
+        3: `Start with "Step 1: daily cost = 4 × $8 = $___. Step 2: weekly cost = $32 × 7 = $___"`,
+        4: `Start with "Using Interest = P × r × t: $500 × 0.10 × 1 = $___. Total = $500 + $___ = $___"`,
+        5: `Start with "At $6/kg: 8 × $6 × 7 = $___. At $4/kg: 8 × $4 × 7 = $___. Weekly saving: $___ − $___ = $___"`,
+      },
     },
     pdhpe: {
       what:  `Persuade the Taronga directors to fund your enclosure design — use specific features from your design as evidence, include at least one persuasive technique, and think about what the directors care about (animal welfare and sustainability).`,
@@ -245,8 +293,20 @@ const ANIMAL_OBS_HINTS = {
       start: `Start with "Near the buffalo, I noticed..." and describe what you saw, then explain what each animal might gain from the interaction.`,
     },
     maths: {
-      what:  `Write your measurement and algebra working — estimate your arm span as a fraction or ratio of the buffalo's 200 cm, simplify it, or set up and solve the algebraic equation to find the buffalo's speed. Show all working.`,
-      start: `Start with "My arm span is ...cm, which is .../200 of the buffalo's arm span." or "Let s represent the buffalo's speed in m/min..." then show all steps.`,
+      what: {
+        1: `Write YES or NO about whether your arm span could reach the horn span (200 cm), and include your estimated arm span in cm to back up your answer.`,
+        2: `Write your estimate of the buffalo's length in metres and compare it to a car (4.5 m). Include numbers in your comparison — is it longer or shorter, and by how much?`,
+        3: `Write your ratio in 3 steps: (1) estimate your arm span in cm and write the ratio arm span : 200, (2) find the number that divides evenly into both, (3) write the simplified ratio. Show all working.`,
+        4: `Write your 2-step rate calculation: (1) speed = distance ÷ time = 60 ÷ 3 = ___ m/min, (2) distance in 5 minutes = speed × 5 = ___ m. Show both steps with units.`,
+        5: `Write your 3-part answer: (1) the completed table (Years 0–3), (2) the rule for year y (hint: it starts at 10 and adds 5 each year), (3) the population after 6 years. Show your substitution.`,
+      },
+      start: {
+        1: `Start with "My arm span is about ___ cm. The horn span is 200 cm, so I [could / could not] reach it because..."`,
+        2: `Start with "I estimated the buffalo is about ___ m long. A car is 4.5 m, so the buffalo is ___ m [longer/shorter] than a car."`,
+        3: `Start with "My arm span is ___ cm. Ratio: ___ : 200. The number that divides evenly into both is ___." Then show your simplified ratio.`,
+        4: `Start with "Speed = 60 ÷ 3 = ___ m/min. In 5 minutes, the buffalo would walk ___ × 5 = ___ m."`,
+        5: `Start with "Year 0 = 10, Year 1 = ___, Year 2 = ___, Year 3 = ___. Rule: animals = 10 + 5 × y. After 6 years: 10 + 5 × 6 = ___."`,
+      },
     },
     pdhpe: {
       what:  `Write about hydration and health — connect the buffalo's need for water to your own body's hydration needs during physical activity, and describe the signs and effects of dehydration.`,
@@ -316,6 +376,7 @@ const ANIMAL_OBS_HINTS = {
 function obsWhat(stage, subject, animal) {
   const hint = animal && ANIMAL_OBS_HINTS[animal]?.[subject];
   if (hint) {
+    if (typeof hint.what === 'object') return byStage(hint.what, stage);
     if (stage <= 2) {
       const suffix = {
         science: ` Keep it simple — even a sentence or two about what you saw is great!`,
@@ -359,7 +420,7 @@ function obsWhat(stage, subject, animal) {
 
 function obsStart(stage, subject, animal) {
   const hint = animal && ANIMAL_OBS_HINTS[animal]?.[subject];
-  if (hint) return hint.start;
+  if (hint) return typeof hint.start === 'object' ? byStage(hint.start, stage) : hint.start;
   if (stage <= 2) return `Start with "I saw..." or "The animal was..." — just describe what you noticed first!`;
   if (stage === 3) return `Start with your main observation: "I observed that..." Then add one detail that surprised you.`;
   const s4 = {
@@ -459,8 +520,15 @@ function missionGorilla(stage, subject) {
     ? `It's a memory challenge! Study the Gorilla Whopper ingredients carefully — think about the FOOD GROUPS you see (fruits, leaves, bamboo). Build the stack in the correct order, then answer a nutrition question about what gorillas eat and why.`
     : `It's a memory challenge! Study the Gorilla Whopper ingredients carefully, then build the stack in the correct order before time runs out. Tap each ingredient in the sequence you remembered.`;
   const stuck = `Focus on the top and bottom items first — they're easiest to anchor in your memory. Then work out the middle. Look for any clues in the ingredient names or sizes that hint at the order.`;
+  const mathsQuestion = (() => {
+    if (stage <= 1) return `The question asks you to add up servings of food. Count each type — leaves, bamboo, and fruit — then add them all together. What does 3 + 2 + 1 equal?`;
+    if (stage === 2) return `You have three amounts to add: leaves, bamboo, and fruit (all in kg). Try adding the two smaller numbers first, then add the biggest. What's your total?`;
+    if (stage === 3) return `This is a fractions question. A fraction compares a part to the whole. You know how many kg are leaves, and you know the total kg. Write it as a fraction: leaves ÷ total. Then simplify — what number divides evenly into both?`;
+    if (stage === 4) return `This is a ratio question. A ratio compares two amounts using a colon (:). First work out how much food is NOT leaves (total minus leaves). Then write leaves : remaining. Simplify by finding the highest common factor (the biggest number that divides evenly into both numbers).`;
+    return `This uses ratio with multiple parts. Step 1: add all the ratio numbers together to find the total parts. Step 2: divide 18 kg by that total to find what one part equals. Step 3: multiply by the leaves number in the ratio.`;
+  })();
   const question = subject === 'maths'
-    ? `The maths question is about the gorilla's diet quantities. Gorillas eat about 18 kg of food daily — leaves make up 12 kg, the rest is bamboo and fruit. Use that data for fractions, ratios, or totals depending on what's asked.`
+    ? mathsQuestion
     : subject === 'pdhpe'
     ? `The question is about gorilla nutrition and food groups. Leaves and bamboo are plant-based (like vegetables) and fruit is a carbohydrate. Think about what nutrients these provide and how a plant-based diet supports the gorilla's energy needs.`
     : quizStuck(stage, subject);
@@ -519,7 +587,24 @@ function missionGiraffe(stage, subject) {
     : subject === 'pdhpe'
     ? `A giraffe's neck is about 1.8 m — imagine pumping blood that far up with every heartbeat! Its heart weighs about 11 kg and generates very high blood pressure. For the question: compare giraffe heart size, rate, and pressure to what you know about the human heart during exercise.`
     : `A giraffe's neck alone is about 1.8 metres — that's roughly your height! Total height is usually 4.5–6 metres. Use the ruler overlay to line up top to bottom, then use that measurement for the ratio calculation.`;
-  return missionBase(what, stuck, stage, subject);
+  const mathsQuestion = (() => {
+    if (stage <= 1) return `This is a division question. You need to find how many 0.5 m fit into 4 m. Try: 4 ÷ 0.5. Hint: dividing by 0.5 is the same as multiplying by 2!`;
+    if (stage === 2) return `Find the difference between your estimate and the actual height. Subtract the smaller from the bigger: 5.0 − 4.5 = ___. Which answer matches that gap?`;
+    if (stage === 3) return `A fraction shows a part of a whole. The neck (2 m) is the part, and the total height (5 m) is the whole. Write it as neck ÷ total = 2/5. Does that fraction simplify?`;
+    if (stage === 4) return `Write the ratio as neck : total height = 2.5 : 5.5. These are decimals — multiply both by 2 to get whole numbers first, then check if they simplify further.`;
+    return `Divide the giraffe's height by the person's height: 5.5 ÷ 1.75. Try this step by step: how many times does 1.75 go into 5.5? Round your final answer to 1 decimal place.`;
+  })();
+  const question = subject === 'maths' ? mathsQuestion : quizStuck(stage, subject);
+  return {
+    greeting: `Need a hand with this activity? Let me help without giving it away!`,
+    options: [
+      { label: 'What do I need to do?',       key: 'what'     },
+      { label: "I'm stuck on the activity",   key: 'stuck'    },
+      { label: 'Help with the question',      key: 'question' },
+      { label: 'What if I get it wrong?',     key: 'wrong'    },
+    ],
+    responses: { what, stuck, question, wrong: WRONG_HELP },
+  };
 }
 
 function missionLemur(stage, subject) {
@@ -546,7 +631,18 @@ function missionLemur(stage, subject) {
   const stuck = subject === 'pdhpe'
     ? `Focus on one lemur at a time rather than all of them. What is it doing RIGHT NOW? Tap that button, then move to another lemur. Quick eyes help here!`
     : `If it's hard to tell what a lemur is doing, look at where it is and what's in its mouth or hands — that's usually a clue to whether it's feeding, resting, or moving.`;
-  return missionBase(what, stuck, stage, subject);
+  const mathsQuestion = `Look at each behaviour on your graph. For each one, compare your solid bar to the dashed real-world bar. Which pair of bars has the BIGGEST gap between them? That behaviour is your answer.`;
+  const question = subject === 'maths' ? mathsQuestion : quizStuck(stage, subject);
+  return {
+    greeting: `Need a hand with this activity? Let me help without giving it away!`,
+    options: [
+      { label: 'What do I need to do?',       key: 'what'     },
+      { label: "I'm stuck on the activity",   key: 'stuck'    },
+      { label: 'Help with the question',      key: 'question' },
+      { label: 'What if I get it wrong?',     key: 'wrong'    },
+    ],
+    responses: { what, stuck, question, wrong: WRONG_HELP },
+  };
 }
 
 function missionDingo(stage, subject) {
@@ -582,7 +678,30 @@ function missionSealion(stage, subject) {
   const stuck = subject === 'english'
     ? `If you're over budget, remove a lower-priority item. For the final question: ask yourself WHY each item matters to the sea lion specifically. The best justification connects to the animal's real needs (health, enrichment, safety), not how it looks or how cheap it is.`
     : `Each item snaps into its zone automatically when you tap USE — you can drag to reposition afterwards. If you're over budget, remove a lower-priority item. Ask yourself: what does the sea lion absolutely NEED versus what would just be nice to have?`;
-  return missionBase(what, stuck, stage, subject);
+  const mathsQuestion = (() => {
+    if (stage <= 1) return `This is a multiplication question. The sea lion eats 8 kg every day. How many days? Try: 8 × 3 = ___. Which answer matches?`;
+    if (stage === 2) return `This is a subtraction question. Take the smaller weight away from the bigger one: 250 − 100 = ___. Which answer matches?`;
+    if (stage === 3) return `This is a rate question — multiply quantity × cost per kg: 7 kg × $8 = ___. Which answer matches?`;
+    if (stage === 4) return `This is simple interest. Use: Interest = P × r × t. P = $1,000, r = 0.05 (that's 5% as a decimal), t = 2 years. Step 1: 1,000 × 0.05 = ___. Step 2: multiply by 2. Which answer matches?`;
+    return `This is a cost comparison. Step 1: Supplier A daily cost: 10 × $6 = ___. Step 2: Supplier B daily cost: 10 × $4 = ___. Step 3: Find the saving — subtract the cheaper total from the more expensive one. Which answer matches?`;
+  })();
+  const question = subject === 'maths'
+    ? mathsQuestion
+    : subject === 'pdhpe'
+    ? `The question is about sea lion wellbeing. Think about what the animal NEEDS — not just what looks nice. Consider space to swim, enrichment for mental health, and shelter. Which answer connects most directly to a real physical or psychological need?`
+    : subject === 'english'
+    ? `The question asks why a specific enclosure item supports sea lion wellbeing. Look for the answer that explains the REASON behind the choice — connecting the item to the animal's real needs (health, enrichment, safety), not just its appearance.`
+    : quizStuck(stage, subject);
+  return {
+    greeting: `Need a hand with this activity? Let me help without giving it away!`,
+    options: [
+      { label: 'What do I need to do?',       key: 'what'     },
+      { label: "I'm stuck on the activity",   key: 'stuck'    },
+      { label: 'Help with the question',      key: 'question' },
+      { label: 'What if I get it wrong?',     key: 'wrong'    },
+    ],
+    responses: { what, stuck, question, wrong: WRONG_HELP },
+  };
 }
 
 function missionBushwalk(stage, subject) {
@@ -602,8 +721,15 @@ function missionBushwalk(stage, subject) {
 function missionBuffalo(stage, subject) {
   const what = `Tap the screen to make the buffalo swim upward — stop tapping and it sinks! Guide it through as many gates as you can without touching the walls. Find a steady tapping rhythm and watch ahead for the next gap.`;
   const stuck = `Don't overcorrect — a few gentle taps at a steady rhythm works better than rapid-fire tapping. Look one gate ahead, not just the current one. It gets easier once you find your rhythm!`;
+  const mathsQuestion = (() => {
+    if (stage <= 1) return `This is a subtraction question. You started with 100 gates total. How many did you NOT pass? Try: 100 − 7 = ___. Which answer matches?`;
+    if (stage === 2) return `This is a multiplication question. You passed 10 gates and each earns 5 points. Try: 10 × 5 = ___. Which answer matches your total?`;
+    if (stage === 3) return `This is a fractions question. You passed 25 out of 100 gates — write it as a fraction: 25/100. Now simplify: what number divides evenly into both 25 and 100?`;
+    if (stage === 4) return `This is a division question. Your friend scored 56 points and each gate earns 4 points. Try: 56 ÷ 4 = ___ gates. Which answer matches?`;
+    return `This question has two parts. Gates 1–10 earn 2 points each: 10 × 2 = ___. Gates 11–20 earn 5 points each: 10 × 5 = ___. Add both totals together for your final score.`;
+  })();
   const question = subject === 'maths'
-    ? `The maths question uses measurement and algebra — think about the buffalo's horn span (200 cm), your arm span, and how they relate as a ratio or fraction. Or set up an equation with a variable to find a missing value, then solve it step by step.`
+    ? mathsQuestion
     : subject === 'pdhpe'
     ? `The question is about hydration. Just like the buffalo rolls in water to cool down and keep going, YOUR body needs water during physical activity. Think about what happens to your heart rate, temperature, and performance when you don't drink enough.`
     : subject === 'english'

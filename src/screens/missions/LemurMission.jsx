@@ -533,6 +533,13 @@ export default function LemurMission() {
   const gamePct  = { feeding: LEMUR_REAL_PCT.foraging, resting: LEMUR_REAL_PCT.sunbathing + LEMUR_REAL_PCT.resting, moving: LEMUR_REAL_PCT.leaping, social: LEMUR_REAL_PCT.calling };
   const obsMax   = Math.max(...BEHAVIOURS.map(b => counts[b.key]), 1);
   const BAR_H    = 80;
+  const maxDiffIdx = BEHAVIOURS.reduce((bestIdx, b, i) => {
+    const obsPct = totalObs > 0 ? (counts[b.key] / totalObs) * 100 : 0;
+    const diff   = Math.abs(obsPct - (gamePct[b.key] || 0));
+    const bestObsPct = totalObs > 0 ? (counts[BEHAVIOURS[bestIdx].key] / totalObs) * 100 : 0;
+    const bestDiff   = Math.abs(bestObsPct - (gamePct[BEHAVIOURS[bestIdx].key] || 0));
+    return diff > bestDiff ? i : bestIdx;
+  }, 0);
 
   return (
     <div style={{ position:'fixed', inset:0, background: showResult ? (isCorrect ? 'linear-gradient(135deg,#10b981 0%,#059669 100%)' : 'linear-gradient(135deg,#ef4444 0%,#dc2626 100%)') : 'var(--mist-light)', transition:'background 0.5s ease', display:'flex', flexDirection:'column' }}>
@@ -595,7 +602,7 @@ export default function LemurMission() {
             <p style={{ fontSize:'clamp(0.9rem,2vh,1.1rem)', fontWeight:600, color:'var(--jungle-deep)', marginBottom:'1rem', lineHeight:1.4 }}>{q?.q}</p>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.75rem' }}>
               {(q?.options || []).map((opt, i) => (
-                <button key={i} onClick={() => handleQuizAnswer(0, i, computedCorrect >= 0 ? computedCorrect : 0)}
+                <button key={i} onClick={() => handleQuizAnswer(0, i, maxDiffIdx)}
                   style={{ textAlign:'center', padding:'clamp(1rem,2.5vh,1.5rem) clamp(0.5rem,1vh,0.8rem)', borderRadius:'var(--t-r-md)', border:'3px solid #D4C8E8', background:'white', cursor:'pointer', transition:'all 0.2s ease', fontSize:'clamp(0.85rem,1.8vh,1rem)', fontWeight:600, color:'var(--jungle-deep)', lineHeight:1.2, minHeight:'clamp(70px,12vh,90px)', display:'flex', alignItems:'center', justifyContent:'center', touchAction:'manipulation', WebkitTapHighlightColor:'transparent' }}>
                   {opt}
                 </button>
