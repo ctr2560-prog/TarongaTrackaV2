@@ -1671,7 +1671,7 @@
       background:
         linear-gradient(180deg, rgba(255,255,255,.1), rgba(255,255,255,0) 28%),
         linear-gradient(180deg, rgba(18,66,39,.06), rgba(18,66,39,.2)),
-        url('/Gorilla Game/background.png') center/cover no-repeat;
+        url('/gorilla-game/background.png') center/cover no-repeat;
     }
     .gwr-vine { position:absolute; width:90px; height:90px; border:5px solid rgba(41,102,52,.6); border-color:rgba(41,102,52,.7) transparent transparent transparent; border-radius:50%; top:-45px; }
     .gwr-vine.a { left:-8px; transform:rotate(-18deg); }
