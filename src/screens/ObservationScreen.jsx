@@ -633,16 +633,16 @@ const ENGLISH_OBS_CONFIG = {
     starters: ['Jabari turned slowly and…', 'Kito reached the branches and…', 'The enclosure went quiet when…'],
   },
   'lion': {
-    heading: 'Imagery Writing',
-    chips: [{ label:'Visual', color:'#B45309' },{ label:'Sensory', color:'#DC2626' },{ label:'Imagery', color:'#059669' },{ label:'Vivid', color:'#7C3AED' }],
+    heading: 'Describing the Eyes',
+    chips: [{ label:'Colour', color:'#B45309' },{ label:'Like / As', color:'#DC2626' },{ label:'What do they remind you of?', color:'#059669' },{ label:'Effect', color:'#7C3AED' }],
     hintsByStage: {
-      1: ['What colour is the lion? (golden, tawny, amber)', 'What does the lion\'s coat or mane remind you of?', 'Write: "The lion\'s [feature] is like a..." or use a vivid describing word'],
-      2: ['Describe one thing you can see clearly — colour, shape, texture', 'Now describe the lion\'s movement or stillness', 'Use a comparison: "like", "as", or a strong visual word'],
-      3: ['Choose two or three specific details (coat, eyes, mane, paws)', 'Use language that appeals to the senses — what can you see, almost feel or sense?', 'Try an unexpected comparison that makes the reader see the lion differently'],
-      4: ['Start with the most striking visual detail you can see right now', 'Use an unexpected comparison — avoid "big" or "strong" on their own', 'Think about the impression you want the reader to have of the lion'],
-      5: ['Choose your most powerful image — what language will most surprise the reader?', 'Consider what your word choices suggest (power, danger, beauty, stillness)', 'How does your imagery position the reader to feel about the lion?'],
+      1: ['What colour are the lion\'s eyes? (golden, amber, yellow)', 'What do they remind you of? (coins, flames, sunlight...)', 'Write: "The lion\'s eyes are like a ___"'],
+      2: ['Pick a specific colour word for the eyes — not just "yellow", try amber or gold', 'What do the eyes remind you of?', 'Write your comparison using "like" or "as"'],
+      3: ['Start with the colour — what exact shade are the eyes?', 'Write a comparison: "The eyes are like ___"', 'Add a second detail — what feeling do the eyes give you?'],
+      4: ['Write your strongest comparison for the eyes', 'What effect does it create for the reader — power, danger, calm?', 'Use: "This creates the effect of..." to explain your choice'],
+      5: ['Write two different images for the eyes — vary the comparisons', 'What do your word choices suggest about the lion (danger, power, age, intelligence)?', 'End with "This imagery positions the reader to feel..."'],
     },
-    starters: ['The lion\'s…', 'Like a…, the lion…', 'I could see…'],
+    starters: ['The lion\'s eyes are like…', 'Looking into the lion\'s eyes, I could see…', 'The golden eyes…'],
   },
   'giraffe': {
     heading: 'Simile Writing',
@@ -670,15 +670,15 @@ const ENGLISH_OBS_CONFIG = {
   },
   'tiger': {
     heading: 'Loss Writing',
-    chips: [{ label:'Loss', color:'#B45309' },{ label:'Sumatran tiger', color:'#DC2626' },{ label:'Contrast', color:'#059669' },{ label:'Personification', color:'#0284C7' }],
+    chips: [{ label:'Loss', color:'#B45309' },{ label:'Sumatran tiger', color:'#DC2626' },{ label:'The passage', color:'#059669' },{ label:'Reference', color:'#0284C7' }],
     hintsByStage: {
-      1: ['Look at your photo — what do you see?', 'Write one sentence about the tiger, one sentence about what the world is losing', 'Use a powerful word from the passage if it helps'],
-      2: ['Use your photo as your evidence', 'Try to use one technique from the passage — a powerful word, contrast, or personification', 'Write two sentences that make the reader feel the weight of loss'],
-      3: ['Use your photo as evidence and write a paragraph about loss', 'Include at least one technique from the passage (contrast, personification, or powerful word choice)', 'Name the technique you used and explain what it does'],
-      4: ['Choose two techniques from the passage: contrast, personification, or powerful word choice', 'Write about the Sumatran tiger specifically — use what you know: fewer than 400 remain, the forest was cleared, they were erased', 'After you write, note which two techniques you used'],
-      5: ['Write a loss piece using your photo as your central evidence', 'Use techniques from the passage deliberately: contrast, diction, positioning', 'Analyse how your language choices position the reader to feel the weight of what is being lost'],
+      1: ['Look at the tiger in front of you — what do you see?', 'Write one sentence about the tiger', 'For your second sentence, use a word or idea from the passage — like "erased" or "what the world is losing"'],
+      2: ['Look at the tiger and think about the passage', 'Use an idea or phrase from the passage in one of your sentences', 'You could try: "The passage says... and when I look at this tiger..."'],
+      3: ['Write a paragraph about the tiger and loss', 'Refer to something from the passage — a word, phrase or idea', 'Connect what you read to what you can actually see in front of you'],
+      4: ['Use ideas or quotes from the passage to support your writing', 'Connect what the passage says to what you can observe in the tiger', 'Try: "As the passage describes... this tiger..."'],
+      5: ['Write a piece that connects the passage to the tiger in front of you', 'Quote or refer to the passage directly in your writing', 'Explain how the passage\'s ideas match what you can see'],
     },
-    starters: ['This tiger is…', 'What the world is losing is…', 'In my photograph…', 'Fewer than 400…'],
+    starters: ['This tiger is…', 'What the world is losing is…', 'The passage says… and when I look at this tiger…', 'Fewer than 400…'],
   },
   'dingo': {
     heading: 'Warrigal\'s Story',
@@ -717,16 +717,16 @@ const ENGLISH_OBS_CONFIG = {
     starters: ['Should we really allow sea lions to…?', 'Sea lions need our help because…', 'I used the technique of… because it…'],
   },
   'asian-water-buffalo': {
-    heading: 'Informative Writing',
-    chips: [{ label:'Topic sentence', color:'#B45309' },{ label:'Facts', color:'#059669' },{ label:'Hooves', color:'#0284C7' },{ label:'Inform', color:'#DC2626' }],
+    heading: 'Buffalo Hooves',
+    chips: [{ label:'Hooves', color:'#B45309' },{ label:'Shape', color:'#059669' },{ label:'Help', color:'#0284C7' },{ label:'Mud', color:'#DC2626' }],
     hintsByStage: {
-      1: ['Look at the buffalo\'s feet — what do you notice about the shape?', 'Buffalo hooves are very wide and spread out', 'Write one sentence: what do the hooves look like OR what do they do?'],
-      2: ['Describe what the hooves look like (wide, spread, split in the middle)', 'Then explain what they help the buffalo do (walk in mud without sinking)', 'Use the word "because" or "which helps" to connect your two sentences'],
-      3: ['Start with a topic sentence: "Buffalo hooves are..."', 'Add a fact about what they look like', 'Finish with how this helps the buffalo survive in muddy habitats'],
-      4: ['Use the word "adaptation" — the hooves are adapted for a specific habitat', 'Describe the structure (wide, cloven/split) and the function (distribute weight, grip on wet ground)', 'Explain WHY this suits the buffalo\'s environment (swamps, muddy fields)'],
-      5: ['Use formal informative language: "The Asian water buffalo\'s hooves are..."', 'Link structure (what they look like) to function (what they do) to habitat (where buffalo live)', 'Use specific vocabulary: cloven, distribute, weight, adaptation, wetland, traction'],
+      1: ['Look at the buffalo\'s feet', 'Are the hooves wide or narrow?', 'Write: "The buffalo has hooves that are..."'],
+      2: ['Sentence 1: what do the hooves look like? (wide, flat, spread out)', 'Sentence 2: what do you think they help the buffalo do?', 'Try starting with "They help the buffalo..."'],
+      3: ['Start with: "Buffalo hooves are wide and..."', 'Next: what do they help the buffalo do?', 'Finish: why does this help? (muddy ground, swamps)'],
+      4: ['Describe the shape: wide, flat, split in two', 'Explain the job: they spread weight so the buffalo doesn\'t sink', 'Why does this suit the habitat? (muddy, wet ground)'],
+      5: ['Describe the shape (wide, split in two) and what you can see', 'Explain the job the hooves do (spread weight across soft mud)', 'Connect to habitat: the buffalo lives in swamps — how do the hooves suit this?'],
     },
-    starters: ['Buffalo hooves are…', 'The hooves help the buffalo by…', 'An interesting fact about buffalo hooves is…'],
+    starters: ['Buffalo hooves are…', 'The hooves help the buffalo by…', 'I can see that the hooves are…'],
   },
   'concert-lawn': {
     heading: 'Through the Tree\'s Eyes',
@@ -865,6 +865,28 @@ export default function ObservationScreen() {
     : isEnglish
     ? (animalId === 'concert-lawn'
         ? (classStage <= 2 ? 'For a hundred years, I have seen…' : classStage === 5 ? 'The tree stood as a silent witness to…' : 'If this tree could speak, it would say…')
+        : animalId === 'lion'
+        ? (classStage <= 2 ? 'The lion\'s eyes are like a…' : classStage >= 4 ? 'The lion\'s eyes burned like… This creates the effect of…' : 'The lion\'s eyes are like…')
+        : animalId === 'chimpanzee'
+        ? (classStage <= 2 ? 'Once there was a chimpanzee who…' : 'The trouble began when the chimps couldn\'t…')
+        : animalId === 'gorilla'
+        ? (classStage <= 2 ? 'Jabari turned and…' : 'Slowly, Kito reached out and…')
+        : animalId === 'giraffe'
+        ? (classStage <= 2 ? 'The giraffe is as tall as a…' : 'The giraffe stretches like… This simile…')
+        : animalId === 'koala'
+        ? (classStage <= 2 ? 'Koalas are…' : 'Koalas are a species that…')
+        : animalId === 'tiger'
+        ? (classStage <= 2 ? 'The tiger stood like the last of something…' : 'What the world is losing is…')
+        : animalId === 'dingo'
+        ? (classStage <= 2 ? 'I could run no further…' : 'I turned to face him and…')
+        : animalId === 'lemur'
+        ? (classStage <= 2 ? 'I leapt into the branches and…' : 'I leapt between the trees and…')
+        : animalId === 'sea-lion'
+        ? (classStage <= 2 ? 'The sea lions need…' : 'Dear Taronga Directors,…')
+        : animalId === 'asian-water-buffalo'
+        ? (classStage <= 2 ? 'Buffalo hooves are…' : 'The wide hooves of the buffalo…')
+        : animalId === 'blue-mountains-bushwalk'
+        ? (classStage <= 2 ? 'I heard…' : 'The first thing I noticed was…')
         : (classStage <= 2 ? 'I noticed…' : classStage === 5 ? 'In my response I will use the technique of…' : 'I noticed the language technique of…'))
     : classStage <= 2
     ? 'I saw…'
@@ -1315,6 +1337,24 @@ export default function ObservationScreen() {
               </div>
             );
           })()}
+
+          {/* Dreaming story dropdown (English dingo only) */}
+          {isEnglish && animalId === 'dingo' && (
+            <div style={{ marginBottom:'0.85rem' }}>
+              <button onClick={() => setStoryOpen(o => !o)}
+                style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', background: storyOpen ? '#2C1A0E' : '#fdf6ee', border:`1.5px solid ${storyOpen ? 'rgba(255,200,100,0.4)' : 'rgba(196,135,58,0.4)'}`, borderRadius: storyOpen ? '10px 10px 0 0' : '10px', padding:'0.65rem 1rem', cursor:'pointer', transition:'all 0.2s' }}>
+                <span style={{ fontSize:'0.82rem', fontWeight:700, color: storyOpen ? 'rgba(255,200,100,0.9)' : '#9B5E1E', letterSpacing:'0.05em' }}>📖 Read the story again — Warrigal and the Mundurra</span>
+                <span style={{ fontSize:'0.75rem', color: storyOpen ? 'rgba(255,255,255,0.5)' : '#888' }}>{storyOpen ? '▴ Hide' : '▾ Show'}</span>
+              </button>
+              {storyOpen && (
+                <div style={{ background:'#2C1A0E', border:'1.5px solid rgba(255,200,100,0.25)', borderTop:'none', borderRadius:'0 0 10px 10px', padding:'1rem 1.2rem' }}>
+                  <p style={{ fontSize:'0.6rem', fontWeight:800, color:'rgba(255,200,100,0.6)', textTransform:'uppercase', letterSpacing:'0.12em', margin:'0 0 0.75rem' }}>Aboriginal Dreaming Story</p>
+                  <p style={{ fontSize:'0.88rem', color:'rgba(255,255,255,0.88)', lineHeight:1.8, margin:0 }}>Warrigal, the old dingo, was hungry. He had been stalking a wallaby through the scrub when an old mundurra, a hunter, scared it away. The mundurra spotted Warrigal and raised his spear (his tura), so Warrigal ran. But both were old and tired, and when Warrigal could run no further, he turned and faced the hunter. "Why do you chase me, old brother?" he panted. The mundurra was also relieved to stop. "We are both lonely hunters," said Warrigal, "and our old age unites us." The mundurra lowered his spear and sat down. Together they worked out that they might both eat better if they hunted as a team. And so they did, sharing food and campfires, and becoming close friends. So did all their descendants. Men and dogs have hunted together ever since.</p>
+                  <p style={{ fontSize:'0.65rem', color:'rgba(255,255,255,0.3)', marginTop:'0.85rem', marginBottom:0 }}>Source: dingoden.net</p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Textarea */}
           <textarea value={observation} onChange={e => setObservation(e.target.value)}

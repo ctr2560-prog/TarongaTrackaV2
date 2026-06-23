@@ -30,10 +30,10 @@ const ZOOM_IMAGERY_MCQ = {
     fact: '"Rippled like sun-warmed sand" gives the coat movement and warmth. "Each hair a brushstroke of amber and gold" makes it feel painted and alive. Strong imagery stacks sensory details to create a rich, layered picture.',
   },
   '4×': {
-    q: "At maximum zoom, you can see the lion's eyes. Which sentence uses the best imagery to describe them?",
-    options: ["The lion's eyes are yellow with a dark pupil", "The lion's eyes look very focused and intense", "The lion's eyes burned like two amber coals, ancient and unblinking", "Lions have excellent eyesight that helps them hunt at night"],
+    q: "Look at the lion's eyes. Which sentence creates the best picture of them?",
+    options: ["The lion's eyes are yellow", "The lion is looking at something", "The lion's eyes glow like golden flames in the shadows", "Lions use their eyes to hunt at night"],
     correct: 2,
-    fact: '"Burned like two amber coals" gives the eyes heat and permanence. "Ancient and unblinking" layers meaning on top, so the reader feels not just the look of the eyes but the weight of the lion\'s intelligence behind them.',
+    fact: '"Glow like golden flames in the shadows" creates a vivid picture — it gives the eyes colour, light and contrast. Good imagery makes the reader feel like they can see something, not just know a fact about it.',
   },
 };
 
@@ -107,12 +107,14 @@ export default function LionMission() {
   const fact                = currentQuestion?.stageFacts?.[classStage] || currentQuestion?.fact;
 
   const [zoom,            setZoom]            = useState(isScience ? null : '1×');
+  const [sliderZoom,      setSliderZoom]      = useState(1);
+  const showEnglishQuestion = isEnglish && sliderZoom > 4;
 
-  const englishMcq  = isEnglish && zoom ? ZOOM_IMAGERY_MCQ[zoom] : null;
-  const displayQ    = isEnglish ? (englishMcq?.q    || 'Select a zoom level above to observe the lion, then answer here.') : stageQuestion;
-  const displayOpts = isEnglish ? (englishMcq?.options || []) : stageOptions;
-  const displayCorr = isEnglish ? (englishMcq?.correct ?? 2) : stageCorrectIdx;
-  const displayFact = isEnglish ? (englishMcq?.fact || fact) : fact;
+  const englishMcq  = ZOOM_IMAGERY_MCQ['4×'];
+  const displayQ    = isEnglish ? englishMcq.q       : stageQuestion;
+  const displayOpts = isEnglish ? englishMcq.options : stageOptions;
+  const displayCorr = isEnglish ? englishMcq.correct : stageCorrectIdx;
+  const displayFact = isEnglish ? englishMcq.fact    : fact;
   const [selectedZoomIdx, setSelectedZoomIdx] = useState(null);
   const [holdSeconds,     setHoldSeconds]     = useState(0);
   const [hintsOpen,       setHintsOpen]       = useState(false);
@@ -248,7 +250,7 @@ export default function LionMission() {
               </div>
             ) : (
               <video ref={videoRef} autoPlay playsInline muted
-                style={{ width:'100%', height:'100%', objectFit:'cover', transform:`scale(${scale}) scaleX(${frontCam ? -1 : 1})`, transformOrigin:'center', transition:'transform 0.3s ease', display:'block' }} />
+                style={{ width:'100%', height:'100%', objectFit:'cover', transform:`scale(${isEnglish ? sliderZoom : scale}) scaleX(${frontCam ? -1 : 1})`, transformOrigin:'center', transition:'transform 0.2s ease', display:'block' }} />
             )}
 
             {/* Instruction banner */}
@@ -257,7 +259,7 @@ export default function LionMission() {
                 {isScience
                   ? 'Calculate the correct zoom, select it and hold for 5 seconds'
                   : isEnglish
-                  ? "Zoom in to observe the lion's coat, eyes and mane — then answer below"
+                  ? "Drag the zoom bar and zoom in until you can see the lion's eyes"
                   : "Zoom in to observe the lion's muscles, then answer below"}
               </span>
             </div>
@@ -299,16 +301,27 @@ export default function LionMission() {
               </button>
             )}
 
-            {/* Zoom buttons */}
-            <div style={{ position:'absolute', bottom:'0.75rem', left:'50%', transform:'translateX(-50%)', display:'flex', gap:'0.4rem' }}>
-              {zoomOptions.map((z, idx) => (
-                <button key={z}
-                  onClick={() => isScience ? selectZoom(z, idx) : setZoom(z)}
-                  style={{ padding:'0.4rem 0.75rem', borderRadius:'40px', border: zoom === z ? '2px solid rgba(255,180,50,0.9)' : '2px solid rgba(255,255,255,0.25)', background: zoom === z ? 'rgba(180,100,0,0.85)' : 'rgba(0,0,0,0.55)', color: zoom === z ? 'white' : 'rgba(255,255,255,0.75)', fontSize:'0.8rem', fontWeight:700, cursor:'pointer', transition:'all 0.15s', backdropFilter:'blur(4px)' }}>
-                  {z}
-                </button>
-              ))}
-            </div>
+            {/* Zoom controls */}
+            {isEnglish ? (
+              <div style={{ position:'absolute', bottom:'0.75rem', left:'50%', transform:'translateX(-50%)', width:'80%', display:'flex', flexDirection:'column', alignItems:'center', gap:'0.35rem' }}>
+                <input type="range" min="1" max="6" step="0.1" value={sliderZoom}
+                  onChange={e => setSliderZoom(Number(e.target.value))}
+                  style={{ width:'100%', accentColor:'rgba(255,180,50,0.9)', cursor:'pointer' }} />
+                <span style={{ fontSize:'0.7rem', color: sliderZoom > 4 ? 'rgba(255,180,50,0.95)' : 'rgba(255,255,255,0.8)', fontWeight:700, background:'rgba(0,0,0,0.55)', padding:'0.1rem 0.55rem', borderRadius:'4px', backdropFilter:'blur(4px)' }}>
+                  {sliderZoom.toFixed(1)}× {sliderZoom > 4 ? '— answer below!' : ''}
+                </span>
+              </div>
+            ) : (
+              <div style={{ position:'absolute', bottom:'0.75rem', left:'50%', transform:'translateX(-50%)', display:'flex', gap:'0.4rem' }}>
+                {zoomOptions.map((z, idx) => (
+                  <button key={z}
+                    onClick={() => isScience ? selectZoom(z, idx) : setZoom(z)}
+                    style={{ padding:'0.4rem 0.75rem', borderRadius:'40px', border: zoom === z ? '2px solid rgba(255,180,50,0.9)' : '2px solid rgba(255,255,255,0.25)', background: zoom === z ? 'rgba(180,100,0,0.85)' : 'rgba(0,0,0,0.55)', color: zoom === z ? 'white' : 'rgba(255,255,255,0.75)', fontSize:'0.8rem', fontWeight:700, cursor:'pointer', transition:'all 0.15s', backdropFilter:'blur(4px)' }}>
+                    {z}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Bottom panel — science */}
@@ -359,17 +372,25 @@ export default function LionMission() {
           {/* Bottom panel — PDHPE / English */}
           {!isScience && (
             <div style={{ flexShrink:0, background:'white', borderTop:'1px solid #eee', padding:'0.85rem 1rem', zIndex:10 }}>
-              <p style={{ fontSize:'0.82rem', fontWeight:600, color:'var(--jungle-deep)', marginBottom:'0.6rem', textAlign:'center' }}>
-                {displayQ}
-              </p>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.5rem' }}>
-                {displayOpts.map((opt, i) => (
-                  <button key={i} onClick={() => handleQuizAnswer(0, i, displayCorr)}
-                    style={{ padding:'0.7rem 0.5rem', borderRadius:'var(--t-r-sm)', border:'2px solid transparent', background:'#f4f8f6', color:'var(--jungle-deep)', fontSize:'0.8rem', fontWeight:600, cursor:'pointer', textAlign:'left', transition:'all 0.15s', lineHeight:1.3 }}>
-                    {opt}
-                  </button>
-                ))}
-              </div>
+              {isEnglish && !showEnglishQuestion ? (
+                <p style={{ fontSize:'0.85rem', fontWeight:600, color:'#888', textAlign:'center', margin:0 }}>
+                  Keep zooming in — fill the screen with the lion's eyes 👁️
+                </p>
+              ) : (
+                <>
+                  <p style={{ fontSize:'0.82rem', fontWeight:600, color:'var(--jungle-deep)', marginBottom:'0.6rem', textAlign:'center' }}>
+                    {displayQ}
+                  </p>
+                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.5rem' }}>
+                    {displayOpts.map((opt, i) => (
+                      <button key={i} onClick={() => handleQuizAnswer(0, i, displayCorr)}
+                        style={{ padding:'0.7rem 0.5rem', borderRadius:'var(--t-r-sm)', border:'2px solid transparent', background:'#f4f8f6', color:'var(--jungle-deep)', fontSize:'0.8rem', fontWeight:600, cursor:'pointer', textAlign:'left', transition:'all 0.15s', lineHeight:1.3 }}>
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           )}
 

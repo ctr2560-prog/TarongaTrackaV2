@@ -157,8 +157,20 @@ const ANIMAL_OBS_HINTS = {
       start: `Start with "The lion uses the ATP-PC system when..." and explain how its long rest periods link to energy system recovery.`,
     },
     english: {
-      what:  `Write descriptive imagery about the lion — use language that appeals to the senses and include at least one unexpected comparison (not just "big" or "strong"). Think about what impression you want to create.`,
-      start: `Start with "The lion's..." or "Like a ..., the lion..." and choose the single most striking visual detail you can see right now.`,
+      what: {
+        1: `Look at the lion's eyes and write one sentence. Use a colour word (golden, amber, yellow) and the word "like" to make a comparison.`,
+        2: `Write two sentences about the lion's eyes — the first describes the colour, the second says what they remind you of. Use "like" or "as".`,
+        3: `Write a short paragraph about the lion's eyes. Include one comparison (what do they remind you of?) and one other detail about how they look or feel.`,
+        4: `Write a descriptive paragraph about the lion's eyes. Include one strong comparison and then explain what effect it creates for the reader.`,
+        5: `Write a descriptive piece using at least two images of the lion's eyes. Explain how your language choices create a specific impression of the lion for the reader.`,
+      },
+      start: {
+        1: `Start with "The lion's eyes are like a ___" and add a colour word.`,
+        2: `Start with "The lion's eyes are ___ (colour). They remind me of ___."`,
+        3: `Start with "The lion's eyes are like ___ —" and build from there with a second detail.`,
+        4: `Start with your strongest comparison: "The lion's eyes ___ like ___..." then write "This creates the effect of..."`,
+        5: `Start with your most striking image, then add a second one. End with "This imagery positions the reader to feel..."`,
+      },
     },
   },
   'giraffe': {
@@ -205,8 +217,8 @@ const ANIMAL_OBS_HINTS = {
       start: `Start with "From watching the tiger, an athlete could learn..." and describe one specific quality — explosive power, patience, or muscle use — and which sport it applies to.`,
     },
     english: {
-      what:  `Write a loss piece about the Sumatran tiger — use your photo as evidence and include at least one technique from the passage (contrast, personification, or powerful word choice). Remember: fewer than 400 remain.`,
-      start: `Start with "This tiger is..." or "What the world is losing is..." or "Fewer than 400..." and choose your most powerful opening line.`,
+      what:  `Write about the Sumatran tiger and what is being lost. Use words or ideas from the passage in your writing — you might quote a phrase, refer to an image from the text, or build on an idea the writer uses.`,
+      start: `Start with "This tiger is..." or "What the world is losing is..." and bring in something from the passage — a word, a fact, or an idea that connects to what you can see in front of you.`,
     },
   },
   'dingo': {
@@ -313,8 +325,8 @@ const ANIMAL_OBS_HINTS = {
       start: `Start with "Just like the buffalo, my body needs water to..." and describe what happens to your body when you don't drink enough during exercise.`,
     },
     english: {
-      what:  `Write an informative text about the buffalo's hooves — describe their structure (wide, cloven/split), explain their function (distribute weight, grip in mud), and connect to the buffalo's wetland habitat.`,
-      start: `Start with "Buffalo hooves are..." and describe exactly what you can see, then explain what that structure does for the animal.`,
+      what:  `Look at the buffalo's feet — the hooves are very wide and spread out. Write about what the hooves look like and how they help the buffalo walk in muddy, wet ground.`,
+      start: `Start with "Buffalo hooves are..." and describe what you can see. Then add a sentence about what the hooves help the buffalo do.`,
     },
   },
   'koala': {
@@ -546,12 +558,12 @@ function missionGorilla(stage, subject) {
 
 function missionLion(stage, subject) {
   const what = subject === 'english'
-    ? `Zoom in on the lion using the camera buttons. Study what you can see at each zoom level — the specific details you notice (colour, texture, expression, shape) will help you answer the imagery question below your photo.`
+    ? `Drag the zoom bar to zoom in on the lion's face until you can see its eyes clearly. Once you pass 4×, a question will appear — look closely at the colour and expression of the eyes before you answer.`
     : subject === 'pdhpe'
     ? `Zoom in on the lion using the camera buttons. Watch how it moves — does it explode into action or stay still for long stretches? Then answer a question about which energy system the lion relies on most.`
     : `Use the zoom buttons to magnify your view of the lion, then use the magnification formula shown on screen. Hold your device steady for 5 seconds once you've zoomed in!`;
   const stuck = subject === 'english'
-    ? `Look at your zoomed photo carefully. What is the single most striking visual detail — colour, texture, shape, or expression? Think about what that specific thing would feel like, smell like, or remind you of. The imagery question will focus on one particular feature.`
+    ? `Keep dragging the zoom bar to the right until the label turns gold and the question appears. Then focus on the lion's eyes — what colour are they, and what do they remind you of?`
     : subject === 'pdhpe'
     ? `Watch the lion for a moment before answering. Is it mostly resting or does it move suddenly in short powerful bursts? Short explosive sprints = ATP-PC system. Long steady movement = aerobic system. The lion's rest-to-action ratio is the key clue.`
     : `Use the formula: Magnification = Image Size divided by Actual Size. Write down the two numbers from the question first, then divide. Which answer matches your result?`;
@@ -560,7 +572,7 @@ function missionLion(stage, subject) {
 
 function missionTiger(stage, subject) {
   const what = subject === 'english'
-    ? `Read the passage about the Sumatran tiger carefully — the question will ask about a specific language technique used in the text. Take your time with the whole passage before looking at the options.`
+    ? `Read the passage about the Sumatran tiger carefully before answering. The question asks about specific words and ideas in the passage — look closely at the language as you read.`
     : subject === 'pdhpe'
     ? `Take a photo of the tiger, then use the slider to estimate its length from nose to tail. Then watch HOW it moves — patience, stillness, explosive bursts. You'll answer a question about what athletes could learn from observing the tiger!`
     : subject === 'maths'
@@ -733,7 +745,7 @@ function missionBuffalo(stage, subject) {
     : subject === 'pdhpe'
     ? `The question is about hydration. Just like the buffalo rolls in water to cool down and keep going, YOUR body needs water during physical activity. Think about what happens to your heart rate, temperature, and performance when you don't drink enough.`
     : subject === 'english'
-    ? `The question asks you to identify informative writing. Look for the sentence that uses third person, present tense, and factual language about buffalo hooves — no opinions, no storytelling, just clear factual explanation.`
+    ? `The question is about capital letters and full stops. Every sentence needs a capital letter at the start and a full stop at the end. Read each option carefully — which one does both correctly?`
     : `The question is about the buffalo's adaptation — focus on its wide, cloven hooves. Think about what "cloven" means (split in two) and how wide hooves help an animal that lives in muddy, wet environments where the ground is soft.`;
   return {
     greeting: `Need a hand with this activity? Let me help without giving it away!`,

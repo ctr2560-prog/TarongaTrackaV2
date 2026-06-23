@@ -6,20 +6,7 @@ import MathsCalculator from '../../components/MathsCalculator';
 import StudentGuide from '../../components/StudentGuide';
 
 const DREAMING_PASSAGE = [
-  'Warrigal, the old dingo, crept towards the black wallaby. Tired and hungry, he moved with great care, because he was much too old to run down the bunderra if it spotted him. He was almost within striking distance when the wallaby raised its head sharply, spun on its hind legs, and was gone.',
-  'Warrigal wondered what had startled the bunderra, so he kept low and watched. He did not have long to wait. An old mundurra, a hunter, appeared out of the scrub. Warrigal growled angrily to himself, then sighed and decided to remain hidden till the old man had gone.',
-  'The old man was just as angry, because he too had been tracking the bunderra. He too was wondering what had startled it, when out of the corner of his eye he noticed the crouching Warrigal. "You\'re not as good to eat as a bunderra," he muttered, "but I am so hungry that even a skinny warrigal will do."',
-  'When Warrigal saw the old mundurra raise his tura - his spear - he sprang to his feet and trotted away. The mundurra gave chase but the pace was slow. Neither was swift because of their age. Both were weary from hunger.',
-  'When Warrigal could run no further, he turned on the mundurra. "Why do you chase me, old brother?" he panted.',
-  'The mundurra, who was also relieved to stop, stood over Warrigal with his spear still raised, though unsteadily. "I want to kill you and eat you," he replied. "And you are not my brother," he added scornfully.',
-  '"Yet we are surely brothers of a sort," said Warrigal. "We are both lonely hunters, and our old age unites us more."',
-  'The old mundurra scratched his beard as he considered this. Then he rested his tura on the ground and sat down to get his breath back.',
-  '"Perhaps we are brothers, at least in spirit," he said.',
-  '"That\'s my point," said Warrigal. "So, what shall we do? Brothers may not kill each other, yet we both must eat."',
-  '"And neither of us eats well any more," grumbled the old mundurra, who was as thin and bony as the dingo.',
-  'Warrigal nodded and sighed, watching the old man closely. The mundurra sighed too, then scratched his beard again as he thought about their problem.',
-  '"If we are brothers," he said finally, "and perhaps we are, then we should hunt together, and share what we catch. We might both eat better together than separately."',
-  'And so they did. The old man and the old dingo hunted together, shared food and campfires together, and became close friends. So did all their descendants - men and dogs - who can be seen together in any baanya, or camp.',
+  'Warrigal, the old dingo, was hungry. He had been stalking a wallaby through the scrub when an old mundurra, a hunter, scared it away. The mundurra spotted Warrigal and raised his spear (his tura), so Warrigal ran. But both were old and tired, and when Warrigal could run no further, he turned and faced the hunter. "Why do you chase me, old brother?" he panted. The mundurra was also relieved to stop. "We are both lonely hunters," said Warrigal, "and our old age unites us." The mundurra lowered his spear and sat down. Together they worked out that they might both eat better if they hunted as a team. And so they did, sharing food and campfires, and becoming close friends. So did all their descendants. Men and dogs have hunted together ever since.',
 ];
 
 const DINGO_ENGLISH_MCQ = {
