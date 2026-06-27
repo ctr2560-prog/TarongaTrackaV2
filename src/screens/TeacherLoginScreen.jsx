@@ -223,7 +223,7 @@ export default function TeacherLoginScreen() {
         )}
 
         <button
-          onClick={() => setCurrentScreen('schoolEntry')}
+          onClick={() => setCurrentScreen('home')}
           style={{ display:'block', width:'100%', background:'none', border:'none', color:'#999', fontSize:'0.82rem', cursor:'pointer', marginTop:'0.75rem', padding:'0.4rem', transition:'color 0.18s' }}
           onMouseEnter={e => e.currentTarget.style.color = '#666'}
           onMouseLeave={e => e.currentTarget.style.color = '#999'}>

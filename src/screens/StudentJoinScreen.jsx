@@ -226,7 +226,7 @@ export default function StudentJoinScreen() {
           </button>
 
           <button
-            onClick={() => { setJoinError(''); setCurrentScreen('schoolEntry'); }}
+            onClick={() => { setJoinError(''); setCurrentScreen('home'); }}
             style={{ display:'block', width:'100%', background:'none', border:'none', color:'var(--t-ash)', fontSize:'0.82rem', cursor:'pointer', marginTop:'0.85rem', padding:'0.4rem', transition:'color 0.18s' }}
             onMouseEnter={e => e.currentTarget.style.color = 'var(--t-slate)'}
             onMouseLeave={e => e.currentTarget.style.color = 'var(--t-ash)'}>
