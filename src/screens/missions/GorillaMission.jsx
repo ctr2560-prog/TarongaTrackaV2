@@ -6,18 +6,18 @@ import MathsCalculator from '../../components/MathsCalculator';
 import StudentGuide from '../../components/StudentGuide';
 
 const INGREDIENTS = [
-  { id:'leaves',   emoji:'🍃', label:'Leaves',   icon:'gorilla-game/icon-leaves.png' },
-  { id:'bamboo',   emoji:'🎋', label:'Bamboo',    icon:'gorilla-game/icon-bamboo.png' },
-  { id:'fruit',    emoji:'🍎', label:'Fruit',     icon:'gorilla-game/icon-fruit.png' },
-  { id:'termites', emoji:'🐜', label:'Termites',  icon:'gorilla-game/icon-termite.png' },
+  { id:'leaves',   emoji:'🍃', label:'Leaves',   icon:'/gorilla-game/icon-leaves.png' },
+  { id:'bamboo',   emoji:'🎋', label:'Bamboo',    icon:'/gorilla-game/icon-bamboo.png' },
+  { id:'fruit',    emoji:'🍎', label:'Fruit',     icon:'/gorilla-game/icon-fruit.png' },
+  { id:'termites', emoji:'🐜', label:'Termites',  icon:'/gorilla-game/icon-termite.png' },
 ];
 const CUSTOMERS = [
   { name:'Mila', title:'Mila the Lady Gorilla', ready:'Waiting for her whopper',
-    img:{n:'gorilla-game/Customer1_neutral.png',h:'gorilla-game/Customer1_happy.png',m:'gorilla-game/Customer1_angry.png'} },
+    img:{n:'/gorilla-game/Customer1_neutral.png',h:'/gorilla-game/Customer1_happy.png',m:'/gorilla-game/Customer1_angry.png'} },
   { name:'Koko', title:'Koko the Jungle Queen', ready:'Ready for a giant order',
-    img:{n:'gorilla-game/Customer3-neutral.png',h:'gorilla-game/Customer3-happy.png',m:'gorilla-game/Customer3-angry.png'} },
+    img:{n:'/gorilla-game/Customer3-neutral.png',h:'/gorilla-game/Customer3-happy.png',m:'/gorilla-game/Customer3-angry.png'} },
   { name:'Zuri', title:'Zuri the Forest Foodie', ready:'Craving fresh snacks',
-    img:{n:'gorilla-game/Customer1_neutral.png',h:'gorilla-game/Customer1_happy.png',m:'gorilla-game/Customer1_angry.png'} },
+    img:{n:'/gorilla-game/Customer1_neutral.png',h:'/gorilla-game/Customer1_happy.png',m:'/gorilla-game/Customer1_angry.png'} },
 ];
 const GAME_DUR = 45;
 
@@ -71,8 +71,8 @@ export default function GorillaMission() {
   useEffect(() => {
     const srcs = [
       'images/gorilla.jpg', 'images/logo.png',
-      '/gorilla-game/background.png',
-      'gorilla-game/server_body_idle.png',
+      '//gorilla-game/background.png',
+      '/gorilla-game/server_body_idle.png',
       ...INGREDIENTS.map(i => i.icon),
       ...CUSTOMERS.flatMap(c => [c.img.n, c.img.h, c.img.m]),
     ];
@@ -276,7 +276,7 @@ export default function GorillaMission() {
             <div key={`gt-${toastKey}`} className={`gwr-toast${toastGood ? ' good' : ' bad'}${toastKey > 0 ? ' show' : ''}`}>{toastText}</div>
             <div key={`gc-${comboBurstKey}`} className={`gwr-comboBurst${comboBurstKey > 0 ? ' show' : ''}`}>{comboBurstText}</div>
             <div className="gwr-serverSprite">
-              <img src="gorilla-game/server_body_idle.png" alt="" />
+              <img src="/gorilla-game/server_body_idle.png" alt="" />
               {grabIng && (
                 <div style={{ position:'absolute', top:'148px', width:'42px', height:'42px', zIndex:6, pointerEvents:'none', ...(grabSide === 'left' ? {left:'44px'} : {right:'44px'}) }}>
                   <img src={grabIng.icon} alt="" style={{ width:'100%', height:'100%', objectFit:'contain' }} />

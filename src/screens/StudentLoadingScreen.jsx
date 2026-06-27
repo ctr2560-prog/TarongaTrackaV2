@@ -6,6 +6,29 @@ const MESSAGES = [
   'Loading animal missions',
   'Saving questions for offline use',
   'Getting your zoo map ready',
+  'Almost ready…',
+];
+
+const PRELOAD_IMAGES = [
+  '/gorilla-game/Customer1_neutral.png',
+  '/gorilla-game/Customer1_happy.png',
+  '/gorilla-game/Customer1_angry.png',
+  '/gorilla-game/Customer2_neutral.png',
+  '/gorilla-game/Customer2_happy.png',
+  '/gorilla-game/Customer2_angry.png',
+  '/gorilla-game/Customer3-neutral.png',
+  '/gorilla-game/Customer3-happy.png',
+  '/gorilla-game/Customer3-angry.png',
+  '/gorilla-game/icon-leaves.png',
+  '/gorilla-game/icon-bamboo.png',
+  '/gorilla-game/icon-fruit.png',
+  '/gorilla-game/icon-termite.png',
+  '/gorilla-game/server_body_idle.png',
+  '/gorilla-game/server_arm_left_idle.png',
+  '/gorilla-game/server_arm_left_reach.png',
+  '/gorilla-game/server_arm_right_idle.png',
+  '/gorilla-game/server_arm_right_reach.png',
+  '/gorilla-game/background.png',
 ];
 
 export default function StudentLoadingScreen() {
@@ -13,11 +36,18 @@ export default function StudentLoadingScreen() {
   const [phase, setPhase] = useState(0);
 
   useEffect(() => {
+    // Preload gorilla game images so they're cached before students reach that station
+    PRELOAD_IMAGES.forEach(src => {
+      const img = new Image();
+      img.src = src;
+    });
+
     const timers = [
       setTimeout(() => setPhase(1), 600),
       setTimeout(() => setPhase(2), 1200),
       setTimeout(() => setPhase(3), 1800),
-      setTimeout(() => setCurrentScreen('map'), 2400),
+      setTimeout(() => setPhase(4), 2400),
+      setTimeout(() => setCurrentScreen('map'), 3200),
     ];
     return () => timers.forEach(clearTimeout);
   }, [setCurrentScreen]);
