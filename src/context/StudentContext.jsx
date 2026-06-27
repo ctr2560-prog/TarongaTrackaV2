@@ -38,6 +38,7 @@ export function StudentProvider({ children }) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [quizAnswers,          setQuizAnswers]          = useState({});
   const [firstAttemptResults,  setFirstAttemptResults]  = useState({});
+  const [firstAttemptAnswers,  setFirstAttemptAnswers]  = useState({});
   const [showResult,           setShowResult]           = useState(false);
   const [isCorrect,            setIsCorrect]            = useState(false);
   const [isProcessingAnswer,   setIsProcessingAnswer]   = useState(false);
@@ -312,6 +313,10 @@ export function StudentProvider({ children }) {
       if (prev[questionIndex] !== undefined) return prev;
       return { ...prev, [questionIndex]: correct };
     });
+    setFirstAttemptAnswers(prev => {
+      if (prev[questionIndex] !== undefined) return prev;
+      return { ...prev, [questionIndex]: answerIndex };
+    });
     if (correct) {
       const audio = new Audio('images/ding.mp3');
       audio.play().catch(() => {});
@@ -336,11 +341,16 @@ export function StudentProvider({ children }) {
     if (wc < minW) { alert(`Your response needs at least ${minW} words. You have ${wc}.`); return; }
 
     const stageQs = getStageQuestions(currentAnimal, classStage, classSubject);
-    const quizResults = stageQs.map((q, i) => ({
-      question: q.q || q.question || 'Question unavailable',
-      correctOnFirstAttempt: firstAttemptResults[i] === true,
-      missionType: 'knowledge',
-    }));
+    const quizResults = stageQs.map((q, i) => {
+      const opts = q.stageOptions?.[classStage] || q.options || [];
+      const selIdx = firstAttemptAnswers[i];
+      return {
+        question: q.stageVariants?.[classStage] || q.q || q.question || 'Question unavailable',
+        correctOnFirstAttempt: firstAttemptResults[i] === true,
+        selectedAnswer: selIdx !== undefined ? (opts[selIdx] || null) : null,
+        missionType: 'knowledge',
+      };
+    });
 
     const observationScore = buildObservationScore(observation.trim(), currentAnimal.id, classStage, classSubject);
 

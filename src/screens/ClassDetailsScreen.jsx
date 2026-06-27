@@ -848,6 +848,151 @@ export default function ClassDetailsScreen() {
                         <RadarSVG avgB={avgB} avgD={avgD} avgW={avgW} dark={false} labels={isMaths ? ['Method','Accuracy','Comms'] : isPdhpe ? ['Compare','Understand','Comms'] : undefined} />
                       </div>
                     )}
+                    {/* ── Student table ── */}
+                    {isZZ ? (
+                      <div style={{ background:'linear-gradient(160deg,#020D06 0%,#040F08 100%)', borderRadius:'var(--t-r-lg)', border:'1px solid rgba(46,125,85,0.3)', overflow:'hidden', marginBottom:'1.5rem' }}>
+                        <div style={{ padding:'0.75rem 1rem', background:'linear-gradient(135deg,#071E14,#0A2F1F)', borderBottom:'1px solid rgba(46,125,85,0.25)', display:'flex', alignItems:'center', gap:'0.65rem' }}>
+                          <span>🌙</span>
+                          <span style={{ fontSize:'0.85rem', fontWeight:700, color:'white' }}>ZooSnooz Night Program</span>
+                          <span style={{ fontSize:'0.72rem', color:'rgba(184,212,192,0.65)', marginLeft:'auto' }}>{students.length} students · {ZOOSNOOZ_ANIMALS.length} animals</span>
+                        </div>
+                        <div style={{ overflowX:'auto' }}>
+                          <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'0.88rem' }}>
+                            <thead>
+                              <tr style={{ borderBottom:'1px solid rgba(46,125,85,0.25)' }}>
+                                {['Student','Points','Quiz %','Animals','Submitted','Actions'].map(h => (
+                                  <th key={h} style={{ textAlign:h==='Student'?'left':'center', padding:'0.65rem 0.75rem', fontWeight:600, color:'#4A9E6B', fontSize:'0.75rem', textTransform:'uppercase', letterSpacing:'0.05em' }}>{h}</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {students.length === 0 ? (
+                                <tr><td colSpan={6} style={{ textAlign:'center', padding:'2rem', color:'rgba(184,212,192,0.4)', fontSize:'0.85rem' }}>No students yet.</td></tr>
+                              ) : students.map((s,i) => {
+                                const zzMap = resolveZzData(s);
+                                const completedIds = ZOOSNOOZ_ANIMALS.filter(a => zzMap[a.id]).map(a => a.id);
+                                const completedCount = completedIds.length;
+                                const allDone = completedCount === ZOOSNOOZ_ANIMALS.length;
+                                const zzPts   = s.zzTotalPoints ?? 0;
+                                const correct = completedIds.filter(id => {
+                                  const d = zzMap[id];
+                                  return d.quizCorrect === true || d.quizResults?.[0]?.correctOnFirstAttempt === true;
+                                }).length;
+                                const quizPct = completedCount > 0
+                                  ? Math.round((correct / completedCount) * 100)
+                                  : (s.quizPercentage != null ? s.quizPercentage : null);
+                                return (
+                                  <tr key={i} style={{ borderBottom:'1px solid rgba(46,125,85,0.1)', background: allDone?'rgba(46,125,85,0.08)':i%2===0?'rgba(255,255,255,0.02)':'transparent' }}>
+                                    <td style={{ padding:'0.8rem 0.75rem', color:'#D4EDE0', fontWeight:600 }}>{s.name}{allDone&&<span style={{ marginLeft:'0.4rem', fontSize:'0.6rem', background:'#2E7D55', color:'white', borderRadius:'4px', padding:'0.1rem 0.35rem', fontWeight:700, verticalAlign:'middle' }}>Done</span>}</td>
+                                    <td style={{ padding:'0.8rem 0.75rem', textAlign:'center', fontWeight:700, color:'#A8C4B2' }}>{completedCount>0?zzPts:<span style={{ color:'rgba(255,255,255,0.2)' }}> - </span>}</td>
+                                    <td style={{ padding:'0.8rem 0.75rem', textAlign:'center', fontWeight:600, color:'#4A9E6B' }}>{quizPct!==null?`${quizPct}%`:<span style={{ color:'rgba(255,255,255,0.2)' }}> - </span>}</td>
+                                    <td style={{ padding:'0.8rem 0.75rem', textAlign:'center' }}>
+                                      <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'0.2rem' }}>
+                                        <div style={{ width:'48px', height:'4px', background:'rgba(46,125,85,0.2)', borderRadius:'3px', overflow:'hidden' }}><div style={{ height:'100%', width:`${(completedCount/ZOOSNOOZ_ANIMALS.length)*100}%`, background:'#2E7D55', borderRadius:'3px' }}/></div>
+                                        <span style={{ fontSize:'0.7rem', fontWeight:700, color:'#4A9E6B' }}>{completedCount}/{ZOOSNOOZ_ANIMALS.length}</span>
+                                      </div>
+                                    </td>
+                                    <td style={{ padding:'0.8rem 0.75rem', textAlign:'center', color:'rgba(184,212,192,0.5)', fontSize:'0.82rem' }}>
+                                      {s.completedAt ? new Date(s.completedAt.toDate?.() || s.completedAt).toLocaleDateString('en-AU',{day:'numeric',month:'short'}) : ' - '}
+                                    </td>
+                                    <td style={{ padding:'0.8rem 0.75rem', textAlign:'center' }}>
+                                      {completedCount>0 ? <button onClick={() => setObsModal({...s, isZZ:true})} style={{ background:'rgba(46,125,85,0.18)', color:'#A8C4B2', border:'1px solid rgba(46,125,85,0.35)', padding:'0.25rem 0.55rem', borderRadius:'var(--t-r-xs)', fontSize:'0.75rem', fontWeight:600, cursor:'pointer' }}>View</button> : <span style={{ color:'rgba(255,255,255,0.2)', fontSize:'0.72rem' }}> - </span>}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ background:'var(--t-chalk)', borderRadius:'var(--t-r-lg)', boxShadow:'var(--t-shadow-sm)', overflow:'hidden', border:'1px solid var(--t-stone)', marginBottom:'1rem' }}>
+                        <div style={{ display:'grid', gridTemplateColumns:'1.4fr 0.6fr 0.6fr 0.6fr 0.85fr 1.4fr 0.75fr 1.1fr', background:'var(--t-forest)', padding:'0.6rem 1rem' }}>
+                          {['Student','Points','Badges','Quiz %','Observations','Conservation Statement','Status','Actions'].map(h => (
+                            <div key={h} style={{ color:'rgba(255,255,255,0.8)', fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em' }}>{h}</div>
+                          ))}
+                        </div>
+                        {students.length === 0 ? (
+                          <div style={{ padding:'2rem 1rem', textAlign:'center' }}><p style={{ color:'#999', fontSize:'0.85rem', fontStyle:'italic' }}>No students have submitted yet.</p></div>
+                        ) : students.map((s,i) => {
+                          const badgeCount   = Array.isArray(s.badges) ? new Set(s.badges.map(b=>b.animalId).filter(Boolean)).size : 0;
+                          const hasObs       = (s.badges||[]).some(b=>b.observation);
+                          const busy = studentActionBusy[s.id];
+                          return (
+                            <div key={s.name} style={{ display:'grid', gridTemplateColumns:'1.4fr 0.6fr 0.6fr 0.6fr 0.85fr 1.4fr 0.75fr 1.1fr', padding:'0.7rem 1rem', borderTop:'1px solid var(--t-stone)', alignItems:'center', background: i%2===0 ? 'var(--t-chalk)' : 'var(--t-parchment)' }}>
+                              <div style={{ display:'flex', alignItems:'center', gap:'0.55rem' }}>
+                                <div style={{ width:'28px', height:'28px', borderRadius:'50%', background: s.completed ? 'linear-gradient(135deg,var(--t-mid),var(--t-eucalyptus))' : 'linear-gradient(135deg,#aaa,#ccc)', display:'flex', alignItems:'center', justifyContent:'center', color:'white', fontSize:'0.72rem', fontWeight:700, flexShrink:0 }}>{s.name.charAt(0).toUpperCase()}</div>
+                                <span style={{ fontWeight:600, color:'var(--t-deep)', fontSize:'0.88rem' }}>{s.name}</span>
+                              </div>
+                              <div style={{ fontWeight:700, color:'var(--sunset-orange)', fontSize:'0.9rem' }}>{s.totalPoints||0}</div>
+                              <div style={{ fontWeight:600, color:'var(--t-mid)', fontSize:'0.9rem' }}>{badgeCount}</div>
+                              <div style={{ fontWeight:600, color:'var(--t-mid)', fontSize:'0.85rem' }}>{s.quizPercentage!==undefined ? `${s.quizPercentage}%` : ' - '}</div>
+                              <div>{hasObs ? <button onClick={()=>setObsModal(s)} style={{ background:'var(--t-deep)', color:'white', border:'none', padding:'0.25rem 0.6rem', borderRadius:'6px', fontSize:'0.72rem', fontWeight:600, cursor:'pointer' }}>View</button> : <span style={{ color:'#bbb', fontSize:'0.75rem' }}> - </span>}</div>
+                              <div>{s.conservationStatement ? <button onClick={()=>setConservationModal({name:s.name,text:s.conservationStatement})} style={{ background:'var(--t-deep)', color:'white', border:'none', padding:'0.25rem 0.6rem', borderRadius:'6px', fontSize:'0.72rem', fontWeight:600, cursor:'pointer' }}>View</button> : <span style={{ color:'#bbb', fontSize:'0.75rem' }}> - </span>}</div>
+                              <div style={{ display:'flex', alignItems:'center', gap:'0.35rem' }}>
+                                <div style={{ width:'8px', height:'8px', borderRadius:'50%', background: s.status==='complete'?'#16A34A':'#CA8A04' }} />
+                                <span style={{ fontSize:'0.72rem', fontWeight:700, color: s.status==='complete'?'#16A34A':'#CA8A04' }}>{s.status==='complete'?'Complete':'Incomplete'}</span>
+                              </div>
+                              <div style={{ display:'flex', alignItems:'center', gap:'0.35rem' }}>
+                                <button
+                                  onClick={() => resetStudent(s)}
+                                  disabled={!!busy}
+                                  title="Restore to animal list (keeps badges)"
+                                  style={{ display:'flex', alignItems:'center', gap:'0.25rem', background:'none', color:'#D97706', border:'1.5px solid #FCD34D', padding:'0.28rem 0.55rem', borderRadius:'7px', fontSize:'0.72rem', fontWeight:700, cursor:busy?'not-allowed':'pointer', opacity:busy?0.4:1, transition:'background 0.15s, color 0.15s', whiteSpace:'nowrap' }}
+                                  onMouseEnter={e=>{ if(!busy){e.currentTarget.style.background='#FFFBEB';e.currentTarget.style.color='#B45309';} }}
+                                  onMouseLeave={e=>{ e.currentTarget.style.background='none';e.currentTarget.style.color='#D97706'; }}>
+                                  {busy==='resetting' ? <span style={{ fontSize:'0.85rem' }}>…</span> : <><span style={{ fontSize:'0.9rem', lineHeight:1 }}>↺</span> <span>Restore</span></>}
+                                </button>
+                                <button
+                                  onClick={() => deleteStudent(s)}
+                                  disabled={!!busy}
+                                  title="Delete student"
+                                  style={{ display:'flex', alignItems:'center', gap:'0.25rem', background:'none', color:'#DC2626', border:'1.5px solid #FECACA', padding:'0.28rem 0.55rem', borderRadius:'7px', fontSize:'0.72rem', fontWeight:700, cursor:busy?'not-allowed':'pointer', opacity:busy?0.4:1, transition:'background 0.15s, color 0.15s', whiteSpace:'nowrap' }}
+                                  onMouseEnter={e=>{ if(!busy){e.currentTarget.style.background='#FEF2F2';e.currentTarget.style.color='#B91C1C';} }}
+                                  onMouseLeave={e=>{ e.currentTarget.style.background='none';e.currentTarget.style.color='#DC2626'; }}>
+                                  {busy==='deleting' ? <span style={{ fontSize:'0.85rem' }}>…</span> : <><span style={{ fontSize:'0.85rem', lineHeight:1 }}>🗑</span> <span>Delete</span></>}
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* ── How It's Marked (day mode) ── */}
+                    {!isZZ && (
+                      <div style={{ marginBottom:'1rem', borderRadius:'var(--t-r-md)', border:'1px solid var(--t-mist)', background:'var(--t-chalk)', overflow:'hidden' }}>
+                        <button onClick={() => setMarkingCardOpen(o=>!o)} style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0.55rem 1.2rem', background:'linear-gradient(135deg,var(--t-foam) 0%,#E4EFE8 100%)', border:'none', cursor:'pointer', textAlign:'left' }}>
+                          <span style={{ fontWeight:700, fontSize:'0.9rem', color:'var(--t-deep)' }}>How Student Responses Are Marked</span>
+                          <span style={{ fontSize:'1.1rem', color:'var(--t-mid)', transition:'transform 0.2s', display:'inline-block', transform:markingCardOpen?'rotate(180deg)':'rotate(0deg)' }}>▾</span>
+                        </button>
+                        {markingCardOpen && (
+                          <div style={{ padding:'1rem', display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))', gap:'0.75rem' }}>
+                            {(isMaths ? [
+                              {title:'Method',color:'#34A85A',bg:'#F4FBF7',desc:'Assesses whether students show their mathematical working.',items:['Numbers, operators, and equations used','Step-by-step working visible in response'],note:'Higher: clear, logical working chain'},
+                              {title:'Accuracy',color:'#4A90D9',bg:'#F4F7FB',desc:'Assesses correctness of numbers, units, and answers.',items:['Numbers and measurements present','Correct answer included with appropriate units'],note:'Correct key answer detected = score boost'},
+                              {title:'Communication',color:'#E8894A',bg:'#FDF8F4',desc:'Assesses clarity of mathematical expression.',items:['Structured response with labels or steps','Mathematical vocabulary used appropriately'],note:'Higher: well-structured, precise maths language'},
+                            ] : isPdhpe ? [
+                              {title:'Physical Obs',color:'#DC2626',bg:'#FEF2F2',desc:'Assesses whether students identified a relevant physical or health-related behaviour.',items:['Named a physical action or social behaviour','Connected observation to the body or health'],note:'Higher: specific PDHPE-relevant observation with correct terminology'},
+                              {title:'Health Concepts',color:'#7C3AED',bg:'#F5F3FF',desc:'Assesses application of PDHPE knowledge to what they observed.',items:['Named a body system, hormone, or health concept','Explained a physiological or mental health connection'],note:'Higher: accurate, in-depth application of PDHPE frameworks'},
+                              {title:'Communication',color:'#059669',bg:'#F0FDF4',desc:'Assesses clarity and use of PDHPE language.',items:['Full sentences with PDHPE vocabulary','Explanatory language: because, therefore, which means'],note:'Higher: structured, precise PDHPE language throughout'},
+                            ] : [
+                              {title:'Behaviour',color:'#34A85A',bg:'#F4FBF7',desc:'Assesses what students observe at the exhibit.',items:['Identifying what the animal is doing','Recognising behaviours (feeding, resting, interacting)'],note:'Higher: clear, accurate observations'},
+                              {title:'Detail',color:'#4A90D9',bg:'#F4F7FB',desc:'Assesses level of understanding shown.',items:['A clear observation or relevant concept','A simple explanation or link to behaviour'],note:'Students do NOT need all elements for marks'},
+                              {title:'Writing',color:'#E8894A',bg:'#FDF8F4',desc:'Assesses clarity of communication.',items:['Full sentences, appropriate terminology','Clear expression of ideas'],note:'Higher: well-structured, scientific language'},
+                            ]).map(d => (
+                              <div key={d.title} style={{ background:d.bg, borderRadius:'var(--t-r-sm)', padding:'0.85rem 1rem', borderLeft:`4px solid ${d.color}` }}>
+                                <p style={{ fontWeight:700, fontSize:'0.88rem', color:'var(--t-deep)', marginBottom:'0.4rem' }}>{d.title}</p>
+                                <p style={{ fontSize:'0.78rem', color:'#555', marginBottom:'0.4rem', lineHeight:1.6 }}>{d.desc}</p>
+                                <ul style={{ margin:'0 0 0.4rem', paddingLeft:'1rem', fontSize:'0.76rem', color:'#555', lineHeight:1.8 }}>{d.items.map(i=><li key={i}>{i}</li>)}</ul>
+                                <p style={{ fontSize:'0.74rem', fontWeight:600, color:d.color, margin:0 }}>{d.note}</p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {/* Teaching Takeaways */}
                     {obsCnt > 0 && (
                       <>
@@ -965,151 +1110,6 @@ export default function ClassDetailsScreen() {
                 );
               })()}
 
-              {/* ── How It's Marked (day mode) ── */}
-              {!isZZ && (
-                <div style={{ marginBottom:'1rem', borderRadius:'var(--t-r-md)', border:'1px solid var(--t-mist)', background:'var(--t-chalk)', overflow:'hidden' }}>
-                  <button onClick={() => setMarkingCardOpen(o=>!o)} style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0.55rem 1.2rem', background:'linear-gradient(135deg,var(--t-foam) 0%,#E4EFE8 100%)', border:'none', cursor:'pointer', textAlign:'left' }}>
-                    <span style={{ fontWeight:700, fontSize:'0.9rem', color:'var(--t-deep)' }}>How Student Responses Are Marked</span>
-                    <span style={{ fontSize:'1.1rem', color:'var(--t-mid)', transition:'transform 0.2s', display:'inline-block', transform:markingCardOpen?'rotate(180deg)':'rotate(0deg)' }}>▾</span>
-                  </button>
-                  {markingCardOpen && (
-                    <div style={{ padding:'1rem', display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))', gap:'0.75rem' }}>
-                      {(isMaths ? [
-                        {title:'Method',color:'#34A85A',bg:'#F4FBF7',desc:'Assesses whether students show their mathematical working.',items:['Numbers, operators, and equations used','Step-by-step working visible in response'],note:'Higher: clear, logical working chain'},
-                        {title:'Accuracy',color:'#4A90D9',bg:'#F4F7FB',desc:'Assesses correctness of numbers, units, and answers.',items:['Numbers and measurements present','Correct answer included with appropriate units'],note:'Correct key answer detected = score boost'},
-                        {title:'Communication',color:'#E8894A',bg:'#FDF8F4',desc:'Assesses clarity of mathematical expression.',items:['Structured response with labels or steps','Mathematical vocabulary used appropriately'],note:'Higher: well-structured, precise maths language'},
-                      ] : isPdhpe ? [
-                        {title:'Physical Obs',color:'#DC2626',bg:'#FEF2F2',desc:'Assesses whether students identified a relevant physical or health-related behaviour.',items:['Named a physical action or social behaviour','Connected observation to the body or health'],note:'Higher: specific PDHPE-relevant observation with correct terminology'},
-                        {title:'Health Concepts',color:'#7C3AED',bg:'#F5F3FF',desc:'Assesses application of PDHPE knowledge to what they observed.',items:['Named a body system, hormone, or health concept','Explained a physiological or mental health connection'],note:'Higher: accurate, in-depth application of PDHPE frameworks'},
-                        {title:'Communication',color:'#059669',bg:'#F0FDF4',desc:'Assesses clarity and use of PDHPE language.',items:['Full sentences with PDHPE vocabulary','Explanatory language: because, therefore, which means'],note:'Higher: structured, precise PDHPE language throughout'},
-                      ] : [
-                        {title:'Behaviour',color:'#34A85A',bg:'#F4FBF7',desc:'Assesses what students observe at the exhibit.',items:['Identifying what the animal is doing','Recognising behaviours (feeding, resting, interacting)'],note:'Higher: clear, accurate observations'},
-                        {title:'Detail',color:'#4A90D9',bg:'#F4F7FB',desc:'Assesses level of understanding shown.',items:['A clear observation or relevant concept','A simple explanation or link to behaviour'],note:'Students do NOT need all elements for marks'},
-                        {title:'Writing',color:'#E8894A',bg:'#FDF8F4',desc:'Assesses clarity of communication.',items:['Full sentences, appropriate terminology','Clear expression of ideas'],note:'Higher: well-structured, scientific language'},
-                      ]).map(d => (
-                        <div key={d.title} style={{ background:d.bg, borderRadius:'var(--t-r-sm)', padding:'0.85rem 1rem', borderLeft:`4px solid ${d.color}` }}>
-                          <p style={{ fontWeight:700, fontSize:'0.88rem', color:'var(--t-deep)', marginBottom:'0.4rem' }}>{d.title}</p>
-                          <p style={{ fontSize:'0.78rem', color:'#555', marginBottom:'0.4rem', lineHeight:1.6 }}>{d.desc}</p>
-                          <ul style={{ margin:'0 0 0.4rem', paddingLeft:'1rem', fontSize:'0.76rem', color:'#555', lineHeight:1.8 }}>{d.items.map(i=><li key={i}>{i}</li>)}</ul>
-                          <p style={{ fontSize:'0.74rem', fontWeight:600, color:d.color, margin:0 }}>{d.note}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* ── Student table ── */}
-              {isZZ ? (
-                <div style={{ background:'linear-gradient(160deg,#020D06 0%,#040F08 100%)', borderRadius:'var(--t-r-lg)', border:'1px solid rgba(46,125,85,0.3)', overflow:'hidden', marginBottom:'1.5rem' }}>
-                  <div style={{ padding:'0.75rem 1rem', background:'linear-gradient(135deg,#071E14,#0A2F1F)', borderBottom:'1px solid rgba(46,125,85,0.25)', display:'flex', alignItems:'center', gap:'0.65rem' }}>
-                    <span>🌙</span>
-                    <span style={{ fontSize:'0.85rem', fontWeight:700, color:'white' }}>ZooSnooz Night Program</span>
-                    <span style={{ fontSize:'0.72rem', color:'rgba(184,212,192,0.65)', marginLeft:'auto' }}>{students.length} students · {ZOOSNOOZ_ANIMALS.length} animals</span>
-                  </div>
-                  <div style={{ overflowX:'auto' }}>
-                    <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'0.88rem' }}>
-                      <thead>
-                        <tr style={{ borderBottom:'1px solid rgba(46,125,85,0.25)' }}>
-                          {['Student','Points','Quiz %','Animals','Submitted','Actions'].map(h => (
-                            <th key={h} style={{ textAlign:h==='Student'?'left':'center', padding:'0.65rem 0.75rem', fontWeight:600, color:'#4A9E6B', fontSize:'0.75rem', textTransform:'uppercase', letterSpacing:'0.05em' }}>{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {students.length === 0 ? (
-                          <tr><td colSpan={6} style={{ textAlign:'center', padding:'2rem', color:'rgba(184,212,192,0.4)', fontSize:'0.85rem' }}>No students yet.</td></tr>
-                        ) : students.map((s,i) => {
-                          const zzMap = resolveZzData(s);
-                          const completedIds = ZOOSNOOZ_ANIMALS.filter(a => zzMap[a.id]).map(a => a.id);
-                          const completedCount = completedIds.length;
-                          const allDone = completedCount === ZOOSNOOZ_ANIMALS.length;
-                          const zzPts   = s.zzTotalPoints ?? 0;
-                          const correct = completedIds.filter(id => {
-                            const d = zzMap[id];
-                            return d.quizCorrect === true || d.quizResults?.[0]?.correctOnFirstAttempt === true;
-                          }).length;
-                          const quizPct = completedCount > 0
-                            ? Math.round((correct / completedCount) * 100)
-                            : (s.quizPercentage != null ? s.quizPercentage : null);
-                          return (
-                            <tr key={i} style={{ borderBottom:'1px solid rgba(46,125,85,0.1)', background: allDone?'rgba(46,125,85,0.08)':i%2===0?'rgba(255,255,255,0.02)':'transparent' }}>
-                              <td style={{ padding:'0.8rem 0.75rem', color:'#D4EDE0', fontWeight:600 }}>{s.name}{allDone&&<span style={{ marginLeft:'0.4rem', fontSize:'0.6rem', background:'#2E7D55', color:'white', borderRadius:'4px', padding:'0.1rem 0.35rem', fontWeight:700, verticalAlign:'middle' }}>Done</span>}</td>
-                              <td style={{ padding:'0.8rem 0.75rem', textAlign:'center', fontWeight:700, color:'#A8C4B2' }}>{completedCount>0?zzPts:<span style={{ color:'rgba(255,255,255,0.2)' }}> - </span>}</td>
-                              <td style={{ padding:'0.8rem 0.75rem', textAlign:'center', fontWeight:600, color:'#4A9E6B' }}>{quizPct!==null?`${quizPct}%`:<span style={{ color:'rgba(255,255,255,0.2)' }}> - </span>}</td>
-                              <td style={{ padding:'0.8rem 0.75rem', textAlign:'center' }}>
-                                <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'0.2rem' }}>
-                                  <div style={{ width:'48px', height:'4px', background:'rgba(46,125,85,0.2)', borderRadius:'3px', overflow:'hidden' }}><div style={{ height:'100%', width:`${(completedCount/ZOOSNOOZ_ANIMALS.length)*100}%`, background:'#2E7D55', borderRadius:'3px' }}/></div>
-                                  <span style={{ fontSize:'0.7rem', fontWeight:700, color:'#4A9E6B' }}>{completedCount}/{ZOOSNOOZ_ANIMALS.length}</span>
-                                </div>
-                              </td>
-                              <td style={{ padding:'0.8rem 0.75rem', textAlign:'center', color:'rgba(184,212,192,0.5)', fontSize:'0.82rem' }}>
-                                {s.completedAt ? new Date(s.completedAt.toDate?.() || s.completedAt).toLocaleDateString('en-AU',{day:'numeric',month:'short'}) : ' - '}
-                              </td>
-                              <td style={{ padding:'0.8rem 0.75rem', textAlign:'center' }}>
-                                {completedCount>0 ? <button onClick={() => setObsModal({...s, isZZ:true})} style={{ background:'rgba(46,125,85,0.18)', color:'#A8C4B2', border:'1px solid rgba(46,125,85,0.35)', padding:'0.25rem 0.55rem', borderRadius:'var(--t-r-xs)', fontSize:'0.75rem', fontWeight:600, cursor:'pointer' }}>View</button> : <span style={{ color:'rgba(255,255,255,0.2)', fontSize:'0.72rem' }}> - </span>}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              ) : (
-                <div style={{ background:'var(--t-chalk)', borderRadius:'var(--t-r-lg)', boxShadow:'var(--t-shadow-sm)', overflow:'hidden', border:'1px solid var(--t-stone)' }}>
-                  <div style={{ display:'grid', gridTemplateColumns:'1.4fr 0.6fr 0.6fr 0.6fr 0.85fr 1.4fr 0.75fr 1.1fr', background:'var(--t-forest)', padding:'0.6rem 1rem' }}>
-                    {['Student','Points','Badges','Quiz %','Observations','Conservation Statement','Status','Actions'].map(h => (
-                      <div key={h} style={{ color:'rgba(255,255,255,0.8)', fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em' }}>{h}</div>
-                    ))}
-                  </div>
-                  {students.length === 0 ? (
-                    <div style={{ padding:'2rem 1rem', textAlign:'center' }}><p style={{ color:'#999', fontSize:'0.85rem', fontStyle:'italic' }}>No students have submitted yet.</p></div>
-                  ) : students.map((s,i) => {
-                    const badgeCount   = Array.isArray(s.badges) ? new Set(s.badges.map(b=>b.animalId).filter(Boolean)).size : 0;
-                    const hasObs       = (s.badges||[]).some(b=>b.observation);
-                    const busy = studentActionBusy[s.id];
-                    return (
-                      <div key={s.name} style={{ display:'grid', gridTemplateColumns:'1.4fr 0.6fr 0.6fr 0.6fr 0.85fr 1.4fr 0.75fr 1.1fr', padding:'0.7rem 1rem', borderTop:'1px solid var(--t-stone)', alignItems:'center', background: i%2===0 ? 'var(--t-chalk)' : 'var(--t-parchment)' }}>
-                        <div style={{ display:'flex', alignItems:'center', gap:'0.55rem' }}>
-                          <div style={{ width:'28px', height:'28px', borderRadius:'50%', background: s.completed ? 'linear-gradient(135deg,var(--t-mid),var(--t-eucalyptus))' : 'linear-gradient(135deg,#aaa,#ccc)', display:'flex', alignItems:'center', justifyContent:'center', color:'white', fontSize:'0.72rem', fontWeight:700, flexShrink:0 }}>{s.name.charAt(0).toUpperCase()}</div>
-                          <span style={{ fontWeight:600, color:'var(--t-deep)', fontSize:'0.88rem' }}>{s.name}</span>
-                        </div>
-                        <div style={{ fontWeight:700, color:'var(--sunset-orange)', fontSize:'0.9rem' }}>{s.totalPoints||0}</div>
-                        <div style={{ fontWeight:600, color:'var(--t-mid)', fontSize:'0.9rem' }}>{badgeCount}</div>
-                        <div style={{ fontWeight:600, color:'var(--t-mid)', fontSize:'0.85rem' }}>{s.quizPercentage!==undefined ? `${s.quizPercentage}%` : ' - '}</div>
-                        <div>{hasObs ? <button onClick={()=>setObsModal(s)} style={{ background:'var(--t-deep)', color:'white', border:'none', padding:'0.25rem 0.6rem', borderRadius:'6px', fontSize:'0.72rem', fontWeight:600, cursor:'pointer' }}>View</button> : <span style={{ color:'#bbb', fontSize:'0.75rem' }}> - </span>}</div>
-                        <div>{s.conservationStatement ? <button onClick={()=>setConservationModal({name:s.name,text:s.conservationStatement})} style={{ background:'var(--t-deep)', color:'white', border:'none', padding:'0.25rem 0.6rem', borderRadius:'6px', fontSize:'0.72rem', fontWeight:600, cursor:'pointer' }}>View</button> : <span style={{ color:'#bbb', fontSize:'0.75rem' }}> - </span>}</div>
-                        <div style={{ display:'flex', alignItems:'center', gap:'0.35rem' }}>
-                          <div style={{ width:'8px', height:'8px', borderRadius:'50%', background: s.status==='complete'?'#16A34A':'#CA8A04' }} />
-                          <span style={{ fontSize:'0.72rem', fontWeight:700, color: s.status==='complete'?'#16A34A':'#CA8A04' }}>{s.status==='complete'?'Complete':'Incomplete'}</span>
-                        </div>
-                        <div style={{ display:'flex', alignItems:'center', gap:'0.35rem' }}>
-                          <button
-                            onClick={() => resetStudent(s)}
-                            disabled={!!busy}
-                            title="Restore to animal list (keeps badges)"
-                            style={{ display:'flex', alignItems:'center', gap:'0.25rem', background:'none', color:'#D97706', border:'1.5px solid #FCD34D', padding:'0.28rem 0.55rem', borderRadius:'7px', fontSize:'0.72rem', fontWeight:700, cursor:busy?'not-allowed':'pointer', opacity:busy?0.4:1, transition:'background 0.15s, color 0.15s', whiteSpace:'nowrap' }}
-                            onMouseEnter={e=>{ if(!busy){e.currentTarget.style.background='#FFFBEB';e.currentTarget.style.color='#B45309';} }}
-                            onMouseLeave={e=>{ e.currentTarget.style.background='none';e.currentTarget.style.color='#D97706'; }}>
-                            {busy==='resetting' ? <span style={{ fontSize:'0.85rem' }}>…</span> : <><span style={{ fontSize:'0.9rem', lineHeight:1 }}>↺</span> <span>Restore</span></>}
-                          </button>
-                          <button
-                            onClick={() => deleteStudent(s)}
-                            disabled={!!busy}
-                            title="Delete student"
-                            style={{ display:'flex', alignItems:'center', gap:'0.25rem', background:'none', color:'#DC2626', border:'1.5px solid #FECACA', padding:'0.28rem 0.55rem', borderRadius:'7px', fontSize:'0.72rem', fontWeight:700, cursor:busy?'not-allowed':'pointer', opacity:busy?0.4:1, transition:'background 0.15s, color 0.15s', whiteSpace:'nowrap' }}
-                            onMouseEnter={e=>{ if(!busy){e.currentTarget.style.background='#FEF2F2';e.currentTarget.style.color='#B91C1C';} }}
-                            onMouseLeave={e=>{ e.currentTarget.style.background='none';e.currentTarget.style.color='#DC2626'; }}>
-                            {busy==='deleting' ? <span style={{ fontSize:'0.85rem' }}>…</span> : <><span style={{ fontSize:'0.85rem', lineHeight:1 }}>🗑</span> <span>Delete</span></>}
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
               {/* ── Student Documentaries ── */}
               {isZZ && students.some(s=>s.zzDocumentaryURL) && (
                 <div style={{marginBottom:'1.5rem'}}>
@@ -1127,6 +1127,96 @@ export default function ClassDetailsScreen() {
                   </div>
                 </div>
               )}
+
+              {/* ── MCQ Question Analysis (day mode) ── */}
+              {!isZZ && (() => {
+                const mcqByAnimal = {};
+                students.forEach(student => {
+                  const seenAnimals = new Set();
+                  (student.badges || []).forEach(badge => {
+                    const aid = badge.animalId;
+                    if (!aid || seenAnimals.has(aid)) return;
+                    seenAnimals.add(aid);
+                    const qrs = (badge.quizResults || []).filter(qr => !qr.missionType || qr.missionType === 'knowledge');
+                    if (!qrs.length) return;
+                    if (!mcqByAnimal[aid]) mcqByAnimal[aid] = { questions: [], studentCount: 0 };
+                    mcqByAnimal[aid].studentCount++;
+                    qrs.forEach((qr, qi) => {
+                      if (!mcqByAnimal[aid].questions[qi]) {
+                        mcqByAnimal[aid].questions[qi] = { text: qr.question || `Question ${qi + 1}`, correct: 0, incorrect: 0 };
+                      }
+                      if (qr.question) mcqByAnimal[aid].questions[qi].text = qr.question;
+                      if (qr.correctOnFirstAttempt) mcqByAnimal[aid].questions[qi].correct++;
+                      else mcqByAnimal[aid].questions[qi].incorrect++;
+                    });
+                  });
+                });
+                const totalStu = students.length;
+                const entries = Object.entries(mcqByAnimal).sort(([a],[b]) => a.localeCompare(b));
+                if (!entries.length || !totalStu) return null;
+                const fmtAnimal = id => id.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                return (
+                  <div style={{ marginBottom:'1rem' }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', marginBottom:'0.75rem', paddingTop:'0.25rem' }}>
+                      <div style={{ flex:1, height:'2px', background:'linear-gradient(90deg,var(--t-eucalyptus),transparent)', borderRadius:'2px' }} />
+                      <p style={{ fontSize:'0.65rem', fontWeight:800, color:'var(--t-mid)', textTransform:'uppercase', letterSpacing:'0.1em', margin:0, whiteSpace:'nowrap' }}>MCQ Question Analysis</p>
+                      <div style={{ flex:1, height:'2px', background:'linear-gradient(270deg,var(--t-eucalyptus),transparent)', borderRadius:'2px' }} />
+                    </div>
+                    <div style={{ display:'flex', gap:'1rem', marginBottom:'0.75rem', justifyContent:'flex-end' }}>
+                      {[['#34A85A','Correct'],['#E8454A','Incorrect'],['#CCC','Not attempted']].map(([col,label]) => (
+                        <div key={label} style={{ display:'flex', alignItems:'center', gap:'0.3rem' }}>
+                          <div style={{ width:'10px', height:'10px', borderRadius:'50%', background:col }} />
+                          <span style={{ fontSize:'0.72rem', color:'#666' }}>{label}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', padding:'0.4rem 1rem', marginBottom:'0.25rem' }}>
+                      <span style={{ fontSize:'0.72rem', fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:'0.06em' }}>Question</span>
+                      <span style={{ fontSize:'0.72rem', fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:'0.06em' }}>Results</span>
+                    </div>
+                    <div style={{ display:'flex', flexDirection:'column', gap:'0.5rem' }}>
+                      {entries.map(([animalId, data]) => {
+                        const notAttempted = totalStu - data.studentCount;
+                        return (
+                          <div key={animalId} style={{ background:'var(--t-chalk)', borderRadius:'var(--t-r-md)', border:'1px solid var(--t-stone)', overflow:'hidden' }}>
+                            <div style={{ padding:'0.55rem 1rem', background:'linear-gradient(135deg,var(--t-foam) 0%,#E4EFE8 100%)', borderBottom:'1px solid var(--t-stone)', display:'flex', alignItems:'baseline', gap:'0.5rem' }}>
+                              <span style={{ fontSize:'0.85rem', fontWeight:700, color:'var(--t-deep)' }}>{fmtAnimal(animalId)}</span>
+                              <span style={{ fontSize:'0.72rem', color:'var(--t-slate)' }}>{data.studentCount} of {totalStu} students attempted</span>
+                            </div>
+                            <div style={{ padding:'0.5rem 0' }}>
+                              {data.questions.map((q, qi) => {
+                                const correctPct   = totalStu > 0 ? Math.round(q.correct / totalStu * 100) : 0;
+                                const incorrectPct = totalStu > 0 ? Math.round(q.incorrect / totalStu * 100) : 0;
+                                const notPct       = totalStu > 0 ? Math.round(notAttempted / totalStu * 100) : 0;
+                                return (
+                                  <div key={qi} style={{ display:'grid', gridTemplateColumns:'1fr 1fr', padding:'0.55rem 1rem', borderTop: qi > 0 ? '1px solid var(--t-stone)' : 'none', alignItems:'center', gap:'0.75rem' }}>
+                                    <p style={{ fontSize:'0.78rem', fontWeight:600, color:'var(--t-deep)', margin:0, lineHeight:1.4 }}>{q.text}</p>
+                                    <div>
+                                      <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', marginBottom:'0.3rem' }}>
+                                        <span style={{ fontSize:'0.72rem', fontWeight:700, color:'#34A85A', minWidth:'2.2rem' }}>{correctPct}%</span>
+                                        <div style={{ flex:1, height:'8px', borderRadius:'4px', overflow:'hidden', background:'#EEE', display:'flex' }}>
+                                          <div style={{ width:`${correctPct}%`, background:'#34A85A', transition:'width 0.4s' }} />
+                                          <div style={{ width:`${incorrectPct}%`, background:'#E8454A', transition:'width 0.4s' }} />
+                                          <div style={{ width:`${notPct}%`, background:'#D0D0D0', transition:'width 0.4s' }} />
+                                        </div>
+                                      </div>
+                                      <div style={{ display:'flex', gap:'0.65rem', fontSize:'0.68rem' }}>
+                                        <span style={{ color:'#34A85A', fontWeight:600 }}>{q.correct} correct</span>
+                                        <span style={{ color:'#E8454A', fontWeight:600 }}>{q.incorrect} incorrect</span>
+                                        <span style={{ color:'#999', fontWeight:600 }}>{notAttempted} not attempted</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
 
             </div>
           )}
@@ -1242,6 +1332,20 @@ export default function ClassDetailsScreen() {
                           {b.timestamp && <span style={{ fontSize:'0.65rem', color:'#aaa' }}>· {new Date(b.timestamp).toLocaleDateString('en-AU',{day:'numeric',month:'short'})}</span>}
                         </div>
                         {b.observation?.trim() && <p style={{ fontSize:'0.85rem', color:'#444', lineHeight:1.55, margin:'0 0 0.4rem' }}>{b.observation}</p>}
+                        {(b.quizResults||[]).length > 0 && (
+                          <div style={{ marginBottom:'0.6rem', background:'white', borderRadius:'8px', padding:'0.6rem 0.75rem', border:'1px solid #E8EDF0' }}>
+                            <div style={{ fontSize:'0.62rem', fontWeight:800, color:'#888', textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:'0.4rem' }}>MCQ Results</div>
+                            {(b.quizResults||[]).map((qr, qi) => (
+                              <div key={qi} style={{ marginBottom: qi < b.quizResults.length-1 ? '0.5rem' : 0, paddingBottom: qi < b.quizResults.length-1 ? '0.5rem' : 0, borderBottom: qi < b.quizResults.length-1 ? '1px solid #F0F0F0' : 'none' }}>
+                                <p style={{ fontSize:'0.75rem', color:'#555', margin:'0 0 0.2rem', fontWeight:600 }}>{qr.question}</p>
+                                <div style={{ display:'flex', alignItems:'center', gap:'0.4rem' }}>
+                                  <span style={{ fontSize:'0.65rem', fontWeight:800, color: qr.correctOnFirstAttempt ? '#059669' : '#DC2626' }}>{qr.correctOnFirstAttempt ? '✓ Correct' : '✗ Incorrect'}</span>
+                                  {qr.selectedAnswer && <span style={{ fontSize:'0.72rem', color:'#666', fontStyle:'italic' }}>— "{qr.selectedAnswer}"</span>}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                         {obs && (
                           <div>
                             <div style={{ display:'flex', gap:'0.75rem', flexWrap:'wrap', alignItems:'center', marginBottom:'0.3rem' }}>
