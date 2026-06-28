@@ -163,23 +163,9 @@ export default function CreateClassScreen() {
         </button>
       </div>
 
-      <div className="lms-two-col">
-        {/* Sidebar */}
-        <div className="lms-sidebar">
-          <div className="lms-sidebar-logo">
-            <p style={{ fontSize:'0.63rem', fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase', color:'rgba(255,255,255,0.4)', marginBottom:'0.15rem' }}>Teacher Portal</p>
-            <p style={{ fontSize:'0.82rem', fontWeight:600, color:'rgba(255,255,255,0.75)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{teacherEmail}</p>
-          </div>
-          <nav className="lms-nav">
-            <button className="lms-nav-item" onClick={() => setCurrentScreen('teacherDashboard')}>
-              <span className="lms-nav-icon">&#8592;</span> Dashboard
-            </button>
-          </nav>
-        </div>
-
-        {/* Main */}
-        <div className="lms-main">
-          <div className="lms-main-inner" style={{ maxWidth:'680px' }}>
+      {/* Main — no sidebar, centred single column */}
+      <div className="lms-main" style={{ flex:1, overflowY:'auto' }}>
+          <div style={{ maxWidth:'720px', width:'100%', margin:'0 auto' }}>
             <div style={{ marginBottom:'1.75rem' }}>
               <h2 className="heading-display" style={{ fontSize:'clamp(1.4rem, 2.5vw, 1.8rem)', color:'var(--t-deep)', lineHeight:1.2, marginBottom:'0.25rem' }}>Create a New Class</h2>
               <p style={{ color:'var(--t-slate)', fontSize:'0.85rem' }}>Students will join using the generated class code.</p>
@@ -285,7 +271,6 @@ export default function CreateClassScreen() {
           </div>
         </div>
       </div>
-    </div>
 
     {/* Who's Who modal */}
     {showWwzModal && (
