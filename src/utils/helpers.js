@@ -1,6 +1,7 @@
 import { MATHS_ANIMALS } from '../data/animalsMaths';
 import { PDHPE_ANIMALS } from '../data/animalsPdhpe';
 import { ENGLISH_ANIMALS } from '../data/animalsEnglish';
+import { animals } from '../data/animals';
 
 export const normaliseCode = (code) =>
   code.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 6);
@@ -134,4 +135,24 @@ export function calculateAnimalPoints(badge) {
   const observationPoints = Math.round(((behaviour + detail + writing) / 15) * 100);
   const quizPoints = (badge.quizResults || []).filter(q => q.correctOnFirstAttempt).length * 20;
   return observationPoints + quizPoints;
+}
+
+export function getCurrentQuestionTexts(animalId, subject) {
+  const texts = new Set();
+  const addFromQuestions = (questions) => {
+    (questions || []).forEach(q => {
+      if (q.stageVariants) Object.values(q.stageVariants).forEach(t => { if (t) texts.add(t); });
+      if (q.q) texts.add(q.q);
+    });
+  };
+  if (subject === 'maths') {
+    addFromQuestions(MATHS_ANIMALS[animalId]?.questions);
+  } else if (subject === 'pdhpe') {
+    addFromQuestions(PDHPE_ANIMALS[animalId]?.questions);
+  } else if (subject === 'english') {
+    addFromQuestions(ENGLISH_ANIMALS[animalId]?.questions);
+  } else {
+    addFromQuestions(animals.find(a => a.id === animalId)?.questions);
+  }
+  return texts;
 }

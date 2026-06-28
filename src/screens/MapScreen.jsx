@@ -157,7 +157,7 @@ export default function MapScreen() {
             <div style={{ fontSize:'3rem', marginBottom:'0.6rem' }}>🌍</div>
             <h2 className="heading-display" style={{ fontSize:'1.9rem', color:'var(--jungle-deep)', marginBottom:'0.5rem' }}>Make a Difference</h2>
             <p style={{ fontSize:'0.92rem', color:'#555', lineHeight:1.7, marginBottom:'0.4rem' }}>Before you finish, think about how you can help protect animals and the environment.</p>
-            <p style={{ fontSize:'0.95rem', fontWeight:600, color:'var(--jungle-deep)', marginBottom:'1rem' }}>Based on today's experience, what is ONE thing you can do to support conservation?</p>
+            <p style={{ fontSize:'0.95rem', fontWeight:600, color:'var(--jungle-deep)', marginBottom:'1rem' }}>Based on what you learned today, what is ONE thing you can do to help protect animals and the environment?</p>
             <textarea
               value={conservationStatement}
               onChange={e => setConservationStatement(e.target.value)}

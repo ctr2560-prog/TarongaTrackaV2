@@ -208,12 +208,22 @@ export default function ClassDetailsScreen() {
   const completedCount = students.filter(s=>s.completed).length;
   const completedStuds = students.filter(s=>s.completed);
   const avgQuizPct     = (() => {
-    const withData = students.filter(s => (s.badges||[]).some(b => (b.quizResults||[]).length > 0));
-    if (!withData.length) return 0;
-    return Math.round(withData.reduce((sum, s) => {
-      const allQR = (s.badges||[]).flatMap(b => b.quizResults||[]);
-      return sum + Math.round(allQR.filter(r => r.correctOnFirstAttempt === true).length / allQR.length * 100);
-    }, 0) / withData.length);
+    const qMap = {};
+    students.forEach(s => {
+      (s.badges||[]).forEach(b => {
+        const aid = b.animalId || 'unknown';
+        (b.quizResults||[])
+          .filter(qr => !qr.missionType || qr.missionType === 'knowledge')
+          .forEach((qr, qi) => {
+            const key = `${aid}||${qi}`;
+            if (!qMap[key]) qMap[key] = { correct: 0, total: 0 };
+            qMap[key].total++;
+            if (qr.correctOnFirstAttempt === true) qMap[key].correct++;
+          });
+      });
+    });
+    const rates = Object.values(qMap).filter(q => q.total > 0);
+    return rates.length > 0 ? Math.round(rates.reduce((s, q) => s + (q.correct / q.total * 100), 0) / rates.length) : 0;
   })();
 
   // ── CSV Export ──────────────────────────────────────────────────────────────
@@ -917,6 +927,11 @@ export default function ClassDetailsScreen() {
                         ) : students.map((s,i) => {
                           const badgeCount   = Array.isArray(s.badges) ? new Set(s.badges.map(b=>b.animalId).filter(Boolean)).size : 0;
                           const hasObs       = (s.badges||[]).some(b=>b.observation);
+                          const { qc: sQCorrect, qt: sQTotal } = (s.badges||[]).reduce((acc, b) => {
+                            (b.quizResults||[]).filter(qr => !qr.missionType || qr.missionType === 'knowledge').forEach(qr => { acc.qt++; if (qr.correctOnFirstAttempt === true) acc.qc++; });
+                            return acc;
+                          }, { qc: 0, qt: 0 });
+                          const studentQuizPct = sQTotal > 0 ? `${Math.round(sQCorrect / sQTotal * 100)}%` : ' - ';
                           const busy = studentActionBusy[s.id];
                           return (
                             <div key={s.name} style={{ display:'grid', gridTemplateColumns:'1.4fr 0.6fr 0.6fr 0.6fr 0.85fr 1.4fr 0.75fr 1.1fr', padding:'0.7rem 1rem', borderTop:'1px solid var(--t-stone)', alignItems:'center', background: i%2===0 ? 'var(--t-chalk)' : 'var(--t-parchment)' }}>
@@ -926,7 +941,7 @@ export default function ClassDetailsScreen() {
                               </div>
                               <div style={{ fontWeight:700, color:'var(--sunset-orange)', fontSize:'0.9rem' }}>{s.totalPoints||0}</div>
                               <div style={{ fontWeight:600, color:'var(--t-mid)', fontSize:'0.9rem' }}>{badgeCount}</div>
-                              <div style={{ fontWeight:600, color:'var(--t-mid)', fontSize:'0.85rem' }}>{s.quizPercentage!==undefined ? `${s.quizPercentage}%` : ' - '}</div>
+                              <div style={{ fontWeight:600, color:'var(--t-mid)', fontSize:'0.85rem' }}>{studentQuizPct}</div>
                               <div>{hasObs ? <button onClick={()=>setObsModal(s)} style={{ background:'var(--t-deep)', color:'white', border:'none', padding:'0.25rem 0.6rem', borderRadius:'6px', fontSize:'0.72rem', fontWeight:600, cursor:'pointer' }}>View</button> : <span style={{ color:'#bbb', fontSize:'0.75rem' }}> - </span>}</div>
                               <div>{s.conservationStatement ? <button onClick={()=>setConservationModal({name:s.name,text:s.conservationStatement})} style={{ background:'var(--t-deep)', color:'white', border:'none', padding:'0.25rem 0.6rem', borderRadius:'6px', fontSize:'0.72rem', fontWeight:600, cursor:'pointer' }}>View</button> : <span style={{ color:'#bbb', fontSize:'0.75rem' }}> - </span>}</div>
                               <div style={{ display:'flex', alignItems:'center', gap:'0.35rem' }}>
@@ -1184,10 +1199,10 @@ export default function ClassDetailsScreen() {
                               <span style={{ fontSize:'0.72rem', color:'var(--t-slate)' }}>{data.studentCount} of {totalStu} students attempted</span>
                             </div>
                             <div style={{ padding:'0.5rem 0' }}>
-                              {data.questions.map((q, qi) => {
-                                const correctPct   = totalStu > 0 ? Math.round(q.correct / totalStu * 100) : 0;
-                                const incorrectPct = totalStu > 0 ? Math.round(q.incorrect / totalStu * 100) : 0;
-                                const notPct       = totalStu > 0 ? Math.round(notAttempted / totalStu * 100) : 0;
+                              {data.questions.filter(q => q.correct + q.incorrect > 0).map((q, qi) => {
+                                const attempted    = q.correct + q.incorrect;
+                                const correctPct   = attempted > 0 ? Math.round(q.correct   / attempted * 100) : 0;
+                                const incorrectPct = attempted > 0 ? Math.round(q.incorrect / attempted * 100) : 0;
                                 return (
                                   <div key={qi} style={{ display:'grid', gridTemplateColumns:'1fr 1fr', padding:'0.55rem 1rem', borderTop: qi > 0 ? '1px solid var(--t-stone)' : 'none', alignItems:'center', gap:'0.75rem' }}>
                                     <p style={{ fontSize:'0.78rem', fontWeight:600, color:'var(--t-deep)', margin:0, lineHeight:1.4 }}>{q.text}</p>
@@ -1197,13 +1212,12 @@ export default function ClassDetailsScreen() {
                                         <div style={{ flex:1, height:'8px', borderRadius:'4px', overflow:'hidden', background:'#EEE', display:'flex' }}>
                                           <div style={{ width:`${correctPct}%`, background:'#34A85A', transition:'width 0.4s' }} />
                                           <div style={{ width:`${incorrectPct}%`, background:'#E8454A', transition:'width 0.4s' }} />
-                                          <div style={{ width:`${notPct}%`, background:'#D0D0D0', transition:'width 0.4s' }} />
                                         </div>
                                       </div>
                                       <div style={{ display:'flex', gap:'0.65rem', fontSize:'0.68rem' }}>
                                         <span style={{ color:'#34A85A', fontWeight:600 }}>{q.correct} correct</span>
                                         <span style={{ color:'#E8454A', fontWeight:600 }}>{q.incorrect} incorrect</span>
-                                        <span style={{ color:'#999', fontWeight:600 }}>{notAttempted} not attempted</span>
+                                        <span style={{ color:'#999', fontWeight:600 }}>{attempted} attempted</span>
                                       </div>
                                     </div>
                                   </div>

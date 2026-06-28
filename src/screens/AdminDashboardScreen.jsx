@@ -7,6 +7,7 @@ import { db, storage } from '../firebase';
 import { ref as storageRef, getDownloadURL } from 'firebase/storage';
 import { useApp } from '../context/AppContext';
 import { ZOOSNOOZ_ANIMALS } from '../data/zoosnoozAnimals';
+import { getCurrentQuestionTexts } from '../utils/helpers';
 
 function generateCode() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -29,6 +30,8 @@ function AnalyticsTab({ classes }) {
   const [students,       setStudents]       = useState(null);
   const [fetching,       setFetching]       = useState(false);
   const [schoolExpanded, setSchoolExpanded] = useState(false);
+  const [mcqExpanded,    setMcqExpanded]    = useState({});  // key: `${subject}||${animalId}`
+  const [mcqStage,       setMcqStage]       = useState({});  // key: `${subject}||${animalId}`
 
   // Fetch all student docs once
   useEffect(() => {
@@ -89,11 +92,33 @@ function AnalyticsTab({ classes }) {
     const students  = viewClasses.reduce((s, c) => s + c.studentCount, 0);
     const completed = viewClasses.reduce((s, c) => s + c.completedCount, 0);
     const badges    = viewClasses.reduce((s, c) => s + (c.totalBadges || 0), 0);
-    let wQSum = 0, wQCount = 0;
-    viewClasses.forEach(c => { if (c.quizAverage != null && c.completedCount > 0) { wQSum += c.quizAverage * c.completedCount; wQCount += c.completedCount; } });
-    const zzCount = viewClasses.filter(c => c.sessionType === 'zoosnooz').length;
-    return { total, students, completed, badges, avgQuiz: wQCount > 0 ? Math.round(wQSum / wQCount) : null, zzCount };
-  }, [viewClasses]);
+    const zzCount   = viewClasses.filter(c => c.sessionType === 'zoosnooz').length;
+    const qMap = {};
+    const currentTextsCache = {};
+    viewStudents.forEach(st => {
+      const subject = st._subject || '';
+      (st.badges || []).forEach(b => {
+        const aid = b.animalId || 'unknown';
+        (b.quizResults || [])
+          .filter(qr => !qr.missionType || qr.missionType === 'knowledge')
+          .forEach((qr) => {
+            const qtext = qr.question || '';
+            const key = `${subject}||${aid}||${qtext}`;
+            if (!qMap[key]) qMap[key] = { correct: 0, total: 0, subject, aid, qtext };
+            qMap[key].total++;
+            if (qr.correctOnFirstAttempt === true) qMap[key].correct++;
+          });
+      });
+    });
+    const qRates = Object.values(qMap).filter(q => {
+      if (q.total === 0) return false;
+      const cacheKey = `${q.aid}||${q.subject}`;
+      if (!currentTextsCache[cacheKey]) currentTextsCache[cacheKey] = getCurrentQuestionTexts(q.aid, q.subject);
+      return currentTextsCache[cacheKey].has(q.qtext);
+    });
+    const avgQuiz = qRates.length > 0 ? Math.round(qRates.reduce((s, q) => s + (q.correct / q.total * 100), 0) / qRates.length) : null;
+    return { total, students, completed, badges, avgQuiz, zzCount };
+  }, [viewClasses, viewStudents]);
 
   const animalVisits = useMemo(() => {
     const counts = {};
@@ -176,28 +201,41 @@ function AnalyticsTab({ classes }) {
     const schools = {};
     viewClasses.forEach(cls => {
       const s = cls.schoolName || 'Unknown';
-      if (!schools[s]) schools[s] = { name: s, classes: 0, students: 0, quizSum: 0, quizCount: 0, obsSum: 0, obsCount: 0 };
+      if (!schools[s]) schools[s] = { name: s, classes: 0, students: 0, qMap: {}, obsSum: 0, obsCount: 0 };
       schools[s].classes++;
       schools[s].students += cls.studentCount;
-      if (cls.quizAverage != null && cls.completedCount > 0) { schools[s].quizSum += cls.quizAverage * cls.completedCount; schools[s].quizCount += cls.completedCount; }
     });
     viewStudents.forEach(st => {
       const s = st._schoolName || 'Unknown';
       if (!schools[s]) return;
-      const addObs = (o) => { if (!o) return; schools[s].obsSum += ((o.behaviour||0)+(o.detail||0)+(o.writing||0))/15*100; schools[s].obsCount++; };
       const isZz = st._sessionType === 'zoosnooz' || !!(st.zzBadges?.length || st.zoosnooz);
+      const addObs = (o) => { if (!o) return; schools[s].obsSum += ((o.behaviour||0)+(o.detail||0)+(o.writing||0))/15*100; schools[s].obsCount++; };
       if (isZz) {
         if (st.zzBadges?.length) st.zzBadges.forEach(b => addObs(b.observationScore));
         else if (st.zoosnooz) ZOOSNOOZ_ANIMALS.forEach(a => addObs(st.zoosnooz[a.id]?.observationScore));
       } else {
-        (st.badges || []).forEach(b => addObs(b.observationScore));
+        (st.badges || []).forEach(b => {
+          addObs(b.observationScore);
+          const aid = b.animalId || 'unknown';
+          (b.quizResults || [])
+            .filter(qr => !qr.missionType || qr.missionType === 'knowledge')
+            .forEach((qr, qi) => {
+              const key = `${aid}||${qi}`;
+              if (!schools[s].qMap[key]) schools[s].qMap[key] = { correct: 0, total: 0 };
+              schools[s].qMap[key].total++;
+              if (qr.correctOnFirstAttempt === true) schools[s].qMap[key].correct++;
+            });
+        });
       }
     });
-    return Object.values(schools).map(s => ({
-      ...s,
-      quizAvg: s.quizCount > 0 ? Math.round(s.quizSum / s.quizCount) : null,
-      obsAvg:  s.obsCount  > 0 ? Math.round(s.obsSum  / s.obsCount)  : null,
-    })).sort((a, b) => (b.quizAvg ?? -1) - (a.quizAvg ?? -1));
+    return Object.values(schools).map(s => {
+      const rates = Object.values(s.qMap).filter(q => q.total > 0);
+      return {
+        ...s,
+        quizAvg: rates.length > 0 ? Math.round(rates.reduce((sum, q) => sum + (q.correct / q.total * 100), 0) / rates.length) : null,
+        obsAvg:  s.obsCount  > 0 ? Math.round(s.obsSum / s.obsCount) : null,
+      };
+    }).sort((a, b) => (b.quizAvg ?? -1) - (a.quizAvg ?? -1));
   }, [viewClasses, viewStudents]);
 
   const conStatements = useMemo(() => {
@@ -221,6 +259,62 @@ function AnalyticsTab({ classes }) {
     });
     return map;
   }, [viewClasses]);
+
+  const mcqAnalysis = useMemo(() => {
+    if (!students || view === 'zoosnooz') return null;
+    const classStageMap = {};
+    classes.forEach(c => { classStageMap[c.classCode] = c.stage ?? 'Unknown'; });
+    const data = {};
+    const subjectStageStudents = {};
+    viewStudents.forEach(st => {
+      if (st._sessionType === 'zoosnooz' || st._location === 'zoosnooz-sydney') return;
+      const subject = st._subject || 'unknown';
+      const stage   = classStageMap[st._classCode] ?? 'Unknown';
+      const sKey    = `${st._classCode}||${st.name || 'anon'}`;
+      if (!subjectStageStudents[subject]) subjectStageStudents[subject] = {};
+      if (!subjectStageStudents[subject][stage]) subjectStageStudents[subject][stage] = new Set();
+      subjectStageStudents[subject][stage].add(sKey);
+      const seenAnimals = new Set();
+      (st.badges || []).forEach(badge => {
+        const animalId   = badge.animalId || (badge.animal || '').toLowerCase().replace(/\s+/g, '-') || 'unknown';
+        const animalName = badge.animal || badge.animalId || 'Unknown';
+        const dedupKey   = `${animalId}||${stage}`;
+        if (seenAnimals.has(dedupKey)) return;
+        seenAnimals.add(dedupKey);
+        let qrs = [];
+        if (badge.quizResults?.length) {
+          qrs = badge.quizResults.filter(qr => !qr.missionType || qr.missionType === 'knowledge');
+        } else if (badge.quizQuestion || badge.question) {
+          qrs = [{ question: badge.quizQuestion || badge.question, correctOnFirstAttempt: badge.quizFirstAttempt === true }];
+        }
+        if (!qrs.length) return;
+        if (!data[subject])                           data[subject] = {};
+        if (!data[subject][animalId])                 data[subject][animalId] = { animalName, stages: {} };
+        if (!data[subject][animalId].stages[stage])   data[subject][animalId].stages[stage] = { studentsWithBadge: new Set(), qMap: {} };
+        const sd = data[subject][animalId].stages[stage];
+        sd.studentsWithBadge.add(sKey);
+        qrs.forEach((qr) => {
+          const qtext = qr.question || 'Unknown Question';
+          if (!sd.qMap[qtext]) sd.qMap[qtext] = { text: qtext, correct: 0, incorrect: 0 };
+          if (qr.correctOnFirstAttempt) sd.qMap[qtext].correct++;
+          else sd.qMap[qtext].incorrect++;
+        });
+      });
+    });
+    // Convert qMap → questions array with isOld flag; current questions first
+    Object.entries(data).forEach(([subject, animalMap]) => {
+      Object.entries(animalMap).forEach(([animalId, animalData]) => {
+        const currentTexts = getCurrentQuestionTexts(animalId, subject);
+        Object.values(animalData.stages).forEach(sd => {
+          sd.questions = Object.values(sd.qMap).map(q => ({
+            ...q,
+            isOld: !currentTexts.has(q.text),
+          })).sort((a, b) => (a.isOld ? 1 : 0) - (b.isOld ? 1 : 0));
+        });
+      });
+    });
+    return { data, subjectStageStudents };
+  }, [viewStudents, view, students, classes]);
 
   const exportCSV = () => {
     const rows = [['Student Name','Class','School','Session Type','Quiz %','Badges','Completed']];
@@ -505,6 +599,133 @@ function AnalyticsTab({ classes }) {
               </div>
             </div>
           )}
+
+          {/* MCQ Analysis per Subject */}
+          {view !== 'zoosnooz' && mcqAnalysis && (() => {
+            const { data, subjectStageStudents } = mcqAnalysis;
+            const subjectOrder = subjectFilter !== 'all'
+              ? [subjectFilter]
+              : Object.keys(data).sort((a, b) => (SUBJECT_LABELS[a] || a).localeCompare(SUBJECT_LABELS[b] || b));
+            const hasData = subjectOrder.some(sub => data[sub] && Object.keys(data[sub]).length);
+            const fmtAnimal = id => id.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+            return (
+              <div style={{ background:'white', borderRadius:'var(--t-r-md)', border:'1px solid var(--t-mist)', padding:'1.25rem' }}>
+                <h3 style={{ fontSize:'1rem', fontWeight:700, color:'var(--t-deep)', margin:'0 0 0.25rem' }}>MCQ Question Analysis</h3>
+                <p style={{ color:'var(--t-slate)', fontSize:'0.78rem', margin:'0 0 1rem' }}>Per subject — select an animal to see question results by stage.</p>
+                {!hasData && (
+                  <p style={{ color:'var(--t-ash)', fontSize:'0.82rem', fontStyle:'italic' }}>No per-question quiz data found for this view. Data appears once students complete sessions with individual question tracking.</p>
+                )}
+                {subjectOrder.map(subject => {
+                  if (!data[subject]) return null;
+                  const animalEntries = Object.entries(data[subject]).sort(([a],[b]) => fmtAnimal(a).localeCompare(fmtAnimal(b)));
+                  if (!animalEntries.length) return null;
+                  return (
+                    <div key={subject} style={{ marginBottom: subjectOrder.length > 1 ? '1.5rem' : 0 }}>
+                      {subjectOrder.length > 1 && (
+                        <div style={{ fontSize:'0.68rem', fontWeight:800, color:'var(--t-ash)', textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:'0.65rem', borderBottom:'1px solid var(--t-mist)', paddingBottom:'0.4rem' }}>
+                          {SUBJECT_LABELS[subject] || subject}
+                        </div>
+                      )}
+                      <div style={{ display:'flex', flexDirection:'column', gap:'0.6rem' }}>
+                        {animalEntries.map(([animalId, animalData]) => {
+                          const cardKey  = `${subject}||${animalId}`;
+                          const expanded = !!mcqExpanded[cardKey];
+                          const stages   = Object.keys(animalData.stages).sort((a,b) => String(a).localeCompare(String(b)));
+                          const selStage = mcqStage[cardKey] || stages[0] || '';
+                          const sd       = animalData.stages[selStage];
+                          const stageTotalStudents = subjectStageStudents[subject]?.[selStage]?.size || 0;
+                          return (
+                            <div key={animalId} style={{ border:'1px solid var(--t-mist)', borderRadius:'var(--t-r-sm)', overflow:'hidden' }}>
+                              <button
+                                onClick={() => setMcqExpanded(prev => ({ ...prev, [cardKey]: !prev[cardKey] }))}
+                                style={{ width:'100%', display:'flex', alignItems:'center', padding:'0.75rem 1rem', background: expanded ? 'var(--t-foam)' : 'var(--t-chalk)', border:'none', cursor:'pointer', textAlign:'left', gap:'0.75rem' }}>
+                                <div style={{ display:'flex', alignItems:'center', gap:'0.6rem', flexShrink:0 }}>
+                                  <span style={{ fontSize:'0.92rem', fontWeight:700, color:'var(--t-deep)' }}>{fmtAnimal(animalId)}</span>
+                                  <span style={{ fontSize:'0.72rem', color:'var(--t-ash)', fontWeight:400 }}>
+                                    {(() => {
+                                      const total = Object.values(animalData.stages).reduce((sum, s) => sum + s.studentsWithBadge.size, 0);
+                                      return `${total} badge${total !== 1 ? 's' : ''} earned`;
+                                    })()}
+                                  </span>
+                                </div>
+                                {stages.length > 1 && (() => {
+                                  let totalCorrect = 0, totalIncorrect = 0;
+                                  stages.forEach(st => {
+                                    (animalData.stages[st].questions || []).forEach(q => {
+                                      totalCorrect   += q.correct;
+                                      totalIncorrect += q.incorrect;
+                                    });
+                                  });
+                                  const totalAttempts = totalCorrect + totalIncorrect;
+                                  const cPct = totalAttempts > 0 ? Math.round(totalCorrect   / totalAttempts * 100) : 0;
+                                  const iPct = totalAttempts > 0 ? Math.round(totalIncorrect / totalAttempts * 100) : 0;
+                                  const rPct = Math.max(0, 100 - cPct - iPct);
+                                  return (
+                                    <div style={{ flex:1, display:'flex', borderRadius:'3px', overflow:'hidden', height:'7px' }}>
+                                      {cPct > 0 && <div style={{ width:`${cPct}%`, background:'#22C55E' }} />}
+                                      {iPct > 0 && <div style={{ width:`${iPct}%`, background:'#EF4444' }} />}
+                                      {rPct > 0 && <div style={{ width:`${rPct}%`, background:'#D1D5DB' }} />}
+                                    </div>
+                                  );
+                                })()}
+                                <span style={{ fontSize:'0.78rem', color:'var(--t-mid)', fontWeight:600, flexShrink:0 }}>{expanded ? '▲ Hide' : '▼ Show'}</span>
+                              </button>
+                              {expanded && (
+                                <div style={{ padding:'1rem', borderTop:'1px solid var(--t-mist)' }}>
+                                  {stages.length > 1 && (
+                                    <div style={{ display:'flex', gap:'0.4rem', flexWrap:'wrap', marginBottom:'1rem' }}>
+                                      <span style={{ fontSize:'0.72rem', fontWeight:600, color:'var(--t-slate)', alignSelf:'center', marginRight:'0.25rem' }}>Stage:</span>
+                                      {stages.map(s => (
+                                        <button key={s}
+                                          onClick={() => setMcqStage(prev => ({ ...prev, [cardKey]: s }))}
+                                          style={{ padding:'0.25rem 0.7rem', borderRadius:'var(--t-r-pill)', border:`1.5px solid ${selStage===s ? 'var(--t-mid)' : 'var(--t-mist)'}`, background: selStage===s ? 'var(--t-mid)' : 'white', color: selStage===s ? 'white' : 'var(--t-slate)', fontSize:'0.78rem', fontWeight:600, cursor:'pointer' }}>
+                                          {s}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  )}
+                                  {sd ? (
+                                    <div style={{ display:'flex', flexDirection:'column', gap:'0.75rem' }}>
+                                      {sd.questions.filter(q => q.correct + q.incorrect > 0).map((q, qi) => {
+                                        const total        = q.correct + q.incorrect;
+                                        const correctPct   = total > 0 ? Math.round((q.correct   / total) * 100) : 0;
+                                        const incorrectPct = total > 0 ? Math.round((q.incorrect / total) * 100) : 0;
+                                        return (
+                                          <div key={qi} style={{ opacity: q.isOld ? 0.8 : 1 }}>
+                                            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'0.3rem', gap:'0.5rem' }}>
+                                              <div style={{ display:'flex', alignItems:'center', gap:'0.4rem', flex:1, flexWrap:'wrap' }}>
+                                                <span style={{ fontSize:'0.8rem', color: q.isOld ? '#B45309' : 'var(--t-deep)', fontWeight:500 }}>{q.text}</span>
+                                                {q.isOld && <span style={{ fontSize:'0.62rem', fontWeight:700, color:'#92400E', background:'#FEF3C7', border:'1px solid #F59E0B', borderRadius:'3px', padding:'1px 5px', flexShrink:0 }}>previous</span>}
+                                              </div>
+                                              <span style={{ fontSize:'0.72rem', color:'var(--t-ash)', flexShrink:0 }}>{total} attempted</span>
+                                            </div>
+                                            <div style={{ display:'flex', borderRadius:'4px', overflow:'hidden', height:'18px', opacity: q.isOld ? 0.65 : 1 }}>
+                                              {correctPct > 0 && <div style={{ width:`${correctPct}%`, background:'#22C55E', display:'flex', alignItems:'center', justifyContent:'center' }}><span style={{ fontSize:'0.65rem', color:'white', fontWeight:700 }}>{correctPct > 8 ? `${correctPct}%` : ''}</span></div>}
+                                              {incorrectPct > 0 && <div style={{ width:`${incorrectPct}%`, background:'#EF4444', display:'flex', alignItems:'center', justifyContent:'center' }}><span style={{ fontSize:'0.65rem', color:'white', fontWeight:700 }}>{incorrectPct > 8 ? `${incorrectPct}%` : ''}</span></div>}
+                                            </div>
+                                            <div style={{ display:'flex', gap:'1rem', marginTop:'0.25rem' }}>
+                                              <span style={{ fontSize:'0.68rem', color:'#16A34A' }}>✓ {q.correct} correct</span>
+                                              <span style={{ fontSize:'0.68rem', color:'#DC2626' }}>✗ {q.incorrect} incorrect</span>
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  ) : (
+                                    <p style={{ color:'var(--t-ash)', fontSize:'0.78rem', margin:0 }}>No data for this stage.</p>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
 
         </>)}
 
@@ -1255,6 +1476,37 @@ function OverviewTab({ classes, loading, onClassClick }) {
   const [dateFilter,    setDateFilter]    = useState('all');
   const [subjectFilter, setSubjectFilter] = useState('all');
   const [deletingClass, setDeletingClass] = useState(null);
+  const [avgQuizBadges, setAvgQuizBadges] = useState(null);
+
+  useEffect(() => {
+    if (!classes.length) return;
+    let cancelled = false;
+    (async () => {
+      const qMap = {};
+      for (const cls of classes) {
+        try {
+          const snap = await getDocs(collection(db, 'classes', cls.classCode, 'students'));
+          snap.docs.forEach(d => {
+            (d.data().badges || []).forEach(b => {
+              const aid = b.animalId || 'unknown';
+              (b.quizResults || [])
+                .filter(qr => !qr.missionType || qr.missionType === 'knowledge')
+                .forEach((qr, qi) => {
+                  const key = `${aid}||${qi}`;
+                  if (!qMap[key]) qMap[key] = { correct: 0, total: 0 };
+                  qMap[key].total++;
+                  if (qr.correctOnFirstAttempt === true) qMap[key].correct++;
+                });
+            });
+          });
+        } catch {}
+      }
+      if (cancelled) return;
+      const rates = Object.values(qMap).filter(q => q.total > 0);
+      setAvgQuizBadges(rates.length > 0 ? Math.round(rates.reduce((s, q) => s + (q.correct / q.total * 100), 0) / rates.length) : null);
+    })();
+    return () => { cancelled = true; };
+  }, [classes]);
 
   const deleteClass = async (e, cls) => {
     e.stopPropagation();
@@ -1284,9 +1536,7 @@ function OverviewTab({ classes, loading, onClassClick }) {
 
   const totalStudents = classes.reduce((s,c) => s+c.studentCount, 0);
   const uniqueSchools = new Set(classes.map(c=>c.schoolName).filter(Boolean)).size;
-  let wQSum=0, wQCount=0;
-  classes.forEach(c => { if (c.quizAverage != null && c.completedCount > 0) { wQSum+=c.quizAverage*c.completedCount; wQCount+=c.completedCount; } });
-  const avgQuiz = wQCount > 0 ? Math.round(wQSum/wQCount) : 0;
+  const avgQuiz = avgQuizBadges ?? 0;
   const totalBadges = classes.reduce((s,c)=>s+(c.totalBadges||0), 0);
 
   if (loading) return (
@@ -1932,7 +2182,7 @@ export default function AdminDashboardScreen() {
       </div>
 
       {/* Content */}
-      <div style={{ flex:1, overflowY:'auto', padding:'1.25rem 1.5rem' }}>
+      <div style={{ flex:1, minHeight:0, overflowY:'auto', padding:'1.25rem 1.5rem' }}>
         <div style={{ maxWidth:'960px', margin:'0 auto' }}>
           {tab === 'overview'    && <OverviewTab classes={classes} loading={loading} onClassClick={code=>{setSelectedAdminClass(code);setCurrentScreen('adminClassView');}} />}
           {tab === 'analytics'   && <AnalyticsTab classes={classes} />}

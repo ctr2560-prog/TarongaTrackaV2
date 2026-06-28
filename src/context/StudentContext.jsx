@@ -341,16 +341,19 @@ export function StudentProvider({ children }) {
     if (wc < minW) { alert(`Your response needs at least ${minW} words. You have ${wc}.`); return; }
 
     const stageQs = getStageQuestions(currentAnimal, classStage, classSubject);
-    const quizResults = stageQs.map((q, i) => {
-      const opts = q.stageOptions?.[classStage] || q.options || [];
-      const selIdx = firstAttemptAnswers[i];
-      return {
-        question: q.stageVariants?.[classStage] || q.q || q.question || 'Question unavailable',
-        correctOnFirstAttempt: firstAttemptResults[i] === true,
-        selectedAnswer: selIdx !== undefined ? (opts[selIdx] || null) : null,
-        missionType: 'knowledge',
-      };
-    });
+    const quizResults = stageQs
+      .map((q, i) => {
+        if (firstAttemptResults[i] === undefined) return null;
+        const opts = q.stageOptions?.[classStage] || q.options || [];
+        const selIdx = firstAttemptAnswers[i];
+        return {
+          question: q.stageVariants?.[classStage] || q.q || q.question || 'Question unavailable',
+          correctOnFirstAttempt: firstAttemptResults[i] === true,
+          selectedAnswer: selIdx !== undefined ? (opts[selIdx] || null) : null,
+          missionType: 'knowledge',
+        };
+      })
+      .filter(Boolean);
 
     const observationScore = buildObservationScore(observation.trim(), currentAnimal.id, classStage, classSubject);
 

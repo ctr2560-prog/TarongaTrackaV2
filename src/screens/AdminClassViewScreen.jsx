@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { collection, doc, getDoc, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useApp } from '../context/AppContext';
@@ -103,7 +103,7 @@ export default function AdminClassViewScreen() {
   );
 
   return (
-    <div style={{ position:'fixed', inset:0, background:'var(--t-foam)', display:'flex', flexDirection:'column', fontFamily:'var(--t-font)' }}>
+    <div style={{ position:'fixed', inset:0, background:'var(--t-foam)', display:'grid', gridTemplateRows:'auto 1fr', fontFamily:'var(--t-font)' }}>
 
       {/* Header */}
       <div style={headerStyle}>
@@ -123,7 +123,7 @@ export default function AdminClassViewScreen() {
       </div>
 
       {/* Content */}
-      <div style={{ flex:1, overflowY:'auto', padding:'1.25rem', display:'flex', flexDirection:'column', gap:'1.25rem' }}>
+      <div style={{ overflowY:'auto', padding:'1.25rem', display:'flex', flexDirection:'column', gap:'1.25rem' }}>
 
         {/* KPI row */}
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(120px, 1fr))', gap:'0.75rem' }}>
@@ -168,8 +168,8 @@ export default function AdminClassViewScreen() {
                     const sAvgD = allObs.length ? (allObs.reduce((t,b)=>t+(b.observationScore.detail||0),0)/allObs.length).toFixed(1) : ' - ';
                     const sAvgW = allObs.length ? (allObs.reduce((t,b)=>t+(b.observationScore.writing||0),0)/allObs.length).toFixed(1) : ' - ';
                     return (
-                      <>
-                        <tr key={s.id} onClick={() => setExpanded(isExpanded ? null : s.id)} style={{ cursor:'pointer', background: isExpanded ? 'var(--t-foam)' : 'white', transition:'background 0.15s' }}>
+                      <Fragment key={s.id}>
+                        <tr onClick={() => setExpanded(isExpanded ? null : s.id)} style={{ cursor:'pointer', background: isExpanded ? 'var(--t-foam)' : 'white', transition:'background 0.15s' }}>
                           <td style={tdStyle}>
                             <div style={{ fontWeight:600 }}>{s.name || s.id}</div>
                             {s.name !== s.id && <div style={{ fontSize:'0.68rem', color:'var(--t-ash)', fontFamily:'monospace' }}>{s.id}</div>}
@@ -190,7 +190,7 @@ export default function AdminClassViewScreen() {
                         {isExpanded && (
                           <tr key={`${s.id}-exp`}>
                             <td colSpan={7} style={{ padding:'0 0 0 1rem', background:'var(--t-foam)', borderBottom:'2px solid var(--t-mist)' }}>
-                              <div style={{ padding:'0.85rem', display:'flex', flexDirection:'column', gap:'0.75rem' }}>
+                              <div style={{ padding:'0.85rem', display:'flex', flexDirection:'column', gap:'0.75rem', maxHeight:'360px', overflowY:'auto' }}>
                                 {/* Badge observations */}
                                 {(s.badges||[]).map((b, i) => {
                                   const o = b.observationScore || {};
@@ -235,7 +235,7 @@ export default function AdminClassViewScreen() {
                             </td>
                           </tr>
                         )}
-                      </>
+                      </Fragment>
                     );
                   })}
                 </tbody>
