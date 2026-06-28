@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { doc, onSnapshot, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, setDoc, serverTimestamp, increment } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useApp } from './AppContext';
 import { animals as hardcodedAnimals } from '../data/animals';
@@ -425,6 +425,16 @@ export function StudentProvider({ children }) {
       setActivityCompleted(true);
       setIsSubmittingActivity(false);
       setCurrentScreen('submissionComplete');
+
+      // Award 10 points to the school (non-blocking)
+      try {
+        const classSnap = await getDoc(doc(db, 'classes', code));
+        const schoolName = classSnap.data()?.schoolName;
+        if (schoolName) {
+          const schoolId = schoolName.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+          await setDoc(doc(db, 'schools', schoolId), { name: schoolName, totalPoints: increment(10), lastUpdated: serverTimestamp() }, { merge: true });
+        }
+      } catch {}
     } catch (err) {
       console.error('Submission error:', err);
       setIsSubmittingActivity(false);

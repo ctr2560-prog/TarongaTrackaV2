@@ -13,6 +13,7 @@ export { default as StudentJoinScreen }       from './StudentJoinScreen';
 export { default as StudentLoadingScreen }    from './StudentLoadingScreen';
 export { default as TeacherLoginScreen }      from './TeacherLoginScreen';
 export { default as TeacherDashboardScreen }  from './TeacherDashboardScreen';
+export { default as CreateClassScreen }       from './CreateClassScreen';
 export { default as ClassDetailsScreen }      from './ClassDetailsScreen';
 export { default as AdminLoginScreen }        from './AdminLoginScreen';
 export { default as AdminDashboardScreen }    from './AdminDashboardScreen';
