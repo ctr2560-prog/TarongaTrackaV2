@@ -244,7 +244,7 @@ export default function TeacherDashboardScreen() {
             <button className="lms-nav-item" onClick={() => setCurrentScreen('createClass')}><span className="lms-nav-icon">+</span> Create Class</button>
             <button className="lms-nav-item" onClick={() => { const el = document.getElementById('t-classes-section'); el?.scrollIntoView({ behavior:'smooth' }); }}><span className="lms-nav-icon">○</span> My Classes</button>
             <button className="lms-nav-item" onClick={() => window.open('https://www.wildlybytaronga.com.au', '_blank')}><span className="lms-nav-icon">✦</span> <WildlyLabel /></button>
-            <button className="lms-nav-item" onClick={() => window.open('https://www.taronga.org.au/learn', '_blank')}><span className="lms-nav-icon">◎</span> Taronga Programs</button>
+            <button className="lms-nav-item" onClick={() => window.open('https://www.taronga.org.au/learn', '_blank')}><span className="lms-nav-icon">◎</span> Book Excursion</button>
           </nav>
           <p className="lms-nav-group-label" style={{ marginTop:'1rem' }}>Account</p>
           <nav className="lms-nav">
