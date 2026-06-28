@@ -25,6 +25,10 @@ const MILESTONES = [
   { points: 1000, label: 'Conservation partner' },
 ];
 
+const SvgPlus    = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
+const SvgLayers  = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>;
+const SvgHelpCircle = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17" strokeWidth="2.5"/></svg>;
+const SvgGlobe   = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>;
 const SvgTrash = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>;
 const SvgTree  = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22v-6"/><path d="M8 16l4-4 4 4"/><path d="M6 12l6-6 6 6"/><path d="M4 8l8-6 8 6"/></svg>;
 const SvgSearch = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>;
@@ -271,16 +275,16 @@ export default function TeacherDashboardScreen() {
             {/* Quick actions */}
             <div style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:'0.75rem', marginBottom:'1.5rem' }}>
               {[
-                { icon:'+', label:'Create Class', sub:'New session', action: () => setCurrentScreen('createClass'), color:'var(--t-mid)' },
-                { icon:'◈', label:'Pre/Post Visit', sub:'Learning resources', action: () => {}, color:'#0369A1' },
-                { icon:'?', label:'How To', sub:'Guides & tutorials', action: () => {}, color:'#7C3AED' },
-                { icon:'✦', label:'Wildly', sub:'by Taronga', action: () => window.open('https://www.wildlybytaronga.com.au', '_blank'), color:'#D97706' },
+                { icon:<SvgPlus/>, label:'Create Class', sub:'New session', action: () => setCurrentScreen('createClass'), color:'var(--t-mid)' },
+                { icon:<SvgLayers/>, label:'Pre/Post Visit', sub:'Learning resources', action: () => {}, color:'#0369A1' },
+                { icon:<SvgHelpCircle/>, label:'How To', sub:'Guides & tutorials', action: () => {}, color:'#7C3AED' },
+                { icon:<SvgGlobe/>, label:'Wildly', sub:'by Taronga', action: () => window.open('https://www.wildlybytaronga.com.au', '_blank'), color:'#D97706' },
               ].map(btn => (
                 <button key={btn.label} onClick={btn.action}
                   style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'0.5rem', padding:'1.25rem 0.75rem', borderRadius:'var(--t-r-md)', border:'1px solid var(--t-stone)', background:'white', cursor:'pointer', boxShadow:'var(--t-shadow-sm)', transition:'all 0.18s', textAlign:'center' }}
                   onMouseEnter={e => { e.currentTarget.style.borderColor=btn.color; e.currentTarget.style.boxShadow=`0 4px 16px rgba(0,0,0,0.1)`; e.currentTarget.style.transform='translateY(-2px)'; }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor='var(--t-stone)'; e.currentTarget.style.boxShadow='var(--t-shadow-sm)'; e.currentTarget.style.transform='none'; }}>
-                  <div style={{ fontSize:'1.75rem', lineHeight:1 }}>{btn.icon}</div>
+                  <div style={{ width:'32px', height:'32px', display:'flex', alignItems:'center', justifyContent:'center', color:btn.color }}>{btn.icon}</div>
                   <div>
                     <div style={{ fontSize:'0.8rem', fontWeight:700, color:'var(--t-deep)', lineHeight:1.2 }}>{btn.label}</div>
                     <div style={{ fontSize:'0.68rem', color:'var(--t-ash)', marginTop:'0.15rem' }}>{btn.sub}</div>
