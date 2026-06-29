@@ -8,6 +8,14 @@
         { "fieldPath": "createdAt", "order": "DESCENDING" },
         { "fieldPath": "__name__", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "challengeSubmissions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "teacherEmail", "order": "ASCENDING" },
+        { "fieldPath": "submittedAt", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
