@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, getDocs, collection, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import { useApp } from '../context/AppContext';
 import LegalModal from '../components/LegalModal';
@@ -16,6 +16,10 @@ export default function TeacherLoginScreen() {
   const [status,    setStatus]    = useState('idle'); // 'idle' | 'loading' | 'error' | 'reset-sent'
   const [errorMsg,  setErrorMsg]  = useState('');
   const [legalDoc,  setLegalDoc]  = useState(null); // 'privacy' | 'terms' | null
+  const [schoolInput,  setSchoolInput]  = useState('');
+  const [allSchools,   setAllSchools]   = useState([]);
+  const [schoolSugs,   setSchoolSugs]   = useState([]);
+  const [showSugs,     setShowSugs]     = useState(false);
 
   const switchMode = (next) => {
     setMode(next);
@@ -23,10 +27,24 @@ export default function TeacherLoginScreen() {
     setErrorMsg('');
     setPassword('');
     setConfirm('');
+    setSchoolInput('');
   };
 
+  useEffect(() => {
+    if (mode !== 'register') return;
+    getDocs(collection(db, 'schools'))
+      .then(snap => setAllSchools(snap.docs.map(d => (d.data().name || '').trim()).filter(Boolean)))
+      .catch(() => {});
+  }, [mode]);
+
+  useEffect(() => {
+    const q = schoolInput.trim().toLowerCase();
+    if (!q) { setSchoolSugs([]); return; }
+    setSchoolSugs(allSchools.filter(s => s.toLowerCase().includes(q)));
+  }, [schoolInput, allSchools]);
+
   const isLoginValid    = email.trim().includes('@') && password.length > 0;
-  const isRegisterValid = email.trim().includes('@') && password.length >= 6 && password === confirm;
+  const isRegisterValid = email.trim().includes('@') && password.length >= 6 && password === confirm && schoolInput.trim().length > 1;
 
   const handleSignIn = async () => {
     if (email.trim().toLowerCase() === 'demo@zoo') {
@@ -59,6 +77,7 @@ export default function TeacherLoginScreen() {
       await createUserWithEmailAndPassword(auth, email.trim(), password);
       await setDoc(doc(db, 'teachers', email.trim().toLowerCase()), {
         email: email.trim().toLowerCase(),
+        schoolName: schoolInput.trim(),
         commsOptIn,
         createdAt: serverTimestamp(),
       }, { merge: true });
@@ -171,6 +190,41 @@ export default function TeacherLoginScreen() {
 
         {!isLogin && (
           <>
+            <label style={{ display:'block', fontSize:'0.82rem', fontWeight:600, color:'var(--t-deep)', marginBottom:'0.35rem' }}>Your School</label>
+            <div style={{ position:'relative', marginBottom:'0.75rem' }}>
+              <input
+                type="text"
+                value={schoolInput}
+                onChange={e => { setSchoolInput(e.target.value); setShowSugs(true); setStatus('idle'); }}
+                onFocus={() => setShowSugs(true)}
+                onBlur={() => setTimeout(() => setShowSugs(false), 150)}
+                placeholder="Start typing your school name…"
+                style={{ width:'100%', padding:'0.75rem 1rem', borderRadius:'var(--t-r-md)', border:'2px solid #E5E5E5', fontSize:'1rem', fontFamily:'DM Sans, sans-serif', boxSizing:'border-box', outline:'none' }}
+                onFocusCapture={e => e.target.style.borderColor = 'var(--t-mid)'}
+                onBlurCapture={e  => e.target.style.borderColor = '#E5E5E5'}
+                disabled={status === 'loading'}
+              />
+              {showSugs && schoolInput.trim().length > 0 && (
+                <div style={{ position:'absolute', top:'calc(100% + 4px)', left:0, right:0, background:'white', border:'1.5px solid #E5E5E5', borderRadius:'var(--t-r-md)', boxShadow:'0 8px 24px rgba(0,0,0,0.12)', zIndex:20, maxHeight:'200px', overflowY:'auto' }}>
+                  {schoolSugs.map(s => (
+                    <button key={s} onMouseDown={() => { setSchoolInput(s); setShowSugs(false); }}
+                      style={{ display:'block', width:'100%', padding:'0.65rem 1rem', background:'none', border:'none', textAlign:'left', fontSize:'0.9rem', cursor:'pointer', color:'var(--t-deep)', fontFamily:'DM Sans, sans-serif' }}
+                      onMouseEnter={e => e.currentTarget.style.background='#F5F5F5'}
+                      onMouseLeave={e => e.currentTarget.style.background='none'}>
+                      {s}
+                    </button>
+                  ))}
+                  {!schoolSugs.some(s => s.toLowerCase() === schoolInput.trim().toLowerCase()) && (
+                    <button onMouseDown={() => { setShowSugs(false); }}
+                      style={{ display:'block', width:'100%', padding:'0.65rem 1rem', background:'none', border:'none', borderTop: schoolSugs.length ? '1px solid #F0F0F0' : 'none', textAlign:'left', fontSize:'0.9rem', cursor:'pointer', color:'var(--t-mid)', fontFamily:'DM Sans, sans-serif', fontWeight:600 }}
+                      onMouseEnter={e => e.currentTarget.style.background='#F0FFF4'}
+                      onMouseLeave={e => e.currentTarget.style.background='none'}>
+                      + Add "{schoolInput.trim()}"
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
             <label style={{ display:'flex', gap:'0.65rem', alignItems:'flex-start', marginBottom:'0.85rem', cursor:'pointer' }}>
               <input
                 type="checkbox"

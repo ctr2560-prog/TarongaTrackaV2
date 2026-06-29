@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { auth } from '../firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '../firebase';
 
 const AppContext = createContext(null);
 
@@ -41,6 +43,7 @@ export function AppProvider({ children }) {
   const [teacher,     setTeacher]     = useState(null);   // Firebase User | null
   const [authLoading, setAuthLoading] = useState(true);   // true until first auth state known
   const [demoMode,    setDemoMode]    = useState(false);
+  const [teacherProfile, setTeacherProfile] = useState(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -50,6 +53,14 @@ export function AppProvider({ children }) {
     });
     return unsubscribe;
   }, []);
+
+  useEffect(() => {
+    if (!teacherEmail) { setTeacherProfile(null); return; }
+    const unsub = onSnapshot(doc(db, 'teachers', teacherEmail), snap => {
+      setTeacherProfile(snap.exists() ? snap.data() : null);
+    }, () => setTeacherProfile(null));
+    return () => unsub();
+  }, [teacherEmail]);
 
   const clearStudentSession = () => {
     ['tarongaStudentName','tarongaClassCode','tarongaClassStage','tarongaClassSubject',
@@ -85,7 +96,7 @@ export function AppProvider({ children }) {
       adminAccessCode,   setAdminAccessCode,
       selectedClass,     setSelectedClass,
       selectedAdminClass, setSelectedAdminClass,
-      teacher,       signOutTeacher, authLoading, demoMode, setDemoMode,
+      teacher,       signOutTeacher, authLoading, demoMode, setDemoMode, teacherProfile,
       clearStudentSession,
       docViewCode,   setDocViewCode,
     }}>

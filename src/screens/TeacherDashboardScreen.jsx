@@ -77,7 +77,7 @@ function normalizeSchoolId(name) {
 }
 
 export default function TeacherDashboardScreen() {
-  const { setCurrentScreen, teacherEmail, setSelectedClass, teacher, authLoading, signOutTeacher, demoMode } = useApp();
+  const { setCurrentScreen, teacherEmail, setSelectedClass, teacher, authLoading, signOutTeacher, demoMode, teacherProfile } = useApp();
 
   useEffect(() => {
     if (!authLoading && !teacher && !demoMode) setCurrentScreen('teacherLogin');
@@ -118,6 +118,13 @@ export default function TeacherDashboardScreen() {
   const [uploadSuccess,     setUploadSuccess]     = useState(false);
   const fileInputRef = useRef(null);
 
+  // Set school nudge
+  const [setSchoolInput,    setSetSchoolInput]    = useState('');
+  const [setSchoolSugs,     setSetSchoolSugs]     = useState([]);
+  const [showSetSchoolSugs, setShowSetSchoolSugs] = useState(false);
+  const [allSchools,        setAllSchools]        = useState([]);
+  const [savingSchool,      setSavingSchool]      = useState(false);
+
   // Classes listener
   useEffect(() => {
     if (!teacherEmail.trim()) return;
@@ -156,7 +163,7 @@ export default function TeacherDashboardScreen() {
   }, [teacherClasses]);
 
   // School points
-  const primarySchool = teacherClasses.find(c => !c.archived)?.schoolName || '';
+  const primarySchool = teacherProfile?.schoolName || teacherClasses.find(c => !c.archived)?.schoolName || '';
   useEffect(() => {
     if (!primarySchool) return;
     const sid = normalizeSchoolId(primarySchool);
@@ -213,6 +220,14 @@ export default function TeacherDashboardScreen() {
     });
   }, [teacherEmail]);
 
+  // Load schools for set-school nudge autocomplete
+  useEffect(() => {
+    if (teacherProfile?.schoolName) return;
+    getDocs(collection(db, 'schools'))
+      .then(snap => setAllSchools(snap.docs.map(d => (d.data().name || '').trim()).filter(Boolean)))
+      .catch(() => {});
+  }, [teacherProfile]);
+
   const activeClasses    = teacherClasses.filter(c => !c.archived);
   const totalStudentsAll = activeClasses.reduce((s, c) => s + (studentCounts[c.classCode]?.total || 0), 0);
 
@@ -231,6 +246,17 @@ export default function TeacherDashboardScreen() {
       setShowFeedback(false); setFeedbackRating(0); setFeedbackComment('');
     } catch {}
     setFeedbackSubmitting(false);
+  };
+
+  const saveSchoolToProfile = async () => {
+    const name = setSchoolInput.trim();
+    if (!name || !teacherEmail) return;
+    setSavingSchool(true);
+    try {
+      await setDoc(doc(db, 'teachers', teacherEmail), { schoolName: name }, { merge: true });
+      setSetSchoolInput('');
+    } catch {}
+    setSavingSchool(false);
   };
 
   const submitChallengeEvidence = async () => {
@@ -332,6 +358,58 @@ export default function TeacherDashboardScreen() {
                 {primarySchool ? ` · ${primarySchool}` : ''}
               </p>
             </div>
+
+            {/* Set school nudge */}
+            {!teacherProfile?.schoolName && (
+              <div style={{ background:'#FFF9C4', border:'1px solid #F59E0B', borderRadius:'var(--t-r-md)', padding:'1rem 1.25rem', marginBottom:'1.5rem', display:'flex', alignItems:'center', gap:'1rem', flexWrap:'wrap' }}>
+                <div style={{ flex:1, minWidth:'200px' }}>
+                  <p style={{ margin:0, fontSize:'0.85rem', fontWeight:700, color:'#92400E' }}>Set your school to use points &amp; leaderboard</p>
+                  <p style={{ margin:'0.2rem 0 0', fontSize:'0.75rem', color:'#B45309' }}>Your school wasn't saved when you created your account.</p>
+                </div>
+                <div style={{ position:'relative', display:'flex', gap:'0.5rem', alignItems:'center', flex:1, minWidth:'220px' }}>
+                  <div style={{ position:'relative', flex:1 }}>
+                    <input
+                      type="text"
+                      value={setSchoolInput}
+                      onChange={e => { setSetSchoolInput(e.target.value); setShowSetSchoolSugs(true); }}
+                      onFocus={() => setShowSetSchoolSugs(true)}
+                      onBlur={() => setTimeout(() => setShowSetSchoolSugs(false), 150)}
+                      placeholder="Your school name…"
+                      style={{ width:'100%', padding:'0.55rem 0.85rem', borderRadius:'var(--t-r-sm)', border:'1.5px solid #F59E0B', fontSize:'0.85rem', fontFamily:'DM Sans, sans-serif', boxSizing:'border-box', outline:'none', background:'white' }}
+                    />
+                    {showSetSchoolSugs && setSchoolInput.trim().length > 0 && (() => {
+                      const q = setSchoolInput.trim().toLowerCase();
+                      const sugs = allSchools.filter(s => s.toLowerCase().includes(q));
+                      const exactMatch = sugs.some(s => s.toLowerCase() === q);
+                      return (
+                        <div style={{ position:'absolute', top:'calc(100% + 4px)', left:0, right:0, background:'white', border:'1.5px solid #E5E5E5', borderRadius:'var(--t-r-sm)', boxShadow:'0 8px 24px rgba(0,0,0,0.12)', zIndex:20, maxHeight:'180px', overflowY:'auto' }}>
+                          {sugs.map(s => (
+                            <button key={s} onMouseDown={() => { setSetSchoolInput(s); setShowSetSchoolSugs(false); }}
+                              style={{ display:'block', width:'100%', padding:'0.55rem 0.85rem', background:'none', border:'none', textAlign:'left', fontSize:'0.85rem', cursor:'pointer', color:'var(--t-deep)', fontFamily:'DM Sans, sans-serif' }}
+                              onMouseEnter={e => e.currentTarget.style.background='#F5F5F5'}
+                              onMouseLeave={e => e.currentTarget.style.background='none'}>
+                              {s}
+                            </button>
+                          ))}
+                          {!exactMatch && (
+                            <button onMouseDown={() => setShowSetSchoolSugs(false)}
+                              style={{ display:'block', width:'100%', padding:'0.55rem 0.85rem', background:'none', border:'none', borderTop: sugs.length ? '1px solid #F0F0F0' : 'none', textAlign:'left', fontSize:'0.85rem', cursor:'pointer', color:'var(--t-mid)', fontFamily:'DM Sans, sans-serif', fontWeight:600 }}
+                              onMouseEnter={e => e.currentTarget.style.background='#F0FFF4'}
+                              onMouseLeave={e => e.currentTarget.style.background='none'}>
+                              + Add "{setSchoolInput.trim()}"
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                  <button onClick={saveSchoolToProfile} disabled={setSchoolInput.trim().length < 2 || savingSchool}
+                    style={{ padding:'0.55rem 1rem', borderRadius:'var(--t-r-sm)', border:'none', background: setSchoolInput.trim().length >= 2 ? '#D97706' : '#CCC', color:'white', fontSize:'0.82rem', fontWeight:700, cursor: setSchoolInput.trim().length >= 2 ? 'pointer' : 'not-allowed', whiteSpace:'nowrap', flexShrink:0 }}>
+                    {savingSchool ? 'Saving…' : 'Save'}
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Quick actions */}
             <div style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:'0.75rem', marginBottom:'1.5rem' }}>

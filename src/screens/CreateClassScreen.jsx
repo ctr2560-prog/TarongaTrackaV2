@@ -49,7 +49,7 @@ const NSW_OUTCOMES = {
 const inputStyle = { width:'100%', padding:'0.65rem 0.9rem', borderRadius:'var(--t-r-sm)', border:'1.5px solid var(--t-stone)', fontSize:'0.88rem', fontFamily:'DM Sans, sans-serif', marginBottom:'0.85rem', boxSizing:'border-box', background:'var(--t-parchment)', color:'var(--t-ink)', outline:'none', transition:'border-color 0.2s' };
 
 export default function CreateClassScreen() {
-  const { setCurrentScreen, teacherEmail, teacher, authLoading, demoMode } = useApp();
+  const { setCurrentScreen, teacherEmail, teacher, authLoading, demoMode, teacherProfile } = useApp();
 
   useEffect(() => {
     if (!authLoading && !teacher && !demoMode) setCurrentScreen('teacherLogin');
@@ -57,8 +57,8 @@ export default function CreateClassScreen() {
 
   const [existingCodes,   setExistingCodes]   = useState([]);
   const [newClassName,    setNewClassName]    = useState('');
-  const [newSchoolName,   setNewSchoolName]   = useState('');
   const [newClassStage,   setNewClassStage]   = useState(4);
+  const schoolName = teacherProfile?.schoolName || '';
   const [newLocation,     setNewLocation]     = useState('taronga-sydney');
   const [newSubject,      setNewSubject]      = useState('science');
   const [accessCodeInput, setAccessCodeInput] = useState('');
@@ -80,7 +80,7 @@ export default function CreateClassScreen() {
   }, [accessCodeInput]);
 
   const createClass = async () => {
-    if (!newClassName.trim() || !newSchoolName.trim()) return;
+    if (!newClassName.trim() || !schoolName) return;
     if (!accessCodeInput.trim()) { setCreateError('Please enter a Taronga Access Code.'); return; }
     setCreateError('');
     setCreatingClass(true);
@@ -106,14 +106,14 @@ export default function CreateClassScreen() {
         const venue       = codeData.venue || 'Taronga Zoo';
         const sessionType = codeData.sessionType || 'standard';
         tx.set(doc(db, 'teachers', teacherEmail, 'classes', code), {
-          classCode: code, className: newClassName.trim(), schoolName: newSchoolName.trim(),
+          classCode: code, className: newClassName.trim(), schoolName: schoolName,
           stage: newClassStage, accessCodeUsed: accessCodeInput.trim(),
           venue, createdAt: serverTimestamp(), archived: false,
           sessionClosed: false, sessionDate, sessionType,
           location: newLocation, subject: newLocation === 'zoosnooz-sydney' ? null : newSubject,
         });
         tx.set(doc(db, 'classes', code), {
-          classCode: code, className: newClassName.trim(), schoolName: newSchoolName.trim(),
+          classCode: code, className: newClassName.trim(), schoolName: schoolName,
           stage: newClassStage, teacherEmail, accessCodeUsed: accessCodeInput.trim(),
           venue, createdAt: serverTimestamp(), sessionClosed: false, sessionDate, sessionType,
           location: newLocation, subject: newLocation === 'zoosnooz-sydney' ? null : newSubject,
@@ -129,12 +129,12 @@ export default function CreateClassScreen() {
           'school':          { id:'expedition-school',   points:20 },
         };
         const award = EXPEDITION_AWARDS[newLocation] || EXPEDITION_AWARDS['taronga-sydney'];
-        const schoolId = newSchoolName.trim().toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+        const schoolId = schoolName.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
         const schoolSnap = await getDoc(doc(db, 'schools', schoolId));
         const awarded = schoolSnap.exists() ? (schoolSnap.data().awardedChallenges || []) : [];
         if (!awarded.includes(award.id)) {
           await setDoc(doc(db, 'schools', schoolId), {
-            name: newSchoolName.trim(),
+            name: schoolName,
             totalPoints: increment(award.points),
             awardedChallenges: arrayUnion(award.id),
             lastUpdated: serverTimestamp(),
@@ -142,7 +142,7 @@ export default function CreateClassScreen() {
         }
       } catch {}
 
-      setNewClassName(''); setNewSchoolName(''); setAccessCodeInput(''); setZzConsentChecked(false);
+      setNewClassName(''); setAccessCodeInput(''); setZzConsentChecked(false);
       setNewLocation('taronga-sydney'); setNewSubject('science');
       setClassCreated(true);
       setShowWwzModal(true);
@@ -224,8 +224,12 @@ export default function CreateClassScreen() {
               )}
 
               <label style={{ display:'block', fontSize:'0.78rem', fontWeight:700, color:'var(--t-deep)', marginBottom:'0.3rem', textTransform:'uppercase', letterSpacing:'0.05em' }}>School Name</label>
-              <input type="text" value={newSchoolName} onChange={e => setNewSchoolName(e.target.value)} placeholder="e.g. Campbelltown Public School"
-                style={inputStyle} onFocus={e => e.target.style.borderColor='var(--t-mid)'} onBlur={e => e.target.style.borderColor='var(--t-stone)'} />
+              <div style={{ marginBottom:'0.85rem', padding:'0.65rem 0.9rem', borderRadius:'var(--t-r-sm)', border:'1.5px solid var(--t-mist)', background:'var(--t-chalk)', fontSize:'0.88rem', color:'var(--t-slate)' }}>
+                {schoolName
+                  ? <><span style={{ fontWeight:700, color:'var(--t-deep)' }}>{schoolName}</span><span style={{ color:'var(--t-ash)', fontSize:'0.78rem', marginLeft:'0.5rem' }}>· from your profile</span></>
+                  : <span style={{ color:'#ef4444' }}>No school set on your profile — go to Dashboard to set it.</span>
+                }
+              </div>
 
               <label style={{ display:'block', fontSize:'0.78rem', fontWeight:700, color:'var(--t-deep)', marginBottom:'0.3rem', textTransform:'uppercase', letterSpacing:'0.05em' }}>NSW Stage</label>
               <select value={newClassStage} onChange={e => setNewClassStage(Number(e.target.value))} style={{ ...inputStyle, appearance:'auto', cursor:'pointer' }}
@@ -259,8 +263,8 @@ export default function CreateClassScreen() {
 
               {createError && <p style={{ color:'var(--t-danger)', fontSize:'0.82rem', fontWeight:600, marginBottom:'0.75rem' }}>⚠ {createError}</p>}
 
-              <button onClick={createClass} disabled={!newClassName.trim() || !newSchoolName.trim() || creatingClass}
-                style={{ width:'100%', padding:'0.85rem', borderRadius:'var(--t-r-sm)', border:'none', background:(!newClassName.trim()||!newSchoolName.trim()||creatingClass)?'#CCC':'linear-gradient(135deg, var(--t-mid), var(--t-eucalyptus))', color:'white', fontSize:'0.95rem', fontWeight:700, cursor:(!newClassName.trim()||!newSchoolName.trim()||creatingClass)?'not-allowed':'pointer', letterSpacing:'0.04em', transition:'all 0.2s' }}>
+              <button onClick={createClass} disabled={!newClassName.trim() || !schoolName || creatingClass}
+                style={{ width:'100%', padding:'0.85rem', borderRadius:'var(--t-r-sm)', border:'none', background:(!newClassName.trim()||!schoolName||creatingClass)?'#CCC':'linear-gradient(135deg, var(--t-mid), var(--t-eucalyptus))', color:'white', fontSize:'0.95rem', fontWeight:700, cursor:(!newClassName.trim()||!schoolName||creatingClass)?'not-allowed':'pointer', letterSpacing:'0.04em', transition:'all 0.2s' }}>
                 {creatingClass ? 'Creating…' : '+ Create Class'}
               </button>
 
