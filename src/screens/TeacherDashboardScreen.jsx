@@ -56,7 +56,7 @@ const CHALLENGES = [
   { id:'wildlife-crossing',  name:'Wildlife Crossing Design',  desc:'Design and model a wildlife corridor or road crossing for a local species, then present it to the class.',           points:80, icon:<SvgBridge/>,   type:'submit' },
 ];
 
-const MONTHLY_CHALLENGE = { name:'June Challenge — Habitat Heroes', desc:'Document three different animal habitats near your school with photos and a short description.', points:100, icon:<SvgStar/> };
+const MONTHLY_CHALLENGE = { id:'monthly-june-2026', name:'June Challenge — Habitat Heroes', desc:'Document three different animal habitats near your school with photos and a short description.', points:100, icon:<SvgStar/> };
 
 const RESOURCE_CARDS = [
   { title:'Teacher Guide', desc:'How to run a Taronga Tracka session', icon:<SvgBook/>, tag:'Guide' },
@@ -406,24 +406,35 @@ export default function TeacherDashboardScreen() {
                 </div>
 
                 {/* Monthly challenge — featured */}
-                <div style={{ display:'flex', alignItems:'center', gap:'1rem', padding:'1.1rem 1.25rem', borderRadius:'var(--t-r-md)', border:'2px dashed #F59E0B', background:'linear-gradient(135deg, #FFFBEB, #FEF3C7)' }}>
-                  <div style={{ width:'44px', height:'44px', borderRadius:'var(--t-r-sm)', background:'#FEF3C7', border:'1px solid #F59E0B', display:'flex', alignItems:'center', justifyContent:'center', color:'#D97706', flexShrink:0 }}>{MONTHLY_CHALLENGE.icon}</div>
+                {(() => {
+                  const monthlySub = mySubmissions[MONTHLY_CHALLENGE.id];
+                  const monthlyPending  = monthlySub?.status === 'pending';
+                  const monthlyApproved = monthlySub?.status === 'approved';
+                  return (
+                <div style={{ display:'flex', alignItems:'center', gap:'1rem', padding:'1.1rem 1.25rem', borderRadius:'var(--t-r-md)', border: monthlyApproved ? '2px solid #D97706' : '2px dashed #F59E0B', background:'linear-gradient(135deg, #FFFBEB, #FEF3C7)' }}>
+                  <div style={{ width:'44px', height:'44px', borderRadius:'var(--t-r-sm)', background: monthlyApproved ? '#D97706' : '#FEF3C7', border:'1px solid #F59E0B', display:'flex', alignItems:'center', justifyContent:'center', color: monthlyApproved ? 'white' : '#D97706', flexShrink:0 }}>{MONTHLY_CHALLENGE.icon}</div>
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', marginBottom:'0.25rem', flexWrap:'wrap' }}>
                       <span style={{ fontSize:'0.85rem', fontWeight:700, color:'#92400E' }}>{MONTHLY_CHALLENGE.name}</span>
                       <span style={{ fontSize:'0.62rem', fontWeight:700, color:'#B45309', background:'#FDE68A', padding:'0.1rem 0.45rem', borderRadius:'var(--t-r-pill)' }}>Monthly</span>
                       <span style={{ fontSize:'0.65rem', fontWeight:700, color:'#D97706', background:'white', border:'1px solid #F59E0B', padding:'0.1rem 0.4rem', borderRadius:'var(--t-r-pill)' }}>+{MONTHLY_CHALLENGE.points} pts</span>
+                      {monthlyPending  && <span style={{ fontSize:'0.62rem', fontWeight:700, color:'#92400E', background:'#FEF3C7', border:'1px solid #F59E0B', padding:'0.1rem 0.45rem', borderRadius:'var(--t-r-pill)' }}>Pending review</span>}
+                      {monthlyApproved && <span style={{ fontSize:'0.62rem', fontWeight:700, color:'#166534', background:'#DCFCE7', border:'1px solid #86EFAC', padding:'0.1rem 0.45rem', borderRadius:'var(--t-r-pill)' }}>Complete</span>}
                     </div>
-                    <p style={{ fontSize:'0.75rem', color:'#92400E', margin:'0 0 0.6rem', lineHeight:1.5 }}>{MONTHLY_CHALLENGE.desc}</p>
+                    <p style={{ fontSize:'0.75rem', color:'#92400E', margin: monthlySub ? '0' : '0 0 0.6rem', lineHeight:1.5 }}>{MONTHLY_CHALLENGE.desc}</p>
+                    {!monthlySub && (
                     <button onClick={() => { setUploadChallenge(MONTHLY_CHALLENGE); setUploadFile(null); setUploadNote(''); setUploadSuccess(false); }}
-                      style={{ padding:'0.4rem 1rem', borderRadius:'var(--t-r-pill)', border:'1.5px solid #D97706', background:'none', color:'#D97706', fontSize:'0.73rem', fontWeight:700, cursor:'pointer' }}
+                      style={{ marginTop:'0.6rem', padding:'0.4rem 1rem', borderRadius:'var(--t-r-pill)', border:'1.5px solid #D97706', background:'none', color:'#D97706', fontSize:'0.73rem', fontWeight:700, cursor:'pointer' }}
                       onMouseEnter={e => { e.currentTarget.style.background='#D97706'; e.currentTarget.style.color='white'; }}
                       onMouseLeave={e => { e.currentTarget.style.background='none'; e.currentTarget.style.color='#D97706'; }}>
                       Submit Evidence
                     </button>
+                    )}
                   </div>
                 </div>
-              </div>
+                    );
+                  })()}
+                </div>
 
               {/* Horizontal scroll of all challenges */}
               <div style={{ overflowX:'auto', marginBottom:'0.25rem', paddingBottom:'0.5rem' }}>
