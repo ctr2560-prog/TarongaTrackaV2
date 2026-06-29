@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { collection, doc, onSnapshot, getDocs, getDoc, query, orderBy, limit, setDoc, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, onSnapshot, getDocs, getDoc, query, orderBy, limit, setDoc, addDoc, serverTimestamp, increment } from 'firebase/firestore';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
 import { useApp } from '../context/AppContext';
@@ -89,8 +89,9 @@ export default function TeacherDashboardScreen() {
   const [legalDoc,           setLegalDoc]           = useState(null);
 
   // School points + leaderboard
-  const [schoolPoints,   setSchoolPoints]   = useState(null);
-  const [leaderboard,    setLeaderboard]    = useState([]);
+  const [schoolPoints,    setSchoolPoints]    = useState(null);
+  const [schoolDocExists, setSchoolDocExists] = useState(null); // null = unknown
+  const [leaderboard,     setLeaderboard]     = useState([]);
 
   // Challenge upload modal
   const [uploadChallenge,   setUploadChallenge]   = useState(null);
@@ -143,10 +144,24 @@ export default function TeacherDashboardScreen() {
     if (!primarySchool) return;
     const sid = normalizeSchoolId(primarySchool);
     const unsub = onSnapshot(doc(db, 'schools', sid), snap => {
+      setSchoolDocExists(snap.exists());
       setSchoolPoints(snap.exists() ? (snap.data().totalPoints || 0) : 0);
     });
     return () => unsub();
   }, [primarySchool]);
+
+  // Seed school doc for teachers whose classes predate the points system
+  useEffect(() => {
+    if (!primarySchool || classesLoading || schoolDocExists !== false) return;
+    const activeCount = teacherClasses.filter(c => !c.archived).length;
+    if (activeCount === 0) return;
+    const sid = normalizeSchoolId(primarySchool);
+    setDoc(doc(db, 'schools', sid), {
+      name: primarySchool,
+      totalPoints: activeCount * 25,
+      lastUpdated: serverTimestamp(),
+    }, { merge: true }).catch(() => {});
+  }, [primarySchool, classesLoading, schoolDocExists, teacherClasses]);
 
   // Leaderboard
   useEffect(() => {
