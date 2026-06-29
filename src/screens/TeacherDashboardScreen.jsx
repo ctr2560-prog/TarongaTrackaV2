@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { collection, doc, onSnapshot, getDocs, getDoc, query, orderBy, limit, setDoc, addDoc, serverTimestamp, increment } from 'firebase/firestore';
+import { collection, doc, onSnapshot, getDocs, getDoc, query, orderBy, limit, where, setDoc, addDoc, serverTimestamp, increment } from 'firebase/firestore';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
 import { useApp } from '../context/AppContext';
@@ -98,6 +98,9 @@ export default function TeacherDashboardScreen() {
   const [schoolDocExists, setSchoolDocExists] = useState(null); // null = unknown
   const [leaderboard,     setLeaderboard]     = useState([]);
 
+  // My challenge submissions (keyed by challengeId → latest submission)
+  const [mySubmissions, setMySubmissions] = useState({});
+
   // Challenge upload modal
   const [uploadChallenge,   setUploadChallenge]   = useState(null);
   const [uploadFile,        setUploadFile]        = useState(null);
@@ -176,6 +179,20 @@ export default function TeacherDashboardScreen() {
     );
     return () => unsub();
   }, []);
+
+  // My challenge submissions — keep latest per challengeId
+  useEffect(() => {
+    if (!teacherEmail) return;
+    const q = query(collection(db, 'challengeSubmissions'), where('teacherEmail', '==', teacherEmail), orderBy('submittedAt', 'desc'));
+    return onSnapshot(q, snap => {
+      const map = {};
+      snap.docs.forEach(d => {
+        const data = d.data();
+        if (!map[data.challengeId]) map[data.challengeId] = { id: d.id, ...data };
+      });
+      setMySubmissions(map);
+    });
+  }, [teacherEmail]);
 
   const activeClasses    = teacherClasses.filter(c => !c.archived);
   const totalStudentsAll = activeClasses.reduce((s, c) => s + (studentCounts[c.classCode]?.total || 0), 0);
@@ -404,29 +421,38 @@ export default function TeacherDashboardScreen() {
                   {CHALLENGES.map(ch => {
                     const isAutoComplete = ch.type === 'auto' && activeClasses.length > 0;
                     const isSubmit = ch.type === 'submit';
-                    const isComingSoon = ch.type === 'coming-soon';
+                    const sub = mySubmissions[ch.id];
+                    const isApproved = sub?.status === 'approved';
+                    const isPending  = sub?.status === 'pending';
+                    const isDone     = isAutoComplete || isApproved;
+                    const borderCol  = isDone ? 'var(--t-mid)' : isPending ? '#F59E0B' : 'var(--t-stone)';
+                    const bgCol      = isDone ? 'var(--t-foam)' : isPending ? '#FFFBEB' : 'white';
                     return (
-                      <div key={ch.id} style={{ width:'180px', flexShrink:0, display:'flex', flexDirection:'column', borderRadius:'var(--t-r-md)', border:`1px solid ${isAutoComplete ? 'var(--t-mid)' : 'var(--t-stone)'}`, background: isAutoComplete ? 'var(--t-foam)' : 'white', padding:'1rem', opacity: isComingSoon ? 0.55 : 1, position:'relative', overflow:'hidden' }}>
-                        {isAutoComplete && (
+                      <div key={ch.id} style={{ width:'180px', flexShrink:0, display:'flex', flexDirection:'column', borderRadius:'var(--t-r-md)', border:`1px solid ${borderCol}`, background:bgCol, padding:'1rem', position:'relative', overflow:'hidden' }}>
+                        {isDone && (
                           <div style={{ position:'absolute', top:'0.5rem', right:'0.5rem', width:'20px', height:'20px', borderRadius:'50%', background:'var(--t-mid)', color:'white', display:'flex', alignItems:'center', justifyContent:'center' }}>
                             <SvgCheck/>
                           </div>
                         )}
-                        <div style={{ width:'40px', height:'40px', borderRadius:'var(--t-r-sm)', background: isAutoComplete ? 'var(--t-mid)' : 'var(--t-chalk)', border:`1px solid ${isAutoComplete ? 'var(--t-mid)' : 'var(--t-mist)'}`, display:'flex', alignItems:'center', justifyContent:'center', color: isAutoComplete ? 'white' : 'var(--t-slate)', marginBottom:'0.6rem' }}>
+                        {isPending && !isDone && (
+                          <div style={{ position:'absolute', top:'0.5rem', right:'0.5rem', fontSize:'0.6rem', fontWeight:800, color:'#92400E', background:'#FEF3C7', border:'1px solid #F59E0B', borderRadius:'3px', padding:'1px 5px' }}>Review</div>
+                        )}
+                        <div style={{ width:'40px', height:'40px', borderRadius:'var(--t-r-sm)', background: isDone ? 'var(--t-mid)' : 'var(--t-chalk)', border:`1px solid ${isDone ? 'var(--t-mid)' : 'var(--t-mist)'}`, display:'flex', alignItems:'center', justifyContent:'center', color: isDone ? 'white' : 'var(--t-slate)', marginBottom:'0.6rem' }}>
                           {ch.icon}
                         </div>
-                        <div style={{ fontSize:'0.8rem', fontWeight:700, color: isAutoComplete ? 'var(--t-mid)' : 'var(--t-deep)', marginBottom:'0.2rem', lineHeight:1.2 }}>{ch.name}</div>
+                        <div style={{ fontSize:'0.8rem', fontWeight:700, color: isDone ? 'var(--t-mid)' : 'var(--t-deep)', marginBottom:'0.2rem', lineHeight:1.2 }}>{ch.name}</div>
                         <p style={{ fontSize:'0.7rem', color:'var(--t-slate)', margin:'0 0 auto', lineHeight:1.4, paddingBottom:'0.75rem' }}>{ch.desc}</p>
-                        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:'0.6rem', paddingTop:'0.6rem', borderTop:`1px solid ${isAutoComplete ? 'rgba(46,125,85,0.15)' : 'var(--t-mist)'}` }}>
-                          <span style={{ fontSize:'0.68rem', fontWeight:700, color: isAutoComplete ? 'var(--t-mid)' : 'var(--t-sage)', background: isAutoComplete ? 'rgba(46,125,85,0.1)' : 'var(--t-chalk)', padding:'0.15rem 0.4rem', borderRadius:'var(--t-r-pill)' }}>+{ch.points} pts</span>
+                        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:'0.6rem', paddingTop:'0.6rem', borderTop:`1px solid ${isDone ? 'rgba(46,125,85,0.15)' : 'var(--t-mist)'}` }}>
+                          <span style={{ fontSize:'0.68rem', fontWeight:700, color: isDone ? 'var(--t-mid)' : 'var(--t-sage)', background: isDone ? 'rgba(46,125,85,0.1)' : 'var(--t-chalk)', padding:'0.15rem 0.4rem', borderRadius:'var(--t-r-pill)' }}>+{ch.points} pts</span>
                           {isAutoComplete && <span style={{ fontSize:'0.65rem', fontWeight:700, color:'var(--t-mid)' }}>Auto</span>}
-                          {isSubmit && (
+                          {isApproved && <span style={{ fontSize:'0.65rem', fontWeight:700, color:'var(--t-mid)' }}>Complete</span>}
+                          {isPending && !isApproved && <span style={{ fontSize:'0.65rem', fontWeight:600, color:'#92400E' }}>Pending</span>}
+                          {isSubmit && !sub && (
                             <button onClick={() => { setUploadChallenge(ch); setUploadFile(null); setUploadNote(''); setUploadSuccess(false); }}
                               style={{ fontSize:'0.65rem', fontWeight:700, color:'var(--t-mid)', background:'none', border:'none', cursor:'pointer', padding:0, textDecoration:'underline' }}>
                               Submit
                             </button>
                           )}
-                          {isComingSoon && <span style={{ fontSize:'0.63rem', color:'var(--t-ash)', fontWeight:600 }}>Soon</span>}
                         </div>
                       </div>
                     );
