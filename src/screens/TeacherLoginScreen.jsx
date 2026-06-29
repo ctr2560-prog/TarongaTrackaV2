@@ -4,6 +4,7 @@ import { doc, setDoc, getDocs, collection, serverTimestamp } from 'firebase/fire
 import { auth, db } from '../firebase';
 import { useApp } from '../context/AppContext';
 import LegalModal from '../components/LegalModal';
+import nswSchools from '../data/nswPublicSchools.json';
 
 export default function TeacherLoginScreen() {
   const { setCurrentScreen, setTeacherEmail, setDemoMode } = useApp();
@@ -17,7 +18,7 @@ export default function TeacherLoginScreen() {
   const [errorMsg,  setErrorMsg]  = useState('');
   const [legalDoc,  setLegalDoc]  = useState(null); // 'privacy' | 'terms' | null
   const [schoolInput,  setSchoolInput]  = useState('');
-  const [allSchools,   setAllSchools]   = useState([]);
+  const [allSchools,   setAllSchools]   = useState([]); // [{name, suburb, postcode}]
   const [schoolSugs,   setSchoolSugs]   = useState([]);
   const [showSugs,     setShowSugs]     = useState(false);
 
@@ -30,17 +31,29 @@ export default function TeacherLoginScreen() {
     setSchoolInput('');
   };
 
+  // Seed NSW DoE schools + any already-in-Firestore schools when register form opens
   useEffect(() => {
     if (mode !== 'register') return;
+    const base = nswSchools.map(s => ({ name: s.name, suburb: s.suburb, postcode: s.postcode }));
     getDocs(collection(db, 'schools'))
-      .then(snap => setAllSchools(snap.docs.map(d => (d.data().name || '').trim()).filter(Boolean)))
-      .catch(() => {});
+      .then(snap => {
+        const firestoreNames = new Set(base.map(s => s.name.toLowerCase()));
+        const extras = snap.docs
+          .map(d => ({ name: (d.data().name || '').trim(), suburb: '', postcode: '' }))
+          .filter(s => s.name && !firestoreNames.has(s.name.toLowerCase()));
+        setAllSchools([...base, ...extras]);
+      })
+      .catch(() => setAllSchools(base));
   }, [mode]);
 
   useEffect(() => {
     const q = schoolInput.trim().toLowerCase();
-    if (!q) { setSchoolSugs([]); return; }
-    setSchoolSugs(allSchools.filter(s => s.toLowerCase().includes(q)));
+    if (!q || q.length < 2) { setSchoolSugs([]); return; }
+    setSchoolSugs(
+      allSchools
+        .filter(s => s.name.toLowerCase().includes(q) || s.suburb.toLowerCase().includes(q))
+        .slice(0, 12)
+    );
   }, [schoolInput, allSchools]);
 
   const isLoginValid    = email.trim().includes('@') && password.length > 0;
@@ -204,17 +217,18 @@ export default function TeacherLoginScreen() {
                 onBlurCapture={e  => e.target.style.borderColor = '#E5E5E5'}
                 disabled={status === 'loading'}
               />
-              {showSugs && schoolInput.trim().length > 0 && (
-                <div style={{ position:'absolute', top:'calc(100% + 4px)', left:0, right:0, background:'white', border:'1.5px solid #E5E5E5', borderRadius:'var(--t-r-md)', boxShadow:'0 8px 24px rgba(0,0,0,0.12)', zIndex:20, maxHeight:'200px', overflowY:'auto' }}>
+              {showSugs && schoolInput.trim().length >= 2 && (
+                <div style={{ position:'absolute', top:'calc(100% + 4px)', left:0, right:0, background:'white', border:'1.5px solid #E5E5E5', borderRadius:'var(--t-r-md)', boxShadow:'0 8px 24px rgba(0,0,0,0.12)', zIndex:20, maxHeight:'220px', overflowY:'auto' }}>
                   {schoolSugs.map(s => (
-                    <button key={s} onMouseDown={() => { setSchoolInput(s); setShowSugs(false); }}
-                      style={{ display:'block', width:'100%', padding:'0.65rem 1rem', background:'none', border:'none', textAlign:'left', fontSize:'0.9rem', cursor:'pointer', color:'var(--t-deep)', fontFamily:'DM Sans, sans-serif' }}
+                    <button key={s.name + s.suburb} onMouseDown={() => { setSchoolInput(s.name); setShowSugs(false); }}
+                      style={{ display:'block', width:'100%', padding:'0.55rem 1rem', background:'none', border:'none', textAlign:'left', cursor:'pointer', fontFamily:'DM Sans, sans-serif' }}
                       onMouseEnter={e => e.currentTarget.style.background='#F5F5F5'}
                       onMouseLeave={e => e.currentTarget.style.background='none'}>
-                      {s}
+                      <div style={{ fontSize:'0.9rem', color:'var(--t-deep)', lineHeight:1.3 }}>{s.name}</div>
+                      {s.suburb && <div style={{ fontSize:'0.73rem', color:'#999', marginTop:'1px' }}>{s.suburb}{s.postcode ? ` ${s.postcode}` : ''}</div>}
                     </button>
                   ))}
-                  {!schoolSugs.some(s => s.toLowerCase() === schoolInput.trim().toLowerCase()) && (
+                  {!schoolSugs.some(s => s.name.toLowerCase() === schoolInput.trim().toLowerCase()) && (
                     <button onMouseDown={() => { setShowSugs(false); }}
                       style={{ display:'block', width:'100%', padding:'0.65rem 1rem', background:'none', border:'none', borderTop: schoolSugs.length ? '1px solid #F0F0F0' : 'none', textAlign:'left', fontSize:'0.9rem', cursor:'pointer', color:'var(--t-mid)', fontFamily:'DM Sans, sans-serif', fontWeight:600 }}
                       onMouseEnter={e => e.currentTarget.style.background='#F0FFF4'}

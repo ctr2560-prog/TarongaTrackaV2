@@ -6,6 +6,7 @@ import { useApp } from '../context/AppContext';
 import LegalModal from '../components/LegalModal';
 import TeacherHelpBot from '../components/TeacherHelpBot';
 import TeacherTutorial from '../components/TeacherTutorial';
+import nswSchools from '../data/nswPublicSchools.json';
 
 const WILDLY_PHRASES = ['Wildly by Taronga', 'Continue the learning', 'Resources', 'Programs', 'Assessments'];
 
@@ -220,12 +221,19 @@ export default function TeacherDashboardScreen() {
     });
   }, [teacherEmail]);
 
-  // Load schools for set-school nudge autocomplete
+  // Load schools for set-school nudge autocomplete (NSW DoE list + Firestore extras)
   useEffect(() => {
     if (teacherProfile?.schoolName) return;
+    const base = nswSchools;
     getDocs(collection(db, 'schools'))
-      .then(snap => setAllSchools(snap.docs.map(d => (d.data().name || '').trim()).filter(Boolean)))
-      .catch(() => {});
+      .then(snap => {
+        const baseNames = new Set(base.map(s => s.name.toLowerCase()));
+        const extras = snap.docs
+          .map(d => ({ name: (d.data().name || '').trim(), suburb: '', postcode: '' }))
+          .filter(s => s.name && !baseNames.has(s.name.toLowerCase()));
+        setAllSchools([...base, ...extras]);
+      })
+      .catch(() => setAllSchools(base));
   }, [teacherProfile]);
 
   const activeClasses    = teacherClasses.filter(c => !c.archived);
@@ -377,18 +385,19 @@ export default function TeacherDashboardScreen() {
                       placeholder="Your school name…"
                       style={{ width:'100%', padding:'0.55rem 0.85rem', borderRadius:'var(--t-r-sm)', border:'1.5px solid #F59E0B', fontSize:'0.85rem', fontFamily:'DM Sans, sans-serif', boxSizing:'border-box', outline:'none', background:'white' }}
                     />
-                    {showSetSchoolSugs && setSchoolInput.trim().length > 0 && (() => {
+                    {showSetSchoolSugs && setSchoolInput.trim().length >= 2 && (() => {
                       const q = setSchoolInput.trim().toLowerCase();
-                      const sugs = allSchools.filter(s => s.toLowerCase().includes(q));
-                      const exactMatch = sugs.some(s => s.toLowerCase() === q);
+                      const sugs = allSchools.filter(s => s.name.toLowerCase().includes(q) || s.suburb.toLowerCase().includes(q)).slice(0, 10);
+                      const exactMatch = sugs.some(s => s.name.toLowerCase() === q);
                       return (
-                        <div style={{ position:'absolute', top:'calc(100% + 4px)', left:0, right:0, background:'white', border:'1.5px solid #E5E5E5', borderRadius:'var(--t-r-sm)', boxShadow:'0 8px 24px rgba(0,0,0,0.12)', zIndex:20, maxHeight:'180px', overflowY:'auto' }}>
+                        <div style={{ position:'absolute', top:'calc(100% + 4px)', left:0, right:0, background:'white', border:'1.5px solid #E5E5E5', borderRadius:'var(--t-r-sm)', boxShadow:'0 8px 24px rgba(0,0,0,0.12)', zIndex:20, maxHeight:'200px', overflowY:'auto' }}>
                           {sugs.map(s => (
-                            <button key={s} onMouseDown={() => { setSetSchoolInput(s); setShowSetSchoolSugs(false); }}
-                              style={{ display:'block', width:'100%', padding:'0.55rem 0.85rem', background:'none', border:'none', textAlign:'left', fontSize:'0.85rem', cursor:'pointer', color:'var(--t-deep)', fontFamily:'DM Sans, sans-serif' }}
+                            <button key={s.name + s.suburb} onMouseDown={() => { setSetSchoolInput(s.name); setShowSetSchoolSugs(false); }}
+                              style={{ display:'block', width:'100%', padding:'0.5rem 0.85rem', background:'none', border:'none', textAlign:'left', cursor:'pointer', fontFamily:'DM Sans, sans-serif' }}
                               onMouseEnter={e => e.currentTarget.style.background='#F5F5F5'}
                               onMouseLeave={e => e.currentTarget.style.background='none'}>
-                              {s}
+                              <div style={{ fontSize:'0.85rem', color:'var(--t-deep)', lineHeight:1.3 }}>{s.name}</div>
+                              {s.suburb && <div style={{ fontSize:'0.72rem', color:'#999', marginTop:'1px' }}>{s.suburb}{s.postcode ? ` ${s.postcode}` : ''}</div>}
                             </button>
                           ))}
                           {!exactMatch && (
