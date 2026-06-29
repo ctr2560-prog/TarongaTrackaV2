@@ -1487,13 +1487,15 @@ function OverviewTab({ classes, loading, onClassClick }) {
         try {
           const snap = await getDocs(collection(db, 'classes', cls.classCode, 'students'));
           snap.docs.forEach(d => {
+            const subject = cls.subject || '';
             (d.data().badges || []).forEach(b => {
               const aid = b.animalId || 'unknown';
               (b.quizResults || [])
                 .filter(qr => !qr.missionType || qr.missionType === 'knowledge')
-                .forEach((qr, qi) => {
-                  const key = `${aid}||${qi}`;
-                  if (!qMap[key]) qMap[key] = { correct: 0, total: 0 };
+                .forEach((qr) => {
+                  const qtext = qr.question || '';
+                  const key = `${subject}||${aid}||${qtext}`;
+                  if (!qMap[key]) qMap[key] = { correct: 0, total: 0, subject, aid, qtext };
                   qMap[key].total++;
                   if (qr.correctOnFirstAttempt === true) qMap[key].correct++;
                 });
@@ -1502,7 +1504,13 @@ function OverviewTab({ classes, loading, onClassClick }) {
         } catch {}
       }
       if (cancelled) return;
-      const rates = Object.values(qMap).filter(q => q.total > 0);
+      const currentCache = {};
+      const rates = Object.values(qMap).filter(q => {
+        if (q.total === 0) return false;
+        const cacheKey = `${q.aid}||${q.subject}`;
+        if (!currentCache[cacheKey]) currentCache[cacheKey] = getCurrentQuestionTexts(q.aid, q.subject);
+        return currentCache[cacheKey].has(q.qtext);
+      });
       setAvgQuizBadges(rates.length > 0 ? Math.round(rates.reduce((s, q) => s + (q.correct / q.total * 100), 0) / rates.length) : null);
     })();
     return () => { cancelled = true; };
