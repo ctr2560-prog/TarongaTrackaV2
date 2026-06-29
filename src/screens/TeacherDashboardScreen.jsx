@@ -29,6 +29,9 @@ const SvgPlus    = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="n
 const SvgLayers  = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>;
 const SvgHelpCircle = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17" strokeWidth="2.5"/></svg>;
 const SvgGlobe   = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>;
+const SvgZap    = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>;
+const SvgImage  = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>;
+const SvgCheck  = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>;
 const SvgTrash = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>;
 const SvgTree  = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22v-6"/><path d="M8 16l4-4 4 4"/><path d="M6 12l6-6 6 6"/><path d="M4 8l8-6 8 6"/></svg>;
 const SvgSearch = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>;
@@ -41,9 +44,11 @@ const SvgChart = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="non
 const SvgMail  = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>;
 
 const CHALLENGES = [
-  { id:'clean-up-school', name:'Clean Up School', desc:'Organise a litter clean-up around your school grounds.', points:50, icon:<SvgTrash/>, active:true },
-  { id:'plant-a-tree', name:'Plant a Tree', desc:'Plant a native tree or shrub in your school grounds.', points:75, icon:<SvgTree/>, active:false },
-  { id:'biodiversity-audit', name:'Biodiversity Audit', desc:'Count and photograph species found near your school.', points:60, icon:<SvgSearch/>, active:false },
+  { id:'expedition', name:'Tracka Expedition', desc:'Run any Taronga Tracka session with your class.', points:25, icon:<SvgZap/>, type:'auto' },
+  { id:'wildlife-posters', name:'Wildlife Posters', desc:'Create wildlife awareness posters with your class and display them at school.', points:40, icon:<SvgImage/>, type:'submit' },
+  { id:'clean-up-school', name:'Clean Up School', desc:'Organise a litter clean-up around your school grounds.', points:50, icon:<SvgTrash/>, type:'submit' },
+  { id:'plant-a-tree', name:'Plant a Tree', desc:'Plant a native tree or shrub in your school grounds.', points:75, icon:<SvgTree/>, type:'coming-soon' },
+  { id:'biodiversity-audit', name:'Biodiversity Audit', desc:'Count and photograph species found near your school.', points:60, icon:<SvgSearch/>, type:'coming-soon' },
 ];
 
 const MONTHLY_CHALLENGE = { name:'June Challenge — Habitat Heroes', desc:'Document three different animal habitats near your school with photos and a short description.', points:100, icon:<SvgStar/> };
@@ -323,8 +328,8 @@ export default function TeacherDashboardScreen() {
                 </div>
               </div>
 
+              {/* Points card + milestone */}
               <div style={{ display:'grid', gridTemplateColumns:'220px 1fr', gap:'1.25rem', marginBottom:'1.25rem' }}>
-                {/* Points card */}
                 <div style={{ background:'linear-gradient(135deg, var(--t-deep) 0%, var(--t-mid) 100%)', borderRadius:'var(--t-r-md)', padding:'1.25rem', color:'white', display:'flex', flexDirection:'column', gap:'0.5rem' }}>
                   <div style={{ fontSize:'0.65rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.1em', color:'rgba(255,255,255,0.55)' }}>Your School</div>
                   <div style={{ fontSize:'0.82rem', fontWeight:600, color:'rgba(255,255,255,0.85)', lineHeight:1.2 }}>{primarySchool || '—'}</div>
@@ -342,43 +347,59 @@ export default function TeacherDashboardScreen() {
                   )}
                 </div>
 
-                {/* Challenge cards */}
-                <div style={{ display:'flex', flexDirection:'column', gap:'0.6rem' }}>
-                  {CHALLENGES.map(ch => (
-                    <div key={ch.id} style={{ display:'flex', alignItems:'center', gap:'0.85rem', padding:'0.75rem 1rem', borderRadius:'var(--t-r-sm)', border:'1px solid var(--t-mist)', background:'var(--t-chalk)', opacity: ch.active ? 1 : 0.6 }}>
-                      <div style={{ fontSize:'1.4rem', flexShrink:0 }}>{ch.icon}</div>
-                      <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', marginBottom:'0.15rem' }}>
-                          <span style={{ fontSize:'0.82rem', fontWeight:700, color:'var(--t-deep)' }}>{ch.name}</span>
-                          <span style={{ fontSize:'0.65rem', fontWeight:700, color:'var(--t-mid)', background:'var(--t-foam)', padding:'0.1rem 0.4rem', borderRadius:'var(--t-r-pill)' }}>+{ch.points} pts</span>
-                          {!ch.active && <span style={{ fontSize:'0.62rem', color:'var(--t-ash)', background:'#F3F4F6', padding:'0.1rem 0.4rem', borderRadius:'var(--t-r-pill)' }}>Coming Soon</span>}
-                        </div>
-                        <p style={{ fontSize:'0.73rem', color:'var(--t-slate)', margin:0, lineHeight:1.45 }}>{ch.desc}</p>
-                      </div>
-                      {ch.active && (
-                        <button onClick={() => { setUploadChallenge(ch); setUploadFile(null); setUploadNote(''); setUploadSuccess(false); }}
-                          style={{ flexShrink:0, padding:'0.45rem 0.9rem', borderRadius:'var(--t-r-pill)', border:'1.5px solid var(--t-mid)', background:'none', color:'var(--t-mid)', fontSize:'0.75rem', fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}
-                          onMouseEnter={e => { e.currentTarget.style.background='var(--t-mid)'; e.currentTarget.style.color='white'; }}
-                          onMouseLeave={e => { e.currentTarget.style.background='none'; e.currentTarget.style.color='var(--t-mid)'; }}>
-                          Submit Evidence
-                        </button>
-                      )}
+                {/* Monthly challenge — featured */}
+                <div style={{ display:'flex', alignItems:'center', gap:'1rem', padding:'1.1rem 1.25rem', borderRadius:'var(--t-r-md)', border:'2px dashed #F59E0B', background:'linear-gradient(135deg, #FFFBEB, #FEF3C7)' }}>
+                  <div style={{ width:'44px', height:'44px', borderRadius:'var(--t-r-sm)', background:'#FEF3C7', border:'1px solid #F59E0B', display:'flex', alignItems:'center', justifyContent:'center', color:'#D97706', flexShrink:0 }}>{MONTHLY_CHALLENGE.icon}</div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', marginBottom:'0.25rem', flexWrap:'wrap' }}>
+                      <span style={{ fontSize:'0.85rem', fontWeight:700, color:'#92400E' }}>{MONTHLY_CHALLENGE.name}</span>
+                      <span style={{ fontSize:'0.62rem', fontWeight:700, color:'#B45309', background:'#FDE68A', padding:'0.1rem 0.45rem', borderRadius:'var(--t-r-pill)' }}>Monthly</span>
+                      <span style={{ fontSize:'0.65rem', fontWeight:700, color:'#D97706', background:'white', border:'1px solid #F59E0B', padding:'0.1rem 0.4rem', borderRadius:'var(--t-r-pill)' }}>+{MONTHLY_CHALLENGE.points} pts</span>
                     </div>
-                  ))}
-
-                  {/* Monthly challenge */}
-                  <div style={{ display:'flex', alignItems:'center', gap:'0.85rem', padding:'0.75rem 1rem', borderRadius:'var(--t-r-sm)', border:'2px dashed #F59E0B', background:'#FFFBEB' }}>
-                    <div style={{ fontSize:'1.4rem', flexShrink:0 }}>{MONTHLY_CHALLENGE.icon}</div>
-                    <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', marginBottom:'0.15rem' }}>
-                        <span style={{ fontSize:'0.82rem', fontWeight:700, color:'#92400E' }}>{MONTHLY_CHALLENGE.name}</span>
-                        <span style={{ fontSize:'0.65rem', fontWeight:700, color:'#D97706', background:'#FEF3C7', padding:'0.1rem 0.4rem', borderRadius:'var(--t-r-pill)' }}>+{MONTHLY_CHALLENGE.points} pts</span>
-                        <span style={{ fontSize:'0.62rem', color:'#B45309', background:'#FDE68A', padding:'0.1rem 0.4rem', borderRadius:'var(--t-r-pill)', fontWeight:700 }}>Monthly</span>
-                      </div>
-                      <p style={{ fontSize:'0.73rem', color:'#92400E', margin:0, lineHeight:1.45 }}>{MONTHLY_CHALLENGE.desc}</p>
-                    </div>
-                    <span style={{ fontSize:'0.72rem', color:'#B45309', fontWeight:600, flexShrink:0 }}>Coming Soon</span>
+                    <p style={{ fontSize:'0.75rem', color:'#92400E', margin:'0 0 0.6rem', lineHeight:1.5 }}>{MONTHLY_CHALLENGE.desc}</p>
+                    <button onClick={() => { setUploadChallenge(MONTHLY_CHALLENGE); setUploadFile(null); setUploadNote(''); setUploadSuccess(false); }}
+                      style={{ padding:'0.4rem 1rem', borderRadius:'var(--t-r-pill)', border:'1.5px solid #D97706', background:'none', color:'#D97706', fontSize:'0.73rem', fontWeight:700, cursor:'pointer' }}
+                      onMouseEnter={e => { e.currentTarget.style.background='#D97706'; e.currentTarget.style.color='white'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background='none'; e.currentTarget.style.color='#D97706'; }}>
+                      Submit Evidence
+                    </button>
                   </div>
+                </div>
+              </div>
+
+              {/* Horizontal scroll of all challenges */}
+              <div style={{ overflowX:'auto', marginBottom:'0.25rem', paddingBottom:'0.5rem' }}>
+                <div style={{ display:'flex', gap:'0.75rem', width:'max-content' }}>
+                  {CHALLENGES.map(ch => {
+                    const isAutoComplete = ch.type === 'auto' && activeClasses.length > 0;
+                    const isSubmit = ch.type === 'submit';
+                    const isComingSoon = ch.type === 'coming-soon';
+                    return (
+                      <div key={ch.id} style={{ width:'180px', flexShrink:0, display:'flex', flexDirection:'column', borderRadius:'var(--t-r-md)', border:`1px solid ${isAutoComplete ? 'var(--t-mid)' : 'var(--t-stone)'}`, background: isAutoComplete ? 'var(--t-foam)' : 'white', padding:'1rem', opacity: isComingSoon ? 0.55 : 1, position:'relative', overflow:'hidden' }}>
+                        {isAutoComplete && (
+                          <div style={{ position:'absolute', top:'0.5rem', right:'0.5rem', width:'20px', height:'20px', borderRadius:'50%', background:'var(--t-mid)', color:'white', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                            <SvgCheck/>
+                          </div>
+                        )}
+                        <div style={{ width:'40px', height:'40px', borderRadius:'var(--t-r-sm)', background: isAutoComplete ? 'var(--t-mid)' : 'var(--t-chalk)', border:`1px solid ${isAutoComplete ? 'var(--t-mid)' : 'var(--t-mist)'}`, display:'flex', alignItems:'center', justifyContent:'center', color: isAutoComplete ? 'white' : 'var(--t-slate)', marginBottom:'0.6rem' }}>
+                          {ch.icon}
+                        </div>
+                        <div style={{ fontSize:'0.8rem', fontWeight:700, color: isAutoComplete ? 'var(--t-mid)' : 'var(--t-deep)', marginBottom:'0.2rem', lineHeight:1.2 }}>{ch.name}</div>
+                        <p style={{ fontSize:'0.7rem', color:'var(--t-slate)', margin:'0 0 auto', lineHeight:1.4, paddingBottom:'0.75rem' }}>{ch.desc}</p>
+                        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:'0.6rem', paddingTop:'0.6rem', borderTop:`1px solid ${isAutoComplete ? 'rgba(46,125,85,0.15)' : 'var(--t-mist)'}` }}>
+                          <span style={{ fontSize:'0.68rem', fontWeight:700, color: isAutoComplete ? 'var(--t-mid)' : 'var(--t-sage)', background: isAutoComplete ? 'rgba(46,125,85,0.1)' : 'var(--t-chalk)', padding:'0.15rem 0.4rem', borderRadius:'var(--t-r-pill)' }}>+{ch.points} pts</span>
+                          {isAutoComplete && <span style={{ fontSize:'0.65rem', fontWeight:700, color:'var(--t-mid)' }}>Auto</span>}
+                          {isSubmit && (
+                            <button onClick={() => { setUploadChallenge(ch); setUploadFile(null); setUploadNote(''); setUploadSuccess(false); }}
+                              style={{ fontSize:'0.65rem', fontWeight:700, color:'var(--t-mid)', background:'none', border:'none', cursor:'pointer', padding:0, textDecoration:'underline' }}>
+                              Submit
+                            </button>
+                          )}
+                          {isComingSoon && <span style={{ fontSize:'0.63rem', color:'var(--t-ash)', fontWeight:600 }}>Soon</span>}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 

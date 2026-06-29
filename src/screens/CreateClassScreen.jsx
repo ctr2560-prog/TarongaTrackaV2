@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, doc, getDoc, runTransaction, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, getDoc, runTransaction, serverTimestamp, setDoc, increment } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useApp } from '../context/AppContext';
 import { openTeacherInfoSheet } from '../utils/teacherInfoSheet';
@@ -119,6 +119,12 @@ export default function CreateClassScreen() {
           location: newLocation, subject: newLocation === 'zoosnooz-sydney' ? null : newSubject,
         });
       });
+
+      // Award expedition points to the school (non-blocking)
+      try {
+        const schoolId = newSchoolName.trim().toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+        await setDoc(doc(db, 'schools', schoolId), { name: newSchoolName.trim(), totalPoints: increment(25), lastUpdated: serverTimestamp() }, { merge: true });
+      } catch {}
 
       setNewClassName(''); setNewSchoolName(''); setAccessCodeInput(''); setZzConsentChecked(false);
       setNewLocation('taronga-sydney'); setNewSubject('science');
