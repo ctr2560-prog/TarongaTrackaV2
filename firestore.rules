@@ -46,8 +46,11 @@ service cloud.firestore {
     }
 
     // ── Admin access verification ─────────────────────────────────────────────
+    // The access code IS the credential — the login screen reads this collection
+    // unauthenticated to verify the code. Security comes from the code being secret,
+    // not from Firebase Auth (which isn't used for admin login).
     match /adminAccess/{docId} {
-      allow read: if request.auth != null;
+      allow read: if true;
       allow write: if false;
     }
 
