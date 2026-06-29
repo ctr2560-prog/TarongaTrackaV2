@@ -2019,6 +2019,17 @@ function ChallengesTab() {
     setActioning(null);
   };
 
+  const revoke = async (sub) => {
+    if (!window.confirm(`Revoke approval for "${sub.challengeName}" from ${sub.schoolName}? This will subtract ${sub.pointsValue} pts from their total.`)) return;
+    setActioning(sub.id);
+    try {
+      await updateDoc(doc(db, 'challengeSubmissions', sub.id), { status: 'pending', approvedAt: deleteField() });
+      const sid = normalizeSchoolId(sub.schoolName || '');
+      await setDoc(doc(db, 'schools', sid), { totalPoints: increment(-(sub.pointsValue || 0)), lastUpdated: serverTimestamp() }, { merge: true });
+    } catch (e) { alert('Revoke failed: ' + e.message); }
+    setActioning(null);
+  };
+
   const filtered = filter === 'all' ? submissions : submissions.filter(s => s.status === filter);
   const pendingCount = submissions.filter(s => s.status === 'pending').length;
 
@@ -2132,7 +2143,13 @@ function ChallengesTab() {
                       </div>
                     )}
                     {sub.status === 'approved' && (
-                      <span style={{ fontSize:'0.72rem', color:'#166534', fontWeight:600 }}>Points awarded</span>
+                      <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:'0.3rem' }}>
+                        <span style={{ fontSize:'0.72rem', color:'#166534', fontWeight:600 }}>Points awarded</span>
+                        <button onClick={() => revoke(sub)} disabled={actioning === sub.id}
+                          style={{ fontSize:'0.68rem', fontWeight:600, color:'#6B7280', background:'none', border:'1px solid #D1D5DB', borderRadius:'var(--t-r-pill)', padding:'0.25rem 0.6rem', cursor:'pointer' }}>
+                          Revoke
+                        </button>
+                      </div>
                     )}
                     {sub.status === 'rejected' && (
                       <button onClick={() => approve(sub)} disabled={actioning === sub.id}
