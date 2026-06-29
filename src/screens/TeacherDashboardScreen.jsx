@@ -426,13 +426,13 @@ export default function TeacherDashboardScreen() {
                 { icon:<SvgPlus/>, label:'Create Class', sub:'New session', action: () => setCurrentScreen('createClass'), color:'var(--t-mid)' },
                 { icon:<SvgLayers/>, label:'Pre/Post Visit', sub:'Learning resources', action: () => {}, color:'#0369A1' },
                 { icon:<SvgHelpCircle/>, label:'How To', sub:'Guides & tutorials', action: () => {}, color:'#7C3AED' },
-                { icon:<SvgGlobe/>, label:'Wildly', sub:'by Taronga', action: () => window.open('https://www.wildlybytaronga.com.au', '_blank'), color:'#D97706' },
+                { icon:<img src="/images/wildly-logo.png" alt="Wildly by Taronga" style={{ width:'68px', height:'auto', objectFit:'contain' }} />, label:'Wildly', sub:'by Taronga', action: () => window.open('https://www.wildlybytaronga.com.au', '_blank'), color:'#1B6B3A', wideIcon: true },
               ].map(btn => (
                 <button key={btn.label} onClick={btn.action}
                   style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'0.5rem', padding:'1.25rem 0.75rem', borderRadius:'var(--t-r-md)', border:'1px solid var(--t-stone)', background:'white', cursor:'pointer', boxShadow:'var(--t-shadow-sm)', transition:'all 0.18s', textAlign:'center' }}
                   onMouseEnter={e => { e.currentTarget.style.borderColor=btn.color; e.currentTarget.style.boxShadow=`0 4px 16px rgba(0,0,0,0.1)`; e.currentTarget.style.transform='translateY(-2px)'; }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor='var(--t-stone)'; e.currentTarget.style.boxShadow='var(--t-shadow-sm)'; e.currentTarget.style.transform='none'; }}>
-                  <div style={{ width:'32px', height:'32px', display:'flex', alignItems:'center', justifyContent:'center', color:btn.color }}>{btn.icon}</div>
+                  <div style={{ width: btn.wideIcon ? '72px' : '32px', height:'32px', display:'flex', alignItems:'center', justifyContent:'center', color:btn.color }}>{btn.icon}</div>
                   <div>
                     <div style={{ fontSize:'0.8rem', fontWeight:700, color:'var(--t-deep)', lineHeight:1.2 }}>{btn.label}</div>
                     <div style={{ fontSize:'0.68rem', color:'var(--t-ash)', marginTop:'0.15rem' }}>{btn.sub}</div>
