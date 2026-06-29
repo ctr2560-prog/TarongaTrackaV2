@@ -19,10 +19,10 @@ function WildlyLabel() {
 }
 
 const MILESTONES = [
-  { points: 100,  label: 'Plant a seedling' },
-  { points: 250,  label: 'Name a zoo animal' },
-  { points: 500,  label: 'Sponsor a habitat' },
-  { points: 1000, label: 'Conservation partner' },
+  { points: 100,  label: 'Conservation Starter' },
+  { points: 300,  label: 'Free class zoo visit', reward: true },
+  { points: 600,  label: 'Sponsor a habitat' },
+  { points: 1000, label: 'Conservation Partner' },
 ];
 
 const SvgPlus    = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
@@ -31,6 +31,9 @@ const SvgHelpCircle = () => <svg width="24" height="24" viewBox="0 0 24 24" fill
 const SvgGlobe   = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>;
 const SvgZap    = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>;
 const SvgImage  = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>;
+const SvgFeather = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M20.24 12.24a6 6 0 00-8.49-8.49L5 10.5V19h8.5z"/><line x1="16" y1="8" x2="2" y2="22"/><line x1="17.5" y1="15" x2="9" y2="15"/></svg>;
+const SvgBridge  = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M2 18h20"/><path d="M5 18V12"/><path d="M19 18V12"/><path d="M5 12Q5 6 12 6Q19 6 19 12"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/></svg>;
+const SvgNotebook = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M9 2v20"/><line x1="13" y1="7" x2="17" y2="7"/><line x1="13" y1="11" x2="17" y2="11"/><line x1="13" y1="15" x2="17" y2="15"/></svg>;
 const SvgCheck  = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>;
 const SvgTrash = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>;
 const SvgTree  = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22v-6"/><path d="M8 16l4-4 4 4"/><path d="M6 12l6-6 6 6"/><path d="M4 8l8-6 8 6"/></svg>;
@@ -44,11 +47,14 @@ const SvgChart = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="non
 const SvgMail  = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>;
 
 const CHALLENGES = [
-  { id:'expedition', name:'Tracka Expedition', desc:'Run any Taronga Tracka session with your class.', points:25, icon:<SvgZap/>, type:'auto' },
-  { id:'wildlife-posters', name:'Wildlife Posters', desc:'Create wildlife awareness posters with your class and display them at school.', points:40, icon:<SvgImage/>, type:'submit' },
-  { id:'clean-up-school', name:'Clean Up School', desc:'Organise a litter clean-up around your school grounds.', points:50, icon:<SvgTrash/>, type:'submit' },
-  { id:'plant-a-tree', name:'Plant a Tree', desc:'Plant a native tree or shrub in your school grounds.', points:75, icon:<SvgTree/>, type:'coming-soon' },
-  { id:'biodiversity-audit', name:'Biodiversity Audit', desc:'Count and photograph species found near your school.', points:60, icon:<SvgSearch/>, type:'coming-soon' },
+  { id:'expedition',         name:'Tracka Expedition',         desc:'Run any Taronga Tracka session with your class.',                                                                       points:25, icon:<SvgZap/>,      type:'auto' },
+  { id:'nature-journal',     name:'Nature Journal',            desc:'Students document local wildlife observations in illustrated journals over a week.',                                    points:35, icon:<SvgNotebook/>, type:'submit' },
+  { id:'wildlife-poem',      name:'Wildlife Poem',             desc:'Write and illustrate a class poem about a local or endangered species.',                                               points:30, icon:<SvgFeather/>,  type:'submit' },
+  { id:'wildlife-posters',   name:'Wildlife Posters',          desc:'Create wildlife awareness posters with your class and display them at school.',                                        points:40, icon:<SvgImage/>,    type:'submit' },
+  { id:'clean-up-school',    name:'Clean Up School',           desc:'Organise a litter clean-up around your school grounds.',                                                              points:50, icon:<SvgTrash/>,    type:'submit' },
+  { id:'biodiversity-audit', name:'Biodiversity Audit',        desc:'Count and photograph species found near your school and submit your findings.',                                       points:60, icon:<SvgSearch/>,   type:'submit' },
+  { id:'plant-a-tree',       name:'Plant a Tree',              desc:'Plant a native tree or shrub in your school grounds.',                                                                points:75, icon:<SvgTree/>,     type:'submit' },
+  { id:'wildlife-crossing',  name:'Wildlife Crossing Design',  desc:'Design and model a wildlife corridor or road crossing for a local species, then present it to the class.',           points:80, icon:<SvgBridge/>,   type:'submit' },
 ];
 
 const MONTHLY_CHALLENGE = { name:'June Challenge — Habitat Heroes', desc:'Document three different animal habitats near your school with photos and a short description.', points:100, icon:<SvgStar/> };
@@ -355,10 +361,21 @@ export default function TeacherDashboardScreen() {
                   {schoolPoints !== null && nextMilestone && (
                     <>
                       <div style={{ background:'rgba(255,255,255,0.15)', borderRadius:'4px', height:'6px', overflow:'hidden', marginTop:'0.25rem' }}>
-                        <div style={{ width:`${milestoneProgress}%`, height:'100%', background:'rgba(255,255,255,0.8)', borderRadius:'4px', transition:'width 0.5s' }} />
+                        <div style={{ width:`${milestoneProgress}%`, height:'100%', background: nextMilestone.reward ? '#FCD34D' : 'rgba(255,255,255,0.8)', borderRadius:'4px', transition:'width 0.5s' }} />
                       </div>
-                      <div style={{ fontSize:'0.67rem', color:'rgba(255,255,255,0.55)', lineHeight:1.4 }}>Next: {nextMilestone.label} at {nextMilestone.points} pts</div>
+                      {nextMilestone.reward ? (
+                        <div style={{ fontSize:'0.67rem', color:'#FCD34D', lineHeight:1.4, fontWeight:700 }}>
+                          {nextMilestone.points - (schoolPoints||0)} pts to a free zoo visit
+                        </div>
+                      ) : (
+                        <div style={{ fontSize:'0.67rem', color:'rgba(255,255,255,0.55)', lineHeight:1.4 }}>Next: {nextMilestone.label} at {nextMilestone.points} pts</div>
+                      )}
                     </>
+                  )}
+                  {schoolPoints !== null && (schoolPoints || 0) >= 300 && (
+                    <div style={{ marginTop:'0.25rem', background:'#FCD34D', borderRadius:'var(--t-r-xs)', padding:'0.3rem 0.6rem', display:'flex', alignItems:'center', gap:'0.4rem' }}>
+                      <span style={{ fontSize:'0.7rem', fontWeight:800, color:'#78350F' }}>Free zoo visit unlocked!</span>
+                    </div>
                   )}
                 </div>
 
