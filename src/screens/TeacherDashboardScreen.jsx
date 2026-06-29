@@ -19,7 +19,6 @@ function WildlyLabel() {
 }
 
 const MILESTONES = [
-  { points: 100,  label: 'Conservation Starter' },
   { points: 300,  label: 'Free class zoo visit', reward: true },
   { points: 600,  label: 'Sponsor a habitat' },
   { points: 1000, label: 'Conservation Partner' },
