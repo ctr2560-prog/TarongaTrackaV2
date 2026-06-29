@@ -37,6 +37,8 @@ const SvgCheck  = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="no
 const SvgTrash = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>;
 const SvgTree  = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22v-6"/><path d="M8 16l4-4 4 4"/><path d="M6 12l6-6 6 6"/><path d="M4 8l8-6 8 6"/></svg>;
 const SvgSearch = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>;
+const SvgMoon   = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>;
+const SvgSchool = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>;
 const SvgStar  = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>;
 const SvgBook  = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>;
 const SvgCompass = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>;
@@ -46,7 +48,10 @@ const SvgChart = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="non
 const SvgMail  = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>;
 
 const CHALLENGES = [
-  { id:'expedition',         name:'Tracka Expedition',         desc:'Run any Taronga Tracka session with your class.',                                                                       points:25, icon:<SvgZap/>,      type:'auto' },
+  { id:'expedition-sydney',   name:'Taronga Sydney',       desc:'Run a Tracka session at Taronga Zoo Sydney.',                                                     points:25, icon:<SvgZap/>,      type:'auto', location:'taronga-sydney'  },
+  { id:'expedition-zoosnooz', name:'ZooSnooz Night',       desc:'Lead your class through an after-dark ZooSnooz experience at Taronga Sydney.',                    points:40, icon:<SvgMoon/>,     type:'auto', location:'zoosnooz-sydney' },
+  { id:'expedition-dubbo',    name:'Taronga Dubbo',        desc:'Run a Tracka session at Taronga Western Plains Zoo in Dubbo.',                                    points:35, icon:<SvgZap/>,      type:'auto', location:'dubbo'           },
+  { id:'expedition-school',   name:'Your School',          desc:'Run a Tracka session on your school grounds.',                                                    points:20, icon:<SvgSchool/>,   type:'auto', location:'school'          },
   { id:'nature-journal',     name:'Nature Journal',            desc:'Students document local wildlife observations in illustrated journals over a week.',                                    points:35, icon:<SvgNotebook/>, type:'submit' },
   { id:'wildlife-poem',      name:'Wildlife Poem',             desc:'Write and illustrate a class poem about a local or endangered species.',                                               points:30, icon:<SvgFeather/>,  type:'submit' },
   { id:'wildlife-posters',   name:'Wildlife Posters',          desc:'Create wildlife awareness posters with your class and display them at school.',                                        points:40, icon:<SvgImage/>,    type:'submit' },
@@ -100,6 +105,10 @@ export default function TeacherDashboardScreen() {
 
   // My challenge submissions (keyed by challengeId → latest submission)
   const [mySubmissions, setMySubmissions] = useState({});
+
+  // Challenge scroll
+  const challengeScrollRef = useRef(null);
+  const [canScrollRight,   setCanScrollRight]   = useState(true);
 
   // Challenge upload modal
   const [uploadChallenge,   setUploadChallenge]   = useState(null);
@@ -437,10 +446,19 @@ export default function TeacherDashboardScreen() {
                 </div>
 
               {/* Horizontal scroll of all challenges */}
-              <div style={{ overflowX:'auto', marginBottom:'0.25rem', paddingBottom:'0.5rem' }}>
+              <div style={{ position:'relative' }}>
+              <div
+                ref={challengeScrollRef}
+                onScroll={e => {
+                  const el = e.currentTarget;
+                  setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 10);
+                }}
+                style={{ overflowX:'auto', marginBottom:'0.25rem', paddingBottom:'0.5rem' }}>
                 <div style={{ display:'flex', gap:'0.75rem', width:'max-content' }}>
                   {CHALLENGES.map(ch => {
-                    const isAutoComplete = ch.type === 'auto' && activeClasses.length > 0;
+                    const isAutoComplete = ch.type === 'auto' && (
+                      ch.location ? activeClasses.some(c => c.location === ch.location) : activeClasses.length > 0
+                    );
                     const isSubmit = ch.type === 'submit';
                     const sub = mySubmissions[ch.id];
                     const isApproved = sub?.status === 'approved';
@@ -479,6 +497,12 @@ export default function TeacherDashboardScreen() {
                     );
                   })}
                 </div>
+              </div>
+              {canScrollRight && (
+                <div style={{ position:'absolute', top:0, right:0, bottom:'0.5rem', width:'64px', background:'linear-gradient(to right, transparent, white 70%)', display:'flex', alignItems:'center', justifyContent:'flex-end', paddingRight:'0.5rem', pointerEvents:'none' }}>
+                  <div style={{ width:'28px', height:'28px', borderRadius:'50%', background:'white', border:'1px solid var(--t-stone)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 2px 8px rgba(0,0,0,0.1)', color:'var(--t-slate)', fontSize:'1.1rem', lineHeight:1 }}>›</div>
+                </div>
+              )}
               </div>
 
               {/* Leaderboard */}

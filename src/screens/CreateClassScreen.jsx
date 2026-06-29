@@ -120,16 +120,23 @@ export default function CreateClassScreen() {
         });
       });
 
-      // Award expedition points once per school (non-blocking)
+      // Award location-specific expedition points once per school (non-blocking)
       try {
+        const EXPEDITION_AWARDS = {
+          'taronga-sydney':  { id:'expedition-sydney',   points:25 },
+          'zoosnooz-sydney': { id:'expedition-zoosnooz', points:40 },
+          'dubbo':           { id:'expedition-dubbo',    points:35 },
+          'school':          { id:'expedition-school',   points:20 },
+        };
+        const award = EXPEDITION_AWARDS[newLocation] || EXPEDITION_AWARDS['taronga-sydney'];
         const schoolId = newSchoolName.trim().toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
         const schoolSnap = await getDoc(doc(db, 'schools', schoolId));
-        const alreadyAwarded = schoolSnap.exists() && schoolSnap.data().awardedChallenges?.includes('expedition');
-        if (!alreadyAwarded) {
+        const awarded = schoolSnap.exists() ? (schoolSnap.data().awardedChallenges || []) : [];
+        if (!awarded.includes(award.id)) {
           await setDoc(doc(db, 'schools', schoolId), {
             name: newSchoolName.trim(),
-            totalPoints: increment(25),
-            awardedChallenges: arrayUnion('expedition'),
+            totalPoints: increment(award.points),
+            awardedChallenges: arrayUnion(award.id),
             lastUpdated: serverTimestamp(),
           }, { merge: true });
         }
