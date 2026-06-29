@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, doc, getDoc, runTransaction, serverTimestamp, setDoc, increment } from 'firebase/firestore';
+import { collection, doc, getDoc, runTransaction, serverTimestamp, setDoc, increment, arrayUnion } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useApp } from '../context/AppContext';
 import { openTeacherInfoSheet } from '../utils/teacherInfoSheet';
@@ -120,10 +120,19 @@ export default function CreateClassScreen() {
         });
       });
 
-      // Award expedition points to the school (non-blocking)
+      // Award expedition points once per school (non-blocking)
       try {
         const schoolId = newSchoolName.trim().toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-        await setDoc(doc(db, 'schools', schoolId), { name: newSchoolName.trim(), totalPoints: increment(25), lastUpdated: serverTimestamp() }, { merge: true });
+        const schoolSnap = await getDoc(doc(db, 'schools', schoolId));
+        const alreadyAwarded = schoolSnap.exists() && schoolSnap.data().awardedChallenges?.includes('expedition');
+        if (!alreadyAwarded) {
+          await setDoc(doc(db, 'schools', schoolId), {
+            name: newSchoolName.trim(),
+            totalPoints: increment(25),
+            awardedChallenges: arrayUnion('expedition'),
+            lastUpdated: serverTimestamp(),
+          }, { merge: true });
+        }
       } catch {}
 
       setNewClassName(''); setNewSchoolName(''); setAccessCodeInput(''); setZzConsentChecked(false);

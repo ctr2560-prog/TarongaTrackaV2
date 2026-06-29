@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { collection, doc, onSnapshot, getDocs, getDoc, query, orderBy, limit, where, setDoc, addDoc, serverTimestamp, increment } from 'firebase/firestore';
+import { collection, doc, onSnapshot, getDocs, getDoc, query, orderBy, limit, where, setDoc, addDoc, serverTimestamp, increment, arrayUnion } from 'firebase/firestore';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
 import { useApp } from '../context/AppContext';
@@ -158,7 +158,7 @@ export default function TeacherDashboardScreen() {
     return () => unsub();
   }, [primarySchool]);
 
-  // Seed school doc for teachers whose classes predate the points system
+  // Seed school doc for teachers whose classes predate the points system (once only, flat 25 pts)
   useEffect(() => {
     if (!primarySchool || classesLoading || schoolDocExists !== false) return;
     const activeCount = teacherClasses.filter(c => !c.archived).length;
@@ -166,7 +166,8 @@ export default function TeacherDashboardScreen() {
     const sid = normalizeSchoolId(primarySchool);
     setDoc(doc(db, 'schools', sid), {
       name: primarySchool,
-      totalPoints: activeCount * 25,
+      totalPoints: 25,
+      awardedChallenges: ['expedition'],
       lastUpdated: serverTimestamp(),
     }, { merge: true }).catch(() => {});
   }, [primarySchool, classesLoading, schoolDocExists, teacherClasses]);

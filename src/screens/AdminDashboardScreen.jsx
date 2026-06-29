@@ -1984,11 +1984,13 @@ function normalizeSchoolId(name) {
 }
 
 function ChallengesTab() {
-  const [submissions,  setSubmissions]  = useState([]);
-  const [leaderboard,  setLeaderboard]  = useState([]);
-  const [filter,       setFilter]       = useState('pending');
-  const [actioning,    setActioning]    = useState(null);
-  const [lightbox,     setLightbox]     = useState(null);
+  const [submissions,    setSubmissions]    = useState([]);
+  const [leaderboard,    setLeaderboard]    = useState([]);
+  const [filter,         setFilter]         = useState('pending');
+  const [actioning,      setActioning]      = useState(null);
+  const [lightbox,       setLightbox]       = useState(null);
+  const [editingSchool,  setEditingSchool]  = useState(null); // { id, name, totalPoints }
+  const [editPts,        setEditPts]        = useState('');
 
   useEffect(() => {
     const q = query(collection(db, 'challengeSubmissions'), orderBy('submittedAt', 'desc'));
@@ -2017,6 +2019,15 @@ function ChallengesTab() {
       await updateDoc(doc(db, 'challengeSubmissions', sub.id), { status: 'rejected', rejectedAt: serverTimestamp() });
     } catch (e) { alert('Reject failed: ' + e.message); }
     setActioning(null);
+  };
+
+  const saveSchoolPts = async () => {
+    const pts = parseInt(editPts, 10);
+    if (isNaN(pts) || pts < 0) { alert('Enter a valid non-negative number.'); return; }
+    try {
+      await setDoc(doc(db, 'schools', editingSchool.id), { totalPoints: pts, lastUpdated: serverTimestamp() }, { merge: true });
+      setEditingSchool(null);
+    } catch (e) { alert('Save failed: ' + e.message); }
   };
 
   const revoke = async (sub) => {
@@ -2059,15 +2070,34 @@ function ChallengesTab() {
               const barW   = Math.round((school.totalPoints / maxPts) * 100);
               const medal  = i === 0 ? '#B45309' : i === 1 ? '#6B7280' : i === 2 ? '#92400E' : 'var(--t-ash)';
               return (
-                <div key={school.id} style={{ display:'grid', gridTemplateColumns:'1.5rem 1fr auto', gap:'0.6rem', alignItems:'center', padding:'0.6rem 0.75rem', borderRadius:'var(--t-r-sm)', background:'var(--t-chalk)', border:'1px solid var(--t-mist)' }}>
-                  <span style={{ fontSize:'0.75rem', fontWeight:800, color:medal, textAlign:'center' }}>{i + 1}</span>
-                  <div>
-                    <div style={{ fontSize:'0.8rem', fontWeight:600, color:'var(--t-deep)', marginBottom:'0.2rem' }}>{school.name || school.id}</div>
-                    <div style={{ height:'4px', background:'var(--t-mist)', borderRadius:'2px', overflow:'hidden' }}>
-                      <div style={{ width:`${barW}%`, height:'100%', background:'var(--t-mid)', borderRadius:'2px' }} />
+                <div key={school.id} style={{ padding:'0.6rem 0.75rem', borderRadius:'var(--t-r-sm)', background:'var(--t-chalk)', border:'1px solid var(--t-mist)' }}>
+                  {editingSchool?.id === school.id ? (
+                    <div style={{ display:'flex', alignItems:'center', gap:'0.5rem' }}>
+                      <span style={{ fontSize:'0.8rem', fontWeight:600, color:'var(--t-deep)', flex:1 }}>{school.name || school.id}</span>
+                      <input type="number" value={editPts} onChange={e => setEditPts(e.target.value)} min="0"
+                        style={{ width:'80px', padding:'0.25rem 0.5rem', borderRadius:'var(--t-r-sm)', border:'1.5px solid var(--t-mid)', fontSize:'0.82rem', fontFamily:'DM Sans, sans-serif', textAlign:'right' }}
+                        onKeyDown={e => { if (e.key === 'Enter') saveSchoolPts(); if (e.key === 'Escape') setEditingSchool(null); }}
+                        autoFocus />
+                      <span style={{ fontSize:'0.75rem', color:'var(--t-ash)' }}>pts</span>
+                      <button onClick={saveSchoolPts} style={{ padding:'0.25rem 0.65rem', borderRadius:'var(--t-r-pill)', border:'none', background:'var(--t-mid)', color:'white', fontSize:'0.73rem', fontWeight:700, cursor:'pointer' }}>Save</button>
+                      <button onClick={() => setEditingSchool(null)} style={{ padding:'0.25rem 0.65rem', borderRadius:'var(--t-r-pill)', border:'1px solid var(--t-stone)', background:'white', color:'var(--t-slate)', fontSize:'0.73rem', cursor:'pointer' }}>Cancel</button>
                     </div>
-                  </div>
-                  <span style={{ fontSize:'0.78rem', fontWeight:700, color:'var(--t-mid)', whiteSpace:'nowrap' }}>{school.totalPoints} pts</span>
+                  ) : (
+                    <div style={{ display:'grid', gridTemplateColumns:'1.5rem 1fr auto auto', gap:'0.6rem', alignItems:'center' }}>
+                      <span style={{ fontSize:'0.75rem', fontWeight:800, color:medal, textAlign:'center' }}>{i + 1}</span>
+                      <div>
+                        <div style={{ fontSize:'0.8rem', fontWeight:600, color:'var(--t-deep)', marginBottom:'0.2rem' }}>{school.name || school.id}</div>
+                        <div style={{ height:'4px', background:'var(--t-mist)', borderRadius:'2px', overflow:'hidden' }}>
+                          <div style={{ width:`${barW}%`, height:'100%', background:'var(--t-mid)', borderRadius:'2px' }} />
+                        </div>
+                      </div>
+                      <span style={{ fontSize:'0.78rem', fontWeight:700, color:'var(--t-mid)', whiteSpace:'nowrap' }}>{school.totalPoints} pts</span>
+                      <button onClick={() => { setEditingSchool(school); setEditPts(String(school.totalPoints)); }}
+                        style={{ fontSize:'0.68rem', color:'var(--t-ash)', background:'none', border:'1px solid var(--t-mist)', borderRadius:'var(--t-r-pill)', padding:'0.2rem 0.5rem', cursor:'pointer' }}>
+                        Edit
+                      </button>
+                    </div>
+                  )}
                 </div>
               );
             })}
