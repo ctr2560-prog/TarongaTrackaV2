@@ -95,7 +95,7 @@ export default function TeacherDashboardScreen() {
 
   // School points + leaderboard
   const [schoolPoints,    setSchoolPoints]    = useState(null);
-  const [schoolDocExists, setSchoolDocExists] = useState(null); // null = unknown
+  const [schoolDocExists, setSchoolDocExists] = useState(null);
   const [leaderboard,     setLeaderboard]     = useState([]);
 
   // My challenge submissions (keyed by challengeId → latest submission)
@@ -158,19 +158,28 @@ export default function TeacherDashboardScreen() {
     return () => unsub();
   }, [primarySchool]);
 
-  // Seed school doc for teachers whose classes predate the points system (once only, flat 25 pts)
+  // Seed/correct school doc for pre-existing schools (once, on mount)
   useEffect(() => {
-    if (!primarySchool || classesLoading || schoolDocExists !== false) return;
+    if (!primarySchool || classesLoading) return;
     const activeCount = teacherClasses.filter(c => !c.archived).length;
     if (activeCount === 0) return;
+    let cancelled = false;
     const sid = normalizeSchoolId(primarySchool);
-    setDoc(doc(db, 'schools', sid), {
-      name: primarySchool,
-      totalPoints: 25,
-      awardedChallenges: ['expedition'],
-      lastUpdated: serverTimestamp(),
-    }, { merge: true }).catch(() => {});
-  }, [primarySchool, classesLoading, schoolDocExists, teacherClasses]);
+    getDoc(doc(db, 'schools', sid)).then(snap => {
+      if (cancelled) return;
+      // Doc missing → create fresh
+      // Doc exists but no awardedChallenges → wrong old seed, correct it to 25
+      if (!snap.exists() || !snap.data().awardedChallenges) {
+        return setDoc(doc(db, 'schools', sid), {
+          name: primarySchool,
+          totalPoints: 25,
+          awardedChallenges: ['expedition'],
+          lastUpdated: serverTimestamp(),
+        }, { merge: true });
+      }
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [primarySchool, classesLoading]);
 
   // Leaderboard
   useEffect(() => {
