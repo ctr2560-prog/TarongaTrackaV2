@@ -72,9 +72,11 @@ service cloud.firestore {
     }
 
     // ── Challenge submissions ─────────────────────────────────────────────────
+    // Teachers create submissions (Firebase Auth required).
+    // Staff portal reads and approves/rejects without Firebase Auth (code-based login).
     match /challengeSubmissions/{submissionId} {
+      allow read, update: if true;
       allow create: if request.auth != null;
-      allow read, update: if request.auth != null;
     }
 
     // ── ZooSnooz session documents ────────────────────────────────────────────
