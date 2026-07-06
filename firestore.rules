@@ -14,10 +14,10 @@ service cloud.firestore {
 
     // ── Classes ───────────────────────────────────────────────────────────────
     // Students find their class by code without logging in → public read.
-    // Only authenticated teachers create/update class metadata.
+    // Write is open so the staff portal (code-based login) can delete classes.
     match /classes/{classCode} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if true;
 
       // Student records — students have no Firebase Auth; they write with a
       // class code + chosen alias.  Teachers and admins read all students.
@@ -28,8 +28,9 @@ service cloud.firestore {
 
     // ── Teacher data ─────────────────────────────────────────────────────────
     // Teacher profile document (email, commsOptIn, etc.)
+    // Read is open so the staff portal (code-based login, no Firebase Auth) can list teachers.
     match /teachers/{email} {
-      allow read: if request.auth != null;
+      allow read: if true;
       allow write: if request.auth != null && request.auth.token.email == email;
 
       // Each teacher's class list subcollection
@@ -56,9 +57,10 @@ service cloud.firestore {
     }
 
     // ── Global app settings ───────────────────────────────────────────────────
+    // Write is open so the staff portal (code-based login) can toggle GPS and other settings.
     match /settings/{settingId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if true;
     }
 
     // ── Feedback ─────────────────────────────────────────────────────────────

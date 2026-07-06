@@ -340,20 +340,18 @@ export default function HomeScreen() {
       {/* ── Home screen ──────────────────────────────────────────────── */}
       <div style={{ position:'relative', width:'100%', height:'100vh', overflow:'hidden' }}>
         <div style={{ position:'absolute', inset:0, zIndex:1, pointerEvents:'none', background:'linear-gradient(180deg,rgba(7,30,20,0.55) 0%,rgba(7,30,20,0.3) 40%,rgba(7,30,20,0.72) 100%)' }} />
+        <img src="/images/taronga-zoo-white.png" alt="Taronga Zoo" className="animate-fade-in-up" style={{ position:'absolute', top:'1.1rem', left:'1.1rem', width:'clamp(115px,30vw,160px)', height:'auto', opacity:0.85, zIndex:11, pointerEvents:'none', filter:'drop-shadow(0 2px 8px rgba(0,0,0,0.45))', animationDelay:'0.9s' }} onError={e => e.target.style.display='none'} />
         <div style={{ position:'relative', zIndex:10, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', height:'100%', padding:'clamp(4rem,10vh,6rem) 1.5rem 5rem', textAlign:'center' }}>
-          <div className="animate-fade-in-up" style={{ animationDelay:'0.15s', marginBottom:'clamp(0.75rem,2vh,1.2rem)' }}>
-            <img src="/images/logo.png" alt="Taronga Tracka" style={{ width:'clamp(150px,36vw,220px)', height:'auto', display:'block', filter:'drop-shadow(0 4px 16px rgba(0,0,0,0.5))' }} onError={e => e.target.style.display='none'} />
+          <div className="animate-fade-in-up" style={{ animationDelay:'0.15s', marginBottom:'clamp(0.75rem,2vh,1.2rem)', position:'relative' }}>
+            <div style={{ position:'absolute', inset:'-18% -30%', background:'radial-gradient(ellipse at center, rgba(4,18,11,0.6) 0%, rgba(4,18,11,0.3) 45%, transparent 72%)', pointerEvents:'none' }} />
+            <img src="/images/tracka-logo-white.png" alt="Taronga Tracka" style={{ position:'relative', width:'clamp(125px,30vw,175px)', height:'auto', display:'block', filter:'drop-shadow(0 3px 10px rgba(0,0,0,0.45))' }} onError={e => e.target.style.display='none'} />
           </div>
-          <div className="animate-fade-in-up" style={{ background:'rgba(7,30,20,0.55)', backdropFilter:'blur(18px) saturate(1.2)', WebkitBackdropFilter:'blur(18px) saturate(1.2)', borderRadius:'var(--t-r-xl)', padding:'clamp(0.9rem,2vh,1.3rem) clamp(1.5rem,4vw,2.2rem)', marginBottom:'clamp(0.75rem,2vh,1.2rem)', border:'1px solid rgba(255,255,255,0.12)', maxWidth:'460px', width:'90%', animationDelay:'0.35s' }}>
-            <h3 className="taronga-title" style={{ fontSize:'clamp(1.6rem,4vw,2rem)', marginBottom:'0.75rem', color:'white', letterSpacing:'0.04em', textShadow:'0 2px 8px rgba(0,0,0,0.4)' }}>Step Into the Wild</h3>
-            <ul style={{ listStyle:'none', padding:0, margin:0, display:'flex', flexDirection:'column', gap:'0.45rem' }}>
-              {['Track animals across the zoo','Record meaningful observations','Earn badges for your discoveries'].map((line,i) => (
-                <li key={i} style={{ fontSize:'clamp(0.9rem,2vw,1.05rem)', color:'rgba(255,255,255,0.88)', display:'flex', alignItems:'center', gap:'0.5rem', justifyContent:'center' }}>
-                  <span style={{ color:'var(--t-eucalyptus)', fontSize:'0.8em' }}>▸</span>{line}
-                </li>
-              ))}
-            </ul>
-          </div>
+          <h1 className="taronga-title animate-fade-in-up" style={{ fontSize:'clamp(2.3rem,7vw,3.8rem)', color:'white', margin:'0 0 0.55rem', letterSpacing:'0.03em', lineHeight:1.08, textShadow:'0 3px 18px rgba(0,0,0,0.6)', animationDelay:'0.3s' }}>
+            Step Into the Wild
+          </h1>
+          <p className="animate-fade-in-up" style={{ fontSize:'clamp(0.95rem,2.2vw,1.15rem)', color:'rgba(255,255,255,0.9)', margin:'0 0 clamp(1.5rem,4vh,2.4rem)', maxWidth:'340px', lineHeight:1.55, textShadow:'0 2px 12px rgba(0,0,0,0.55)', textWrap:'balance', animationDelay:'0.45s' }}>
+            Track animals, record observations and earn badges across the zoo.
+          </p>
           <button onClick={() => setCurrentScreen('comingSoon')} className="animate-scale-in"
             style={{ background:'linear-gradient(135deg,var(--sunset-orange) 0%,var(--earth-clay) 100%)', color:'white', border:'none', padding:'clamp(0.85rem,2vh,1.05rem) clamp(2.5rem,6vw,3rem)', fontSize:'clamp(1rem,2.2vw,1.15rem)', fontWeight:700, borderRadius:'var(--t-r-pill)', cursor:'pointer', boxShadow:'0 8px 28px rgba(180,90,40,0.45)', animationDelay:'0.55s', textTransform:'uppercase', letterSpacing:'0.12em', width:'min(88vw,380px)', marginBottom:'0.6rem', transition:'all 0.2s' }}
             onMouseEnter={e => { e.currentTarget.style.transform='translateY(-2px)'; e.currentTarget.style.boxShadow='0 12px 36px rgba(180,90,40,0.55)'; }}
@@ -364,13 +362,19 @@ export default function HomeScreen() {
             style={{ padding:'clamp(0.75rem,1.8vh,0.95rem) clamp(2rem,5vw,2.5rem)', borderRadius:'var(--t-r-pill)', border:'1.5px solid rgba(255,255,255,0.28)', background:'rgba(26,82,56,0.6)', backdropFilter:'blur(10px)', WebkitBackdropFilter:'blur(10px)', color:'white', cursor:'pointer', fontWeight:600, width:'min(88vw,380px)', boxShadow:'0 4px 16px rgba(0,0,0,0.2)', transition:'all 0.2s', textTransform:'uppercase', letterSpacing:'0.1em', fontSize:'clamp(0.9rem,2vw,1rem)', marginBottom:'0.6rem', animationDelay:'0.65s' }}
             onMouseEnter={e => { e.currentTarget.style.background='rgba(26,82,56,0.85)'; e.currentTarget.style.transform='translateY(-1px)'; }}
             onMouseLeave={e => { e.currentTarget.style.background='rgba(26,82,56,0.6)'; e.currentTarget.style.transform='translateY(0)'; }}>
-            Join a Class
+            <span style={{ display:'inline-flex', alignItems:'center', justifyContent:'center', gap:'0.6rem' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0, opacity:0.85 }}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              Join a Class
+            </span>
           </button>
           <button onClick={() => setCurrentScreen('teacherLogin')} className="animate-scale-in"
             style={{ padding:'clamp(0.75rem,1.8vh,0.95rem) clamp(2rem,5vw,2.5rem)', borderRadius:'var(--t-r-pill)', border:'1.5px solid rgba(255,255,255,0.28)', background:'rgba(26,82,56,0.6)', backdropFilter:'blur(10px)', WebkitBackdropFilter:'blur(10px)', color:'white', cursor:'pointer', fontWeight:600, width:'min(88vw,380px)', boxShadow:'0 4px 16px rgba(0,0,0,0.2)', transition:'all 0.2s', textTransform:'uppercase', letterSpacing:'0.1em', fontSize:'clamp(0.9rem,2vw,1rem)', animationDelay:'0.75s' }}
             onMouseEnter={e => { e.currentTarget.style.background='rgba(26,82,56,0.85)'; e.currentTarget.style.transform='translateY(-1px)'; }}
             onMouseLeave={e => { e.currentTarget.style.background='rgba(26,82,56,0.6)'; e.currentTarget.style.transform='translateY(0)'; }}>
-            Teacher Portal
+            <span style={{ display:'inline-flex', alignItems:'center', justifyContent:'center', gap:'0.6rem' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0, opacity:0.85 }}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h6z"/></svg>
+              Teacher Portal
+            </span>
           </button>
         </div>
         <button onClick={openLearn} style={{ position:'absolute', bottom:'1.5rem', left:'50%', transform:'translateX(-50%)', background:'none', border:'none', cursor:'pointer', zIndex:10, display:'flex', flexDirection:'column', alignItems:'center', gap:'0.35rem', color:'rgba(255,255,255,0.72)', animation:'lm-bob 2.4s ease-in-out infinite', padding:'0.5rem 1rem' }}>
