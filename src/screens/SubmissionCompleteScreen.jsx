@@ -25,7 +25,7 @@ export default function SubmissionCompleteScreen() {
 
       <div className="animate-scale-in" style={{ position:'relative', zIndex:10, background:'white', borderRadius:'28px', padding:'clamp(1.8rem,5vh,2.8rem)', maxWidth:'480px', width:'100%', textAlign:'center', boxShadow:'0 24px 64px rgba(0,0,0,0.35)' }}>
         <div style={{ width:'80px', height:'80px', borderRadius:'50%', background:'linear-gradient(135deg,var(--jungle-mid),var(--jungle-light))', margin:'0 auto 1.2rem', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'2.4rem', boxShadow:'0 6px 20px rgba(26,82,56,0.4)' }}>
-          <img src="images/logo.png" alt="Taronga Tracka" style={{ width:'60%', height:'60%', objectFit:'contain' }} onError={e => e.target.style.display='none'} />
+          <img src="images/tracka-logo-white.png" alt="Taronga Tracka" style={{ width:'60%', height:'60%', objectFit:'contain' }} onError={e => e.target.style.display='none'} />
         </div>
 
         <h2 className="taronga-title" style={{ fontSize:'clamp(1.6rem,4vh,2.2rem)', color:'var(--t-deep)', marginBottom:'0.4rem', letterSpacing:'0.04em' }}>Activity Submitted!</h2>

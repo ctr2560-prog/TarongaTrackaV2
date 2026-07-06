@@ -74,7 +74,7 @@ export default function AnimalScreen() {
             style={{ background: showResult ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.2)', border:'none', color:'white', padding:'0.5rem 1rem', borderRadius:'var(--t-r-pill)', cursor: showResult ? 'not-allowed' : 'pointer', fontSize:'0.85rem', fontWeight:600, opacity: showResult ? 0.5 : 1 }}>
             ← Back
           </button>
-          <img src="images/logo.png" alt="Taronga Tracka" style={{ height:'45px', width:'auto' }} onError={e => e.target.style.display='none'} />
+          <img src="images/tracka-logo-white.png" alt="Taronga Tracka" style={{ height:'45px', width:'auto' }} onError={e => e.target.style.display='none'} />
           <div style={{ width:'70px' }} />
         </div>
       </div>

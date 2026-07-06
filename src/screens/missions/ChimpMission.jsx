@@ -66,7 +66,7 @@ export default function ChimpMission() {
       <div style={{ background:'rgba(0,0,0,0.3)', backdropFilter:'blur(4px)', padding:'0.6rem 1rem', flex:'0 0 auto', zIndex:100, borderBottom:'1px solid rgba(255,255,255,0.07)' }}>
         <div style={{ maxWidth:'600px', margin:'0 auto', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
           <button onClick={() => setCurrentScreen('map')} style={{ background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.2)', color:'white', padding:'0.45rem 1rem', borderRadius:'var(--t-r-pill)', cursor:'pointer', fontSize:'0.82rem', fontWeight:600 }}>← Back</button>
-          <img src="images/logo.png" alt="Taronga Tracka" style={{ height:'40px', width:'auto', opacity:0.85 }} onError={e => e.target.style.display='none'} />
+          <img src="images/tracka-logo-white.png" alt="Taronga Tracka" style={{ height:'40px', width:'auto', opacity:0.85 }} onError={e => e.target.style.display='none'} />
           <div style={{ width:'70px' }} />
         </div>
       </div>

@@ -194,7 +194,7 @@ export default function LionMission() {
       {/* Navbar */}
       <div style={{ background:'linear-gradient(to right,#1A0E00,#3D2A00)', padding:'0.55rem 1rem', display:'flex', justifyContent:'space-between', alignItems:'center', borderBottom:'1px solid rgba(255,180,50,0.2)', flex:'0 0 auto', zIndex:100 }}>
         <button onClick={handleBack} style={{ background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.18)', color:'white', padding:'0.35rem 0.8rem', borderRadius:'40px', cursor:'pointer', fontSize:'0.8rem', fontWeight:600 }}>← Back</button>
-        <img src="images/logo.png" alt="Taronga Tracka" style={{ height:'45px', width:'auto' }} onError={e => e.target.style.display='none'} />
+        <img src="images/tracka-logo-white.png" alt="Taronga Tracka" style={{ height:'45px', width:'auto' }} onError={e => e.target.style.display='none'} />
         <div style={{ width:'70px' }} />
       </div>
 

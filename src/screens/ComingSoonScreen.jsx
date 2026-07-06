@@ -43,7 +43,7 @@ export default function ComingSoonScreen() {
       <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', maxWidth: '360px', width: '100%' }}>
         {/* Logo */}
         <img
-          src="/images/logo.png"
+          src="/images/tracka-logo-white.png"
           alt="Taronga Tracka"
           style={{ width: 'clamp(140px,36vw,200px)', height: 'auto', display: 'block', margin: '0 auto 2.2rem', filter: 'drop-shadow(0 4px 20px rgba(0,0,0,0.5))' }}
           onError={e => e.target.style.display = 'none'}

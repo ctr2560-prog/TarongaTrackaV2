@@ -196,7 +196,7 @@ export default function DocumentaryViewer() {
 
         {/* Footer */}
         <div style={{ textAlign:'center', paddingBottom:'1rem' }}>
-          <img src="images/logo.png" alt="Taronga" style={{ height:28, opacity:0.5 }} onError={e => e.target.style.display='none'} />
+          <img src="images/tracka-logo-white.png" alt="Taronga" style={{ height:28, opacity:0.5 }} onError={e => e.target.style.display='none'} />
           <div style={{ color:'rgba(255,255,255,0.2)', fontSize:'0.68rem', marginTop:'0.4rem' }}>taronga.org.au · ZooSnooz Night Experience</div>
         </div>
 

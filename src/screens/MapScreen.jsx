@@ -184,7 +184,7 @@ export default function MapScreen() {
       <div className="student-header">
         <div className="student-banner-mobile student-header-inner">
           <div className="logo-title-block" style={{ display:'flex', alignItems:'center', gap:'1rem' }}>
-            <img src="images/logo.png" alt="Taronga Tracka" style={{ height:'90px', width:'auto' }} onError={e => e.target.style.display='none'} />
+            <img src="images/tracka-logo-white.png" alt="Taronga Tracka" style={{ height:'90px', width:'auto' }} onError={e => e.target.style.display='none'} />
             <div>
               <h1 className="taronga-title" style={{ fontSize:'clamp(1.6rem, 3.5vw, 2.2rem)', color:'white', marginBottom:'0.2rem', letterSpacing:'0.04em', textShadow:'0 2px 8px rgba(0,0,0,0.4)' }}>Discover Animals</h1>
               <p className="serif-accent" style={{ color:'var(--safari-gold)', fontSize:'1rem' }}>Get within range to unlock</p>

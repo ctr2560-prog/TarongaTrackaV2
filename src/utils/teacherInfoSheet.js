@@ -1380,7 +1380,7 @@ body{
   <!-- Header -->
   <div class="hdr">
     <div class="hdr-left">
-      <img src="${origin}/images/logo.png" alt="Taronga" class="hdr-logo">
+      <img src="${origin}/images/tracka-logo-white.png" alt="Taronga" class="hdr-logo">
       <div class="hdr-divider"></div>
       <div>
         <div class="hdr-wordmark">Taronga Tracka</div>
@@ -1524,7 +1524,7 @@ body{
   <!-- Footer -->
   <div class="ftr">
     <div class="ftr-left">
-      <img src="${origin}/images/logo.png" alt="Taronga" class="ftr-logo">
+      <img src="${origin}/images/tracka-logo-white.png" alt="Taronga" class="ftr-logo">
       <div class="ftr-divider"></div>
       <span class="ftr-name">Taronga Tracka</span>
     </div>

@@ -634,7 +634,7 @@ export default function ZooSnoozScreen() {
         const img = new Image();
         img.onload = () => res(img);
         img.onerror = () => res(null);
-        img.src = 'images/logo.png';
+        img.src = 'images/tracka-logo-white.png';
       });
 
       // Load custom fonts into canvas context
@@ -1289,7 +1289,7 @@ export default function ZooSnoozScreen() {
         <div className="student-header" style={{ position:'sticky', top:0, zIndex:100 }}>
           <div className="student-banner-mobile student-header-inner">
             <div className="logo-title-block" style={{ display:'flex', alignItems:'center', gap:'1rem' }}>
-              <img src="images/logo.png" alt="Taronga Tracka"
+              <img src="images/tracka-logo-white.png" alt="Taronga Tracka"
                 style={{ height:'72px', width:'auto', filter:'drop-shadow(0 0 14px rgba(46,125,85,0.7))' }}
                 onError={e=>e.target.style.display='none'} />
               <div>
@@ -2476,7 +2476,7 @@ export default function ZooSnoozScreen() {
                   </div>
                   {/* Right: logo + hashtags */}
                   <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'0.4rem', flexShrink:0, paddingTop:'0.15rem' }}>
-                    <img src="images/logo.png" alt="Taronga Tracka" style={{ height:'68px', filter:'brightness(0) invert(1)', opacity:0.88 }} onError={e=>e.target.style.display='none'} />
+                    <img src="images/tracka-logo-white.png" alt="Taronga Tracka" style={{ height:'68px', filter:'brightness(0) invert(1)', opacity:0.88 }} onError={e=>e.target.style.display='none'} />
                     <span style={{ fontSize:'0.62rem', color:'rgba(168,196,178,0.6)', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'center', lineHeight:1.6, whiteSpace:'pre-line' }}>{`#ZooSnooz\n#TarongaTracka`}</span>
                   </div>
                 </div>
@@ -2557,7 +2557,7 @@ export default function ZooSnoozScreen() {
                     )}
                   </div>
                   <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'0.3rem', flexShrink:0, paddingTop:'0.2rem' }}>
-                    <img src="images/logo.png" alt="Taronga Tracka" style={{ height:'40px', filter:'brightness(0) invert(1)', opacity:0.88 }} onError={e=>e.target.style.display='none'} />
+                    <img src="images/tracka-logo-white.png" alt="Taronga Tracka" style={{ height:'40px', filter:'brightness(0) invert(1)', opacity:0.88 }} onError={e=>e.target.style.display='none'} />
                     <span style={{ fontSize:'0.5rem', color:'rgba(168,196,178,0.6)', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'center', lineHeight:1.5, whiteSpace:'pre-line' }}>{`#ZooSnooz\n#TarongaTracka`}</span>
                   </div>
                 </div>
