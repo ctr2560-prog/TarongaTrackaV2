@@ -62,14 +62,16 @@ service cloud.firestore {
     }
 
     // ── Feedback ─────────────────────────────────────────────────────────────
+    // Staff portal reads both collections unauthenticated (code-based login).
+    // Students/teachers create freely; reads are open for the staff review tab.
     match /studentFeedback/{docId} {
       allow create: if true;
-      allow read: if request.auth != null;
+      allow read: if true;
     }
 
     match /teacherFeedback/{docId} {
       allow create: if request.auth != null;
-      allow read: if request.auth != null;
+      allow read: if true;
     }
 
     // ── Challenge submissions ─────────────────────────────────────────────────
