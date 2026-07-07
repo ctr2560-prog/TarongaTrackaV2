@@ -22,7 +22,7 @@ const BRAND = {
   englishBorder:'#FDE68A',
 };
 
-const EXHIBITS = {
+export const EXHIBITS = {
   science: [
     {
       name: 'Chimpanzee',
@@ -220,6 +220,24 @@ const EXHIBITS = {
         3: ['Ecosystems', 'Biodiversity', 'Fieldwork Skills'],
         4: ['Working Scientifically', 'Biodiversity', 'Ecosystem Interactions'],
         5: ['Ecological Field Methods', 'Abiotic & Biotic Factors', 'Biodiversity Indices'],
+      },
+    },
+    {
+      name: 'Concert Lawn',
+      obs:  'Habitat detective - sensory observation comparing the natural lawn environment with the city skyline',
+      focusByStage: {
+        1: 'Exploring an outdoor environment with the senses; noticing living and non-living things',
+        2: 'Comparing natural and built environments; features that support living things',
+        3: 'Comparing environments - how natural and urban spaces meet the needs of living things',
+        4: 'Habitat comparison; biotic and abiotic factors across natural and built environments',
+        5: 'Urban ecology; evaluating human impact and ecosystem services in contrasting environments',
+      },
+      tagsByStage: {
+        1: ['Living World', 'Senses', 'Environments'],
+        2: ['Habitats', 'Built Environments', 'Observation'],
+        3: ['Ecosystems', 'Habitats', 'Human Impact'],
+        4: ['Ecosystems', 'Abiotic Factors', 'Human Impact'],
+        5: ['Urban Ecology', 'Human Impact', 'Ecosystem Services'],
       },
     },
   ],
@@ -659,9 +677,227 @@ const EXHIBITS = {
       },
     },
   ],
+  english: [
+    {
+      name: 'Chimpanzee',
+      obs:  'Creative story writing - narrative with conflict, characters, setting and resolution built from behaviour graph data',
+      focusByStage: {
+        1: 'Simple story writing; naming a character, a problem and an ending',
+        2: 'Narrative structure - beginning, middle and end built around a conflict',
+        3: 'Developing setting, conflict and a satisfying resolution in a short narrative',
+        4: 'Character development and theme; grounding narrative conflict in observed data',
+        5: 'Crafting narrative tension and resolution to explore deeper themes of survival and hierarchy',
+      },
+      tagsByStage: {
+        1: ['Imaginative Writing', 'Characters', 'Story Endings'],
+        2: ['Narrative Structure', 'Conflict', 'Imaginative Writing'],
+        3: ['Narrative', 'Setting', 'Resolution'],
+        4: ['Character', 'Theme', 'Narrative Craft'],
+        5: ['Theme', 'Narrative Tension', 'Authorial Choice'],
+      },
+    },
+    {
+      name: 'Western Lowland Gorilla',
+      obs:  'Finish the story - writing a narrative ending grounded in live observation of the gorilla group',
+      focusByStage: {
+        1: 'Completing a story ending using what students can see right now',
+        2: 'Writing story endings informed by observed animal behaviour',
+        3: 'Using real observation to make narrative endings authentic and believable',
+        4: 'Integrating specific observed detail (posture, movement, distance) into narrative endings',
+        5: 'Writing endings that reflect observed social dynamics; resisting neat resolutions',
+      },
+      tagsByStage: {
+        1: ['Story Endings', 'Observation', 'Imaginative Writing'],
+        2: ['Narrative', 'Observation', 'Story Endings'],
+        3: ['Narrative Craft', 'Authenticity', 'Observation'],
+        4: ['Show Don\'t Tell', 'Narrative Detail', 'Observation'],
+        5: ['Narrative Craft', 'Realism', 'Authorial Choice'],
+      },
+    },
+    {
+      name: 'African Lion',
+      obs:  'Describing the eyes - figurative description using colour, comparison and imagery',
+      focusByStage: {
+        1: 'Colour words and simple comparisons - "the lion\'s eyes are like…"',
+        2: 'Precise word choice; building comparisons with "like" or "as"',
+        3: 'Layering imagery - colour, comparison and the feeling it creates',
+        4: 'Explaining the effect imagery creates for the reader',
+        5: 'Varying imagery deliberately; analysing how word choice positions the reader',
+      },
+      tagsByStage: {
+        1: ['Describing Words', 'Comparison', 'Imagery'],
+        2: ['Word Choice', 'Simile', 'Imagery'],
+        3: ['Imagery', 'Figurative Language', 'Mood'],
+        4: ['Imagery', 'Effect on Reader', 'Word Choice'],
+        5: ['Imagery', 'Reader Positioning', 'Connotation'],
+      },
+    },
+    {
+      name: 'Giraffe',
+      obs:  'Simile writing - crafting and explaining comparisons for the giraffe\'s height and movement',
+      focusByStage: {
+        1: 'Introducing similes - comparing using "like" or "as"',
+        2: 'Writing similes and identifying what the two things have in common',
+        3: 'Choosing accurate, vivid similes and explaining the choice',
+        4: 'Analysing the effect a simile creates for the reader',
+        5: 'Evaluating simile effectiveness - accuracy, vividness and intended effect',
+      },
+      tagsByStage: {
+        1: ['Simile', 'Comparison', 'Describing Words'],
+        2: ['Simile', 'Comparison', 'Word Choice'],
+        3: ['Simile', 'Figurative Language', 'Justification'],
+        4: ['Simile', 'Effect on Reader', 'Figurative Language'],
+        5: ['Figurative Language', 'Evaluation', 'Reader Positioning'],
+      },
+    },
+    {
+      name: 'Sumatran Tiger',
+      obs:  'Loss writing - responding to a passage about extinction and connecting it to the tiger in front of them',
+      focusByStage: {
+        1: 'Writing simple sentences that borrow a word or idea from a read passage',
+        2: 'Connecting ideas from a passage to direct observation',
+        3: 'Referring to a text - using a word, phrase or idea as evidence in writing',
+        4: 'Quoting and integrating textual evidence to support a written response',
+        5: 'Synthesising textual reference and observation in a controlled, reflective piece',
+      },
+      tagsByStage: {
+        1: ['Responding to Texts', 'Vocabulary', 'Observation'],
+        2: ['Responding to Texts', 'Making Connections', 'Evidence'],
+        3: ['Textual Reference', 'Evidence', 'Responding to Texts'],
+        4: ['Textual Evidence', 'Quotation', 'Analysis'],
+        5: ['Synthesis', 'Textual Evidence', 'Reflective Writing'],
+      },
+    },
+    {
+      name: 'Koala',
+      obs:  'Informative writing - building factual texts from exhibit signage',
+      focusByStage: {
+        1: 'Finding a fact on a sign and rewriting it in their own words',
+        2: 'Topic sentences and supporting facts; simple informative structure',
+        3: 'Informative text structure - topic sentence, evidence, concluding sentence',
+        4: 'Precise factual language - third person, present tense, subject vocabulary',
+        5: 'Audience and purpose - analysing how language choices suit the informative text type',
+      },
+      tagsByStage: {
+        1: ['Informative Texts', 'Facts', 'Own Words'],
+        2: ['Topic Sentences', 'Informative Texts', 'Facts'],
+        3: ['Text Structure', 'Informative Texts', 'Evidence'],
+        4: ['Factual Language', 'Text Structure', 'Register'],
+        5: ['Audience & Purpose', 'Register', 'Language Analysis'],
+      },
+    },
+    {
+      name: 'Dingo',
+      obs:  'Warrigal\'s story - first-person perspective writing at a narrative turning point',
+      focusByStage: {
+        1: 'Describing the dingo and a story character in simple sentences',
+        2: 'Connecting a real animal to a story character through description',
+        3: 'Writing in first person as a character - voice and feeling',
+        4: 'Sensory first-person narration at a story\'s turning point',
+        5: 'Using perspective deliberately; reflecting on how it shapes theme',
+      },
+      tagsByStage: {
+        1: ['Describing Words', 'Characters', 'Story'],
+        2: ['Making Connections', 'Character', 'Description'],
+        3: ['First Person', 'Voice', 'Character Feelings'],
+        4: ['Perspective', 'Sensory Language', 'Narrative Craft'],
+        5: ['Perspective', 'Theme', 'Reader Positioning'],
+      },
+    },
+    {
+      name: 'Ring-tailed Lemur',
+      obs:  'Creative story - narrative perspective choice (first vs third person) blending observation and game moments',
+      focusByStage: {
+        1: 'Choosing "I" or "the lemur" and writing what the animal is doing',
+        2: 'Keeping a consistent perspective across a short story',
+        3: 'Consistent perspective with sensory detail from observation and experience',
+        4: 'Deliberate perspective choice; explaining how it affects the reader',
+        5: 'Analysing how narrative perspective constructs reader positioning',
+      },
+      tagsByStage: {
+        1: ['First Person', 'Third Person', 'Story'],
+        2: ['Perspective', 'Consistency', 'Narrative'],
+        3: ['Perspective', 'Sensory Language', 'Narrative'],
+        4: ['Narrative Perspective', 'Effect on Reader', 'Craft'],
+        5: ['Reader Positioning', 'Narrative Perspective', 'Analysis'],
+      },
+    },
+    {
+      name: 'Sea Lion',
+      obs:  'Persuasive techniques - emotive language, rhetorical questions and evidence in conservation writing',
+      focusByStage: {
+        1: 'Persuasive words - using "must" and "should" to call for action',
+        2: 'Emotive language supported by a fact',
+        3: 'Combining emotive language, facts and rhetorical questions; naming the techniques',
+        4: 'Using and naming multiple persuasive techniques; explaining how each positions the reader',
+        5: 'Analysing how rhetorical devices construct argument and position audiences',
+      },
+      tagsByStage: {
+        1: ['Persuasive Writing', 'Modal Verbs', 'Conservation'],
+        2: ['Emotive Language', 'Evidence', 'Persuasive Writing'],
+        3: ['Persuasive Devices', 'Rhetorical Questions', 'Evidence'],
+        4: ['Persuasive Devices', 'Reader Positioning', 'Effect'],
+        5: ['Rhetoric', 'Argument', 'Audience'],
+      },
+    },
+    {
+      name: 'Asian Water Buffalo',
+      obs:  'Buffalo hooves - explanatory description linking observed features to their function',
+      focusByStage: {
+        1: 'Simple descriptive sentences about an observed feature',
+        2: 'Describing a feature and suggesting what it helps the animal do',
+        3: 'Structured explanation - description, function, reason',
+        4: 'Cause-and-effect explanation connecting feature, function and habitat',
+        5: 'Controlled explanatory writing linking observation, function and habitat',
+      },
+      tagsByStage: {
+        1: ['Describing Words', 'Observation', 'Sentences'],
+        2: ['Description', 'Explanation', 'Observation'],
+        3: ['Explanatory Writing', 'Text Structure', 'Cause & Effect'],
+        4: ['Explanation', 'Cause & Effect', 'Precision'],
+        5: ['Explanatory Writing', 'Cohesion', 'Precision'],
+      },
+    },
+    {
+      name: 'Blue Mountains Bushwalk',
+      obs:  'Listening recount - first person, past tense recount of the walk using sensory language and a model text',
+      focusByStage: {
+        1: 'Recounting what was heard in order, starting with "I heard…"',
+        2: 'Recount features - first person, past tense and time connectives',
+        3: 'Recount writing with sensory language, guided by a model text',
+        4: 'Recount structure (orientation, sequence, reorientation); borrowing techniques from a model text',
+        5: 'Analysing how person, tense and sensory detail position the reader in recount writing',
+      },
+      tagsByStage: {
+        1: ['Recount', 'Listening', 'Sequencing'],
+        2: ['Recount', 'Past Tense', 'Time Connectives'],
+        3: ['Recount', 'Sensory Language', 'Model Texts'],
+        4: ['Text Structure', 'Model Texts', 'Technique'],
+        5: ['Reader Positioning', 'Language Analysis', 'Recount'],
+      },
+    },
+    {
+      name: 'Concert Lawn',
+      obs:  'Through the tree\'s eyes - personification writing from the perspective of a century-old tree',
+      focusByStage: {
+        1: 'Imagining what a tree has seen; simple personification',
+        2: 'Giving the tree a human emotion and voice',
+        3: 'Personification grounded in real observation of the tree',
+        4: 'Consistent voice and perspective; what personification reveals about time and nature',
+        5: 'Intentional personification exploring impermanence, memory and the natural world',
+      },
+      tagsByStage: {
+        1: ['Personification', 'Imagination', 'Story'],
+        2: ['Personification', 'Voice', 'Feelings'],
+        3: ['Personification', 'Observation', 'Figurative Language'],
+        4: ['Voice', 'Personification', 'Theme'],
+        5: ['Personification', 'Theme', 'Authorial Intent'],
+      },
+    },
+  ],
 };
 
-const SCORING = {
+export const SCORING = {
   science: {
     domains: [
       {
@@ -782,9 +1018,49 @@ const SCORING = {
       },
     ],
   },
+  english: {
+    domains: [
+      {
+        label:'Language & Technique', color:'#7C3AED', lightBg:'#F5F3FF', lightBorder:'#DDD6FE', icon:'L',
+        what:'Did the student use vivid, deliberate language or the technique named in the task?',
+        criteria:[
+          'Uses the target technique (simile, personification, emotive language, etc.) appropriately',
+          'Word choices are specific and purposeful, not generic',
+          'Language suits the audience and purpose of the text type',
+        ],
+        full:'5 pts - deliberate, effective technique with precise word choice',
+        partial:'3 pts - technique attempted but generic or inconsistent',
+        minimal:'1 pt - everyday language only, technique missing',
+      },
+      {
+        label:'Structure & Purpose', color:'#0369a1', lightBg:'#EFF6FF', lightBorder:'#BFDBFE', icon:'S',
+        what:'Did the response follow the required text type and answer the task?',
+        criteria:[
+          'Matches the required text type (narrative, recount, informative or persuasive)',
+          'Ideas are sequenced logically for that text type',
+          'Responds directly to the task prompt and observation',
+        ],
+        full:'5 pts - clear text-type structure that fully addresses the task',
+        partial:'3 pts - partially structured or drifts from the task',
+        minimal:'1 pt - unstructured response with little connection to the task',
+      },
+      {
+        label:'Written Expression', color:'#059669', lightBg:'#F0FDF4', lightBorder:'#A7F3D0', icon:'W',
+        what:'Did the student write clearly, in complete and controlled sentences?',
+        criteria:[
+          'Writes in complete sentences with correct punctuation',
+          'Maintains a consistent voice, tense and perspective',
+          'Uses vocabulary appropriate to their stage of learning',
+        ],
+        full:'5 pts - fluent, controlled writing with consistent voice',
+        partial:'3 pts - ideas communicated but control is inconsistent',
+        minimal:'1 pt - ideas difficult to follow or fragmentary',
+      },
+    ],
+  },
 };
 
-const STAGE_EXPECTATIONS = {
+export const STAGE_EXPECTATIONS = {
   science: {
     1: { label:'Stage 1 (Years 1–2)', minWords:3,  expectation:'Students draw or write simple observations. Accept labelled diagrams alongside written responses.', starters:['I saw…', 'I can see…', 'It has…'] },
     2: { label:'Stage 2 (Years 3–4)', minWords:5,  expectation:'Students write 1–2 sentences describing what they observe, naming the body part or action observed.', starters:['I noticed…', 'The animal…', 'I can see that…'] },
@@ -806,9 +1082,16 @@ const STAGE_EXPECTATIONS = {
     4: { label:'Stage 4 (Years 7–8)', minWords:10, expectation:'Students write a clear comparison between the animal\'s behaviour and human health, reference a PDHPE concept, and explain the connection to their own wellbeing or identity.', starters:['Observing this animal shows…', 'This relates to the PDHPE concept of…', 'This impacts health because…'] },
     5: { label:'Stage 5 (Years 9–10)', minWords:12, expectation:'Students apply PDHPE concepts using observation evidence, connect to health and wellbeing frameworks, and evaluate the implications for their own lifestyle or community health.', starters:['This observation demonstrates…', 'Applying the concept of…', 'This is significant for wellbeing because…'] },
   },
+  english: {
+    1: { label:'Stage 1 (Years 1–2)', minWords:3,  expectation:'Students draw or write simple descriptive sentences using the sentence starters provided. Accept labelled drawings alongside written responses.', starters:['I can see…', 'It is like…', 'The animal is…'] },
+    2: { label:'Stage 2 (Years 3–4)', minWords:5,  expectation:'Students write 1–2 sentences following the text type modelled in the task (story, description or recount), using at least one descriptive word choice.', starters:['I noticed…', 'It looks like…', 'First… then…'] },
+    3: { label:'Stage 3 (Years 5–6)', minWords:8,  expectation:'Students write a short structured response using at least one language technique (simile, emotive word or sensory detail) suited to the text type.', starters:['The animal is like…', 'I heard…', 'This makes me feel…'] },
+    4: { label:'Stage 4 (Years 7–8)', minWords:10, expectation:'Students write a controlled response in the required text type, use and name a language technique, and comment on the effect it creates for the reader.', starters:['This creates the effect of…', 'The technique I used is…', 'As the passage describes…'] },
+    5: { label:'Stage 5 (Years 9–10)', minWords:12, expectation:'Students craft deliberate, well-structured responses that analyse how language choices position the reader, drawing on both observation and textual evidence.', starters:['This imagery positions the reader to…', 'The choice of… suggests…', 'This is effective because…'] },
+  },
 };
 
-const NSW_OUTCOMES = {
+export const NSW_OUTCOMES = {
   science: {
     1: [
       { code:'ST1-1WS-S', desc:'Observes, questions and collects data to communicate and compare ideas' },
@@ -824,17 +1107,12 @@ const NSW_OUTCOMES = {
     ],
     4: [
       { code:'SC4-WS-01',  desc:'Uses scientific tools and instruments for observations' },
-      { code:'SC4-WS-05',  desc:'Uses a variety of ways to process and represent data' },
-      { code:'SC4-WS-06',  desc:'Uses data to identify trends, patterns and relationships, and draw conclusions' },
       { code:'SC4-WS-08',  desc:'Communicates scientific concepts and ideas using a range of communication forms' },
-      { code:'SC4-CLS-01', desc:'Describes the unique features of cells in living things and how structural features can be used to classify organisms' },
       { code:'SC4-LIV-01', desc:'Describes the role, structure and function of a range of living systems and their components' },
     ],
     5: [
       { code:'SC5-WS-01',  desc:'Selects and uses scientific tools and instruments for accurate observations' },
-      { code:'SC5-WS-06',  desc:'Analyses data from investigations to identify trends, patterns and relationships, and draws conclusions' },
       { code:'SC5-WS-08',  desc:'Communicates scientific arguments with evidence, using scientific language and terminology in a range of communication forms' },
-      { code:'SC5-ENV-01', desc:'Analyses the impact of human activity on the natural world' },
       { code:'SC5-GEV-01', desc:'Describes the relationship between the diversity of living things and the theory of evolution' },
     ],
   },
@@ -848,25 +1126,20 @@ const NSW_OUTCOMES = {
       { code:'MAO-WM-01',   desc:'Applies mathematical reasoning and communicates thinking when solving problems' },
       { code:'MA2-DATA-01', desc:'Collects discrete data and constructs graphs using a given scale' },
       { code:'MA2-MR-01',   desc:'Represents and uses the structure of multiplicative relations to 10 x 10 to solve problems' },
-      { code:'MA2-GM-01',   desc:'Estimates, measures and compares lengths, distances and perimeters in metres, centimetres and millimetres' },
     ],
     3: [
       { code:'MAO-WM-01',   desc:'Develops fluency by exploring and connecting mathematical concepts to solve problems and communicate reasoning' },
       { code:'MA3-DATA-01', desc:'Constructs, interprets and evaluates data displays including dot plots, line graphs and two-way tables' },
       { code:'MA3-FRC-01',  desc:'Compares, orders and calculates with fractions, decimals and percentages' },
-      { code:'MA3-GM-01',   desc:'Selects appropriate units to estimate, measure and calculate lengths, perimeters and converts between units' },
     ],
     4: [
       { code:'MAO-WM-01',    desc:'Reasons, communicates and solves problems using mathematical concepts, skills and techniques' },
       { code:'MA4-RAT-C-01', desc:'Solves problems involving ratios and rates, and explores their graphical representation' },
-      { code:'MA4-FRC-C-01', desc:'Operates with fractions, decimals and percentages in a variety of contexts' },
-      { code:'MA4-ALG-C-01', desc:'Generalises number properties to operate with algebraic expressions and equations' },
       { code:'MA4-STA-C-01', desc:'Classifies and displays data using a variety of statistical representations and interprets results' },
     ],
     5: [
       { code:'MAO-WM-01',    desc:'Selects and applies appropriate mathematical techniques to reason, communicate and solve problems' },
       { code:'MA5-RAT-C-01', desc:'Applies ratios and rates to solve problems including financial mathematics and similar figures' },
-      { code:'MA5-ALG-C-01', desc:'Develops and applies algebraic techniques to expand, factorise and solve equations and inequalities' },
       { code:'MA5-STA-C-01', desc:'Interprets and critically analyses statistical data and evaluates the validity of claims and predictions' },
     ],
   },
@@ -887,18 +1160,40 @@ const NSW_OUTCOMES = {
       { code:'PH3-SMI-01', desc:'Applies self-management and interpersonal skills to manage situations and promote health, safety and wellbeing' },
     ],
     4: [
-      { code:'PH4-MSS-01', desc:'Transfers movement skills and concepts for use in a range of dynamic movement environments' },
       { code:'PH4-SHP-01', desc:'Plans for and uses strategies to participate in activities that encourage safety, health and lifelong physical activity' },
       { code:'PH4-SHW-01', desc:'Assesses the influence of contextual factors on attitudes and behaviours to propose strategies that enhance safety, health and wellbeing' },
       { code:'PH4-IBC-01', desc:'Investigates and explains factors that shape identity and sense of belonging' },
-      { code:'PH4-SMI-01', desc:'Refines and applies self-management and interpersonal skills to manage complex situations' },
     ],
     5: [
-      { code:'PH5-MSS-01', desc:'Refines and transfers movement skills and concepts for adaptation in a range of dynamic movement environments' },
       { code:'PH5-SHP-01', desc:'Designs, implements and evaluates plans to enhance safety, health and participation in lifelong physical activity' },
       { code:'PH5-SHW-01', desc:'Analyses the interrelationship between contextual factors, attitudes and behaviours to promote safety, health and wellbeing' },
       { code:'PH5-IBC-01', desc:'Analyses how identity and a sense of belonging contribute to the health and wellbeing of individuals and communities' },
-      { code:'PH5-SMI-01', desc:'Evaluates and adapts self-management and interpersonal skills to manage complex situations' },
+    ],
+  },
+  english: {
+    1: [
+      { code:'EN1-CWT-01',   desc:'Plans, creates and revises texts written for different purposes, including paragraphs, using knowledge of vocabulary, text features and sentence structure' },
+      { code:'EN1-UARL-01',  desc:'Understands and responds to literature by creating texts using similar structures, intentional language choices and features appropriate to audience and purpose' },
+    ],
+    2: [
+      { code:'EN2-CWT-01',   desc:'Plans, creates and revises written texts for imaginative purposes, using text features, sentence-level grammar, punctuation and word-level language for effect' },
+      { code:'EN2-CWT-02',   desc:'Plans, creates and revises written texts for informative purposes, using text features, sentence-level grammar, punctuation and word-level language for effect' },
+      { code:'EN2-UARL-01',  desc:'Identifies and describes how ideas are represented in literature and strategically uses similar representations in their own texts' },
+    ],
+    3: [
+      { code:'EN3-CWT-01',   desc:'Plans, creates and revises written texts for multiple purposes and audiences through selection of text features, sentence-level grammar, punctuation and word-level language' },
+      { code:'EN3-UARL-01',  desc:'Analyses representations of ideas in literature through narrative, character, imagery, symbol and connotation, and adapts these representations when creating texts' },
+      { code:'EN3-UARL-02',  desc:'Analyses representations of ideas in literature through genre and theme that reflect perspective and context, argument and authority, and adapts these representations when creating texts' },
+    ],
+    4: [
+      { code:'EN4-URA-01',   desc:'Analyses how meaning is created through the use and interpretation of increasingly complex language forms, features and structures' },
+      { code:'EN4-URB-01',   desc:'Examines and explains how texts represent ideas, experiences and values' },
+      { code:'EN4-ECA-01',   desc:'Creates personal, creative and critical texts for a range of audiences by using linguistic and stylistic conventions of language to express ideas' },
+    ],
+    5: [
+      { code:'EN5-URA-01',   desc:'Analyses how meaning is created through the use and interpretation of complex language forms, features and structures' },
+      { code:'EN5-URB-01',   desc:'Evaluates how texts represent ideas and experiences, and how they can affirm or challenge values and attitudes' },
+      { code:'EN5-ECA-01',   desc:'Crafts personal, creative and critical texts for a range of audiences by experimenting with and controlling language forms and features to shape meaning' },
     ],
   },
 };
@@ -916,7 +1211,7 @@ function svgDownloadIcon() {
 }
 
 export function openTeacherInfoSheet(subject, stage, outcomes) {
-  const resolvedOutcomes = outcomes || NSW_OUTCOMES[subject]?.[parseInt(stage, 10)] || [];
+  const resolvedOutcomes = (NSW_OUTCOMES[subject]?.[parseInt(stage, 10)] || outcomes || []).slice(0, 3);
   const isScience  = subject === 'science';
   const isMaths    = subject === 'maths';
   const isPdhpe    = subject === 'pdhpe';
@@ -935,62 +1230,66 @@ export function openTeacherInfoSheet(subject, stage, outcomes) {
   const exhibitRows = exhibits.map((e, i) => {
     const focus = e.focusByStage?.[stageNum] || e.focusByStage?.[4] || '';
     const tags  = e.tagsByStage?.[stageNum]  || e.tagsByStage?.[4]  || [];
-    const tagHtml = tags.map(t => `<span class="t-tag" style="background:${accentColor}">${t}</span>`).join('');
+    const tagHtml = tags.map(t => `<span class="t-tag">${t}</span>`).join('');
     return `
-    <tr>
-      <td class="t-num">${String(i + 1).padStart(2, '0')}</td>
-      <td class="t-name">${e.name}</td>
-      <td class="t-focus">
-        <div class="t-tags">${tagHtml}</div>
-        <span class="t-focus-main">${focus}</span>
-        ${e.obs ? `<span class="t-focus-obs">Task: ${e.obs}</span>` : ''}
-      </td>
-    </tr>`;
+    <div class="ex-row">
+      <div class="ex-num">${String(i + 1).padStart(2, '0')}</div>
+      <div class="ex-main">
+        <div class="ex-name">${e.name}</div>
+        <div class="ex-focus">${focus}</div>
+        ${e.obs ? `<div class="ex-task">Task: ${e.obs}</div>` : ''}
+        <div class="ex-tags">${tagHtml}</div>
+      </div>
+    </div>`;
   }).join('');
 
   const outcomeRows = resolvedOutcomes.map(o => `
     <div class="outcome-row">
-      <span class="outcome-code" style="background:${accentColor}">${o.code}</span>
+      <span class="outcome-code">${o.code}</span>
       <span class="outcome-desc">${o.desc}</span>
     </div>`).join('');
 
   const domainCards = scoring.domains.map(d => `
     <div class="domain-card">
-      <div class="domain-hd" style="background:${d.color}">
+      <div class="domain-hd">
         <span class="domain-icon">${d.icon}</span>
         <div>
           <div class="domain-name">${d.label}</div>
-          <div class="domain-pts">out of 5 points</div>
+          <div class="domain-pts">5 points</div>
         </div>
       </div>
-      <div class="domain-body">
-        <p class="domain-q">${d.what}</p>
-        <ul class="domain-ul">
-          ${d.criteria.map(c => `<li>${c}</li>`).join('')}
-        </ul>
-        <div class="bands">
-          <div class="band b-full"><span class="dot" style="background:#059669"></span><span>${d.full}</span></div>
-          <div class="band b-part"><span class="dot" style="background:#D97706"></span><span>${d.partial}</span></div>
-          <div class="band b-min"><span class="dot"  style="background:#DC2626"></span><span>${d.minimal}</span></div>
-        </div>
+      <p class="domain-q">${d.what}</p>
+      <ul class="domain-ul">
+        ${d.criteria.map(c => `<li>${c}</li>`).join('')}
+      </ul>
+      <div class="bands">
+        <div class="band"><span class="dot" style="background:#059669"></span><span>${d.full}</span></div>
+        <div class="band"><span class="dot" style="background:#D97706"></span><span>${d.partial}</span></div>
+        <div class="band"><span class="dot" style="background:#DC2626"></span><span>${d.minimal}</span></div>
       </div>
     </div>`).join('');
 
   const portalRows = PORTAL_GUIDE.map(g => `
     <div class="portal-row">
-      <div class="portal-num" style="color:${accentColor}">${g.num}</div>
+      <div class="portal-num">${g.num}</div>
       <div class="portal-content">
         <div class="portal-title">${g.heading}</div>
         <div class="portal-body">${g.body}</div>
       </div>
     </div>`).join('');
 
+  const syllabusLabel = isScience
+    ? 'Science 7–10 (2023) / Science & Technology K–6 (2017)'
+    : isMaths ? 'Mathematics K–10 (2022)'
+    : isPdhpe ? 'PDHPE K–6 (2024) / PDHPE 7–10 (2024)'
+    : 'English K–10 (2022)';
+
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Taronga Tracka - Teacher Information Sheet - ${subjectLabel} Stage ${stage}</title>
+<title>Taronga Tracka Teacher Information Sheet: ${subjectLabel} Stage ${stage}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
 <style>
@@ -1004,138 +1303,110 @@ export function openTeacherInfoSheet(subject, stage, outcomes) {
 body{
   font-family:'DM Sans',system-ui,sans-serif;
   font-size:10pt;
-  line-height:1.6;
+  line-height:1.65;
   color:${BRAND.ink};
-  background:#E8E4DC;
+  background:#EDEAE3;
+  -webkit-font-smoothing:antialiased;
 }
 
-/* ── Page shell ── */
 .page{
-  max-width:800px;
-  margin:0 auto;
+  max-width:820px;
+  margin:32px auto;
   background:#fff;
-  box-shadow:0 8px 40px rgba(7,30,20,0.18);
-}
-
-/* ── TOP STRIPE ── */
-.top-stripe{
-  height:5px;
-  background:linear-gradient(90deg, ${accentColor} 0%, ${isScience ? BRAND.eucalyptus : isMaths ? '#0ea5e9' : isPdhpe ? '#a855f7' : '#d97706'} 100%);
+  border-radius:20px;
+  overflow:hidden;
+  box-shadow:0 24px 80px rgba(7,30,20,0.16);
 }
 
 /* ── HEADER ── */
 .hdr{
   background:${BRAND.forest};
-  padding:28px 40px 24px;
+  padding:44px 52px 0;
+  position:relative;
+  overflow:hidden;
+}
+.hdr-glow{
+  position:absolute;
+  top:-120px; right:-100px;
+  width:340px; height:340px;
+  border-radius:50%;
+  background:radial-gradient(circle, rgba(46,125,85,0.4) 0%, transparent 70%);
+  pointer-events:none;
+}
+.hdr-top{
   display:flex;
-  align-items:center;
+  align-items:flex-start;
   justify-content:space-between;
   gap:24px;
+  margin-bottom:30px;
   position:relative;
 }
-.hdr::after{
-  content:'';
-  position:absolute;
-  bottom:0; left:0; right:0;
-  height:1px;
-  background:rgba(168,196,178,0.2);
-}
-.hdr-left{
-  display:flex;
-  align-items:center;
-  gap:20px;
-}
-.hdr-logo{
-  height:52px;
-  width:auto;
-  display:block;
-  flex-shrink:0;
-}
-.hdr-divider{
-  width:1px;
-  height:44px;
-  background:rgba(168,196,178,0.35);
-  flex-shrink:0;
-}
-.hdr-wordmark{
-  font-family:'TarongaHeadline','DM Sans',sans-serif;
-  font-size:18pt;
-  font-weight:normal;
-  color:#fff;
-  letter-spacing:0.06em;
-  line-height:1.15;
-}
-.hdr-tagline{
-  font-size:8pt;
-  color:${BRAND.mist};
-  letter-spacing:0.14em;
-  text-transform:uppercase;
-  margin-top:3px;
-  font-weight:500;
-}
-.hdr-right{
-  text-align:right;
-  flex-shrink:0;
-}
+.hdr-logo{ height:72px; width:auto; display:block; }
+.hdr-right{ text-align:right; flex-shrink:0; padding-top:6px; }
 .hdr-subject{
   display:inline-block;
   background:${accentColor};
   color:#fff;
-  font-size:8.5pt;
-  font-weight:700;
-  letter-spacing:0.1em;
+  font-size:8pt;
+  font-weight:800;
+  letter-spacing:0.16em;
   text-transform:uppercase;
-  padding:5px 16px;
+  padding:7px 20px;
   border-radius:40px;
-  margin-bottom:6px;
 }
 .hdr-stage{
   display:block;
-  font-size:8pt;
+  font-size:8.5pt;
   color:${BRAND.mist};
-  letter-spacing:0.05em;
-  font-weight:400;
+  letter-spacing:0.06em;
+  margin-top:9px;
+  font-weight:500;
 }
-
-/* ── META BAR ── */
-.meta-bar{
-  background:${BRAND.deep};
-  padding:10px 40px;
+.hdr-title{
+  font-family:'TarongaHeadline','DM Sans',sans-serif;
+  font-size:25pt;
+  font-weight:normal;
+  color:#fff;
+  letter-spacing:0.03em;
+  line-height:1.08;
+  position:relative;
+}
+.hdr-sub{
+  font-size:9.5pt;
+  color:${BRAND.mist};
+  margin-top:8px;
+  letter-spacing:0.04em;
+  position:relative;
+}
+.hdr-meta{
   display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
+  flex-wrap:wrap;
+  gap:8px 26px;
+  margin-top:28px;
+  padding:16px 0 20px;
+  border-top:1px solid rgba(168,196,178,0.22);
+  position:relative;
 }
 .meta-item{
-  display:flex;
-  align-items:center;
-  gap:6px;
+  display:flex; align-items:center; gap:7px;
   font-size:7.5pt;
   color:${BRAND.mist};
   letter-spacing:0.05em;
 }
-.meta-dot{
-  width:4px; height:4px;
-  border-radius:50%;
-  background:${BRAND.sage};
-  flex-shrink:0;
-}
+.meta-dot{ width:4px; height:4px; border-radius:50%; background:${accentColor}; flex-shrink:0; }
 
 /* ── PRINT BAR ── */
 .print-bar{
-  background:${accentLight};
-  border-bottom:1px solid ${accentBorder};
-  padding:10px 40px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
+  background:${BRAND.parchment};
+  border-bottom:1px solid #ECE7DD;
+  padding:13px 52px;
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
 }
 .print-hint{ font-size:8pt; color:${BRAND.slate}; }
 .print-btn{
-  display:flex; align-items:center; gap:7px;
+  display:flex; align-items:center; gap:8px;
   background:${accentColor}; color:#fff;
-  border:none; padding:8px 22px;
+  border:none; padding:9px 24px;
   border-radius:40px; font-size:8.5pt; font-weight:700;
   letter-spacing:0.06em; cursor:pointer;
   font-family:'DM Sans',sans-serif;
@@ -1143,261 +1414,247 @@ body{
 .print-btn:hover{ opacity:0.88; }
 
 /* ── BODY ── */
-.body{padding:36px 40px 48px}
+.body{ padding:52px 52px 56px; }
 
 /* ── SECTION ── */
-.section{margin-bottom:32px}
-.section-hdr{
-  display:flex; align-items:baseline; gap:12px;
-  border-bottom:2px solid ${BRAND.forest};
-  padding-bottom:8px; margin-bottom:18px;
-}
-.section-num{
-  font-family:'TarongaHeadline','DM Sans',sans-serif;
-  font-size:9pt; font-weight:normal;
+.section{ margin-bottom:46px; }
+.section:last-child{ margin-bottom:0; }
+.sec-kicker{
+  font-size:7pt; font-weight:800;
   color:${accentColor};
-  letter-spacing:0.18em;
   text-transform:uppercase;
-  flex-shrink:0;
-  padding-top:3px;
+  letter-spacing:0.24em;
+  margin-bottom:7px;
 }
-.section-title{
+.sec-title{
   font-family:'TarongaHeadline','DM Sans',sans-serif;
-  font-size:13.5pt;
+  font-size:16.5pt;
   font-weight:normal;
   color:${BRAND.forest};
-  letter-spacing:0.03em;
-  line-height:1.2;
+  letter-spacing:0.02em;
+  line-height:1.15;
+}
+.sec-rule{
+  width:44px; height:3px;
+  background:${accentColor};
+  border-radius:2px;
+  margin:12px 0 22px;
 }
 
-/* ── OVERVIEW GRID ── */
-.overview-grid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:12px;
-}
+/* ── OVERVIEW ── */
+.overview-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
 .ov-card{
   background:${BRAND.parchment};
-  border:1px solid ${BRAND.mist};
-  border-radius:8px;
-  padding:14px 16px;
-  position:relative;
-  overflow:hidden;
-}
-.ov-card::before{
-  content:'';
-  position:absolute;
-  top:0; left:0;
-  width:3px; height:100%;
-  background:${accentColor};
-  border-radius:8px 0 0 8px;
+  border-radius:14px;
+  padding:20px 22px;
 }
 .ov-label{
-  font-size:7pt; font-weight:700;
+  font-size:7pt; font-weight:800;
   color:${accentColor};
-  text-transform:uppercase; letter-spacing:0.12em;
-  margin-bottom:5px;
-}
-.ov-val{
-  font-size:9pt;
-  color:${BRAND.charcoal};
-  line-height:1.5;
-}
-
-/* ── STAGE BOX ── */
-.stage-box{
-  display:grid;
-  grid-template-columns:auto 1fr;
-  gap:0;
-  border:1px solid ${accentBorder};
-  border-radius:10px;
-  overflow:hidden;
-}
-.stage-accent{
-  width:6px;
-  background:${accentColor};
-}
-.stage-inner{
-  padding:16px 20px;
-  background:${accentLight};
-}
-.stage-kicker{
-  font-size:7pt; font-weight:700;
-  color:${accentColor};
-  text-transform:uppercase; letter-spacing:0.12em;
-  margin-bottom:5px;
-}
-.stage-pill{
-  display:inline-block;
-  background:${BRAND.forest}; color:#fff;
-  font-size:7.5pt; font-weight:700;
-  padding:2px 10px; border-radius:4px;
-  letter-spacing:0.05em;
+  text-transform:uppercase; letter-spacing:0.16em;
   margin-bottom:8px;
 }
-.stage-text{
-  font-size:9.5pt; color:${BRAND.charcoal};
-  line-height:1.55; margin-bottom:10px;
+.ov-val{ font-size:9pt; color:${BRAND.charcoal}; line-height:1.65; }
+.ov-val strong{ color:${BRAND.forest}; }
+
+/* ── STAGE ── */
+.stage-box{
+  background:${accentLight};
+  border-radius:16px;
+  padding:24px 28px;
+  display:grid;
+  grid-template-columns:auto 1fr;
+  gap:26px;
+  align-items:start;
 }
-.starters{display:flex; flex-wrap:wrap; gap:6px; margin-top:2px}
+.stage-stat{
+  text-align:center;
+  padding:4px 26px 4px 2px;
+  border-right:1px solid ${accentBorder};
+}
+.stage-stat-num{
+  font-family:'TarongaHeadline','DM Sans',sans-serif;
+  font-size:23pt;
+  color:${accentColor};
+  line-height:1;
+  white-space:nowrap;
+}
+.stage-stat-label{
+  font-size:6.5pt; font-weight:800;
+  color:${BRAND.slate};
+  text-transform:uppercase; letter-spacing:0.14em;
+  margin-top:7px;
+}
+.stage-text{ font-size:9.5pt; color:${BRAND.charcoal}; line-height:1.65; margin-bottom:14px; }
+.stage-kicker{
+  font-size:7pt; font-weight:800;
+  color:${accentColor};
+  text-transform:uppercase; letter-spacing:0.14em;
+  margin-bottom:8px;
+}
+.starters{ display:flex; flex-wrap:wrap; gap:7px; }
 .starter{
-  background:${accentColor}; color:#fff;
+  background:#fff;
+  color:${accentColor};
+  border:1px solid ${accentBorder};
   font-size:8pt; font-style:italic;
-  padding:3px 11px; border-radius:40px;
+  padding:4px 14px; border-radius:40px;
 }
 
-/* ── EXHIBIT TABLE ── */
-.ex-table{
-  width:100%; border-collapse:collapse;
-  font-size:9pt; border:1px solid ${BRAND.mist};
-  border-radius:8px; overflow:hidden;
+/* ── EXHIBITS ── */
+.ex-list{ display:flex; flex-direction:column; }
+.ex-row{
+  display:flex; gap:20px;
+  padding:16px 0;
+  border-bottom:1px solid #F0EDE6;
 }
-.ex-table thead tr{
-  background:${BRAND.forest}; color:#fff;
+.ex-row:first-child{ padding-top:2px; }
+.ex-row:last-child{ border-bottom:none; padding-bottom:2px; }
+.ex-num{
+  font-family:'TarongaHeadline','DM Sans',sans-serif;
+  font-size:11pt;
+  color:${accentColor};
+  min-width:32px;
+  line-height:1.35;
+  flex-shrink:0;
 }
-.ex-table th{
-  padding:9px 12px; text-align:left;
-  font-size:7.5pt; font-weight:700;
-  letter-spacing:0.1em; text-transform:uppercase;
+.ex-main{ flex:1; }
+.ex-name{ font-size:10pt; font-weight:700; color:${BRAND.forest}; margin-bottom:3px; }
+.ex-focus{ font-size:8.5pt; color:${BRAND.charcoal}; line-height:1.6; }
+.ex-task{ font-size:8pt; color:${BRAND.slate}; font-style:italic; margin-top:3px; }
+.ex-tags{ display:flex; flex-wrap:wrap; gap:5px; margin-top:8px; }
+.t-tag{
+  background:${accentLight};
+  color:${accentColor};
+  border:1px solid ${accentBorder};
+  font-size:6.5pt; font-weight:700;
+  letter-spacing:0.06em; text-transform:uppercase;
+  padding:2px 10px; border-radius:40px;
 }
-.ex-table td{ padding:8px 12px; border-bottom:1px solid ${BRAND.mist}; vertical-align:top }
-.ex-table tbody tr:last-child td{ border-bottom:none }
-.ex-table tbody tr:nth-child(even){ background:${BRAND.parchment} }
-.ex-table tbody tr:nth-child(odd) { background:#fff }
-.t-num  { width:36px; color:${BRAND.slate}; font-size:8pt; font-weight:700; font-variant-numeric:tabular-nums }
-.t-name { width:165px; font-weight:600; color:${BRAND.forest} }
-.t-focus{ color:${BRAND.charcoal} }
-.t-tags       { display:flex; flex-wrap:wrap; gap:4px; margin-bottom:5px }
-.t-tag        { display:inline-block; color:#fff; font-size:7pt; font-weight:700; letter-spacing:0.05em; padding:2px 8px; border-radius:40px }
-.t-focus-main { display:block; font-size:8.5pt; color:${BRAND.charcoal}; line-height:1.45 }
-.t-focus-obs  { display:block; font-size:7.5pt; color:${BRAND.slate}; margin-top:3px; font-style:italic }
 
 /* ── OUTCOMES ── */
-.outcomes-list{ display:flex; flex-direction:column; gap:8px }
-.outcome-row{ display:flex; align-items:flex-start; gap:10px }
+.outcomes-list{ display:flex; flex-direction:column; gap:10px; }
+.outcome-row{ display:flex; align-items:flex-start; gap:13px; }
 .outcome-code{
-  flex-shrink:0; color:#fff;
+  flex-shrink:0;
+  background:${accentLight};
+  color:${accentColor};
+  border:1px solid ${accentBorder};
   font-size:7.5pt; font-weight:800;
-  font-family:'DM Sans', monospace;
-  padding:3px 9px; border-radius:5px;
-  letter-spacing:0.03em; margin-top:1px;
+  padding:3px 11px; border-radius:6px;
+  letter-spacing:0.04em;
+  margin-top:2px;
+  font-variant-numeric:tabular-nums;
 }
-.outcome-desc{ font-size:9pt; color:${BRAND.charcoal}; line-height:1.5 }
+.outcome-desc{ font-size:9pt; color:${BRAND.charcoal}; line-height:1.6; }
 
-/* ── DOMAIN CARDS ── */
-.domain-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px }
-.domain-card{ border:1px solid ${BRAND.mist}; border-radius:10px; overflow:hidden }
-.domain-hd{
-  padding:12px 14px; color:#fff;
-  display:flex; align-items:center; gap:10px;
+/* ── SCORING ── */
+.scoring-intro{
+  font-size:9.5pt; color:${BRAND.charcoal};
+  line-height:1.65;
+  max-width:660px;
+  margin-bottom:20px;
 }
+.scoring-intro strong{ color:${BRAND.forest}; }
+.domain-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+.domain-card{
+  background:#fff;
+  border:1px solid #ECE8E0;
+  border-radius:16px;
+  padding:18px;
+}
+.domain-hd{ display:flex; align-items:center; gap:11px; margin-bottom:13px; }
 .domain-icon{
-  width:28px; height:28px; border-radius:50%;
-  background:rgba(255,255,255,0.2);
+  width:34px; height:34px; border-radius:11px;
+  background:${accentLight};
+  color:${accentColor};
+  border:1px solid ${accentBorder};
   display:flex; align-items:center; justify-content:center;
   font-size:11pt; font-weight:800; flex-shrink:0;
 }
-.domain-name{ font-size:9.5pt; font-weight:700; line-height:1.2 }
-.domain-pts { font-size:7.5pt; opacity:0.8; margin-top:1px }
-.domain-body{ padding:12px 14px; background:#fff }
-.domain-q{ font-size:8pt; color:${BRAND.slate}; font-style:italic; margin-bottom:9px; line-height:1.4 }
-.domain-ul{ padding-left:14px; margin-bottom:10px }
-.domain-ul li{ font-size:8.5pt; color:${BRAND.charcoal}; margin-bottom:3px; line-height:1.4 }
-.bands{ display:flex; flex-direction:column; gap:5px; border-top:1px solid ${BRAND.mist}; padding-top:9px }
-.band{ display:flex; align-items:flex-start; gap:7px; font-size:8pt; line-height:1.35 }
-.dot{ width:8px; height:8px; border-radius:50%; flex-shrink:0; margin-top:2px }
-.b-full { color:#065F46 }
-.b-part { color:#78350F }
-.b-min  { color:#7F1D1D }
+.domain-name{ font-size:9.5pt; font-weight:800; color:${BRAND.forest}; line-height:1.2; }
+.domain-pts{ font-size:6.5pt; font-weight:700; color:${BRAND.slate}; text-transform:uppercase; letter-spacing:0.1em; margin-top:2px; }
+.domain-q{ font-size:8pt; color:${BRAND.slate}; font-style:italic; margin-bottom:10px; line-height:1.5; }
+.domain-ul{ padding-left:15px; margin-bottom:12px; }
+.domain-ul li{ font-size:8.5pt; color:${BRAND.charcoal}; margin-bottom:4px; line-height:1.5; }
+.bands{ display:flex; flex-direction:column; gap:6px; border-top:1px solid #F0EDE6; padding-top:11px; }
+.band{ display:flex; align-items:flex-start; gap:8px; font-size:8pt; color:${BRAND.charcoal}; line-height:1.4; }
+.dot{ width:7px; height:7px; border-radius:50%; flex-shrink:0; margin-top:3px; }
 
 /* ── PORTAL ── */
-.portal-list{ display:flex; flex-direction:column; gap:0 }
+.portal-list{ display:flex; flex-direction:column; }
 .portal-row{
-  display:flex; align-items:flex-start; gap:16px;
-  padding:13px 0; border-bottom:1px solid ${BRAND.mist};
+  display:flex; align-items:flex-start; gap:20px;
+  padding:16px 0;
+  border-bottom:1px solid #F0EDE6;
 }
-.portal-row:last-child{ border-bottom:none }
+.portal-row:first-child{ padding-top:2px; }
+.portal-row:last-child{ border-bottom:none; padding-bottom:0; }
 .portal-num{
   font-family:'TarongaHeadline','DM Sans',sans-serif;
   font-size:15pt; font-weight:normal;
+  color:${accentColor};
   letter-spacing:0.04em; flex-shrink:0;
-  line-height:1; padding-top:2px; min-width:32px;
+  line-height:1; padding-top:3px; min-width:34px;
 }
-.portal-title{ font-size:10pt; font-weight:700; color:${BRAND.forest}; margin-bottom:3px }
-.portal-body { font-size:8.5pt; color:${BRAND.charcoal}; line-height:1.55 }
-
-/* ── SCORING INTRO BOX ── */
-.scoring-intro{
-  background:${BRAND.parchment};
-  border:1px solid ${BRAND.mist};
-  border-radius:8px; padding:13px 16px;
-  font-size:9pt; color:${BRAND.charcoal};
-  line-height:1.55; margin-bottom:16px;
-}
-.scoring-intro strong{ color:${BRAND.forest} }
+.portal-title{ font-size:10pt; font-weight:700; color:${BRAND.forest}; margin-bottom:4px; }
+.portal-body{ font-size:8.5pt; color:${BRAND.charcoal}; line-height:1.65; }
 
 /* ── FOOTER ── */
 .ftr{
   background:${BRAND.forest};
-  padding:16px 40px;
+  padding:24px 52px;
   display:flex; align-items:center; justify-content:space-between;
 }
-.ftr-left{ display:flex; align-items:center; gap:14px }
-.ftr-logo{ height:28px; width:auto; opacity:0.85 }
-.ftr-divider{ width:1px; height:22px; background:rgba(168,196,178,0.3) }
+.ftr-left{ display:flex; align-items:center; gap:16px; }
+.ftr-logo{ height:34px; width:auto; opacity:0.9; }
+.ftr-divider{ width:1px; height:24px; background:rgba(168,196,178,0.3); }
 .ftr-name{
   font-family:'TarongaHeadline','DM Sans',sans-serif;
-  font-size:10pt; font-weight:normal;
+  font-size:10.5pt; font-weight:normal;
   color:#fff; letter-spacing:0.05em;
 }
-.ftr-right{ text-align:right; font-size:7.5pt; color:${BRAND.sage}; line-height:1.55 }
+.ftr-right{ text-align:right; font-size:7.5pt; color:${BRAND.sage}; line-height:1.6; }
 
 /* ── PRINT ── */
 @media print{
-  body{ background:#fff }
-  .page{ max-width:none; box-shadow:none }
-  .print-bar{ display:none!important }
-  .top-stripe,.hdr,.meta-bar,.ftr,
-  .domain-hd,.ex-table thead tr,
-  .ov-card::before,.stage-accent,
-  .hdr-subject,.outcome-code,.starter,.stage-pill,
-  .portal-num{
+  body{ background:#fff; }
+  .page{ max-width:none; margin:0; border-radius:0; box-shadow:none; }
+  .print-bar{ display:none!important; }
+  .hdr,.ftr,.hdr-subject,.hdr-glow,
+  .sec-rule,.ov-card,.stage-box,
+  .t-tag,.outcome-code,.starter,
+  .domain-icon,.dot,.meta-dot{
     -webkit-print-color-adjust:exact;
     print-color-adjust:exact;
   }
-  .section{ page-break-inside:avoid }
-  .domain-card{ page-break-inside:avoid }
-  .portal-row{ page-break-inside:avoid }
+  .section{ page-break-inside:avoid; }
+  .domain-card{ page-break-inside:avoid; }
+  .portal-row{ page-break-inside:avoid; }
+  .ex-row{ page-break-inside:avoid; }
 }
 </style>
 </head>
 <body>
 <div class="page">
 
-  <!-- Accent stripe -->
-  <div class="top-stripe"></div>
-
   <!-- Header -->
   <div class="hdr">
-    <div class="hdr-left">
-      <img src="${origin}/images/tracka-logo-white.png" alt="Taronga" class="hdr-logo">
-      <div class="hdr-divider"></div>
-      <div>
-        <div class="hdr-wordmark">Taronga Tracka</div>
-        <div class="hdr-tagline">Teacher Information Sheet</div>
+    <div class="hdr-glow"></div>
+    <div class="hdr-top">
+      <img src="${origin}/images/logo.png" alt="Taronga Tracka" class="hdr-logo">
+      <div class="hdr-right">
+        <span class="hdr-subject">${subjectLabel}</span>
+        <span class="hdr-stage">${stageMeta?.label || 'Stage ' + stage}</span>
       </div>
     </div>
-    <div class="hdr-right">
-      <span class="hdr-subject">${subjectLabel}</span>
-      <span class="hdr-stage">${stageMeta?.label || 'Stage ' + stage}</span>
+    <div class="hdr-title">Teacher Information Sheet</div>
+    <div class="hdr-sub">Everything you need to run and assess your Taronga Tracka excursion.</div>
+    <div class="hdr-meta">
+      <div class="meta-item"><span class="meta-dot"></span> ${subjectLabel} · ${stageMeta?.label || 'Stage ' + stage}</div>
+      <div class="meta-item"><span class="meta-dot"></span> NSW Curriculum Aligned · ${syllabusLabel}</div>
+      <div class="meta-item"><span class="meta-dot"></span> Prepared ${today}</div>
     </div>
-  </div>
-
-  <!-- Meta bar -->
-  <div class="meta-bar">
-    <div class="meta-item"><span class="meta-dot"></span> ${subjectLabel} · Stage ${stage} · ${stageMeta?.label || ''}</div>
-    <div class="meta-item"><span class="meta-dot"></span> NSW Curriculum Aligned · ${isScience ? 'Science 7–10 (2023) / Science & Technology K–6 (2017)' : isMaths ? 'Mathematics K–10 (2022)' : isPdhpe ? 'PDHPE K–6 (2024) / PDHPE 7–10 (2024)' : 'English K–10 (2022)'}</div>
-    <div class="meta-item"><span class="meta-dot"></span> Prepared ${today}</div>
   </div>
 
   <!-- Print bar -->
@@ -1413,10 +1670,9 @@ body{
 
     <!-- 01 About -->
     <div class="section">
-      <div class="section-hdr">
-        <span class="section-num">01</span>
-        <span class="section-title">About This Activity</span>
-      </div>
+      <div class="sec-kicker">Section 01</div>
+      <div class="sec-title">About This Activity</div>
+      <div class="sec-rule"></div>
       <div class="overview-grid">
         <div class="ov-card">
           <div class="ov-label">Platform</div>
@@ -1451,17 +1707,17 @@ body{
 
     <!-- 02 Stage expectations -->
     <div class="section">
-      <div class="section-hdr">
-        <span class="section-num">02</span>
-        <span class="section-title">Observation Writing - Stage ${stage} Expectations</span>
-      </div>
+      <div class="sec-kicker">Section 02</div>
+      <div class="sec-title">Observation Writing: Stage ${stage} Expectations</div>
+      <div class="sec-rule"></div>
       <div class="stage-box">
-        <div class="stage-accent"></div>
-        <div class="stage-inner">
-          <div class="stage-kicker">Minimum response length</div>
-          <span class="stage-pill">≥ ${stageMeta?.minWords || 10} words</span>
+        <div class="stage-stat">
+          <div class="stage-stat-num">≥ ${stageMeta?.minWords || 10}</div>
+          <div class="stage-stat-label">Minimum<br>Words</div>
+        </div>
+        <div>
           <p class="stage-text">${stageMeta?.expectation || ''}</p>
-          <div class="stage-kicker" style="margin-top:2px">Suggested sentence starters - display or read to students before the task</div>
+          <div class="stage-kicker">Suggested sentence starters (display or read to students before the task)</div>
           <div class="starters">
             ${(stageMeta?.starters || []).map(s => `<span class="starter">${s}</span>`).join('')}
           </div>
@@ -1471,28 +1727,17 @@ body{
 
     <!-- 03 Exhibits -->
     <div class="section">
-      <div class="section-hdr">
-        <span class="section-num">03</span>
-        <span class="section-title">Exhibits &amp; Learning Focus</span>
-      </div>
-      <table class="ex-table">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Exhibit</th>
-            <th>Syllabus Links · Stage ${stage} Focus · Observation Task</th>
-          </tr>
-        </thead>
-        <tbody>${exhibitRows}</tbody>
-      </table>
+      <div class="sec-kicker">Section 03</div>
+      <div class="sec-title">Exhibits &amp; Learning Focus</div>
+      <div class="sec-rule"></div>
+      <div class="ex-list">${exhibitRows}</div>
     </div>
 
     <!-- 04 Outcomes -->
     <div class="section">
-      <div class="section-hdr">
-        <span class="section-num">04</span>
-        <span class="section-title">NSW Curriculum Outcomes Assessed</span>
-      </div>
+      <div class="sec-kicker">Section 04</div>
+      <div class="sec-title">NSW Curriculum Outcomes Analysed</div>
+      <div class="sec-rule"></div>
       <div class="outcomes-list">
         ${outcomeRows || '<p style="font-size:9pt;color:#888">No outcomes available for this selection.</p>'}
       </div>
@@ -1500,10 +1745,9 @@ body{
 
     <!-- 05 Scoring -->
     <div class="section">
-      <div class="section-hdr">
-        <span class="section-num">05</span>
-        <span class="section-title">How Responses Are Scored</span>
-      </div>
+      <div class="sec-kicker">Section 05</div>
+      <div class="sec-title">How Responses Are Scored</div>
+      <div class="sec-rule"></div>
       <div class="scoring-intro">
         Each written observation is scored across <strong>three domains</strong> (5 points each = 15 points total per exhibit). Scores are generated automatically and can be reviewed and overridden by the teacher at any time in the portal.
       </div>
@@ -1512,10 +1756,9 @@ body{
 
     <!-- 06 Portal -->
     <div class="section">
-      <div class="section-hdr">
-        <span class="section-num">06</span>
-        <span class="section-title">Analysing Data in the Teacher Portal</span>
-      </div>
+      <div class="sec-kicker">Section 06</div>
+      <div class="sec-title">Analysing Data in the Teacher Portal</div>
+      <div class="sec-rule"></div>
       <div class="portal-list">${portalRows}</div>
     </div>
 
@@ -1524,7 +1767,7 @@ body{
   <!-- Footer -->
   <div class="ftr">
     <div class="ftr-left">
-      <img src="${origin}/images/tracka-logo-white.png" alt="Taronga" class="ftr-logo">
+      <img src="${origin}/images/logo.png" alt="Taronga Tracka" class="ftr-logo">
       <div class="ftr-divider"></div>
       <span class="ftr-name">Taronga Tracka</span>
     </div>

@@ -2350,7 +2350,7 @@ export default function AdminDashboardScreen() {
       {/* Header */}
       <div style={{ background:'linear-gradient(135deg,var(--t-forest) 0%,var(--t-deep) 60%,var(--t-mid) 100%)', padding:'0.85rem 1.5rem', boxShadow:'var(--t-shadow-md)', display:'flex', justifyContent:'space-between', alignItems:'center', flexShrink:0, borderBottom:'1px solid rgba(255,255,255,0.07)', flexWrap:'wrap', gap:'0.75rem' }}>
         <div style={{ display:'flex', alignItems:'center', gap:'0.85rem' }}>
-          <img src="/images/tracka-logo-white.png" alt="" style={{ height:'40px', width:'auto', filter:'drop-shadow(0 2px 6px rgba(0,0,0,0.3))' }} onError={e=>e.target.style.display='none'} />
+          <img src="/images/logo.png" alt="" style={{ height:'40px', width:'auto', filter:'drop-shadow(0 2px 6px rgba(0,0,0,0.3))' }} onError={e=>e.target.style.display='none'} />
           <div>
             <h1 className="taronga-title" style={{ fontSize:'clamp(1.1rem, 2.5vw, 1.35rem)', color:'white', lineHeight:1.15, letterSpacing:'0.04em' }}>Taronga Staff Portal</h1>
             <p style={{ color:'rgba(255,255,255,0.55)', fontSize:'0.7rem', marginTop:'0.1rem' }}>Educational insights & program management</p>

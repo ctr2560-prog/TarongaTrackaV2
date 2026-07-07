@@ -104,7 +104,7 @@ export default function SeaLionMission() {
       '/Seal Game/background.png',
       'Seal Game/seal.png',
       'images/sea-lion.jpg',
-      'images/tracka-logo-white.png',
+      'images/logo.png',
       ...ITEMS.map(it => it.icon),
     ];
     const total = srcs.length;
@@ -314,7 +314,7 @@ export default function SeaLionMission() {
         <img src="images/sea-lion.jpg" alt="" style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover', objectPosition:'center', opacity:0.13, pointerEvents:'none', userSelect:'none' }} />
         <div style={{ flexShrink:0, display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0.85rem 1.1rem 0', position:'relative', zIndex:1 }}>
           <button onClick={() => setCurrentScreen('map')} style={{ background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.14)', color:'rgba(255,255,255,0.75)', padding:'0.4rem 0.95rem', borderRadius:'40px', cursor:'pointer', fontSize:'0.82rem', fontWeight:600 }}>← Back</button>
-          <img src="images/tracka-logo-white.png" alt="Taronga" style={{ height:'32px', width:'auto', opacity:0.75 }} onError={e => e.target.style.display='none'} />
+          <img src="images/logo.png" alt="Taronga" style={{ height:'32px', width:'auto', opacity:0.75 }} onError={e => e.target.style.display='none'} />
         </div>
         <div style={{ flex:'1 1 auto', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'1.5rem 1.25rem 1.75rem', maxWidth:'440px', margin:'0 auto', width:'100%', position:'relative', zIndex:1 }}>
           <h1 className="taronga-title" style={{ fontSize:'clamp(2.2rem,9vw,3rem)', color:'white', letterSpacing:'0.06em', margin:'0 0 0.2rem', textAlign:'center' }}>Sea Lion Sanctuary</h1>
@@ -595,7 +595,7 @@ export default function SeaLionMission() {
       <div style={{ background:'linear-gradient(135deg,var(--jungle-deep) 0%,var(--jungle-mid) 100%)', padding:'0.6rem 1rem', boxShadow:'0 4px 20px rgba(0,0,0,0.1)', flex:'0 0 auto', zIndex:100 }}>
         <div style={{ maxWidth:'900px', margin:'0 auto', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
           <button onClick={() => setCurrentScreen('map')} style={{ background:'rgba(255,255,255,0.15)', border:'none', color:'white', padding:'0.5rem 1rem', borderRadius:'var(--t-r-pill)', cursor:'pointer', fontSize:'0.85rem', fontWeight:600 }}>← Back</button>
-          <img src="images/tracka-logo-white.png" alt="Taronga Tracka" style={{ height:'45px', width:'auto' }} onError={e => e.target.style.display='none'} />
+          <img src="images/logo.png" alt="Taronga Tracka" style={{ height:'45px', width:'auto' }} onError={e => e.target.style.display='none'} />
           <div style={{ width:'70px' }} />
         </div>
       </div>

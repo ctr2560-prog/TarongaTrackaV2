@@ -24,7 +24,7 @@ export default function PublicEntryScreen() {
 
           {/* Hero */}
           <div style={{ textAlign:'center' }}>
-            <img src="images/tracka-logo-white.png" alt="Taronga Tracka" style={{ width:140, marginBottom:'1rem', filter:'drop-shadow(0 4px 16px rgba(0,0,0,0.5))' }} onError={e => e.target.style.display='none'} />
+            <img src="images/logo.png" alt="Taronga Tracka" style={{ width:140, marginBottom:'1rem', filter:'drop-shadow(0 4px 16px rgba(0,0,0,0.5))' }} onError={e => e.target.style.display='none'} />
             <h1 style={{ color:'white', fontSize:'clamp(1.6rem,4vw,2.2rem)', fontWeight:800, margin:'0 0 0.4rem', letterSpacing:'0.02em', textShadow:'0 2px 12px rgba(0,0,0,0.4)' }}>Explore Taronga</h1>
             <p style={{ color:'rgba(255,255,255,0.75)', fontSize:'0.95rem', margin:0, lineHeight:1.6 }}>Discover animals, learn fascinating facts, and track what you find across the zoo.</p>
           </div>

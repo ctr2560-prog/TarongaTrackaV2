@@ -22,7 +22,7 @@ const MAP_BOUNDS = {
 // The bottom ~12% of the image is the KEY legend strip (not geographical).
 const MAP_CONTENT_HEIGHT = 0.88; // fraction of image height that is map (rest = legend)
 
-const ANIMAL_MAP_POSITIONS = {
+export const ANIMAL_MAP_POSITIONS = {
   'sea-lion':                { x: 62.1, y: 25.0, label: 'Sea Lions'     },
   'concert-lawn':            { x: 28.6, y: 24.4, label: 'Concert Lawn'  },
   'gorilla':                 { x: 57.8, y: 43.2, label: 'Gorillas'      },
@@ -184,7 +184,7 @@ export default function MapScreen() {
       <div className="student-header">
         <div className="student-banner-mobile student-header-inner">
           <div className="logo-title-block" style={{ display:'flex', alignItems:'center', gap:'1rem' }}>
-            <img src="images/tracka-logo-white.png" alt="Taronga Tracka" style={{ height:'90px', width:'auto' }} onError={e => e.target.style.display='none'} />
+            <img src="images/logo.png" alt="Taronga Tracka" style={{ height:'90px', width:'auto' }} onError={e => e.target.style.display='none'} />
             <div>
               <h1 className="taronga-title" style={{ fontSize:'clamp(1.6rem, 3.5vw, 2.2rem)', color:'white', marginBottom:'0.2rem', letterSpacing:'0.04em', textShadow:'0 2px 8px rgba(0,0,0,0.4)' }}>Discover Animals</h1>
               <p className="serif-accent" style={{ color:'var(--safari-gold)', fontSize:'1rem' }}>Get within range to unlock</p>

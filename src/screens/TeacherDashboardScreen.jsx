@@ -43,10 +43,11 @@ const SvgSchool = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="no
 const SvgStar  = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>;
 const SvgBook  = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>;
 const SvgCompass = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>;
-const SvgPencil = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>;
 const SvgList  = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3" cy="6" r="0.5" fill="currentColor"/><circle cx="3" cy="12" r="0.5" fill="currentColor"/><circle cx="3" cy="18" r="0.5" fill="currentColor"/></svg>;
 const SvgChart = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>;
 const SvgMail  = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>;
+
+const SvgUsers = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>;
 
 const CHALLENGES = [
   { id:'expedition-sydney',   name:'Taronga Sydney',       desc:'Run a Tracka session at Taronga Zoo Sydney.',                                                     points:25, icon:<SvgZap/>,      type:'auto', location:'taronga-sydney'  },
@@ -65,12 +66,12 @@ const CHALLENGES = [
 const MONTHLY_CHALLENGE = { id:'monthly-june-2026', name:'June Challenge — Habitat Heroes', desc:'Document three different animal habitats near your school with photos and a short description.', points:100, icon:<SvgStar/> };
 
 const RESOURCE_CARDS = [
-  { title:'Teacher Guide', desc:'How to run a Taronga Tracka session', icon:<SvgBook/>, tag:'Guide' },
-  { title:'Pre-Visit Activities', desc:'Prepare your class before the zoo', icon:<SvgCompass/>, tag:'Lesson' },
-  { title:'Post-Visit Activities', desc:'Extend learning back in the classroom', icon:<SvgPencil/>, tag:'Lesson' },
-  { title:'Curriculum Alignment', desc:'NSW syllabus outcome mapping', icon:<SvgList/>, tag:'Document' },
+  { title:'Curriculum Alignment', desc:'NSW syllabus outcome mapping', icon:<SvgList/>, tag:'Document', screen:'curriculumAlignment' },
+  { title:'Zoo Map', desc:'See where every Tracka animal lives', icon:<SvgCompass/>, tag:'Map', screen:'teacherMap' },
+  { title:'Excursion Planning Pack', desc:'From booking to boarding the bus', icon:<SvgBook/>, tag:'Checklist' },
+  { title:'Accessibility & Inclusion', desc:'Supports so every student tracks', icon:<SvgUsers/>, tag:'Guide' },
+  { title:'Conservation Actions', desc:'Ideas to inspire real impact', icon:<SvgTree/>, tag:'Gallery' },
   { title:'Assessment Ideas', desc:'Ideas to assess student learning', icon:<SvgChart/>, tag:'Assessment' },
-  { title:'Parent Communication', desc:'Templates to inform families', icon:<SvgMail/>, tag:'Template' },
 ];
 
 function normalizeSchoolId(name) {
@@ -296,7 +297,7 @@ export default function TeacherDashboardScreen() {
     <div style={{ position:'fixed', inset:0, background:'linear-gradient(135deg, var(--t-deep) 0%, var(--t-mid) 60%, var(--t-eucalyptus) 100%)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'1.5rem' }}>
       <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'1rem' }}>
         <div style={{ width:'72px', height:'72px', borderRadius:'50%', background:'rgba(255,255,255,0.12)', border:'1px solid rgba(255,255,255,0.2)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-          <img src="/images/tracka-logo-white.png" alt="Taronga" style={{ width:'48px', height:'48px', objectFit:'contain' }} onError={e => e.target.style.display='none'} />
+          <img src="/images/logo.png" alt="Taronga" style={{ width:'48px', height:'48px', objectFit:'contain' }} onError={e => e.target.style.display='none'} />
         </div>
         <h1 className="taronga-title" style={{ color:'white', fontSize:'1.5rem', letterSpacing:'0.06em', fontWeight:400, margin:0 }}>TARONGA TRACKA</h1>
         <p style={{ color:'rgba(255,255,255,0.6)', fontSize:'0.8rem', margin:0 }}>Teacher Portal</p>
@@ -316,7 +317,7 @@ export default function TeacherDashboardScreen() {
       <div className="lms-topbar">
         <div className="lms-topbar-brand">
           <div style={{ width:'44px', height:'44px', borderRadius:'50%', background:'var(--t-deep)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, boxShadow:'0 2px 8px rgba(0,0,0,0.12)' }}>
-            <img src="/images/tracka-logo-white.png" alt="Taronga" style={{ height:'32px', width:'auto' }} onError={e => e.target.style.display='none'} />
+            <img src="/images/logo.png" alt="Taronga" style={{ height:'32px', width:'auto' }} onError={e => e.target.style.display='none'} />
           </div>
           <div>
             <h1 className="taronga-title" style={{ fontSize:'1.35rem', letterSpacing:'0.06em', lineHeight:1, color:'var(--t-deep)', fontWeight:400 }}>TARONGA TRACKA</h1>
@@ -425,7 +426,7 @@ export default function TeacherDashboardScreen() {
               {[
                 { icon:<SvgPlus/>, label:'Create Class', sub:'New session', action: () => setCurrentScreen('createClass'), color:'var(--t-mid)' },
                 { icon:<SvgLayers/>, label:'Pre/Post Visit', sub:'Learning resources', action: () => {}, color:'#0369A1' },
-                { icon:<SvgHelpCircle/>, label:'How To', sub:'Guides & tutorials', action: () => {}, color:'#7C3AED' },
+                { icon:<SvgHelpCircle/>, label:'How To', sub:'Guides & tutorials', action: () => setCurrentScreen('teacherGuide'), color:'#7C3AED' },
                 { icon:<img src="/images/wildly-logo.png" alt="Wildly by Taronga" style={{ width:'68px', height:'auto', objectFit:'contain' }} />, label:'Wildly', sub:'by Taronga', action: () => window.open('https://www.wildlybytaronga.com.au', '_blank'), color:'#1B6B3A', wideIcon: true },
               ].map(btn => (
                 <button key={btn.label} onClick={btn.action}
@@ -701,14 +702,17 @@ export default function TeacherDashboardScreen() {
               <h3 className="lms-section-heading" style={{ marginBottom:'0.75rem' }}>Resources</h3>
               <div style={{ display:'flex', gap:'0.75rem', overflowX:'auto', paddingBottom:'0.5rem', scrollbarWidth:'none' }}>
                 {RESOURCE_CARDS.map(r => (
-                  <div key={r.title} style={{ flexShrink:0, width:'180px', background:'white', borderRadius:'var(--t-r-md)', border:'1px solid var(--t-stone)', padding:'1.1rem', cursor:'pointer', transition:'all 0.18s', boxShadow:'var(--t-shadow-sm)' }}
+                  <div key={r.title} onClick={() => { if (r.screen) setCurrentScreen(r.screen); else if (r.href) window.open(r.href, '_blank'); }}
+                    style={{ flexShrink:0, width:'180px', background:'white', borderRadius:'var(--t-r-md)', border:'1px solid var(--t-stone)', padding:'1.1rem', cursor:'pointer', transition:'all 0.18s', boxShadow:'var(--t-shadow-sm)' }}
                     onMouseEnter={e => { e.currentTarget.style.borderColor='var(--t-mid)'; e.currentTarget.style.transform='translateY(-2px)'; }}
                     onMouseLeave={e => { e.currentTarget.style.borderColor='var(--t-stone)'; e.currentTarget.style.transform='none'; }}>
                     <div style={{ fontSize:'1.75rem', marginBottom:'0.6rem' }}>{r.icon}</div>
                     <div style={{ fontSize:'0.62rem', fontWeight:700, color:'var(--t-ash)', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:'0.3rem' }}>{r.tag}</div>
                     <div style={{ fontSize:'0.82rem', fontWeight:700, color:'var(--t-deep)', marginBottom:'0.3rem', lineHeight:1.3 }}>{r.title}</div>
                     <div style={{ fontSize:'0.72rem', color:'var(--t-slate)', lineHeight:1.45 }}>{r.desc}</div>
-                    <div style={{ marginTop:'0.75rem', fontSize:'0.7rem', color:'var(--t-ash)', fontStyle:'italic' }}>Coming soon</div>
+                    <div style={{ marginTop:'0.75rem', fontSize:'0.7rem', color: (r.screen || r.href) ? 'var(--t-mid)' : 'var(--t-ash)', fontStyle: (r.screen || r.href) ? 'normal' : 'italic', fontWeight: (r.screen || r.href) ? 700 : 400 }}>
+                      {(r.screen || r.href) ? 'Open →' : 'Coming soon'}
+                    </div>
                   </div>
                 ))}
               </div>

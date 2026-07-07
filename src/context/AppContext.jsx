@@ -72,7 +72,7 @@ export function AppProvider({ children }) {
     signOut(auth).then(() => {
       setTeacher(null);
       setTeacherEmail('');
-      setCurrentScreen('teacherLogin');
+      setCurrentScreen('home');
     });
   };
 

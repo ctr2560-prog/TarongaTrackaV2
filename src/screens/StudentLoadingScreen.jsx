@@ -54,7 +54,7 @@ export default function StudentLoadingScreen() {
 
   return (
     <div style={{ position:'fixed', inset:0, background:'linear-gradient(160deg,#071A0C 0%,#0D3320 50%,#0A2010 100%)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'1.75rem', padding:'2rem' }}>
-      <img src="images/tracka-logo-white.png" alt="Taronga Tracka"
+      <img src="images/logo.png" alt="Taronga Tracka"
         style={{ width:'clamp(150px,38vw,210px)', height:'auto', filter:'drop-shadow(0 4px 16px rgba(0,0,0,0.5))' }}
         onError={e => e.target.style.display='none'} />
       <div style={{ textAlign:'center' }}>

@@ -63,7 +63,7 @@ export default function ConcertLawnMission() {
             style={{ background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.14)', color:'rgba(255,255,255,0.75)', padding:'0.4rem 0.95rem', borderRadius:'40px', cursor:'pointer', fontSize:'0.82rem', fontWeight:600 }}>
             ← Back
           </button>
-          <img src="images/tracka-logo-white.png" alt="Taronga Tracka" style={{ height:'32px', width:'auto', opacity:0.7 }} onError={e => e.target.style.display='none'} />
+          <img src="images/logo.png" alt="Taronga Tracka" style={{ height:'32px', width:'auto', opacity:0.7 }} onError={e => e.target.style.display='none'} />
         </div>
 
         <div style={{ flex:'1 1 auto', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'1.5rem 1.25rem 2rem', maxWidth:'460px', margin:'0 auto', width:'100%' }}>
@@ -119,7 +119,7 @@ export default function ConcertLawnMission() {
             style={{ background:'rgba(255,255,255,0.15)', border:'none', color:'white', padding:'0.5rem 1rem', borderRadius:'var(--t-r-pill)', cursor:'pointer', fontSize:'0.85rem', fontWeight:600 }}>
             ← Back
           </button>
-          <img src="images/tracka-logo-white.png" alt="Taronga Tracka" style={{ height:'45px', width:'auto' }} onError={e => e.target.style.display='none'} />
+          <img src="images/logo.png" alt="Taronga Tracka" style={{ height:'45px', width:'auto' }} onError={e => e.target.style.display='none'} />
           <div style={{ width:'70px' }} />
         </div>
       </div>

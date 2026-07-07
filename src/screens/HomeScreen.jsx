@@ -344,7 +344,7 @@ export default function HomeScreen() {
         <div style={{ position:'relative', zIndex:10, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', height:'100%', padding:'clamp(4rem,10vh,6rem) 1.5rem 5rem', textAlign:'center' }}>
           <div className="animate-fade-in-up" style={{ animationDelay:'0.15s', marginBottom:'clamp(0.75rem,2vh,1.2rem)', position:'relative' }}>
             <div style={{ position:'absolute', inset:'-18% -30%', background:'radial-gradient(ellipse at center, rgba(4,18,11,0.6) 0%, rgba(4,18,11,0.3) 45%, transparent 72%)', pointerEvents:'none' }} />
-            <img src="/images/tracka-logo-white.png" alt="Taronga Tracka" style={{ position:'relative', width:'clamp(125px,30vw,175px)', height:'auto', display:'block', filter:'drop-shadow(0 3px 10px rgba(0,0,0,0.45))' }} onError={e => e.target.style.display='none'} />
+            <img src="/images/logo.png" alt="Taronga Tracka" style={{ position:'relative', width:'clamp(160px,38vw,225px)', height:'auto', display:'block', filter:'drop-shadow(0 3px 10px rgba(0,0,0,0.45))' }} onError={e => e.target.style.display='none'} />
           </div>
           <h1 className="taronga-title animate-fade-in-up" style={{ fontSize:'clamp(2.3rem,7vw,3.8rem)', color:'white', margin:'0 0 0.55rem', letterSpacing:'0.03em', lineHeight:1.08, textShadow:'0 3px 18px rgba(0,0,0,0.6)', animationDelay:'0.3s' }}>
             Step Into the Wild

@@ -274,7 +274,7 @@ export default function BuffaloMission() {
         <div style={{ background:'linear-gradient(135deg,var(--jungle-deep),var(--jungle-mid))', padding:'0.6rem 1rem', flex:'0 0 auto', zIndex:100 }}>
           <div style={{ maxWidth:'900px', margin:'0 auto', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
             <div style={{ width:'70px' }} />
-            <img src="images/tracka-logo-white.png" alt="Taronga Tracka" style={{ height:'45px', width:'auto' }} onError={e => e.target.style.display='none'} />
+            <img src="images/logo.png" alt="Taronga Tracka" style={{ height:'45px', width:'auto' }} onError={e => e.target.style.display='none'} />
             <div style={{ width:'70px' }} />
           </div>
         </div>
@@ -398,7 +398,7 @@ export default function BuffaloMission() {
               style={{ background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.14)', color:'rgba(255,255,255,0.75)', padding:'0.4rem 0.95rem', borderRadius:'40px', cursor:'pointer', fontSize:'0.82rem', fontWeight:600, letterSpacing:'0.03em' }}>
               ← Back
             </button>
-            <img src="images/tracka-logo-white.png" alt="Taronga" style={{ height:'32px', width:'auto', opacity:0.7 }} onError={e => { e.target.style.display='none'; }} />
+            <img src="images/logo.png" alt="Taronga" style={{ height:'32px', width:'auto', opacity:0.7 }} onError={e => { e.target.style.display='none'; }} />
           </div>
           <div style={{ flex:'1 1 auto', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'1.5rem 1.25rem 1.75rem', maxWidth:'440px', margin:'0 auto', width:'100%' }}>
             <h1 className="taronga-title" style={{ fontSize:'clamp(2.2rem,8vw,3rem)', color:'white', letterSpacing:'0.08em', margin:'0 0 0.2rem', textAlign:'center', lineHeight:1 }}>River Run</h1>

@@ -178,7 +178,7 @@ export default function ClassDetailsScreen() {
       alignItems:'center', justifyContent:'center',
       gap:'1.5rem', zIndex:10,
     }}>
-      <img src="/images/tracka-logo-white.png" alt="Taronga" style={{ height:64, width:'auto', opacity:0.9 }} />
+      <img src="/images/logo.png" alt="Taronga" style={{ height:64, width:'auto', opacity:0.9 }} />
       <div style={{ display:'flex', gap:'8px', alignItems:'center' }}>
         {[0,1,2].map(i => (
           <div key={i} style={{
@@ -384,7 +384,7 @@ export default function ClassDetailsScreen() {
       <div className="lms-topbar" style={ isZZ ? { background:'linear-gradient(135deg,#071E14 0%,#0A2F1F 60%,#071E14 100%)', borderBottom:'1px solid rgba(168,196,178,0.2)' } : {}}>
         <div className="lms-topbar-brand">
           <div style={{ width:'44px', height:'44px', borderRadius:'50%', background: isZZ ? 'rgba(46,125,85,0.3)' : 'var(--t-deep)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-            <img src="/images/tracka-logo-white.png" alt="" style={{ height:'32px', width:'auto', filter: isZZ ? 'brightness(0) invert(1)' : 'none' }} onError={e=>e.target.style.display='none'} />
+            <img src="/images/logo.png" alt="" style={{ height:'32px', width:'auto', filter: isZZ ? 'brightness(0) invert(1)' : 'none' }} onError={e=>e.target.style.display='none'} />
           </div>
           <div style={{ display:'flex', flexDirection:'column', justifyContent:'center' }}>
             <h1 className="taronga-title" style={{ fontSize:'1.35rem', letterSpacing:'0.06em', lineHeight:1, color: isZZ ? '#D4EDE0' : 'var(--t-deep)', fontWeight:400 }}>{isZZ ? '🌙 ZOOSNOOZ' : 'TARONGA TRACKA'}</h1>
@@ -414,7 +414,7 @@ export default function ClassDetailsScreen() {
             <button className="lms-nav-item" onClick={() => window.open('https://www.wildlybytaronga.com.au', '_blank')}>
               <span className="lms-nav-icon"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M6 3H3a1 1 0 00-1 1v9a1 1 0 001 1h9a1 1 0 001-1v-3M10 2h4m0 0v4m0-4L7 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></span> Wildly by Taronga
             </button>
-            {(cls.subject === 'science' || cls.subject === 'maths') && (
+            {['science', 'maths', 'pdhpe', 'english'].includes(cls.subject) && (
               <button className="lms-nav-item" onClick={() => openTeacherInfoSheet(cls.subject, cls.stage)}>
                 <span className="lms-nav-icon"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><rect x="3" y="1" width="10" height="14" rx="1.5" stroke="currentColor" strokeWidth="1.5"/><path d="M6 5h4M6 8h4M6 11h2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg></span> Teacher Info Sheet
               </button>

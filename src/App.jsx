@@ -4,7 +4,8 @@ import { StudentProvider } from './context/StudentContext';
 import {
   HomeScreen, MapScreen, AnimalScreen, ObservationScreen,
   BadgeScreen, CollectionScreen, SchoolEntryScreen, StudentJoinScreen, StudentLoadingScreen,
-  SubmissionCompleteScreen, ResourceHubScreen,
+  SubmissionCompleteScreen, ResourceHubScreen, CurriculumAlignmentScreen, TeacherGuideScreen, TeacherMapScreen,
+  ExcursionPlanScreen, AccessibilityScreen, ConservationGalleryScreen,
   TeacherLoginScreen, TeacherDashboardScreen, CreateClassScreen, ClassDetailsScreen,
   AdminLoginScreen, AdminDashboardScreen, AdminClassViewScreen,
   PublicHomeScreen, PublicHomeExtScreen, PublicEntryScreen,
@@ -79,6 +80,12 @@ function Router() {
     case 'studentLoading':       return <StudentLoadingScreen />;
     case 'submissionComplete':   return <SubmissionCompleteScreen />;
     case 'resourceHub':          return <ResourceHubScreen />;
+    case 'curriculumAlignment':  return <CurriculumAlignmentScreen />;
+    case 'teacherGuide':         return <TeacherGuideScreen />;
+    case 'teacherMap':           return <TeacherMapScreen />;
+    case 'excursionPlan':        return <ExcursionPlanScreen />;
+    case 'accessibility':        return <AccessibilityScreen />;
+    case 'conservationGallery':  return <ConservationGalleryScreen />;
     case 'teacherLogin':         return <TeacherLoginScreen />;
     case 'teacherDashboard':     return <TeacherDashboardScreen />;
     case 'createClass':          return <CreateClassScreen />;
