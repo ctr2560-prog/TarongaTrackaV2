@@ -11,6 +11,25 @@ function readLocal(key, fallback) {
   catch { return fallback; }
 }
 
+// ── Browser history integration ──────────────────────────────────────────────
+// Screens that are safe to load directly from a URL (no in-memory state needed).
+// Everything else falls back to home on a cold load; within a session, back/forward
+// works across all screens because their state is still in memory.
+const DEEP_LINK_SCREENS = new Set([
+  'home', 'comingSoon', 'studentJoin', 'schoolEntry',
+  'teacherLogin', 'teacherDashboard', 'createClass', 'resourceHub',
+  'curriculumAlignment', 'teacherGuide', 'teacherMap',
+  'excursionPlan', 'accessibility', 'conservationGallery',
+  'adminLogin',
+  'publicEntry', 'publicLeaderboard',
+]);
+
+const screenToPath = (screen) => screen === 'home' ? '/' : `/${screen}`;
+const pathToScreen = (pathname) => {
+  const s = pathname.replace(/^\/+|\/+$/g, '');
+  return s === '' ? 'home' : s;
+};
+
 export function AppProvider({ children }) {
   // ── Saved student session ─────────────────────────────────────────────────
   const _savedName    = readLocal('tarongaStudentName', '');
@@ -21,8 +40,29 @@ export function AppProvider({ children }) {
   // ── Navigation ────────────────────────────────────────────────────────────
   const [currentScreen, setCurrentScreen] = useState(() => {
     if (_hasSavedSession) return _savedSession === 'zoosnooz' ? 'zoosnooz' : 'map';
-    return 'home';
+    const fromUrl = pathToScreen(window.location.pathname);
+    return DEEP_LINK_SCREENS.has(fromUrl) ? fromUrl : 'home';
   });
+
+  // Keep the browser URL and history in sync with the current screen, so the
+  // back/forward buttons navigate between screens instead of leaving the site.
+  useEffect(() => {
+    const path = screenToPath(currentScreen);
+    if (window.location.pathname !== path) {
+      window.history.pushState({ screen: currentScreen }, '', path);
+    } else if (!window.history.state?.screen) {
+      window.history.replaceState({ screen: currentScreen }, '', path);
+    }
+  }, [currentScreen]);
+
+  useEffect(() => {
+    const onPop = (e) => {
+      const target = e.state?.screen || pathToScreen(window.location.pathname);
+      setCurrentScreen(target);
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
   const [sessionType,   setSessionType]   = useState(_savedSession);
   const [zzScreen,      setZzScreen]      = useState('map');      // ZooSnooz sub-router
   const [appMode,       setAppMode]       = useState(() => localStorage.getItem('tarongaAppMode') || 'school');

@@ -2223,6 +2223,11 @@ export default function AdminDashboardScreen() {
 
   const [tab, setTab] = useState('overview');
 
+  // No access code in memory (e.g. deep link or stale history entry) → back to login
+  useEffect(() => {
+    if (!adminAccessCode) setCurrentScreen('adminLogin');
+  }, [adminAccessCode, setCurrentScreen]);
+
   // Classes data
   const [classes,  setClasses]  = useState([]);
   const [loading,  setLoading]  = useState(true);
