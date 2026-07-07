@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { auth } from '../firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
@@ -24,6 +24,10 @@ const DEEP_LINK_SCREENS = new Set([
   'publicEntry', 'publicLeaderboard',
 ]);
 
+// Auto-advancing screens: navigating away replaces their history entry so the
+// back button never lands on them (they would immediately bounce forward again).
+const TRANSIENT_SCREENS = new Set(['studentLoading']);
+
 const screenToPath = (screen) => screen === 'home' ? '/' : `/${screen}`;
 const pathToScreen = (pathname) => {
   const s = pathname.replace(/^\/+|\/+$/g, '');
@@ -46,13 +50,17 @@ export function AppProvider({ children }) {
 
   // Keep the browser URL and history in sync with the current screen, so the
   // back/forward buttons navigate between screens instead of leaving the site.
+  const prevScreenRef = useRef(null);
   useEffect(() => {
     const path = screenToPath(currentScreen);
+    // Replace (don't push) on first mount and when leaving auto-advancing screens
+    const replace = prevScreenRef.current === null || TRANSIENT_SCREENS.has(prevScreenRef.current);
     if (window.location.pathname !== path) {
-      window.history.pushState({ screen: currentScreen }, '', path);
+      window.history[replace ? 'replaceState' : 'pushState']({ screen: currentScreen }, '', path);
     } else if (!window.history.state?.screen) {
       window.history.replaceState({ screen: currentScreen }, '', path);
     }
+    prevScreenRef.current = currentScreen;
   }, [currentScreen]);
 
   useEffect(() => {
