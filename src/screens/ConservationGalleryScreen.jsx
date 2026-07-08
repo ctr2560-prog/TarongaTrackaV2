@@ -1,131 +1,170 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '../firebase';
 import { useApp } from '../context/AppContext';
 
-const ACTIONS = [
-  { cat:'school', title:'Plant a native tree or shrub',
-    body:'Add native habitat to your school grounds - food and shelter for local birds, insects and lizards.',
-    challenge:'Plant a Tree', points:75 },
-  { cat:'school', title:'Design a wildlife crossing',
-    body:'Research a local species, then design and model a corridor or road crossing that would help it move safely.',
-    challenge:'Wildlife Crossing Design', points:80 },
-  { cat:'school', title:'Run a biodiversity audit',
-    body:'Count and photograph the species living around your school - then compare again next term to see what changes.',
-    challenge:'Biodiversity Audit', points:60 },
-  { cat:'school', title:'Organise a clean-up day',
-    body:'A litter clean-up around the school grounds keeps rubbish out of waterways - and out of sea lion habitat.',
-    challenge:'Clean Up School', points:50 },
-  { cat:'school', title:'Create wildlife awareness posters',
-    body:'Turn what students learned at the zoo into posters that teach the rest of the school.',
-    challenge:'Wildlife Posters', points:40 },
-  { cat:'school', title:'Keep a nature journal',
-    body:'A week of illustrated observations of local wildlife - the same skills students used at the zoo, applied at home base.',
-    challenge:'Nature Journal', points:35 },
-  { cat:'home', title:'Build a bird bath or water station',
-    body:'A shallow dish of water in the garden supports birds and pollinators through hot weather.' },
-  { cat:'home', title:'Keep cats safe and wildlife safer',
-    body:'A night-time cat curfew or a cat run protects native birds, reptiles and small mammals.' },
-  { cat:'home', title:'Go plastic-free at lunch',
-    body:'Swap cling wrap and single-use packaging for reusable containers - less plastic reaching marine life like our sea lions.' },
-  { cat:'home', title:'Plant a pollinator patch',
-    body:'A pot or garden bed of native flowering plants feeds bees, butterflies and honeyeaters all year round.' },
-  { cat:'home', title:'Switch off for wildlife',
-    body:'An energy switch-off hour each week - less energy use means healthier habitats for every animal students met.' },
-  { cat:'home', title:'Teach your family one thing',
-    body:'Students share their favourite fact or their conservation statement at home - learning that travels is learning that lasts.' },
+const ROTATIONS = [-2.2, 1.6, -1.1, 2.4, -1.8, 0.9, 2.0, -2.6];
+const TAPES = [
+  'rgba(78,203,113,0.38)',   // eucalyptus
+  'rgba(251,191,36,0.42)',   // sun amber
+  'rgba(56,189,248,0.35)',   // harbour blue
+  'rgba(196,181,253,0.42)',  // jacaranda
 ];
 
-const FILTERS = [
-  { id:'all',    label:'All ideas' },
-  { id:'school', label:'At school' },
-  { id:'home',   label:'At home' },
-];
+function GalleryCard({ item, index }) {
+  const rot  = ROTATIONS[index % ROTATIONS.length];
+  const tape = TAPES[index % TAPES.length];
+  const [hover, setHover] = useState(false);
+
+  return (
+    <div style={{ breakInside:'avoid', marginBottom:'1.75rem', animation:'gal-in 0.7s cubic-bezier(0.22,1,0.36,1) both', animationDelay:`${(index % 9) * 0.09}s` }}>
+      <div style={{ animation:`gal-drift ${7 + (index % 4)}s ease-in-out infinite`, animationDelay:`${(index % 5) * 0.8}s` }}>
+        <div
+          onMouseEnter={() => setHover(true)}
+          onMouseLeave={() => setHover(false)}
+          style={{
+            position:'relative',
+            background:'#FFFEFB',
+            borderRadius:'4px',
+            padding:'0.85rem 0.85rem 1.05rem',
+            boxShadow: hover
+              ? '0 3px 6px rgba(7,30,20,0.12), 0 26px 52px rgba(7,30,20,0.3)'
+              : '0 2px 4px rgba(7,30,20,0.1), 0 12px 28px rgba(7,30,20,0.16)',
+            transform: hover ? 'rotate(0deg) translateY(-7px) scale(1.02)' : `rotate(${rot}deg)`,
+            transition:'transform 0.4s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.4s',
+          }}>
+
+          {/* Washi tape */}
+          <div style={{ position:'absolute', top:'-11px', left:'50%', width:'86px', height:'24px', background:tape, transform:`translateX(-50%) rotate(${-rot * 1.4}deg)`, boxShadow:'0 1px 3px rgba(7,30,20,0.12)', backdropFilter:'blur(1px)', zIndex:2 }} />
+
+          {item.evidenceUrl ? (
+            <div style={{ overflow:'hidden', borderRadius:'2px', background:'var(--t-foam)' }}>
+              <img src={item.evidenceUrl} alt={item.challengeName} loading="lazy"
+                style={{ width:'100%', display:'block', transform: hover ? 'scale(1.06)' : 'scale(1)', transition:'transform 0.7s ease' }}
+                onError={e => e.target.parentElement.style.display='none'} />
+            </div>
+          ) : (
+            <div style={{ borderRadius:'2px', background:'linear-gradient(150deg, var(--t-deep) 0%, var(--t-mid) 110%)', padding:'2.2rem 1.5rem 2rem', textAlign:'center', position:'relative', overflow:'hidden' }}>
+              <div style={{ position:'absolute', top:'-40px', right:'-40px', width:'130px', height:'130px', borderRadius:'50%', background:'radial-gradient(circle, rgba(78,203,113,0.25), transparent 70%)' }} />
+              <span style={{ fontFamily:"'Instrument Serif', Georgia, serif", fontSize:'3rem', color:'rgba(255,255,255,0.28)', lineHeight:0.6, display:'block' }}>"</span>
+              <p style={{ margin:'0.4rem 0 0', fontSize:'0.95rem', color:'white', lineHeight:1.65, fontFamily:"'Instrument Serif', Georgia, serif", fontStyle:'italic', position:'relative' }}>{item.note || item.challengeName}</p>
+            </div>
+          )}
+
+          <div style={{ padding:'0.9rem 0.35rem 0' }}>
+            {item.evidenceUrl && item.note && (
+              <p style={{ margin:'0 0 0.7rem', fontSize:'0.9rem', color:'var(--t-charcoal)', lineHeight:1.6, fontFamily:"'Instrument Serif', Georgia, serif", fontStyle:'italic' }}>
+                <span style={{ color:'var(--t-mid)', fontSize:'1.15em' }}>"</span>{item.note}<span style={{ color:'var(--t-mid)', fontSize:'1.15em' }}>"</span>
+              </p>
+            )}
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'0.5rem', flexWrap:'wrap', borderTop:'1px solid #F2EEE6', paddingTop:'0.65rem' }}>
+              <div style={{ minWidth:0 }}>
+                <div style={{ fontSize:'0.76rem', fontWeight:800, color:'var(--t-deep)', lineHeight:1.25 }}>{item.schoolName}</div>
+                <div style={{ fontSize:'0.64rem', fontWeight:600, color:'var(--t-slate)', marginTop:'2px', textTransform:'uppercase', letterSpacing:'0.06em' }}>{item.challengeName}</div>
+              </div>
+              <span style={{ flexShrink:0, fontSize:'0.62rem', fontWeight:800, color:'white', background:'linear-gradient(135deg, var(--t-mid), #2E7D55)', padding:'0.24rem 0.65rem', borderRadius:999, boxShadow:'0 2px 6px rgba(26,82,56,0.3)' }}>+{item.pointsValue} pts</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function ConservationGalleryScreen() {
   const { setCurrentScreen } = useApp();
-  const [filter, setFilter] = useState('all');
+  const [items, setItems]     = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const visible = ACTIONS.filter(a => filter === 'all' || a.cat === filter);
+  useEffect(() => {
+    getDocs(query(collection(db, 'challengeSubmissions'), where('inGallery', '==', true)))
+      .then(snap => {
+        const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        list.sort((a, b) => (b.galleryAt?.seconds || 0) - (a.galleryAt?.seconds || 0));
+        setItems(list);
+      })
+      .catch(() => setItems([]))
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
-    <div className="lms-page">
+    <div className="lms-page" style={{ background:'#F1EDE4' }}>
 
       {/* Top bar */}
       <div className="lms-topbar">
         <div className="lms-topbar-brand">
-          <div style={{ width:'44px', height:'44px', borderRadius:'50%', background:'var(--t-deep)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-            <img src="/images/logo.png" alt="" style={{ height:'32px', width:'auto' }} onError={e => e.target.style.display='none'} />
-          </div>
+          <button onClick={() => setCurrentScreen('teacherDashboard')} style={{ background:'var(--t-foam)', border:'1.5px solid var(--t-stone)', color:'var(--t-charcoal)', padding:'0.45rem 0.95rem', borderRadius:'var(--t-r-sm)', cursor:'pointer', fontSize:'0.8rem', fontWeight:600, flexShrink:0, fontFamily:'inherit' }}>
+            ← Back
+          </button>
           <div style={{ display:'flex', flexDirection:'column', justifyContent:'center' }}>
-            <h1 className="taronga-title" style={{ fontSize:'1.35rem', letterSpacing:'0.06em', lineHeight:1, color:'var(--t-deep)', fontWeight:400 }}>CONSERVATION ACTIONS</h1>
-            <p style={{ fontSize:'0.7rem', color:'var(--t-slate)', fontWeight:500, marginTop:'0.1rem' }}>Teacher Portal · Ideas to inspire real impact</p>
+            <h1 className="taronga-title" style={{ fontSize:'1.35rem', letterSpacing:'0.06em', lineHeight:1, color:'var(--t-deep)', fontWeight:400 }}>CONSERVATION IN ACTION</h1>
+            <p style={{ fontSize:'0.7rem', color:'var(--t-slate)', fontWeight:500, marginTop:'0.1rem' }}>Real actions from real schools</p>
           </div>
         </div>
       </div>
 
-      <div className="lms-two-col">
+      {/* Scroll area */}
+      <div style={{ flex:1, overflowY:'auto' }}>
 
-        {/* Sidebar */}
-        <div className="lms-sidebar">
-          <p className="lms-nav-group-label">Navigation</p>
-          <nav className="lms-nav">
-            <button className="lms-nav-item" onClick={() => setCurrentScreen('teacherDashboard')}>
-              <span className="lms-nav-icon"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M10 13L5 8l5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg></span> Dashboard
-            </button>
-          </nav>
-
-          <p className="lms-nav-group-label">Filter</p>
-          <nav className="lms-nav">
-            {FILTERS.map(f => (
-              <button key={f.id} className={`lms-nav-item ${f.id === filter ? 'lms-nav-active' : ''}`} onClick={() => setFilter(f.id)}>
-                <span className="lms-nav-icon"><span style={{ width:8, height:8, borderRadius:'50%', background: f.id === filter ? 'white' : '#4ecb71', display:'block', opacity:0.85 }} /></span>
-                {f.label}
-              </button>
-            ))}
-          </nav>
+        {/* Hero band */}
+        <div style={{ background:'linear-gradient(165deg, var(--t-deep) 0%, #071E14 100%)', padding:'3rem 1.5rem 5.5rem', textAlign:'center', position:'relative', overflow:'hidden' }}>
+          <div style={{ position:'absolute', top:'-130px', left:'12%', width:'300px', height:'300px', borderRadius:'50%', background:'radial-gradient(circle, rgba(78,203,113,0.18), transparent 70%)', pointerEvents:'none' }} />
+          <div style={{ position:'absolute', bottom:'-110px', right:'8%', width:'340px', height:'340px', borderRadius:'50%', background:'radial-gradient(circle, rgba(46,125,85,0.3), transparent 70%)', pointerEvents:'none' }} />
+          <div style={{ position:'relative' }}>
+            <div style={{ fontSize:'0.62rem', fontWeight:800, color:'#4ecb71', textTransform:'uppercase', letterSpacing:'0.28em', marginBottom:'0.8rem' }}>The Gallery Wall</div>
+            <h2 className="taronga-title" style={{ margin:0, fontSize:'clamp(2.1rem,4.8vw,3.1rem)', color:'white', fontWeight:400, letterSpacing:'0.02em', lineHeight:1.1 }}>
+              What Schools Are Doing<br/>for the Wild
+            </h2>
+            <p style={{ margin:'0.85rem auto 0', fontSize:'0.87rem', color:'rgba(168,196,178,0.9)', maxWidth:'480px', lineHeight:1.7 }}>
+              Every card is a completed conservation challenge, hand-picked by the Taronga team. Your class could be up here next.
+            </p>
+            {!loading && items.length > 0 && (
+              <div style={{ display:'inline-flex', alignItems:'center', gap:'0.45rem', marginTop:'1.2rem', background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.14)', borderRadius:999, padding:'0.4rem 1.1rem' }}>
+                <span style={{ width:6, height:6, borderRadius:'50%', background:'#4ecb71' }} />
+                <span style={{ fontSize:'0.72rem', fontWeight:700, color:'rgba(255,255,255,0.85)', letterSpacing:'0.04em' }}>{items.length} action{items.length === 1 ? '' : 's'} on the wall — and counting</span>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Main */}
-        <div className="lms-main">
-          <div className="lms-main-inner" style={{ maxWidth:'860px', margin:'0 auto' }}>
+        {/* Wall — pulled up over the hero's bottom edge */}
+        <div style={{ maxWidth:'1060px', margin:'-3.25rem auto 0', padding:'0 1.5rem 3.5rem', position:'relative' }}>
 
-            <h2 className="taronga-title" style={{ margin:0, fontSize:'2rem', color:'var(--t-deep)', fontWeight:400, letterSpacing:'0.03em', lineHeight:1.1 }}>
-              From Statement to Action
-            </h2>
-            <p style={{ margin:'0.35rem 0 1.5rem', fontSize:'0.8rem', color:'var(--t-slate)', fontWeight:500, maxWidth:'620px', lineHeight:1.6 }}>
-              At the end of every session, students write a conservation statement - a real action they will take at home or school.
-              Share these ideas to inspire them. School actions link to class challenges, earning points for your school on the leaderboard.
-            </p>
+          {loading && (
+            <p style={{ textAlign:'center', color:'var(--t-ash)', fontSize:'0.85rem', padding:'4.5rem 0' }}>Hanging the frames…</p>
+          )}
 
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(250px, 1fr))', gap:'0.9rem', marginBottom:'1.5rem' }}>
-              {visible.map(a => (
-                <div key={a.title} style={{ background:'white', border:'1px solid var(--t-stone)', borderTop:`3px solid ${a.cat === 'school' ? 'var(--t-mid)' : '#B45309'}`, borderRadius:'var(--t-r-lg)', boxShadow:'var(--t-shadow-sm)', padding:'1.1rem 1.2rem', display:'flex', flexDirection:'column', transition:'transform 0.18s, box-shadow 0.18s' }}
-                  onMouseEnter={e => { e.currentTarget.style.transform='translateY(-2px)'; e.currentTarget.style.boxShadow='var(--t-shadow-md)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform='none'; e.currentTarget.style.boxShadow='var(--t-shadow-sm)'; }}>
-                  <span style={{ alignSelf:'flex-start', fontSize:'0.56rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.1em', padding:'0.16rem 0.6rem', borderRadius:999, marginBottom:'0.55rem',
-                    background: a.cat === 'school' ? 'var(--t-foam)' : '#FFFBEB',
-                    color: a.cat === 'school' ? 'var(--t-mid)' : '#B45309' }}>
-                    {a.cat === 'school' ? 'At school' : 'At home'}
-                  </span>
-                  <div style={{ fontSize:'0.88rem', fontWeight:700, color:'var(--t-deep)', lineHeight:1.3, marginBottom:'0.3rem' }}>{a.title}</div>
-                  <p style={{ margin:0, fontSize:'0.75rem', color:'var(--t-charcoal)', lineHeight:1.6, flex:1 }}>{a.body}</p>
-                  {a.challenge && (
-                    <div style={{ marginTop:'0.7rem', paddingTop:'0.6rem', borderTop:'1px solid var(--t-foam)', fontSize:'0.68rem', fontWeight:700, color:'var(--t-mid)' }}>
-                      Class challenge: {a.challenge} · {a.points} pts
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            <div style={{ textAlign:'center', padding:'0.25rem 1rem 1.5rem' }}>
-              <p style={{ margin:0, fontSize:'0.76rem', color:'var(--t-slate)' }}>
-                Submit completed school actions through Class Challenges on your dashboard to earn points for your school.
+          {!loading && items.length === 0 && (
+            <div style={{ background:'#FFFEFB', borderRadius:'var(--t-r-lg)', boxShadow:'0 12px 32px rgba(7,30,20,0.14)', textAlign:'center', padding:'3.5rem 1.5rem', maxWidth:'560px', margin:'0 auto' }}>
+              <p className="taronga-title" style={{ fontSize:'1.5rem', color:'var(--t-deep)', margin:'0 0 0.6rem', fontWeight:400 }}>The wall is waiting for its first story</p>
+              <p style={{ fontSize:'0.82rem', color:'var(--t-slate)', margin:0, lineHeight:1.65, maxWidth:'400px', marginInline:'auto' }}>
+                Complete a class challenge from your dashboard - approved submissions can be featured here by the Taronga team.
               </p>
             </div>
+          )}
 
-          </div>
+          {!loading && items.length > 0 && (
+            <div className="gal-masonry">
+              {items.map((item, i) => <GalleryCard key={item.id} item={item} index={i} />)}
+            </div>
+          )}
+
         </div>
       </div>
+
+      <style>{`
+        .gal-masonry { column-count: 3; column-gap: 1.75rem; padding-top: 14px; }
+        @media (max-width: 900px) { .gal-masonry { column-count: 2; } }
+        @media (max-width: 560px) { .gal-masonry { column-count: 1; } }
+        @keyframes gal-in {
+          0%   { opacity: 0; transform: translateY(26px) scale(0.96); }
+          100% { opacity: 1; }
+        }
+        @keyframes gal-drift {
+          0%, 100% { transform: translateY(0); }
+          50%      { transform: translateY(-5px); }
+        }
+      `}</style>
     </div>
   );
 }

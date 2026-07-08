@@ -70,7 +70,7 @@ const RESOURCE_CARDS = [
   { title:'Zoo Map', desc:'See where every Tracka animal lives', icon:<SvgCompass/>, tag:'Map', screen:'teacherMap' },
   { title:'Excursion Planning Pack', desc:'From booking to boarding the bus', icon:<SvgBook/>, tag:'Checklist' },
   { title:'Accessibility & Inclusion', desc:'Supports so every student tracks', icon:<SvgUsers/>, tag:'Guide' },
-  { title:'Conservation Actions', desc:'Ideas to inspire real impact', icon:<SvgTree/>, tag:'Gallery' },
+  { title:'Conservation in Action', desc:'Real actions from real schools', icon:<SvgTree/>, tag:'Gallery', screen:'conservationGallery' },
   { title:'Assessment Ideas', desc:'Ideas to assess student learning', icon:<SvgChart/>, tag:'Assessment' },
 ];
 

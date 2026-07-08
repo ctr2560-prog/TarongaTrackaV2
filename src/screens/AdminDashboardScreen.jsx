@@ -2030,11 +2030,21 @@ function ChallengesTab() {
     } catch (e) { alert('Save failed: ' + e.message); }
   };
 
+  const toggleGallery = async (sub) => {
+    setActioning(sub.id);
+    try {
+      await updateDoc(doc(db, 'challengeSubmissions', sub.id), sub.inGallery
+        ? { inGallery: false, galleryAt: deleteField() }
+        : { inGallery: true, galleryAt: serverTimestamp() });
+    } catch (e) { alert('Gallery update failed: ' + e.message); }
+    setActioning(null);
+  };
+
   const revoke = async (sub) => {
     if (!window.confirm(`Revoke approval for "${sub.challengeName}" from ${sub.schoolName}? This will subtract ${sub.pointsValue} pts from their total.`)) return;
     setActioning(sub.id);
     try {
-      await updateDoc(doc(db, 'challengeSubmissions', sub.id), { status: 'pending', approvedAt: deleteField() });
+      await updateDoc(doc(db, 'challengeSubmissions', sub.id), { status: 'pending', approvedAt: deleteField(), inGallery: false, galleryAt: deleteField() });
       const sid = normalizeSchoolId(sub.schoolName || '');
       await setDoc(doc(db, 'schools', sid), { totalPoints: increment(-(sub.pointsValue || 0)), lastUpdated: serverTimestamp() }, { merge: true });
     } catch (e) { alert('Revoke failed: ' + e.message); }
@@ -2134,6 +2144,7 @@ function ChallengesTab() {
                       <span style={{ fontSize:'0.88rem', fontWeight:700, color:'var(--t-deep)' }}>{sub.challengeName}</span>
                       <span style={{ fontSize:'0.65rem', fontWeight:700, padding:'0.15rem 0.5rem', borderRadius:'var(--t-r-pill)', ...statusStyle(sub.status) }}>{sub.status}</span>
                       <span style={{ fontSize:'0.68rem', fontWeight:700, color:'var(--t-mid)', background:'var(--t-foam)', padding:'0.15rem 0.45rem', borderRadius:'var(--t-r-pill)' }}>+{sub.pointsValue} pts</span>
+                      {sub.inGallery && <span style={{ fontSize:'0.65rem', fontWeight:700, color:'#7C3AED', background:'#F5F3FF', border:'1px solid #DDD6FE', padding:'0.15rem 0.5rem', borderRadius:'var(--t-r-pill)' }}>In gallery</span>}
                     </div>
                     <div style={{ fontSize:'0.78rem', color:'var(--t-slate)', marginBottom:'0.2rem' }}>
                       <strong>{sub.schoolName}</strong> · {sub.teacherEmail}
@@ -2175,6 +2186,13 @@ function ChallengesTab() {
                     {sub.status === 'approved' && (
                       <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:'0.3rem' }}>
                         <span style={{ fontSize:'0.72rem', color:'#166534', fontWeight:600 }}>Points awarded</span>
+                        <button onClick={() => toggleGallery(sub)} disabled={actioning === sub.id}
+                          style={{ padding:'0.35rem 0.85rem', borderRadius:'var(--t-r-pill)', fontSize:'0.72rem', fontWeight:700, cursor:'pointer', opacity: actioning===sub.id ? 0.6 : 1,
+                            border: sub.inGallery ? '1px solid #7C3AED' : 'none',
+                            background: sub.inGallery ? 'white' : '#7C3AED',
+                            color: sub.inGallery ? '#7C3AED' : 'white' }}>
+                          {sub.inGallery ? 'Remove from gallery' : 'Post to gallery'}
+                        </button>
                         <button onClick={() => revoke(sub)} disabled={actioning === sub.id}
                           style={{ fontSize:'0.68rem', fontWeight:600, color:'#6B7280', background:'none', border:'1px solid #D1D5DB', borderRadius:'var(--t-r-pill)', padding:'0.25rem 0.6rem', cursor:'pointer' }}>
                           Revoke
