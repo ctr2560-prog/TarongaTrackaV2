@@ -19,7 +19,7 @@ const DEEP_LINK_SCREENS = new Set([
   'home', 'comingSoon', 'studentJoin', 'schoolEntry',
   'teacherLogin', 'teacherDashboard', 'createClass', 'resourceHub',
   'curriculumAlignment', 'teacherGuide', 'teacherMap',
-  'excursionPlan', 'accessibility', 'conservationGallery',
+  'excursionPlan', 'accessibility', 'conservationGallery', 'deviceBooking',
   'adminLogin',
   'publicEntry', 'publicLeaderboard',
 ]);

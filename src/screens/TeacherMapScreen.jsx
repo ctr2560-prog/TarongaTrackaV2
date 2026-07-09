@@ -4,7 +4,7 @@ import { ANIMAL_MAP_POSITIONS } from './MapScreen';
 
 export default function TeacherMapScreen() {
   const { setCurrentScreen } = useApp();
-  const [scale, setScale] = useState(1.4);
+  const [scale, setScale] = useState(0.8);
 
   return (
     <div className="lms-page">
@@ -22,7 +22,7 @@ export default function TeacherMapScreen() {
         </div>
         <div style={{ display:'flex', gap:'0.4rem' }}>
           {[['−', -0.3], ['+', 0.3]].map(([label, delta]) => (
-            <button key={label} onClick={() => setScale(s => Math.min(3, Math.max(1, s + delta)))}
+            <button key={label} onClick={() => setScale(s => Math.min(3, Math.max(0.5, s + delta)))}
               style={{ width:'34px', height:'34px', borderRadius:'var(--t-r-sm)', border:'1.5px solid var(--t-stone)', background:'white', color:'var(--t-deep)', fontSize:'1.05rem', fontWeight:700, cursor:'pointer', fontFamily:'inherit', lineHeight:1 }}>
               {label}
             </button>
@@ -32,7 +32,7 @@ export default function TeacherMapScreen() {
 
       {/* Map */}
       <div style={{ flex:1, overflow:'auto', WebkitOverflowScrolling:'touch', background:'#0a1a0a', textAlign:'center' }}>
-        <div style={{ position:'relative', display:'inline-block', width:`${Math.round(scale * 100)}%`, minWidth:'100%' }}>
+        <div style={{ position:'relative', display:'inline-block', width:`${Math.round(scale * 100)}%` }}>
           <img src="/images/taronga-map.png" alt="Taronga Zoo Map" style={{ width:'100%', display:'block' }} />
 
           {Object.entries(ANIMAL_MAP_POSITIONS).map(([id, pos]) => (

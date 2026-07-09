@@ -8,6 +8,7 @@ import { ref as storageRef, getDownloadURL } from 'firebase/storage';
 import { useApp } from '../context/AppContext';
 import { ZOOSNOOZ_ANIMALS } from '../data/zoosnoozAnimals';
 import { getCurrentQuestionTexts } from '../utils/helpers';
+import DeviceBookingCalendar, { DEVICE_CAPACITY } from '../components/DeviceBookingCalendar';
 
 function generateCode() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -1983,6 +1984,18 @@ function normalizeSchoolId(name) {
   return name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
 }
 
+function BookingsTab() {
+  return (
+    <div style={{ background:'white', borderRadius:'var(--t-r-lg)', border:'1px solid var(--t-stone)', boxShadow:'var(--t-shadow-sm)', padding:'1.4rem 1.5rem' }}>
+      <div style={{ display:'flex', alignItems:'baseline', justifyContent:'space-between', gap:'0.75rem', flexWrap:'wrap', marginBottom:'1rem' }}>
+        <h2 style={{ margin:0, fontSize:'1.05rem', fontWeight:800, color:'var(--t-deep)' }}>Device Bookings</h2>
+        <span style={{ fontSize:'0.72rem', color:'var(--t-slate)', fontWeight:600 }}>{DEVICE_CAPACITY} Tracka devices available per day · live calendar</span>
+      </div>
+      <DeviceBookingCalendar mode="staff" />
+    </div>
+  );
+}
+
 function ChallengesTab() {
   const [submissions,    setSubmissions]    = useState([]);
   const [leaderboard,    setLeaderboard]    = useState([]);
@@ -2364,8 +2377,8 @@ export default function AdminDashboardScreen() {
     finally { setCreatingNight(false); }
   };
 
-  const tabs = ['overview', 'analytics', 'zoosnooz', 'review', 'challenges', 'users', 'controlRoom'];
-  const tabLabels = { overview:'Overview', analytics:'Analytics', zoosnooz:'🌙 ZooSnooz', review:'Review', challenges:'Challenges', users:'Users', controlRoom:'🔒 Control Room' };
+  const tabs = ['overview', 'analytics', 'zoosnooz', 'review', 'challenges', 'bookings', 'users', 'controlRoom'];
+  const tabLabels = { overview:'Overview', analytics:'Analytics', zoosnooz:'🌙 ZooSnooz', review:'Review', challenges:'Challenges', bookings:'Bookings', users:'Users', controlRoom:'🔒 Control Room' };
 
   return (
     <div style={{ position:'fixed', inset:0, background:'var(--t-canvas)', display:'flex', flexDirection:'column' }}>
@@ -2459,6 +2472,7 @@ export default function AdminDashboardScreen() {
           {tab === 'zoosnooz'    && <ZooSnoozAdminTab classes={classes} />}
           {tab === 'review'      && <ReviewTab classes={classes} />}
           {tab === 'challenges'  && <ChallengesTab />}
+          {tab === 'bookings'    && <BookingsTab />}
           {tab === 'users'       && <UsersTab classes={classes} />}
           {tab === 'controlRoom' && <ControlRoomTab adminAccessCode={adminAccessCode} />}
         </div>

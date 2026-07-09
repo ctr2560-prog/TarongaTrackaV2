@@ -49,6 +49,8 @@ const SvgMail  = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="non
 
 const SvgUsers = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>;
 
+const SvgCalendarIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>;
+
 const CHALLENGES = [
   { id:'expedition-sydney',   name:'Taronga Sydney',       desc:'Run a Tracka session at Taronga Zoo Sydney.',                                                     points:25, icon:<SvgZap/>,      type:'auto', location:'taronga-sydney'  },
   { id:'expedition-zoosnooz', name:'ZooSnooz Night',       desc:'Lead your class through an after-dark ZooSnooz experience at Taronga Sydney.',                    points:40, icon:<SvgMoon/>,     type:'auto', location:'zoosnooz-sydney' },
@@ -68,7 +70,7 @@ const MONTHLY_CHALLENGE = { id:'monthly-june-2026', name:'June Challenge — Hab
 const RESOURCE_CARDS = [
   { title:'Curriculum Alignment', desc:'NSW syllabus outcome mapping', icon:<SvgList/>, tag:'Document', screen:'curriculumAlignment' },
   { title:'Zoo Map', desc:'See where every Tracka animal lives', icon:<SvgCompass/>, tag:'Map', screen:'teacherMap' },
-  { title:'Excursion Planning Pack', desc:'From booking to boarding the bus', icon:<SvgBook/>, tag:'Checklist' },
+  { title:'Excursion Planning Pack', desc:'From booking to boarding the bus', icon:<SvgBook/>, tag:'Checklist', screen:'excursionPlan' },
   { title:'Accessibility & Inclusion', desc:'Supports so every student tracks', icon:<SvgUsers/>, tag:'Guide' },
   { title:'Conservation in Action', desc:'Real actions from real schools', icon:<SvgTree/>, tag:'Gallery', screen:'conservationGallery' },
   { title:'Assessment Ideas', desc:'Ideas to assess student learning', icon:<SvgChart/>, tag:'Assessment' },
@@ -213,10 +215,16 @@ export default function TeacherDashboardScreen() {
     if (!teacherEmail) return;
     const q = query(collection(db, 'challengeSubmissions'), where('teacherEmail', '==', teacherEmail), orderBy('submittedAt', 'desc'));
     return onSnapshot(q, snap => {
+      // Keep the best submission per challenge: approved beats pending beats
+      // rejected; within the same status the most recent wins (docs are DESC).
+      const rank = (s) => s === 'approved' ? 2 : s === 'pending' ? 1 : 0;
       const map = {};
       snap.docs.forEach(d => {
         const data = d.data();
-        if (!map[data.challengeId]) map[data.challengeId] = { id: d.id, ...data };
+        const existing = map[data.challengeId];
+        if (!existing || rank(data.status) > rank(existing.status)) {
+          map[data.challengeId] = { id: d.id, ...data };
+        }
       });
       setMySubmissions(map);
     });
@@ -422,9 +430,10 @@ export default function TeacherDashboardScreen() {
             )}
 
             {/* Quick actions */}
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:'0.75rem', marginBottom:'1.5rem' }}>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(140px, 1fr))', gap:'0.75rem', marginBottom:'1.5rem' }}>
               {[
                 { icon:<SvgPlus/>, label:'Create Class', sub:'New session', action: () => setCurrentScreen('createClass'), color:'var(--t-mid)' },
+                { icon:<SvgCalendarIcon/>, label:'Book Devices', sub:'Tracka device calendar', action: () => setCurrentScreen('deviceBooking'), color:'#B45309' },
                 { icon:<SvgLayers/>, label:'Pre/Post Visit', sub:'Learning resources', action: () => {}, color:'#0369A1' },
                 { icon:<SvgHelpCircle/>, label:'How To', sub:'Guides & tutorials', action: () => setCurrentScreen('teacherGuide'), color:'#7C3AED' },
                 { icon:<img src="/images/wildly-logo.png" alt="Wildly by Taronga" style={{ width:'68px', height:'auto', objectFit:'contain' }} />, label:'Wildly', sub:'by Taronga', action: () => window.open('https://www.wildlybytaronga.com.au', '_blank'), color:'#1B6B3A', wideIcon: true },

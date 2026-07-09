@@ -89,6 +89,15 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    // ── Device bookings ───────────────────────────────────────────────────────
+    // Teachers view the calendar and create bookings (Firebase Auth required).
+    // Staff portal manages bookings without Firebase Auth (code-based login).
+    match /deviceBookings/{bookingId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if true;
+    }
+
     // ── Resources ─────────────────────────────────────────────────────────────
     match /resources/{docId} {
       allow read: if true;
