@@ -273,10 +273,10 @@ Do not create a `storage.rules` file locally without also wiring it into `fireba
 ## Key Screens
 
 ### Student flow
-`home` → `studentJoin` / `schoolEntry` → `studentLoading` (transient) → `map` → `animal` → `observation` → `submissionComplete` → `badge` / `collection`
+`home` → `schoolEntry` (choose Student or Teacher) → `studentJoin` (enter code + pick alias) → `studentLoading` (transient, fetches class data) → `map` → `animal` → `observation` → `badge` → `collection` → `submissionComplete`
 
 ### ZooSnooz flow
-`home` → `studentJoin` → `studentLoading` → `zoosnooz` (internal sub-router via `zzScreen` state)
+`home` → `studentJoin` (same join screen, `sessionType='zoosnooz'`) → `studentLoading` → `zoosnooz` (internal sub-router via `zzScreen` state)
 
 ZooSnooz internal screens (`zzScreen` values): `map` → `animal` (phases: insight → interaction → mcq → observation → video → preview) → `badge` → `collection` → `stitch`
 
@@ -287,7 +287,166 @@ ZooSnooz internal screens (`zzScreen` values): `map` → `animal` (phases: insig
 `adminLogin` → `adminDashboard` (tabs: Overview, Classes, Challenges, Feedback, Bookings)
 
 ### Public flow
-`publicEntry` → `publicAnimal` / `publicMission` / `publicLeaderboard`
+`publicEntry` (enter alias, no class code) → `publicAnimal` / `publicMission` / `publicLeaderboard`
+
+---
+
+## All Screens Reference
+
+| Screen | File | Purpose |
+|---|---|---|
+| `home` | `HomeScreen.jsx` | Video hero, role buttons, "For the Wild" lockup |
+| `schoolEntry` | `SchoolEntryScreen.jsx` | Choice card: Student Join vs Teacher Portal |
+| `studentJoin` | `StudentJoinScreen.jsx` | Enter class code + pick animal alias |
+| `studentLoading` | `StudentLoadingScreen.jsx` | Transient — fetches class, auto-advances to map/zoosnooz |
+| `map` | `MapScreen.jsx` | GPS animal map; animals unlock when nearby; exports `ANIMAL_MAP_POSITIONS` |
+| `animal` | `AnimalScreen.jsx` | Dispatches to per-animal mission JSX or default quiz flow |
+| `observation` | `ObservationScreen.jsx` | Free-text observation with stage scaffold, chips, bullets, min-word check |
+| `badge` | `BadgeScreen.jsx` | Badge earned screen; shows obs score bars per subject domain |
+| `collection` | `CollectionScreen.jsx` | All found animals + badges + total points; triggers `completeActivity` |
+| `submissionComplete` | `SubmissionCompleteScreen.jsx` | Confetti screen; shows `StudentFeedbackModal` after 600ms |
+| `zoosnooz` | `ZooSnoozScreen.jsx` | Entire ZooSnooz night experience (~2500 lines) |
+| `documentaryViewer` | `DocumentaryViewer.jsx` | NFC souvenir card; triggered by `docViewCode` in AppContext |
+| `teacherLogin` | `TeacherLoginScreen.jsx` | Magic link email entry |
+| `teacherDashboard` | `TeacherDashboardScreen.jsx` | Quick actions, class cards, resource cards, challenge tile |
+| `createClass` | `CreateClassScreen.jsx` | Create class form; sets stage, subject, session type, access code |
+| `classDetails` | `ClassDetailsScreen.jsx` | Per-class analytics, student list, RadarSVG, ZooSnooz data, info sheet |
+| `teacherGuide` | `TeacherGuideScreen.jsx` | Timeline checklist, 4 phases, tap-to-tick, localStorage progress |
+| `teacherMap` | `TeacherMapScreen.jsx` | Zoo map with student pins, zoom in/out, starts at 0.8 scale |
+| `curriculumAlignment` | `CurriculumAlignmentScreen.jsx` | NSW outcomes, exhibit flip cards, by subject/stage |
+| `resourceHub` | `ResourceHubScreen.jsx` | Downloadable resource list with search + category filter |
+| `excursionPlan` | `ExcursionPlanScreen.jsx` | 9 flip-tile planning checklist with real links |
+| `deviceBooking` | `DeviceBookingScreen.jsx` | Teacher-facing device calendar wrapper |
+| `accessibility` | `AccessibilityScreen.jsx` | 6-need accessibility guide, pre-visit checklist, PDF downloads |
+| `conservationGallery` | `ConservationGalleryScreen.jsx` | Polaroid masonry wall of approved submissions |
+| `adminLogin` | `AdminLoginScreen.jsx` | Staff access code entry |
+| `adminDashboard` | `AdminDashboardScreen.jsx` | Staff portal: 5 tabs — Overview, Classes, Challenges, Feedback, Bookings |
+| `adminClassView` | `AdminClassViewScreen.jsx` | Staff view of a specific class's detail |
+| `publicEntry` | `PublicEntryScreen.jsx` | Public mode entry — alias only, no class code; sets `appMode='public'` |
+| `publicAnimal` | `PublicAnimalScreen.jsx` | Public animal info card |
+| `publicMission` | `PublicMissionScreen.jsx` | Public observation mission |
+| `publicLeaderboard` | `PublicLeaderboardScreen.jsx` | Leaderboard across all classes |
+| `comingSoon` | `ComingSoonScreen.jsx` | Placeholder for upcoming features |
+
+---
+
+## All Components Reference
+
+| Component | File | Purpose |
+|---|---|---|
+| `DeviceBookingCalendar` | `DeviceBookingCalendar.jsx` | Shared device calendar; `mode='teacher'\|'staff'` |
+| `LegalModal` | `LegalModal.jsx` | Privacy Policy + Terms modal with full Australian Privacy Act text |
+| `MathsCalculator` | `MathsCalculator.jsx` | Accessible on-screen calculator shown during maths subject sessions |
+| `StudentFeedbackModal` | `StudentFeedbackModal.jsx` | Post-session student feedback modal (shown after submit + after ZooSnooz) |
+| `StudentGuide` | `StudentGuide.jsx` | Floating "Dr. Cam" character chat bubble shown on map and observation screens |
+| `TeacherHelpBot` | `TeacherHelpBot.jsx` | Keyword-matched FAQ bot shown in teacher dashboard; ~20 pre-written answers |
+| `TeacherTutorial` | `TeacherTutorial.jsx` | Step-by-step teacher onboarding overlay with screenshot highlights + portal highlights |
+| `TutorialOverlay` | `TutorialOverlay.jsx` | Student-side "Dr. Cam" guided tour of the map screen (character image + callouts) |
+
+---
+
+## Per-Animal Missions (`src/screens/missions/`)
+
+Each file provides a fully custom screen for one animal, overriding the default `AnimalScreen` quiz flow. `AnimalScreen.jsx` imports all of them and dispatches based on `currentAnimal.id`.
+
+| File | Animal |
+|---|---|
+| `ChimpMission.jsx` | Chimpanzee |
+| `GorillaMission.jsx` | Gorilla |
+| `LionMission.jsx` | Lion (daytime) |
+| `TigerMission.jsx` | Tiger (daytime) |
+| `GiraffeMission.jsx` | Giraffe |
+| `LemurMission.jsx` | Lemur |
+| `DingoMission.jsx` | Dingo |
+| `SeaLionMission.jsx` | Sea Lion |
+| `BushwalkMission.jsx` | Bushwalk trail |
+| `BuffaloMission.jsx` | Buffalo |
+| `ConcertLawnMission.jsx` | Concert Lawn |
+
+---
+
+## App Context — Full State Reference (`src/context/AppContext.jsx`)
+
+Key state exposed via `useApp()`:
+
+| State | Type | Purpose |
+|---|---|---|
+| `currentScreen` | string | Active screen name |
+| `setCurrentScreen` | fn | Navigate to a screen |
+| `appMode` | `'school'\|'public'` | Determines which student flow runs; persisted in localStorage |
+| `sessionType` | `'standard'\|'zoosnooz'` | Set at join time; determines which map the student enters |
+| `studentName` | string | Alias chosen at join; in localStorage |
+| `classCode` | string | 6-char code; in localStorage |
+| `classStage` | number (2–5) | NSW stage, read from class doc at join time |
+| `classSubject` | string (`'science'\|'maths'\|'english'\|'pdhpe'`) | Subject, read from class doc at join time |
+| `teacherEmail` | string | Signed-in teacher's email (Firebase Auth) |
+| `teacherProfile` | object | Live-synced from `teachers/{email}` Firestore doc |
+| `teacher` | object | Firebase Auth user object |
+| `signOutTeacher` | fn | Signs out and navigates to `home` |
+| `clearStudentSession` | fn | Clears student localStorage + resets student state |
+| `adminAccessCode` | string | Staff portal code; in-memory only (not persisted) |
+| `demoMode` | boolean | Demo flag; disables GPS requirement |
+| `docViewCode` | string\|null | Triggers `DocumentaryViewer` when set; format `zzv_{animalId}_{classCode}_{studentId}` |
+| `zzScreen` | string | ZooSnooz internal sub-router screen |
+| `setZzScreen` | fn | Navigate within ZooSnooz |
+
+---
+
+## Student Context — Key State (`src/context/StudentContext.jsx`)
+
+Exposed via `useStudent()`:
+
+| State/fn | Purpose |
+|---|---|
+| `animalsToRender` | Array of animal objects from `animals.js` to show on map |
+| `foundAnimals` | `Set<string>` of unlocked animal IDs (GPS proximity or demo mode) |
+| `badges` | Object of earned badge data keyed by animal ID |
+| `totalPoints` | Running points total |
+| `activityCompleted` | boolean — true after `completeActivity()` |
+| `completeActivity()` | Submits session to Firestore, increments school points, navigates to `submissionComplete` |
+| `userLocation` | `{ latitude, longitude }` from `watchPosition` |
+| `locationEnabled` | boolean — whether GPS is actively enabled |
+| `checkAnimalProximity(animal)` | Returns `{ nearby: bool, distance: number }` |
+| `currentAnimal` | The animal currently being observed |
+| `currentQuestionIndex` | Quiz progress |
+| `handleQuizAnswer()` | Scores quiz attempt, updates `badges` |
+| `handleNextQuestion()` | Advances quiz |
+
+---
+
+## GPS / Geolocation System
+
+- GPS is controlled by two independent flags: a global admin toggle in Firestore `settings/gps` AND a per-class teacher toggle.
+- **Both must be true** for GPS to be enforced. Either one disabling it turns off proximity checks.
+- `demoMode` in AppContext also bypasses GPS — used for demos/testing.
+- `getDistance(lat1, lon1, lat2, lon2)` in `helpers.js` uses the Haversine formula.
+- Each animal in `animals.js` has `latitude`, `longitude`, and `radius` (metres, default 30).
+- `watchPosition` runs continuously while the student is on the map screen.
+- `ANIMAL_MAP_POSITIONS` is exported from `MapScreen.jsx` and re-used by `TeacherMapScreen.jsx`.
+
+---
+
+## App Modes
+
+`appMode` in AppContext: `'school'` (default) or `'public'`.
+
+- **School mode**: requires class code + alias; GPS optional; teacher analytics enabled.
+- **Public mode**: alias only, no class code; separate public Firestore path; shows `publicLeaderboard`.
+- Mode is persisted in `localStorage` key `tarongaAppMode`.
+- `PublicEntryScreen` sets `appMode='public'` on entry; home screen resets it on return.
+
+## Class Subjects
+
+`classSubject` determines which animal data, scoring rubric, and observation prompts are used:
+
+| Subject | Data file | Scoring |
+|---|---|---|
+| `science` | `animals.js` | behaviour / detail / writing |
+| `english` | `animalsEnglish.js` | Language & Technique / Structure & Purpose / Written Expression |
+| `maths` | `animalsMaths.js` | Method / Accuracy / Comms; shows `MathsCalculator` |
+| `pdhpe` | `animalsPdhpe.js` | Comparison / Understanding / Communication |
+
+`openTeacherInfoSheet(classSubject, classStage)` in `teacherInfoSheet.js` opens a new browser tab with a print-ready info sheet. Called from `ClassDetailsScreen`.
 
 ---
 
