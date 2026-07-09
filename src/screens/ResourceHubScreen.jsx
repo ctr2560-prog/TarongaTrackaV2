@@ -64,7 +64,7 @@ export default function ResourceHubScreen() {
 
       {/* Header */}
       <div style={{ background:'var(--t-deep)', color:'white', padding:'1rem 1.5rem', display:'flex', alignItems:'center', gap:'1rem', flexShrink:0 }}>
-        <button onClick={() => setCurrentScreen('classDetails')} style={{ background:'rgba(255,255,255,0.15)', border:'none', color:'white', padding:'0.5rem 1rem', borderRadius:'var(--t-r-pill)', cursor:'pointer', fontSize:'0.82rem', fontWeight:600, flexShrink:0 }}>
+        <button onClick={() => { if (window.history.state?.screen) window.history.back(); else setCurrentScreen('teacherDashboard'); }} style={{ background:'rgba(255,255,255,0.15)', border:'none', color:'white', padding:'0.5rem 1rem', borderRadius:'var(--t-r-pill)', cursor:'pointer', fontSize:'0.82rem', fontWeight:600, flexShrink:0 }}>
           ← Back
         </button>
         <div>

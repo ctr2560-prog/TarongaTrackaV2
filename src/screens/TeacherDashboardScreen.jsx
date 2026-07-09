@@ -434,7 +434,7 @@ export default function TeacherDashboardScreen() {
               {[
                 { icon:<SvgPlus/>, label:'Create Class', sub:'New session', action: () => setCurrentScreen('createClass'), color:'var(--t-mid)' },
                 { icon:<SvgCalendarIcon/>, label:'Book Devices', sub:'Tracka device calendar', action: () => setCurrentScreen('deviceBooking'), color:'#B45309' },
-                { icon:<SvgLayers/>, label:'Pre/Post Visit', sub:'Learning resources', action: () => {}, color:'#0369A1' },
+                { icon:<SvgLayers/>, label:'Pre/Post Visit', sub:'Learning resources', action: () => setCurrentScreen('resourceHub'), color:'#0369A1' },
                 { icon:<SvgHelpCircle/>, label:'How To', sub:'Guides & tutorials', action: () => setCurrentScreen('teacherGuide'), color:'#7C3AED' },
                 { icon:<img src="/images/wildly-logo.png" alt="Wildly by Taronga" style={{ width:'68px', height:'auto', objectFit:'contain' }} />, label:'Wildly', sub:'by Taronga', action: () => window.open('https://www.wildlybytaronga.com.au', '_blank'), color:'#1B6B3A', wideIcon: true },
               ].map(btn => (

@@ -24,8 +24,19 @@ const TILES = [
     ],
   },
   {
-    id: 'risk',
+    id: 'curriculum',
     step: '03',
+    title: 'Align your teaching',
+    front: 'Outcomes, exhibits and the teacher info sheet',
+    body: 'Explore the NSW outcome mapping for your stage and subject, and download the print-ready teacher information sheet to share with your team.',
+    actions: [
+      { label:'Curriculum alignment', screen:'curriculumAlignment' },
+      { label:'Pre/post visit resources', screen:'resourceHub' },
+    ],
+  },
+  {
+    id: 'risk',
+    step: '04',
     title: 'Risk assessment',
     front: 'Venue safety information for your paperwork',
     body: 'Taronga publishes education venue safety information to support your school\'s risk assessment. Download it and attach it to your excursion paperwork.',
@@ -35,7 +46,7 @@ const TILES = [
   },
   {
     id: 'variation',
-    step: '04',
+    step: '05',
     title: 'Variation of routine',
     front: 'Approval from your principal or delegate',
     body: 'Lodge a variation of routine with your principal or principal\'s delegate in line with the NSW Department of Education excursion policy.',
@@ -45,21 +56,11 @@ const TILES = [
   },
   {
     id: 'consent',
-    step: '05',
+    step: '06',
     title: 'Consent and medical',
     front: 'Parent notes, permissions and medical plans',
     body: 'Send parent notes covering travel, cost and how Taronga Tracka is used on the day. Collect consent and updated medical information, and pack individual health care plans for the visit.',
     actions: [],
-  },
-  {
-    id: 'curriculum',
-    step: '06',
-    title: 'Align your teaching',
-    front: 'Outcomes, exhibits and the teacher info sheet',
-    body: 'Explore the NSW outcome mapping for your stage and subject, and download the print-ready teacher information sheet to share with your team.',
-    actions: [
-      { label:'Curriculum alignment', screen:'curriculumAlignment' },
-    ],
   },
   {
     id: 'prepare',
@@ -79,6 +80,18 @@ const TILES = [
     front: 'The session runs rain or shine',
     body: 'The Institute of Science and Learning is indoors and many exhibits are covered. In light rain the app keeps working - pack zip-lock bags for devices, hats and sunscreen for sunshine.',
     actions: [],
+  },
+  {
+    id: 'after',
+    step: '09',
+    title: 'After your visit',
+    front: 'Keep the learning going back at school',
+    body: 'Submit your class to unlock post-learning activities, keep exploring with Wildly, and earn school points through class challenges.',
+    actions: [
+      { label:'Pre/post learning', screen:'resourceHub' },
+      { label:'Wildly by Taronga', href:'https://www.wildlybytaronga.com.au', external:true },
+      { label:'Conservation in action', screen:'conservationGallery' },
+    ],
   },
 ];
 
@@ -178,7 +191,7 @@ export default function ExcursionPlanScreen() {
               Planning Your Excursion
             </h2>
             <p style={{ margin:'0.35rem 0 1.5rem', fontSize:'0.8rem', color:'var(--t-slate)', fontWeight:500 }}>
-              Taronga Zoo Sydney · Eight steps from first booking to the day itself. Tap a tile for details and links.
+              Taronga Zoo Sydney · Nine steps from first booking to back-at-school. Tap a tile for details and links.
             </p>
 
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(215px, 1fr))', gap:'0.9rem', marginBottom:'1.75rem' }}>
