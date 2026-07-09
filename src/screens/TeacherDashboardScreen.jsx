@@ -71,7 +71,7 @@ const RESOURCE_CARDS = [
   { title:'Curriculum Alignment', desc:'NSW syllabus outcome mapping', icon:<SvgList/>, tag:'Document', screen:'curriculumAlignment' },
   { title:'Zoo Map', desc:'See where every Tracka animal lives', icon:<SvgCompass/>, tag:'Map', screen:'teacherMap' },
   { title:'Excursion Planning Pack', desc:'From booking to boarding the bus', icon:<SvgBook/>, tag:'Checklist', screen:'excursionPlan' },
-  { title:'Accessibility & Inclusion', desc:'Supports so every student tracks', icon:<SvgUsers/>, tag:'Guide' },
+  { title:'Accessibility & Inclusion', desc:'Supports so every student tracks', icon:<SvgUsers/>, tag:'Guide', screen:'accessibility' },
   { title:'Conservation in Action', desc:'Real actions from real schools', icon:<SvgTree/>, tag:'Gallery', screen:'conservationGallery' },
   { title:'Assessment Ideas', desc:'Ideas to assess student learning', icon:<SvgChart/>, tag:'Assessment' },
 ];
