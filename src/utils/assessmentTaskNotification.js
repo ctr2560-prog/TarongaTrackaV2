@@ -197,6 +197,37 @@ const GRADE_COLORS = {
   N: '#1A1A17',
 };
 
+// ── Part A quiz descriptions ──────────────────────────────────────────────────
+
+const PART_A_DESC = {
+  science: {
+    excursion:  'Complete the multiple-choice knowledge check in the Taronga Tracka app during your visit. Questions test your understanding of the animal\'s biology, adaptations, and ecosystem role. Your quiz percentage will be converted to a mark out of 5.',
+    postVisit:  'Your multiple-choice quiz score from the excursion is recorded in the Taronga Tracka app and will contribute to Part A of this assessment. Your teacher will access your score from the class dashboard.',
+  },
+  maths: {
+    excursion:  'Complete the multiple-choice knowledge check in the Taronga Tracka app during your visit. Questions test your ability to interpret mathematical data and apply key concepts from the animal\'s exhibit. Your quiz percentage will be converted to a mark out of 5.',
+    postVisit:  'Your multiple-choice quiz score from the excursion is recorded in the Taronga Tracka app and will contribute to Part A of this assessment. Your teacher will access your score from the class dashboard.',
+  },
+  english: {
+    excursion:  'Complete the multiple-choice knowledge check in the Taronga Tracka app during your visit. Questions test your understanding of language features and the communicative effect of choices related to your observation. Your quiz percentage will be converted to a mark out of 5.',
+    postVisit:  'Your multiple-choice quiz score from the excursion is recorded in the Taronga Tracka app and will contribute to Part A of this assessment. Your teacher will access your score from the class dashboard.',
+  },
+  pdhpe: {
+    excursion:  'Complete the multiple-choice knowledge check in the Taronga Tracka app during your visit. Questions test your understanding of health concepts, body systems, and wellbeing principles as they relate to the animal observed. Your quiz percentage will be converted to a mark out of 5.',
+    postVisit:  'Your multiple-choice quiz score from the excursion is recorded in the Taronga Tracka app and will contribute to Part A of this assessment. Your teacher will access your score from the class dashboard.',
+  },
+};
+
+// Part A quiz % → mark conversion (out of 5)
+const QUIZ_CONVERSION = [
+  { range: '80–100%', marks: 5, label: 'A' },
+  { range: '60–79%',  marks: 4, label: 'B' },
+  { range: '40–59%',  marks: 3, label: 'C' },
+  { range: '20–39%',  marks: 2, label: 'D' },
+  { range: '1–19%',   marks: 1, label: 'E' },
+  { range: '0%',      marks: 0, label: 'N' },
+];
+
 // ── Main export ───────────────────────────────────────────────────────────────
 
 export function openAssessmentTaskNotification(subject, stage, taskType, taskData) {
@@ -211,17 +242,22 @@ export function openAssessmentTaskNotification(subject, stage, taskType, taskDat
 
   // Content
   const taskTypeLabel    = isPostVisit ? 'Post-Visit Assessment Task' : 'In-Excursion Assessment Task';
-  const submissionMethod = isPostVisit ? 'Written submission to teacher' : 'Via Taronga Tracka app (in-excursion)';
+  const submissionMethod = isPostVisit ? 'Written submission to teacher (Part B) + app quiz score (Part A)' : 'Via Taronga Tracka app (quiz + written observation)';
   const taskTitle        = isPostVisit ? (taskData?.title || 'Post-Visit Task') : 'In-Excursion Observation';
   const taskFormat       = isPostVisit ? (taskData?.format || 'Written') : 'In-app written observation';
-  const description      = isPostVisit
+  const partBDescription = isPostVisit
     ? (taskData?.desc || '')
     : (IN_EXCURSION_DESC[subject]?.[stageNum] || IN_EXCURSION_DESC[subject]?.[4] || '');
+  const partADescription = isPostVisit
+    ? (PART_A_DESC[subject]?.postVisit || PART_A_DESC.science.postVisit)
+    : (PART_A_DESC[subject]?.excursion || PART_A_DESC.science.excursion);
 
   const criteria   = CRITERIA[subject]?.[stageNum] || CRITERIA[subject]?.[4] || [];
   const nesaVerbs  = NESA_VERBS[subject] || NESA_VERBS.science;
   const outcomes   = (NSW_OUTCOMES[subject]?.[stageNum] || []).slice(0, 3);
-  const markTotal  = isPostVisit ? 25 : 15;
+  const markPartA  = 5;
+  const markPartB  = isPostVisit ? 25 : 15;
+  const markTotal  = markPartA + markPartB;
   const markingRows = isPostVisit
     ? (MARKING_POST_VISIT[subject] || MARKING_POST_VISIT.science)
     : (MARKING_IN_EXCURSION[subject] || MARKING_IN_EXCURSION.science);
@@ -896,7 +932,7 @@ body {
       </div>` : ''}
       <div class="meta-field">
         <div class="meta-label">Worth</div>
-        <div class="meta-value">${markTotal} marks</div>
+        <div class="meta-value">${markTotal} marks total<br><span style="font-size:8pt;font-weight:400;color:#6B6B62">Part A: ${markPartA} marks · Part B: ${markPartB} marks</span></div>
       </div>
     </div>
   </div>
@@ -908,7 +944,21 @@ body {
       <div class="sec-kicker">Task</div>
       <div class="sec-title">${taskTitle}</div>
       <div class="sec-rule"></div>
-      <div class="task-desc">${description}</div>
+      <p style="font-size:9pt;color:#3D3D38;margin-bottom:16px;line-height:1.65">This task has <strong>two components</strong>. Both parts must be completed to receive full marks.</p>
+      <div class="part-block" style="border:1.5px solid ${accentBorder};border-radius:12px;overflow:hidden;margin-bottom:14px">
+        <div class="part-hd" style="background:${accentLight};border-bottom:1px solid ${accentBorder};padding:10px 18px;display:flex;align-items:center;gap:12px">
+          <span class="part-badge" style="background:${accent};color:#fff;font-size:7pt;font-weight:800;letter-spacing:0.12em;padding:4px 12px;border-radius:20px">PART A</span>
+          <span style="font-size:9pt;font-weight:700;color:${BRAND.forest}">Quiz — ${markPartA} marks</span>
+        </div>
+        <div style="padding:14px 18px;font-size:9pt;color:${BRAND.charcoal};line-height:1.7">${partADescription}</div>
+      </div>
+      <div class="part-block" style="border:1.5px solid ${accentBorder};border-radius:12px;overflow:hidden">
+        <div class="part-hd" style="background:${accentLight};border-bottom:1px solid ${accentBorder};padding:10px 18px;display:flex;align-items:center;gap:12px">
+          <span class="part-badge" style="background:${accent};color:#fff;font-size:7pt;font-weight:800;letter-spacing:0.12em;padding:4px 12px;border-radius:20px">PART B</span>
+          <span style="font-size:9pt;font-weight:700;color:${BRAND.forest}">Written Response — ${markPartB} marks</span>
+        </div>
+        <div style="padding:14px 18px;font-size:9pt;color:${BRAND.charcoal};line-height:1.7">${partBDescription}</div>
+      </div>
     </div>
 
     <!-- Assessment Criteria -->
@@ -916,10 +966,28 @@ body {
       <div class="sec-kicker">Assessment Criteria</div>
       <div class="sec-title">What You Will Be Assessed On</div>
       <div class="sec-rule"></div>
-      <div class="criteria-lead">You will be assessed on how well you:</div>
-      <ul class="criteria-list">
-        ${criteriaHtml}
-      </ul>
+
+      <div style="margin-bottom:18px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <span style="background:${accent};color:#fff;font-size:7pt;font-weight:800;letter-spacing:0.12em;padding:3px 11px;border-radius:20px">PART A</span>
+          <span style="font-size:9pt;font-weight:700;color:${BRAND.forest}">Quiz (${markPartA} marks)</span>
+        </div>
+        <ul class="criteria-list">
+          <li class="criteria-item"><span class="criteria-dot"></span><span>Answer each multiple-choice question using knowledge gained from your observation and the Taronga Tracka app</span></li>
+          <li class="criteria-item"><span class="criteria-dot"></span><span>Demonstrate subject-specific understanding to select the most accurate response for each question</span></li>
+        </ul>
+      </div>
+
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <span style="background:${accent};color:#fff;font-size:7pt;font-weight:800;letter-spacing:0.12em;padding:3px 11px;border-radius:20px">PART B</span>
+          <span style="font-size:9pt;font-weight:700;color:${BRAND.forest}">Written Response (${markPartB} marks)</span>
+        </div>
+        <div class="criteria-lead">You will be assessed on how well you:</div>
+        <ul class="criteria-list">
+          ${criteriaHtml}
+        </ul>
+      </div>
     </div>
 
     <!-- NESA Verbs -->
@@ -1027,21 +1095,70 @@ body {
       <div class="sec-kicker">Marking Criteria</div>
       <div class="sec-title">Grade Descriptors — ${markTotal} Marks Total</div>
       <div class="sec-rule"></div>
-      <table class="mark-table">
-        <thead>
-          <tr>
-            <th>Grade</th>
-            <th>Descriptor</th>
-            <th>Marks</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${markingHtml}
-          <tr class="mark-final-row">
-            <td colspan="2">Final mark</td>
-            <td style="text-align:center">_____ / ${markTotal}</td>
-          </tr>
-        </tbody>
+
+      <!-- Part A marking -->
+      <div style="margin-bottom:24px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <span style="background:${accent};color:#fff;font-size:7pt;font-weight:800;letter-spacing:0.12em;padding:3px 11px;border-radius:20px">PART A</span>
+          <span style="font-size:9pt;font-weight:700;color:${BRAND.forest}">Quiz — ${markPartA} marks</span>
+        </div>
+        <p style="font-size:8.5pt;color:${BRAND.charcoal};margin-bottom:10px;line-height:1.6">Your in-app quiz percentage is converted to a mark out of ${markPartA} using the table below.</p>
+        <table class="mark-table">
+          <thead>
+            <tr>
+              <th>Grade</th>
+              <th>Quiz Score</th>
+              <th>Marks</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${QUIZ_CONVERSION.map(row => {
+              const gc = GRADE_COLORS[row.label] || BRAND.slate;
+              return `
+            <tr class="mark-row">
+              <td class="mark-grade-cell"><span class="grade-badge" style="background:${gc}">${row.label}</span></td>
+              <td class="mark-desc">${row.range}</td>
+              <td class="mark-range">${row.marks} / ${markPartA}</td>
+            </tr>`;
+            }).join('')}
+            <tr class="mark-final-row">
+              <td colspan="2">Part A mark</td>
+              <td style="text-align:center">_____ / ${markPartA}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Part B marking -->
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <span style="background:${accent};color:#fff;font-size:7pt;font-weight:800;letter-spacing:0.12em;padding:3px 11px;border-radius:20px">PART B</span>
+          <span style="font-size:9pt;font-weight:700;color:${BRAND.forest}">Written Response — ${markPartB} marks</span>
+        </div>
+        <table class="mark-table">
+          <thead>
+            <tr>
+              <th>Grade</th>
+              <th>Descriptor</th>
+              <th>Marks</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${markingHtml}
+            <tr class="mark-final-row">
+              <td colspan="2">Part B mark</td>
+              <td style="text-align:center">_____ / ${markPartB}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Combined total -->
+      <table style="width:100%;border-collapse:collapse;margin-top:14px">
+        <tr>
+          <td style="background:${BRAND.forest};color:#fff;padding:12px 18px;font-weight:700;font-size:9pt;border-radius:8px 0 0 8px">Total Mark &nbsp;<span style="font-size:8pt;font-weight:400;opacity:0.75">(Part A + Part B)</span></td>
+          <td style="background:${BRAND.forest};color:#fff;padding:12px 18px;font-weight:700;font-size:10pt;text-align:center;border-radius:0 8px 8px 0;min-width:110px">_____ / ${markTotal}</td>
+        </tr>
       </table>
     </div>
 
