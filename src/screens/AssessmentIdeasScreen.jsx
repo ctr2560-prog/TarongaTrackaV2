@@ -269,7 +269,7 @@ const ALL_TASKS = Object.entries(POST_TASKS).flatMap(([klaId, tasks]) =>
 
 export default function AssessmentIdeasScreen() {
   const { setCurrentScreen } = useApp();
-  const [filterKla, setFilterKla]   = useState('all');
+  const [filterKla, setFilterKla]   = useState('science');
   const [filterStage, setFilterStage] = useState('all');
   const [printStage, setPrintStage] = useState(4);
 
