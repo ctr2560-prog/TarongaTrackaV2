@@ -101,8 +101,20 @@ const ANIMAL_OBS_HINTS = {
       start: `Start with "I observed that the chimpanzees were..." and describe one specific social behaviour you actually saw.`,
     },
     maths: {
-      what:  `Write your percentage analysis — record your three behaviour percentages (resting, feeding, moving), show they add to 100%, and then convert each to hours per day.`,
-      start: `Start with "I recorded that the chimpanzees spent ...% resting, ...% feeding, and ...% moving." then show your step-by-step calculation.`,
+      what: {
+        1: `Write the name of the behaviour you recorded most, and write its percentage.`,
+        2: `Write the percentage for your most-recorded behaviour. Then work out: if there were 10 chimps, how many would be doing that behaviour? Write your number sentence.`,
+        3: `Write the percentage for your most-recorded behaviour as a fraction out of 100. Then simplify the fraction. Show your working step by step.`,
+        4: `Use your most-recorded behaviour percentage to calculate how many hours per day chimps spend on that behaviour (out of 24 hours). Show your working.`,
+        5: `Convert all three of your behaviour percentages — each one needs to be written as a fraction, a decimal, and as hours per day (out of 24). Show all working for every conversion.`,
+      },
+      start: {
+        1: `Start with "The behaviour I recorded most was ___, and the chimpanzees were doing it ___% of the time."`,
+        2: `Start with "My most-recorded behaviour was ___ at ___%. If there were 10 chimps, ___% of 10 = ___ chimps would be doing that."`,
+        3: `Start with "My most-recorded behaviour was ___% = ___/100. To simplify: both ___ and 100 divide by ___, so the simplified fraction is ___."`,
+        4: `Start with "My most-recorded behaviour was ___%. To find hours per day: ___% of 24 = ___ ÷ 100 × 24 = ___ hours."`,
+        5: `Start with "Behaviour 1: ___% = ___/100 = 0.___ = ___ hours. Behaviour 2: ... Behaviour 3: ..." and show every calculation clearly.`,
+      },
     },
     pdhpe: {
       what:  `Compare chimpanzee lifestyle habits to healthy human habits — describe one similarity, one difference from the chart, and one chimp habit you could adopt to improve your own health.`,
@@ -120,18 +132,18 @@ const ANIMAL_OBS_HINTS = {
     },
     maths: {
       what: {
-        1: `Write the ratio of leaves to fruit using a colon (:). Name both foods you are comparing and write which one the gorilla eats more of.`,
-        2: `Write how many times heavier the gorilla is than a student, then write the comparison as a ratio (student : gorilla). Show the division you used to find "how many times heavier".`,
-        3: `Write your ratio in 3 steps: (1) write the ratio 12 : 6, (2) find the number that divides evenly into both, (3) write the simplified ratio. Show your working clearly.`,
-        4: `Write your ratio in 3 steps: (1) write your estimated mass as a ratio to 200 kg, (2) find the highest common factor (the biggest number that divides evenly into both numbers), (3) divide both sides and write the simplified ratio. Show all working.`,
-        5: `Write your 3-step working: Step 1 — add the ratio parts (5+4+2+1). Step 2 — divide 18 kg by the total parts to find what 1 part equals. Step 3 — multiply by 5 to find the kg of leaves. Show each calculation.`,
+        1: `Count the servings in the gorilla's stack — leaves, bamboo, and fruit. Write a number sentence to find the total: 3 + 2 + 1 = ___.`,
+        2: `Add up the three food amounts in kg — leaves, bamboo, and fruit. Write a number sentence to find the total. Remember to include the unit (kg).`,
+        3: `A gorilla eats 12 kg of food every day. Work out how much it eats in one week (7 days). Write the multiplication and your answer.`,
+        4: `Two steps: Step 1 — find how many kg of leaves the gorilla eats in one week (6 kg × 7). Step 2 — multiply by $2 per kg to find the weekly cost. Show both steps clearly.`,
+        5: `Three steps: Step 1 — weekly cost of leaves (6 kg × 7 days × $2). Step 2 — weekly cost of bamboo (4 kg × 7 days × $3). Step 3 — add both totals for the grand total. Show all working.`,
       },
       start: {
-        1: `Start with "The gorilla eats ___ servings of leaves and ___ serving of fruit, so the ratio of leaves to fruit is __ : __."`,
-        2: `Start with "A silverback weighs 200 kg and a student weighs 40 kg. 200 ÷ 40 = ___, so the gorilla is ___ times heavier. The ratio student : gorilla is __ : __."`,
-        3: `Start with "Leaves : other food = 12 : 6. The number that divides evenly into both is ___. 12 ÷ ___ = ___ and 6 ÷ ___ = ___, so the simplified ratio is __ : __."`,
-        4: `Start with "My estimated mass is ___ kg. Ratio: ___ : 200. The highest common factor is ___. Dividing both sides by ___ gives me __ : __."`,
-        5: `Start with "Total ratio parts: 5 + 4 + 2 + 1 = ___. One part = 18 ÷ ___ = ___ kg. Leaves = ___ × 5 = ___ kg."`,
+        1: `Start with "The gorilla eats 3 servings of leaves, 2 of bamboo, and 1 of fruit. 3 + 2 + 1 = ___ servings altogether."`,
+        2: `Start with "The gorilla eats 6 kg of leaves, 4 kg of bamboo, and 2 kg of fruit. 6 + 4 + 2 = ___ kg altogether."`,
+        3: `Start with "The gorilla eats 12 kg per day. In one week: 12 × 7 = ___ kg."`,
+        4: `Start with "Step 1: kg of leaves in a week = 6 × 7 = ___ kg. Step 2: weekly cost = ___ × $2 = $___."`,
+        5: `Start with "Step 1: leaves — 6 × 7 × $2 = $___. Step 2: bamboo — 4 × 7 × $3 = $___. Step 3: total = $___ + $___ = $___."`,
       },
     },
     pdhpe: {
@@ -149,8 +161,20 @@ const ANIMAL_OBS_HINTS = {
       start: `Start with "Lions are important to the ecosystem because..." then describe one thing we would lose if lions disappeared.`,
     },
     maths: {
-      what:  `Write your territory and probability working — estimate the territory area using square roots, then calculate the probability of two successful hunts in a row as a fraction and as a decimal.`,
-      start: `Start with "I estimated the territory area as approximately ..." then show your probability calculation step by step.`,
+      what: {
+        1: `Count the lions in the enclosure and write the number.`,
+        2: `Count the lions. Each lion eats 8 kg of meat per day. Write a number sentence to find how much meat all the lions eat in one day.`,
+        3: `Count the lions. Each lion eats 8 kg of meat per day. Work out how much the whole pride eats in one week (7 days). Show your working — two steps.`,
+        4: `Count the lions. Step 1: find the total meat eaten in one day (lions × 8 kg). Step 2: multiply by 30 to find the monthly amount. Show both steps.`,
+        5: `Count the lions. Step 1: find the total meat the pride needs in one week. Step 2: a successful hunt provides 40 kg — how many hunts are needed each week? Show all working.`,
+      },
+      start: {
+        1: `Start with "I counted ___ lions in the enclosure."`,
+        2: `Start with "I counted ___ lions. Each eats 8 kg per day, so: ___ × 8 = ___ kg of meat per day."`,
+        3: `Start with "I counted ___ lions. Daily total: ___ × 8 = ___ kg. Weekly total: ___ × 7 = ___ kg."`,
+        4: `Start with "I counted ___ lions. Step 1: daily total = ___ × 8 = ___ kg. Step 2: monthly total = ___ × 30 = ___ kg."`,
+        5: `Start with "I counted ___ lions. Step 1: weekly meat needed = ___ × 8 × 7 = ___ kg. Step 2: hunts needed = ___ ÷ 40 = ___ hunts."`,
+      },
     },
     pdhpe: {
       what:  `Write about energy systems — explain the ATP-PC system used in short explosive bursts, how phosphocreatine is replenished during aerobic recovery, and connect this to the lion's rest-to-activity ratio.`,
@@ -180,18 +204,18 @@ const ANIMAL_OBS_HINTS = {
     },
     maths: {
       what: {
-        1: `Write two comparisons about the giraffe's height. Use numbers — is it taller than the fence? About how many times taller than you? Include the unit (metres or cm) in your comparisons.`,
-        2: `Write your arm-span estimate. How many arm spans did you count? What is your arm span in cm? Show the multiplication to get your total height estimate.`,
-        3: `Write your ratio in 3 steps: (1) write your height and 550 cm as a ratio ( __ : 550 ), (2) find the number that divides evenly into both, (3) write the simplified ratio. Show all working.`,
-        4: `Write the comparison: how many times longer is the giraffe's neck than yours? Show the division: 180 ÷ 15 = ___. Then write a sentence explaining what that number means.`,
-        5: `Write your 3-part working: (1) total growth (540 − 180 = ___ cm), (2) average growth per year (___ ÷ 4 = ___ cm/year), (3) the fraction of adult height at birth (180/540) and simplify it. Show each calculation.`,
+        1: `A giraffe is 550 cm tall. Write your own height in cm, then write whether the giraffe is taller or shorter than you.`,
+        2: `A giraffe is 550 cm tall. Write your height in cm, then subtract to find how much taller the giraffe is. Write your subtraction number sentence.`,
+        3: `A giraffe is 550 cm tall. Estimate your height in cm. Divide 550 by your height to find how many times taller the giraffe is. Round to the nearest whole number and show your working.`,
+        4: `A giraffe's neck is 180 cm. Your neck is about 15 cm. Divide to find how many times longer the giraffe's neck is than yours. Write the division and your answer.`,
+        5: `A baby giraffe is 180 cm at birth. An adult is 550 cm. Step 1: find the total growth (550 − 180). Step 2: divide by 4 years to find the average growth per year. Show all working.`,
       },
       start: {
-        1: `Start with "The giraffe is taller than the fence because..." then add one more comparison with a number: "It looks about ___ times taller than..."`,
-        2: `Start with "My arm span is about ___ cm. I estimated the giraffe is about ___ arm spans tall, so ___ × ___ = ___ cm."`,
-        3: `Start with "My height is ___ cm. Ratio: ___ : 550. The number that divides evenly into both is ___." Then show each division step.`,
-        4: `Start with "The giraffe's neck is 180 cm and my neck is about 15 cm. 180 ÷ 15 = ___, so the giraffe's neck is ___ times longer than mine."`,
-        5: `Start with "Total growth: 540 − 180 = ___ cm. Average per year: ___ ÷ 4 = ___ cm/year. Fraction at birth: 180/540 = ..." then show your simplification.`,
+        1: `Start with "A giraffe is 550 cm tall. I am about ___ cm tall. The giraffe is [taller/shorter] than me."`,
+        2: `Start with "A giraffe is 550 cm tall. I am about ___ cm tall. 550 − ___ = ___ cm taller than me."`,
+        3: `Start with "A giraffe is 550 cm tall. I am about ___ cm tall. 550 ÷ ___ = ___ (rounded to the nearest whole number)."`,
+        4: `Start with "The giraffe's neck is 180 cm. My neck is about 15 cm. 180 ÷ 15 = ___, so the giraffe's neck is ___ times longer."`,
+        5: `Start with "Step 1: total growth = 550 − 180 = ___ cm. Step 2: average per year = ___ ÷ 4 = ___ cm per year."`,
       },
     },
     pdhpe: {
@@ -227,8 +251,20 @@ const ANIMAL_OBS_HINTS = {
       start: `Start with "The dingo's fur is..." and describe the colour and texture, then explain how that helps it stay hidden.`,
     },
     maths: {
-      what:  `Write your territory and distance working — calculate the range (max − min) and mean of dingo territories, or calculate the daily travel distance per dingo. Show all working with units (km²).`,
-      start: `Start with "The range of dingo territory is ...km² − ...km² = ..." or "If 6 dingoes share 420 km..." then show every calculation step.`,
+      what: {
+        1: `Write a number sentence to show the total rabbits caught over two days. Add the two amounts together.`,
+        2: `A pack of 5 dingoes each catches 4 rabbits. Write a number sentence to find the total catch: ___ × ___ = ___.`,
+        3: `A pack of 5 dingoes hunts for 3 days, each catching 4 rabbits per day. Work out the total — show it in two steps (daily total, then × days).`,
+        4: `A kangaroo has 1000 kJ of energy. Dingoes receive 1/10 of this. Write the division and your answer in kJ.`,
+        5: `Grass has 1000 kJ. Kangaroos get 1/10. Dingoes get 1/10 of the kangaroo's energy. Step 1: kangaroo energy = 1000 ÷ 10. Step 2: dingo energy = that answer ÷ 10. Show both steps.`,
+      },
+      start: {
+        1: `Start with "On Monday the dingo caught ___ rabbits and on Tuesday ___. Altogether: ___ + ___ = ___."`,
+        2: `Start with "5 dingoes each catch 4 rabbits. Total: 5 × 4 = ___ rabbits."`,
+        3: `Start with "Daily catch for the pack: 5 × 4 = ___ rabbits. Over 3 days: ___ × 3 = ___ rabbits."`,
+        4: `Start with "The kangaroo has 1000 kJ. Dingo gets 1/10: 1000 ÷ 10 = ___ kJ."`,
+        5: `Start with "Step 1: kangaroo energy = 1000 ÷ 10 = ___ kJ. Step 2: dingo energy = ___ ÷ 10 = ___ kJ."`,
+      },
     },
     pdhpe: {
       what:  `Connect the dingo's need for food to human performance — explain what your body needs before physical activity, why food quality and timing matters, and what happens without enough fuel.`,
@@ -246,18 +282,18 @@ const ANIMAL_OBS_HINTS = {
     },
     maths: {
       what: {
-        1: `Count all the rings on the lemur's tail and write the total. A ring-tailed lemur usually has 25 rings.`,
-        2: `Count the rings on one lemur's tail. Then multiply by 4 (the number of lemurs in the group) to find the total. Write: ___ × 4 = ___.`,
-        3: `Count the rings on one lemur and use it as the average. Multiply by 6 to find the total for the group. Show your working: ___ × 6 = ___.`,
-        4: `Count the rings on the lemur — this is the average per lemur. Multiply by 20 (the Taronga troop size) to find the total. Write the full multiplication with units.`,
-        5: `Count the rings and calculate the total for 20 lemurs. Then explain whether sampling just 1 lemur gives a reliable average — what would make the estimate more accurate?`,
+        1: `Count all the rings on the lemur's tail and write the total.`,
+        2: `Count the rings on one lemur's tail. There are 4 lemurs in the group. Write a number sentence to find the total rings: ___ × 4 = ___.`,
+        3: `Count the rings on one lemur. There are 4 lemurs here and 6 at another exhibit — 10 altogether. Find the total rings. Show your working: ___ × 10 = ___.`,
+        4: `Count the rings on one lemur. Taronga has 20 lemurs. Multiply to find the total rings for all 20. Write the full multiplication with units.`,
+        5: `Count the rings on one lemur. Step 1: find the total rings for all 20 lemurs. Step 2: one adult is replaced by a baby lemur with half the usual rings — work out how the total changes. Show all working.`,
       },
       start: {
-        1: `Start with "I counted ___ rings on the lemur's tail..."`,
-        2: `Start with "I counted ___ rings on one lemur. Multiplied by 4 lemurs: ___ × 4 = ___"`,
-        3: `Start with "I counted ___ rings. For 6 lemurs: ___ × 6 = ___ rings altogether"`,
-        4: `Start with "I counted ___ rings per lemur. For 20 lemurs: ___ × 20 = ___ rings total"`,
-        5: `Start with "I counted ___ rings on one lemur. For the whole troop of 20: ___ × 20 = ___. Sampling just 1 lemur..."`,
+        1: `Start with "I counted ___ rings on the lemur's tail."`,
+        2: `Start with "I counted ___ rings on one lemur. For 4 lemurs: ___ × 4 = ___ rings altogether."`,
+        3: `Start with "I counted ___ rings on one lemur. Total lemurs: 4 + 6 = 10. Total rings: ___ × 10 = ___."`,
+        4: `Start with "I counted ___ rings per lemur. For 20 lemurs: ___ × 20 = ___ rings total."`,
+        5: `Start with "Step 1: ___ × 20 = ___ rings for 20 lemurs. Step 2: replace one adult (___ rings) with a baby (___ ÷ 2 = ___ rings). New total: ___ − ___ + ___ = ___."`,
       },
     },
     pdhpe: {
@@ -279,15 +315,15 @@ const ANIMAL_OBS_HINTS = {
         1: `Work out the total cost over 4 days. Write: daily cost × number of days = total. Show the number sentence.`,
         2: `Multiply kg per day by cost per kg to find the daily food cost. Write your number sentence and include units ($).`,
         3: `Two steps: (1) find the daily cost (4 kg × $8), then (2) multiply by 7 to find the weekly cost. Show both calculations clearly.`,
-        4: `Use Interest = P × r × t. P = $500, r = 0.10 (10% as a decimal), t = 1 year. Multiply to find the interest, then add it to $500 to find the total. Show every step.`,
-        5: `Three steps: (1) weekly cost at $6/kg, (2) weekly cost at $4/kg, (3) the weekly saving. Show every calculation with units.`,
+        4: `A male sea lion weighs 250 kg and a female weighs 100 kg. Work out the total weight of 3 males and 2 females. Show your working — multiply first, then add.`,
+        5: `The zoo has 2 male sea lions (250 kg each) and 4 females (100 kg each). Each animal eats 5% of its body weight in fish per day. Step 1: find total weight of all sea lions. Step 2: calculate 5% of that total. Show all working.`,
       },
       start: {
         1: `Start with "The zoo spends $5 per day, so in 4 days: $5 × 4 = ___"`,
         2: `Start with "Fish costs $8 per kg. The sea lion eats 4 kg per day, so: 4 × $8 = ___"`,
         3: `Start with "Step 1: daily cost = 4 × $8 = $___. Step 2: weekly cost = $32 × 7 = $___"`,
-        4: `Start with "Using Interest = P × r × t: $500 × 0.10 × 1 = $___. Total = $500 + $___ = $___"`,
-        5: `Start with "At $6/kg: 8 × $6 × 7 = $___. At $4/kg: 8 × $4 × 7 = $___. Weekly saving: $___ − $___ = $___"`,
+        4: `Start with "3 males: 3 × 250 = ___ kg. 2 females: 2 × 100 = ___ kg. Total: ___ + ___ = ___ kg."`,
+        5: `Start with "Step 1: total weight = (2 × 250) + (4 × 100) = ___ kg. Step 2: fish needed = ___ × 5 ÷ 100 = ___ kg per day."`,
       },
     },
     pdhpe: {
@@ -335,8 +371,20 @@ const ANIMAL_OBS_HINTS = {
       start: `Start with "The koala is..." and describe one specific behaviour, then explain why it makes sense for this animal's survival.`,
     },
     maths: {
-      what:  `Write your financial maths and fractions working — show the fraction of the annual care cost covered by the fundraiser, calculate the year 5 conservation budget, or work out the percentage increase in care costs. Show all steps.`,
-      start: `Start with "The annual care cost is $15,000. I calculated..." and show your working for each step clearly.`,
+      what: {
+        1: `Taronga spends $15,000 a year on each koala. Write that number. Then write how many thousands that is.`,
+        2: `Taronga spends $15,000 a year on each koala. Work out how much it costs to care for 2 koalas for one year. Write your number sentence.`,
+        3: `Taronga spends $15,000 a year on each koala. Work out the cost for one koala over 3 years. Write the multiplication and your answer.`,
+        4: `Taronga has 5 koalas, each costing $15,000 per year. Step 1: find the total annual cost. Step 2: find the total cost over 3 years. Show both steps.`,
+        5: `In 2020 each koala cost $12,000 per year. By 2024 it rose to $15,000. Step 1: find how much more it costs now. Step 2: calculate the percentage increase. Show all working.`,
+      },
+      start: {
+        1: `Start with "Taronga spends $15,000 per koala per year. $15,000 = ___ thousands."`,
+        2: `Start with "Each koala costs $15,000 per year. For 2 koalas: $15,000 × 2 = $___."`,
+        3: `Start with "Each koala costs $15,000 per year. Over 3 years: $15,000 × 3 = $___."`,
+        4: `Start with "Step 1: 5 koalas × $15,000 = $___ per year. Step 2: $___ × 3 = $___ over 3 years."`,
+        5: `Start with "Step 1: $15,000 − $12,000 = $___ increase. Step 2: percentage increase = $___ ÷ $12,000 × 100 = ___% ."`,
+      },
     },
     pdhpe: {
       what:  `Compare koala sleep needs (up to 22 hours) to human sleep recommendations, explain what sleep does for your body, and connect adequate sleep to a specific health outcome.`,
@@ -534,10 +582,10 @@ function missionGorilla(stage, subject) {
   const stuck = `Focus on the top and bottom items first — they're easiest to anchor in your memory. Then work out the middle. Look for any clues in the ingredient names or sizes that hint at the order.`;
   const mathsQuestion = (() => {
     if (stage <= 1) return `The question asks you to add up servings of food. Count each type — leaves, bamboo, and fruit — then add them all together. What does 3 + 2 + 1 equal?`;
-    if (stage === 2) return `You have three amounts to add: leaves, bamboo, and fruit (all in kg). Try adding the two smaller numbers first, then add the biggest. What's your total?`;
-    if (stage === 3) return `This is a fractions question. A fraction compares a part to the whole. You know how many kg are leaves, and you know the total kg. Write it as a fraction: leaves ÷ total. Then simplify — what number divides evenly into both?`;
-    if (stage === 4) return `This is a ratio question. A ratio compares two amounts using a colon (:). First work out how much food is NOT leaves (total minus leaves). Then write leaves : remaining. Simplify by finding the highest common factor (the biggest number that divides evenly into both numbers).`;
-    return `This uses ratio with multiple parts. Step 1: add all the ratio numbers together to find the total parts. Step 2: divide 18 kg by that total to find what one part equals. Step 3: multiply by the leaves number in the ratio.`;
+    if (stage === 2) return `You have three amounts to add: leaves (6 kg), bamboo (8 kg), and fruit (4 kg). Try adding the two smaller numbers first, then add the biggest. What's the total in kg?`;
+    if (stage === 3) return `This is a fractions question. The gorilla eats 6 kg of leaves out of 12 kg total. Write it as a fraction: leaves ÷ total = 6/12. Then simplify — what number divides evenly into both 6 and 12?`;
+    if (stage === 4) return `This question asks "how many times more". Divide the bigger amount by the smaller one: 12 ÷ 6 = ___. Which answer matches?`;
+    return `This is a ratio question. Leaves = 12 kg, so the remaining food = 18 − 12 = 6 kg. Write the ratio leaves : remaining = 12 : 6. Simplify by dividing both sides by 6. Which answer matches?`;
   })();
   const question = subject === 'maths'
     ? mathsQuestion
@@ -666,8 +714,15 @@ function missionDingo(stage, subject) {
     : subject === 'maths'
     ? `The order is: Sun (energy source) → Grass (makes food from sunlight) → Kangaroo (eats grass) → Dingo (eats kangaroo) → Decomposer (breaks down dead matter). The decomposer ALWAYS goes last — it's not eaten by anything in this chain.`
     : `Start with the Sun — it's not eaten, it's the energy SOURCE. Then: Grass uses that energy, Kangaroo eats grass, Dingo eats kangaroo. Don't forget the Decomposer goes last — it breaks dead matter back into soil!`;
+  const dingoMathsQ = (() => {
+    if (stage <= 1) return `Add the two rabbit totals together: Monday's catch + Tuesday's catch. Which answer matches?`;
+    if (stage === 2) return `A pack of 5 dingoes each catches 4 rabbits. Multiply: 5 × 4 = ___. Which answer matches?`;
+    if (stage === 3) return `Step 1: find the daily pack total (5 × 4 = ___). Step 2: multiply by 3 days. Which answer matches?`;
+    if (stage === 4) return `The kangaroo has 1000 kJ. The dingo gets 1/10 of that. Divide: 1000 ÷ 10 = ___. Which answer matches?`;
+    return `Two steps: Step 1 — kangaroo energy = 1000 ÷ 10 = ___ kJ. Step 2 — dingo energy = ___ ÷ 10 = ___ kJ. Which answer matches?`;
+  })();
   const question = subject === 'maths'
-    ? `The maths question is about energy transfer in the food chain. At each step, the consumer gets roughly 1/10 of the energy from the level below. If grass starts with 1000 kJ: Kangaroo gets 1/10 = 100 kJ; Dingo gets 1/10 of that = 10 kJ.`
+    ? dingoMathsQ
     : subject === 'pdhpe'
     ? `The question connects the dingo's need to hunt for food to YOUR body's energy needs. The dingo works hard physically for every meal. Think about which foods give YOU the best energy before physical activity — and why.`
     : quizStuck(stage, subject);
@@ -694,8 +749,8 @@ function missionSealion(stage, subject) {
     if (stage <= 1) return `This is a multiplication question. The sea lion eats 8 kg every day. How many days? Try: 8 × 3 = ___. Which answer matches?`;
     if (stage === 2) return `This is a subtraction question. Take the smaller weight away from the bigger one: 250 − 100 = ___. Which answer matches?`;
     if (stage === 3) return `This is a rate question — multiply quantity × cost per kg: 7 kg × $8 = ___. Which answer matches?`;
-    if (stage === 4) return `This is simple interest. Use: Interest = P × r × t. P = $1,000, r = 0.05 (that's 5% as a decimal), t = 2 years. Step 1: 1,000 × 0.05 = ___. Step 2: multiply by 2. Which answer matches?`;
-    return `This is a cost comparison. Step 1: Supplier A daily cost: 10 × $6 = ___. Step 2: Supplier B daily cost: 10 × $4 = ___. Step 3: Find the saving — subtract the cheaper total from the more expensive one. Which answer matches?`;
+    if (stage === 4) return `Two steps: Step 1 — find the daily cost: 4 kg × $8 = $___. Step 2 — multiply by 3 days: $___ × 3 = $___. Which answer matches?`;
+    return `Two steps: Step 1 — find the daily cost: 5 kg × $6 = $___. Step 2 — multiply by 7 days: $___ × 7 = $___. Which answer matches?`;
   })();
   const question = subject === 'maths'
     ? mathsQuestion
