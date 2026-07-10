@@ -542,49 +542,10 @@ export default function ClassDetailsScreen() {
             <div className="lms-main-inner">
 
               {/* Page heading */}
-              <div style={{ marginBottom:'1.25rem' }}>
+              <div style={{ marginBottom:'1.5rem' }}>
                 <h2 className="heading-display" style={{ fontSize:'clamp(1.2rem, 2.5vw, 1.5rem)', color: isZZ ? '#D4EDE0' : 'var(--t-deep)', lineHeight:1.2, marginBottom:'0.2rem' }}>{cls.className}</h2>
                 <p style={{ color: isZZ ? 'rgba(184,212,192,0.65)' : 'var(--t-slate)', fontSize:'0.8rem' }}>{cls.schoolName}{cls.stage ? ` · Stage ${cls.stage}` : ''} · Code: <span style={{ fontFamily:'monospace', fontWeight:700, color: isZZ ? '#4A9E6B' : 'var(--t-mid)' }}>{cls.classCode}</span></p>
               </div>
-
-              {/* Submit Class banner */}
-              {alreadySubmitted ? (
-                <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', background:'#D1FAE5', border:'1px solid #6EE7B7', borderRadius:'var(--t-r-md)', padding:'0.85rem 1.1rem', marginBottom:'1.25rem' }}>
-                  <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" stroke="#059669" strokeWidth="1.6"/><path d="M6.5 10.5l2.5 2.5 4.5-5" stroke="#059669" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  <div>
-                    <span style={{ fontSize:'0.82rem', fontWeight:700, color:'#065F46' }}>Class submitted</span>
-                    <span style={{ fontSize:'0.78rem', color:'#047857', marginLeft:'0.5rem' }}>Results finalised and school points awarded.</span>
-                  </div>
-                </div>
-              ) : hasIncomplete ? (
-                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'1rem', flexWrap:'wrap', background:'#FFFBEB', border:'1px solid #F59E0B', borderRadius:'var(--t-r-md)', padding:'0.9rem 1.1rem', marginBottom:'1.25rem' }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:'0.65rem' }}>
-                    <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" stroke="#D97706" strokeWidth="1.6"/><path d="M10 6v5M10 13.5v.5" stroke="#D97706" strokeWidth="1.8" strokeLinecap="round"/></svg>
-                    <div>
-                      <span style={{ fontSize:'0.82rem', fontWeight:700, color:'#92400E' }}>Activity in progress</span>
-                      <span style={{ fontSize:'0.76rem', color:'#B45309', marginLeft:'0.5rem' }}>{students.filter(s => s.status !== 'complete').length} student{students.filter(s => s.status !== 'complete').length !== 1 ? 's' : ''} yet to complete. Submit when your class is done to earn school points.</span>
-                    </div>
-                  </div>
-                  <button onClick={handleSubmitAll} disabled={submittingAll}
-                    style={{ padding:'0.5rem 1.1rem', borderRadius:'var(--t-r-pill)', border:'1.5px solid #D97706', background:'white', color:'#D97706', fontSize:'0.78rem', fontWeight:700, cursor:'pointer', whiteSpace:'nowrap', flexShrink:0 }}>
-                    {submittingAll ? 'Submitting…' : 'Submit Anyway'}
-                  </button>
-                </div>
-              ) : (
-                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'1rem', flexWrap:'wrap', background:'linear-gradient(135deg, #1A5238, #2E7D55)', borderRadius:'var(--t-r-md)', padding:'0.9rem 1.1rem', marginBottom:'1.25rem' }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:'0.65rem' }}>
-                    <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" stroke="rgba(255,255,255,0.7)" strokeWidth="1.6"/><path d="M6.5 10.5l2.5 2.5 4.5-5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    <div>
-                      <span style={{ fontSize:'0.82rem', fontWeight:700, color:'white' }}>All students complete</span>
-                      <span style={{ fontSize:'0.76rem', color:'rgba(255,255,255,0.7)', marginLeft:'0.5rem' }}>Submit to finalise results and earn your school's points on the leaderboard.</span>
-                    </div>
-                  </div>
-                  <button onClick={handleSubmitAll} disabled={submittingAll}
-                    style={{ padding:'0.55rem 1.3rem', borderRadius:'var(--t-r-pill)', border:'2px solid rgba(255,255,255,0.4)', background:'rgba(255,255,255,0.15)', color:'white', fontSize:'0.82rem', fontWeight:700, cursor:'pointer', whiteSpace:'nowrap', flexShrink:0, letterSpacing:'0.02em' }}>
-                    {submittingAll ? 'Submitting…' : 'Submit Class →'}
-                  </button>
-                </div>
-              )}
 
               {/* Stat cards */}
               {isZZ ? (() => {
