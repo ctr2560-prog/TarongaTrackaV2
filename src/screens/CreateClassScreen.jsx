@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, doc, getDoc, runTransaction, serverTimestamp, setDoc, increment, arrayUnion } from 'firebase/firestore';
+import { doc, getDoc, serverTimestamp, setDoc, increment, arrayUnion } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useApp } from '../context/AppContext';
 import { openTeacherInfoSheet } from '../utils/teacherInfoSheet';
@@ -55,69 +55,43 @@ export default function CreateClassScreen() {
     if (!authLoading && !teacher && !demoMode) setCurrentScreen('teacherLogin');
   }, [teacher, authLoading, demoMode, setCurrentScreen]);
 
-  const [existingCodes,   setExistingCodes]   = useState([]);
   const [newClassName,    setNewClassName]    = useState('');
   const [newClassStage,   setNewClassStage]   = useState(4);
   const schoolName = teacherProfile?.schoolName || '';
   const [newLocation,     setNewLocation]     = useState('taronga-sydney');
   const [newSubject,      setNewSubject]      = useState('science');
-  const [accessCodeInput, setAccessCodeInput] = useState('');
   const [zzConsentChecked, setZzConsentChecked] = useState(false);
-  const [codeSessionType,  setCodeSessionType]  = useState(null);
   const [creatingClass,   setCreatingClass]   = useState(false);
   const [classCreated,    setClassCreated]    = useState(false);
   const [createError,     setCreateError]     = useState('');
   const [showWwzModal,    setShowWwzModal]    = useState(false);
 
-  useEffect(() => {
-    if (!accessCodeInput.trim()) { setCodeSessionType(null); return; }
-    let cancelled = false;
-    setZzConsentChecked(false);
-    getDoc(doc(db, 'accessCodes', accessCodeInput.trim()))
-      .then(snap => { if (!cancelled) setCodeSessionType(snap.exists() ? (snap.data().sessionType || 'standard') : null); })
-      .catch(() => { if (!cancelled) setCodeSessionType(null); });
-    return () => { cancelled = true; };
-  }, [accessCodeInput]);
+  const isZooSnooz = newLocation === 'zoosnooz-sydney';
 
   const createClass = async () => {
     if (!newClassName.trim() || !schoolName) return;
-    if (!accessCodeInput.trim()) { setCreateError('Please enter a Taronga Access Code.'); return; }
+    if (isZooSnooz && !zzConsentChecked) { setCreateError('Please confirm student filming consent before creating a ZooSnooz class.'); return; }
     setCreateError('');
     setCreatingClass(true);
     try {
-      const codeRef  = doc(db, 'accessCodes', accessCodeInput.trim());
-      const codeSnap = await getDoc(codeRef);
-      if (!codeSnap.exists())                          { setCreateError('Invalid access code.'); setCreatingClass(false); return; }
-      const codeData = codeSnap.data();
-      const now = new Date();
-      if (!codeData.active)                            { setCreateError('This access code is no longer active.'); setCreatingClass(false); return; }
-      if (codeData.expiresAt.toDate() < now)           { setCreateError('This access code has expired.'); setCreatingClass(false); return; }
-      if (codeData.uses >= codeData.maxUses)           { setCreateError('This access code has reached its usage limit.'); setCreatingClass(false); return; }
-      if ((codeData.sessionType||'standard') === 'zoosnooz' && !zzConsentChecked) { setCreateError('Please confirm student filming consent before creating a ZooSnooz class.'); setCreatingClass(false); return; }
+      const code        = generateClassCode();
+      const sessionDate = new Date().toISOString().split('T')[0];
+      const sessionType = isZooSnooz ? 'zoosnooz' : 'standard';
+      const VENUES = { 'taronga-sydney':'Taronga Sydney', 'zoosnooz-sydney':'Taronga Sydney', 'dubbo':'Taronga Dubbo', 'school':'School' };
+      const venue = VENUES[newLocation] || 'Taronga Zoo';
 
-      let code = generateClassCode();
-      while (existingCodes.includes(code)) code = generateClassCode();
-
-      await runTransaction(db, async tx => {
-        const fresh = await tx.get(codeRef);
-        if (fresh.data().uses >= fresh.data().maxUses) throw new Error('Code usage limit reached.');
-        tx.update(codeRef, { uses: fresh.data().uses + 1 });
-        const sessionDate = new Date().toISOString().split('T')[0];
-        const venue       = codeData.venue || 'Taronga Zoo';
-        const sessionType = codeData.sessionType || 'standard';
-        tx.set(doc(db, 'teachers', teacherEmail, 'classes', code), {
-          classCode: code, className: newClassName.trim(), schoolName: schoolName,
-          stage: newClassStage, accessCodeUsed: accessCodeInput.trim(),
-          venue, createdAt: serverTimestamp(), archived: false,
-          sessionClosed: false, sessionDate, sessionType,
-          location: newLocation, subject: newLocation === 'zoosnooz-sydney' ? null : newSubject,
-        });
-        tx.set(doc(db, 'classes', code), {
-          classCode: code, className: newClassName.trim(), schoolName: schoolName,
-          stage: newClassStage, teacherEmail, accessCodeUsed: accessCodeInput.trim(),
-          venue, createdAt: serverTimestamp(), sessionClosed: false, sessionDate, sessionType,
-          location: newLocation, subject: newLocation === 'zoosnooz-sydney' ? null : newSubject,
-        });
+      await setDoc(doc(db, 'teachers', teacherEmail, 'classes', code), {
+        classCode: code, className: newClassName.trim(), schoolName,
+        stage: newClassStage, accessCodeUsed: null,
+        venue, createdAt: serverTimestamp(), archived: false,
+        sessionClosed: false, sessionDate, sessionType,
+        location: newLocation, subject: isZooSnooz ? null : newSubject,
+      });
+      await setDoc(doc(db, 'classes', code), {
+        classCode: code, className: newClassName.trim(), schoolName,
+        stage: newClassStage, teacherEmail, accessCodeUsed: null,
+        venue, createdAt: serverTimestamp(), sessionClosed: false, sessionDate, sessionType,
+        location: newLocation, subject: isZooSnooz ? null : newSubject,
       });
 
       // Award location-specific expedition points once per school (non-blocking)
@@ -142,7 +116,7 @@ export default function CreateClassScreen() {
         }
       } catch {}
 
-      setNewClassName(''); setAccessCodeInput(''); setZzConsentChecked(false);
+      setNewClassName(''); setZzConsentChecked(false);
       setNewLocation('taronga-sydney'); setNewSubject('science');
       setClassCreated(true);
       setShowWwzModal(true);
@@ -155,7 +129,8 @@ export default function CreateClassScreen() {
     }
   };
 
-  const subjectData  = NSW_OUTCOMES[newSubject];
+  const displaySubject = isZooSnooz ? 'science' : newSubject;
+  const subjectData  = NSW_OUTCOMES[displaySubject];
   const outcomes     = subjectData?.[newClassStage] || [];
   const syllabusName = subjectData?.syllabus?.[newClassStage] || '';
   const subjectColors = {
@@ -164,7 +139,7 @@ export default function CreateClassScreen() {
     pdhpe:   { accent:'#7C3AED', bg:'#F5F3FF', border:'#DDD6FE' },
     english: { accent:'#B45309', bg:'#FFFBEB', border:'#FDE68A' },
   };
-  const sc = subjectColors[newSubject] || subjectColors.science;
+  const sc = subjectColors[displaySubject] || subjectColors.science;
 
   return (
     <>
@@ -245,11 +220,7 @@ export default function CreateClassScreen() {
               <input type="text" value={newClassName} onChange={e => setNewClassName(e.target.value)} placeholder="e.g. 7A, Biology, Koala Crew"
                 style={inputStyle} onFocus={e => e.target.style.borderColor='var(--t-mid)'} onBlur={e => e.target.style.borderColor='var(--t-stone)'} />
 
-              <label style={{ display:'block', fontSize:'0.78rem', fontWeight:700, color:'var(--t-deep)', marginBottom:'0.3rem', textTransform:'uppercase', letterSpacing:'0.05em' }}>Taronga Access Code</label>
-              <input type="password" value={accessCodeInput} onChange={e => setAccessCodeInput(e.target.value)} placeholder="Enter access code" autoComplete="off"
-                style={{ ...inputStyle, marginBottom:'1rem' }} onFocus={e => e.target.style.borderColor='var(--t-mid)'} onBlur={e => e.target.style.borderColor='var(--t-stone)'} />
-
-              {(codeSessionType === 'zoosnooz' || newLocation === 'zoosnooz-sydney') && (
+              {isZooSnooz && (
                 <div style={{ background:'#f0f7f2', border:'1px solid #b6d9c3', borderRadius:'10px', padding:'0.9rem 1rem', marginBottom:'1rem' }}>
                   <label style={{ display:'flex', gap:'0.65rem', alignItems:'flex-start', cursor:'pointer' }}>
                     <input type="checkbox" checked={zzConsentChecked} onChange={e => setZzConsentChecked(e.target.checked)}
@@ -271,7 +242,7 @@ export default function CreateClassScreen() {
               {classCreated && <p style={{ marginTop:'0.6rem', fontSize:'0.85rem', color:'#2e7d32', fontWeight:600, textAlign:'center' }}>✓ Class created successfully!</p>}
 
               {/* NSW Curriculum */}
-              {(newSubject === 'science' || newSubject === 'maths' || newSubject === 'pdhpe' || newSubject === 'english') && newLocation !== 'zoosnooz-sydney' && (
+              {(displaySubject === 'science' || displaySubject === 'maths' || displaySubject === 'pdhpe' || displaySubject === 'english') && (
                 <div style={{ marginTop:'1.25rem', background:sc.bg, border:`1px solid ${sc.border}`, borderRadius:'var(--t-r-sm)', padding:'0.9rem 1rem' }}>
                   <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'0.6rem' }}>
                     <p style={{ fontSize:'0.72rem', fontWeight:800, color:sc.accent, textTransform:'uppercase', letterSpacing:'0.07em', margin:0 }}>NSW Curriculum — Stage {newClassStage}</p>
@@ -285,7 +256,7 @@ export default function CreateClassScreen() {
                       </div>
                     ))}
                   </div>
-                  <button onClick={() => openTeacherInfoSheet(newSubject, newClassStage, outcomes)}
+                  <button onClick={() => openTeacherInfoSheet(displaySubject, newClassStage, outcomes)}
                     style={{ marginTop:'0.75rem', display:'flex', alignItems:'center', gap:'0.5rem', background:'none', border:`1px solid ${sc.accent}`, color:sc.accent, fontSize:'0.75rem', fontWeight:700, padding:'0.4rem 0.85rem', borderRadius:'40px', cursor:'pointer', letterSpacing:'0.04em', width:'100%', justifyContent:'center' }}
                     onMouseEnter={e => { e.currentTarget.style.background=sc.accent; e.currentTarget.style.color='white'; }}
                     onMouseLeave={e => { e.currentTarget.style.background='none'; e.currentTarget.style.color=sc.accent; }}>

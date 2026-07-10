@@ -2394,51 +2394,16 @@ export default function AdminDashboardScreen() {
         </div>
 
         <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', flexWrap:'wrap' }}>
-          {/* Daily code */}
-          {(() => {
-            const exp = dailyCode?.expiresAt?.toDate?.() ?? (dailyCode?.expiresAt ? new Date(dailyCode.expiresAt) : null);
-            const isLive = dailyCode && exp && exp > new Date();
-            return (
-              <div style={{ background:'rgba(255,255,255,0.10)', border:'1px solid rgba(255,255,255,0.18)', padding:'0.4rem 0.85rem', borderRadius:'var(--t-r-pill)', color:'white', display:'flex', alignItems:'center', gap:'0.6rem', fontSize:'0.78rem', fontWeight:600 }}>
-                🔑 Daily Code: {isLive ? (
-                  <>
-                    <strong style={{ letterSpacing:'0.05em' }}>{dailyCode.id}</strong>
-                    <span style={{ opacity:0.8 }}>(Exp. 11:59pm)</span>
-                    <button onClick={generateDailyCode} disabled={generatingDaily} style={{ padding:'2px 8px', borderRadius:'10px', border:'none', cursor:'pointer', background:'rgba(255,255,255,0.25)', color:'white', fontWeight:700, fontSize:'0.72rem' }}>
-                      {generatingDaily ? '…' : 'Regenerate'}
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <span style={{ opacity:0.7 }}>{dailyCode ? 'Expired' : 'No active code'}</span>
-                    <button onClick={generateDailyCode} disabled={generatingDaily} style={{ padding:'2px 8px', borderRadius:'10px', border:'none', cursor:'pointer', background:'white', color:'#1A5238', fontWeight:700, fontSize:'0.72rem' }}>
-                      {generatingDaily ? '…' : 'Generate'}
-                    </button>
-                  </>
-                )}
-              </div>
-            );
-          })()}
-
-          {/* Night code */}
-          <div style={{ background:'rgba(0,0,0,0.85)', border:'1px solid rgba(46,125,85,0.45)', padding:'0.4rem 0.85rem', borderRadius:'var(--t-r-pill)', color:'white', display:'flex', alignItems:'center', gap:'0.6rem', fontSize:'0.78rem', fontWeight:600 }}>
-            🌙 {nightCode ? (
-              <>
-                <strong onClick={()=>navigator.clipboard?.writeText(nightCode)} title="Tap to copy" style={{ fontFamily:'monospace', fontSize:'0.9rem', cursor:'pointer', letterSpacing:'0.1em' }}>{nightCode}</strong>
-                <span style={{ opacity:0.7, fontSize:'0.72rem' }}>Night Code</span>
-                <button onClick={()=>setNightCode('')} style={{ padding:'2px 7px', borderRadius:'8px', border:'none', cursor:'pointer', background:'rgba(255,255,255,0.15)', color:'white', fontWeight:700, fontSize:'0.72rem' }}>✕</button>
-              </>
-            ) : (
-              <>
-                <span style={{ opacity:0.7, fontSize:'0.76rem' }}>Night Session</span>
-                <button onClick={createNightCode} disabled={creatingNight} style={{ padding:'3px 10px', borderRadius:'10px', border:'none', cursor:'pointer', background:'#2E7D55', color:'white', fontWeight:700, fontSize:'0.76rem' }}>
-                  {creatingNight ? '…' : 'Generate'}
-                </button>
-              </>
-            )}
+          {/* Daily code — temporarily deactivated */}
+          <div title="Access codes are temporarily deactivated" style={{ background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)', padding:'0.4rem 0.85rem', borderRadius:'var(--t-r-pill)', color:'rgba(255,255,255,0.35)', display:'flex', alignItems:'center', gap:'0.6rem', fontSize:'0.78rem', fontWeight:600, pointerEvents:'none', userSelect:'none' }}>
+            🔑 Daily Code: <span style={{ opacity:0.6 }}>Paused</span>
           </div>
 
-          {codeDeactivated && <div style={{ fontSize:'0.75rem', color:'#A8F0C8', fontWeight:600 }}>✓ Code updated.</div>}
+          {/* Night code — temporarily deactivated */}
+          <div title="Access codes are temporarily deactivated" style={{ background:'rgba(0,0,0,0.4)', border:'1px solid rgba(46,125,85,0.15)', padding:'0.4rem 0.85rem', borderRadius:'var(--t-r-pill)', color:'rgba(255,255,255,0.35)', display:'flex', alignItems:'center', gap:'0.6rem', fontSize:'0.78rem', fontWeight:600, pointerEvents:'none', userSelect:'none' }}>
+            🌙 Night Session: <span style={{ opacity:0.6 }}>Paused</span>
+          </div>
+
 
           <button onClick={()=>{setAdminAccessCode('');setCurrentScreen('home');}}
             style={{ background:'rgba(255,255,255,0.10)', border:'1px solid rgba(255,255,255,0.2)', color:'rgba(255,255,255,0.88)', padding:'0.4rem 0.85rem', borderRadius:'var(--t-r-pill)', cursor:'pointer', fontSize:'0.78rem', fontWeight:600 }}>
