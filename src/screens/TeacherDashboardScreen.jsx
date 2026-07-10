@@ -134,15 +134,16 @@ export default function TeacherDashboardScreen() {
     if (!teacherEmail.trim()) return;
     const unsub = onSnapshot(collection(db, 'teachers', teacherEmail, 'classes'), snap => {
       setTeacherClasses(snap.docs.map(d => ({
-        classCode:   d.data().classCode || d.id,
-        className:   d.data().className || '',
-        schoolName:  d.data().schoolName || '',
-        stage:       d.data().stage || 4,
-        teacherEmail:d.data().teacherEmail || teacherEmail,
-        archived:    d.data().archived || false,
-        sessionType: d.data().sessionType || 'standard',
-        location:    d.data().location || null,
-        subject:     d.data().subject || null,
+        classCode:    d.data().classCode || d.id,
+        className:    d.data().className || '',
+        schoolName:   d.data().schoolName || '',
+        stage:        d.data().stage || 4,
+        teacherEmail: d.data().teacherEmail || teacherEmail,
+        archived:     d.data().archived || false,
+        sessionType:  d.data().sessionType || 'standard',
+        location:     d.data().location || null,
+        subject:      d.data().subject || null,
+        sessionClosed:d.data().sessionClosed || false,
       })));
       setClassesLoading(false);
     }, () => { setTeacherClasses([]); setClassesLoading(false); });
@@ -178,10 +179,10 @@ export default function TeacherDashboardScreen() {
     return () => unsub();
   }, [primarySchool]);
 
-  // Seed/correct school doc for pre-existing schools (once, on mount)
+  // Seed/correct school doc — only once a class has been submitted
   useEffect(() => {
     if (!primarySchool || classesLoading) return;
-    const activeCount = teacherClasses.filter(c => !c.archived).length;
+    const activeCount = teacherClasses.filter(c => !c.archived && c.sessionClosed).length;
     if (activeCount === 0) return;
     let cancelled = false;
     const sid = normalizeSchoolId(primarySchool);
@@ -554,15 +555,22 @@ export default function TeacherDashboardScreen() {
                 <div style={{ display:'flex', gap:'0.75rem', width:'max-content' }}>
                   {CHALLENGES.map(ch => {
                     const isAutoComplete = ch.type === 'auto' && (
-                      ch.location ? activeClasses.some(c => c.location === ch.location) : activeClasses.length > 0
+                      ch.location
+                        ? activeClasses.some(c => c.location === ch.location && c.sessionClosed)
+                        : activeClasses.some(c => c.sessionClosed)
                     );
-                    const isSubmit = ch.type === 'submit';
-                    const sub = mySubmissions[ch.id];
+                    const isCreatedNotSubmitted = !isAutoComplete && ch.type === 'auto' && (
+                      ch.location
+                        ? activeClasses.some(c => c.location === ch.location && !c.sessionClosed)
+                        : activeClasses.some(c => !c.sessionClosed)
+                    );
+                    const isSubmit   = ch.type === 'submit';
+                    const sub        = mySubmissions[ch.id];
                     const isApproved = sub?.status === 'approved';
                     const isPending  = sub?.status === 'pending';
                     const isDone     = isAutoComplete || isApproved;
-                    const borderCol  = isDone ? 'var(--t-mid)' : isPending ? '#F59E0B' : 'var(--t-stone)';
-                    const bgCol      = isDone ? 'var(--t-foam)' : isPending ? '#FFFBEB' : 'white';
+                    const borderCol  = isDone ? 'var(--t-mid)' : isCreatedNotSubmitted ? '#F59E0B' : isPending ? '#F59E0B' : 'var(--t-stone)';
+                    const bgCol      = isDone ? 'var(--t-foam)' : isCreatedNotSubmitted ? '#FFFBEB' : isPending ? '#FFFBEB' : 'white';
                     return (
                       <div key={ch.id} style={{ width:'180px', flexShrink:0, display:'flex', flexDirection:'column', borderRadius:'var(--t-r-md)', border:`1px solid ${borderCol}`, background:bgCol, padding:'1rem', position:'relative', overflow:'hidden' }}>
                         {isDone && (
@@ -570,18 +578,26 @@ export default function TeacherDashboardScreen() {
                             <SvgCheck/>
                           </div>
                         )}
-                        {isPending && !isDone && (
+                        {isCreatedNotSubmitted && (
+                          <div style={{ position:'absolute', top:'0.5rem', right:'0.5rem', fontSize:'0.6rem', fontWeight:800, color:'#92400E', background:'#FEF3C7', border:'1px solid #F59E0B', borderRadius:'3px', padding:'1px 5px' }}>Pending</div>
+                        )}
+                        {isPending && !isDone && !isCreatedNotSubmitted && (
                           <div style={{ position:'absolute', top:'0.5rem', right:'0.5rem', fontSize:'0.6rem', fontWeight:800, color:'#92400E', background:'#FEF3C7', border:'1px solid #F59E0B', borderRadius:'3px', padding:'1px 5px' }}>Review</div>
                         )}
-                        <div style={{ width:'40px', height:'40px', borderRadius:'var(--t-r-sm)', background: isDone ? 'var(--t-mid)' : 'var(--t-chalk)', border:`1px solid ${isDone ? 'var(--t-mid)' : 'var(--t-mist)'}`, display:'flex', alignItems:'center', justifyContent:'center', color: isDone ? 'white' : 'var(--t-slate)', marginBottom:'0.6rem' }}>
+                        <div style={{ width:'40px', height:'40px', borderRadius:'var(--t-r-sm)', background: isDone ? 'var(--t-mid)' : isCreatedNotSubmitted ? '#FEF3C7' : 'var(--t-chalk)', border:`1px solid ${isDone ? 'var(--t-mid)' : isCreatedNotSubmitted ? '#F59E0B' : 'var(--t-mist)'}`, display:'flex', alignItems:'center', justifyContent:'center', color: isDone ? 'white' : isCreatedNotSubmitted ? '#D97706' : 'var(--t-slate)', marginBottom:'0.6rem' }}>
                           {ch.icon}
                         </div>
-                        <div style={{ fontSize:'0.8rem', fontWeight:700, color: isDone ? 'var(--t-mid)' : 'var(--t-deep)', marginBottom:'0.2rem', lineHeight:1.2 }}>{ch.name}</div>
-                        <p style={{ fontSize:'0.7rem', color:'var(--t-slate)', margin:'0 0 auto', lineHeight:1.4, paddingBottom:'0.75rem' }}>{ch.desc}</p>
-                        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:'0.6rem', paddingTop:'0.6rem', borderTop:`1px solid ${isDone ? 'rgba(46,125,85,0.15)' : 'var(--t-mist)'}` }}>
-                          <span style={{ fontSize:'0.68rem', fontWeight:700, color: isDone ? 'var(--t-mid)' : 'var(--t-sage)', background: isDone ? 'rgba(46,125,85,0.1)' : 'var(--t-chalk)', padding:'0.15rem 0.4rem', borderRadius:'var(--t-r-pill)' }}>+{ch.points} pts</span>
-                          {isAutoComplete && <span style={{ fontSize:'0.65rem', fontWeight:700, color:'var(--t-mid)' }}>Auto</span>}
-                          {isApproved && <span style={{ fontSize:'0.65rem', fontWeight:700, color:'var(--t-mid)' }}>Complete</span>}
+                        <div style={{ fontSize:'0.8rem', fontWeight:700, color: isDone ? 'var(--t-mid)' : isCreatedNotSubmitted ? '#92400E' : 'var(--t-deep)', marginBottom:'0.2rem', lineHeight:1.2 }}>{ch.name}</div>
+                        <p style={{ fontSize:'0.7rem', color: isCreatedNotSubmitted ? '#B45309' : 'var(--t-slate)', margin:'0 0 auto', lineHeight:1.4, paddingBottom:'0.75rem' }}>{ch.desc}</p>
+                        {isCreatedNotSubmitted && (
+                          <div style={{ fontSize:'0.65rem', fontWeight:700, color:'#92400E', lineHeight:1.45, padding:'0.35rem 0.5rem', background:'#FEF3C7', borderRadius:'4px', marginBottom:'0.5rem', border:'1px solid #F59E0B' }}>
+                            Submit your class to earn these points!
+                          </div>
+                        )}
+                        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:'0.6rem', paddingTop:'0.6rem', borderTop:`1px solid ${isDone ? 'rgba(46,125,85,0.15)' : isCreatedNotSubmitted ? '#F59E0B40' : 'var(--t-mist)'}` }}>
+                          <span style={{ fontSize:'0.68rem', fontWeight:700, color: isDone ? 'var(--t-mid)' : isCreatedNotSubmitted ? '#D97706' : 'var(--t-sage)', background: isDone ? 'rgba(46,125,85,0.1)' : isCreatedNotSubmitted ? '#FEF3C7' : 'var(--t-chalk)', padding:'0.15rem 0.4rem', borderRadius:'var(--t-r-pill)' }}>+{ch.points} pts</span>
+                          {isAutoComplete && <span style={{ fontSize:'0.65rem', fontWeight:700, color:'var(--t-mid)' }}>Complete</span>}
+                          {isApproved && !isAutoComplete && <span style={{ fontSize:'0.65rem', fontWeight:700, color:'var(--t-mid)' }}>Approved</span>}
                           {isPending && !isApproved && <span style={{ fontSize:'0.65rem', fontWeight:600, color:'#92400E' }}>Pending</span>}
                           {isSubmit && !sub && (
                             <button onClick={() => { setUploadChallenge(ch); setUploadFile(null); setUploadNote(''); setUploadSuccess(false); }}
