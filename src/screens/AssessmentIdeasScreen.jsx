@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { openAssessmentTaskNotification } from '../utils/assessmentTaskNotification';
 
 const KLAS = [
   { id: 'science',  label: 'Science',  color: '#1A5238', light: '#E8F5EE' },
@@ -270,6 +271,7 @@ const FORMAT_COLORS = {
 export default function AssessmentIdeasScreen() {
   const { setCurrentScreen } = useApp();
   const [kla, setKla] = useState('science');
+  const [printStage, setPrintStage] = useState(4);
 
   const active = KLAS.find(k => k.id === kla);
   const evidence = APP_EVIDENCE[kla];
@@ -348,9 +350,47 @@ export default function AssessmentIdeasScreen() {
                   {active.label}
                 </h2>
               </div>
-              <p style={{ margin:'0 0 1.75rem 1.5rem', fontSize:'0.8rem', color:'var(--t-slate)', lineHeight:1.6, maxWidth:'640px' }}>
+              <p style={{ margin:'0 0 1.25rem 1.5rem', fontSize:'0.8rem', color:'var(--t-slate)', lineHeight:1.6, maxWidth:'640px' }}>
                 What the app captures during the excursion, and how to extend it into assessed work back in the classroom.
               </p>
+
+              {/* ── AT Notification print row ── */}
+              <div style={{ margin:'0 0 1.75rem 1.5rem', display:'flex', alignItems:'center', gap:'1rem', flexWrap:'wrap', padding:'0.85rem 1rem', background:'white', border:'1px solid var(--t-stone)', borderRadius:'var(--t-r-md)', boxShadow:'var(--t-shadow-sm)' }}>
+                <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', flexShrink:0 }}>
+                  <span style={{ fontSize:'0.68rem', fontWeight:800, color:'var(--t-slate)', textTransform:'uppercase', letterSpacing:'0.12em' }}>Stage</span>
+                  {[2,3,4,5].map(s => (
+                    <button
+                      key={s}
+                      onClick={() => setPrintStage(s)}
+                      style={{
+                        width:30, height:30, borderRadius:'50%',
+                        border: printStage === s ? `2px solid ${active.color}` : '1.5px solid var(--t-stone)',
+                        background: printStage === s ? active.color : 'white',
+                        color: printStage === s ? 'white' : 'var(--t-slate)',
+                        fontWeight:800, fontSize:'0.75rem', cursor:'pointer',
+                        display:'flex', alignItems:'center', justifyContent:'center',
+                        transition:'all 0.15s',
+                      }}
+                    >{s}</button>
+                  ))}
+                </div>
+                <div style={{ width:1, height:24, background:'var(--t-stone)', flexShrink:0 }} />
+                <button
+                  onClick={() => openAssessmentTaskNotification(kla, printStage, 'in-excursion', null)}
+                  style={{
+                    display:'flex', alignItems:'center', gap:'0.45rem',
+                    background: active.color, color:'white',
+                    border:'none', borderRadius:999,
+                    padding:'0.45rem 1rem', fontSize:'0.75rem', fontWeight:700,
+                    cursor:'pointer', letterSpacing:'0.04em',
+                    boxShadow:`0 2px 8px ${active.color}40`,
+                  }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M3 10v3a1 1 0 001 1h8a1 1 0 001-1v-3M8 2v8m0 0L5 7m3 3 3-3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  Print In-Excursion AT Notification →
+                </button>
+                <span style={{ fontSize:'0.72rem', color:'var(--t-slate)' }}>Opens a print-ready Assessment Task Notification for Stage {printStage} {active.label}</span>
+              </div>
 
               {/* ── Section 1: In-app evidence ── */}
               <h3 style={{ margin:'0 0 0.6rem', fontSize:'0.72rem', fontWeight:800, color:'var(--t-slate)', textTransform:'uppercase', letterSpacing:'0.14em' }}>
@@ -406,6 +446,25 @@ export default function AssessmentIdeasScreen() {
                             <span style={{ display:'inline-block', background:`${fmtColor}12`, color:fmtColor, border:`1px solid ${fmtColor}35`, borderRadius:999, padding:'0.1rem 0.55rem', fontSize:'0.65rem', fontWeight:700 }}>{task.format}</span>
                           </div>
                         </div>
+                        <button
+                          onClick={() => {
+                            const firstStage = parseInt(task.stages[0].replace('S', ''), 10);
+                            openAssessmentTaskNotification(kla, firstStage, 'post-visit', task);
+                          }}
+                          style={{
+                            flexShrink:0,
+                            display:'flex', alignItems:'center', gap:'0.35rem',
+                            background: active.light, color: active.color,
+                            border:`1px solid ${active.color}40`,
+                            borderRadius:999, padding:'0.3rem 0.75rem',
+                            fontSize:'0.68rem', fontWeight:700,
+                            cursor:'pointer', letterSpacing:'0.03em',
+                            whiteSpace:'nowrap',
+                          }}
+                        >
+                          <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M3 10v3a1 1 0 001 1h8a1 1 0 001-1v-3M8 2v8m0 0L5 7m3 3 3-3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                          Print AT ↓
+                        </button>
                       </div>
                       {/* Card body */}
                       <div style={{ padding:'0.8rem 1.1rem', display:'grid', gridTemplateColumns:'1fr auto', gap:'0.75rem', alignItems:'start' }}>
