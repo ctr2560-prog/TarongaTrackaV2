@@ -24,6 +24,7 @@ export { default as TeacherGuideScreen }      from './TeacherGuideScreen';
 export { default as TeacherMapScreen }        from './TeacherMapScreen';
 export { default as ExcursionPlanScreen }     from './ExcursionPlanScreen';
 export { default as AccessibilityScreen }     from './AccessibilityScreen';
+export { default as AssessmentIdeasScreen }   from './AssessmentIdeasScreen';
 export { default as ConservationGalleryScreen } from './ConservationGalleryScreen';
 export { default as DeviceBookingScreen }     from './DeviceBookingScreen';
 export { default as ZooSnoozScreen }          from './ZooSnoozScreen';

@@ -5,7 +5,7 @@ import {
   HomeScreen, MapScreen, AnimalScreen, ObservationScreen,
   BadgeScreen, CollectionScreen, SchoolEntryScreen, StudentJoinScreen, StudentLoadingScreen,
   SubmissionCompleteScreen, ResourceHubScreen, CurriculumAlignmentScreen, TeacherGuideScreen, TeacherMapScreen,
-  ExcursionPlanScreen, AccessibilityScreen, ConservationGalleryScreen, DeviceBookingScreen,
+  ExcursionPlanScreen, AccessibilityScreen, AssessmentIdeasScreen, ConservationGalleryScreen, DeviceBookingScreen,
   TeacherLoginScreen, TeacherDashboardScreen, CreateClassScreen, ClassDetailsScreen,
   AdminLoginScreen, AdminDashboardScreen, AdminClassViewScreen,
   PublicHomeScreen, PublicHomeExtScreen, PublicEntryScreen,
@@ -85,6 +85,7 @@ function Router() {
     case 'teacherMap':           return <TeacherMapScreen />;
     case 'excursionPlan':        return <ExcursionPlanScreen />;
     case 'accessibility':        return <AccessibilityScreen />;
+    case 'assessmentIdeas':      return <AssessmentIdeasScreen />;
     case 'conservationGallery':  return <ConservationGalleryScreen />;
     case 'deviceBooking':        return <DeviceBookingScreen />;
     case 'teacherLogin':         return <TeacherLoginScreen />;
