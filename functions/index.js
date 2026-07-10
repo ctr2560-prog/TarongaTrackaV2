@@ -109,38 +109,138 @@ const { onDocumentCreated } = require('firebase-functions/v2/firestore');
 
 const BOOKING_NOTIFY_EMAIL = 'ctr2560@gmail.com';
 
+function buildBookingEmailHtml(b) {
+  const dateStr   = b.date || 'Unknown date';
+  const school    = b.schoolName || 'Unknown school';
+  const devices   = b.devices || '?';
+  const teacher   = b.teacherEmail || 'Unknown';
+  const note      = b.note ? String(b.note).slice(0, 500) : null;
+  const isZooSnooz   = (b.sessionType || '').toLowerCase().includes('zoosnooz');
+  const sessionLabel = isZooSnooz ? 'ZOOSNOOZ NIGHT SESSION' : 'STANDARD SESSION';
+  const accentLight  = isZooSnooz ? '#2E2E4A' : '#2E7D55';
+  const icon         = isZooSnooz ? '🌙' : '📱';
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Device Booking — ${school}</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;background:#EDEAE3;font-family:'DM Sans',Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#EDEAE3;padding:32px 16px;">
+    <tr><td align="center">
+      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 24px 80px rgba(7,30,20,0.16);">
+
+        <!-- Header -->
+        <tr><td style="background:#071E14;padding:40px 44px 0;position:relative;">
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="vertical-align:top;">
+                <img src="https://tarongatracka.web.app/images/logo.png" alt="Taronga" height="56" style="display:block;height:56px;width:auto;" />
+              </td>
+              <td align="right" style="vertical-align:top;padding-top:4px;">
+                <span style="display:inline-block;background:${accentLight};color:#ffffff;font-size:9px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;padding:6px 16px;border-radius:40px;">${icon} ${sessionLabel}</span>
+                <br>
+                <span style="display:block;font-size:10px;color:#A8C4B2;letter-spacing:0.06em;margin-top:8px;text-align:right;">Device Booking Notification</span>
+              </td>
+            </tr>
+          </table>
+          <h1 style="font-family:'DM Sans',Arial,sans-serif;font-size:26px;font-weight:700;color:#ffffff;letter-spacing:0.01em;line-height:1.15;margin:28px 0 0;">${school}</h1>
+          <p style="font-size:13px;color:#A8C4B2;margin:8px 0 0;letter-spacing:0.03em;">has booked Taronga Tracka devices</p>
+          <!-- Meta bar -->
+          <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:24px;padding:14px 0;border-top:1px solid rgba(168,196,178,0.2);">
+            <tr>
+              <td style="font-size:10px;color:#A8C4B2;letter-spacing:0.05em;padding-right:24px;">
+                <span style="display:inline-block;width:4px;height:4px;border-radius:50%;background:${accentLight};vertical-align:middle;margin-right:6px;"></span>
+                ${dateStr}
+              </td>
+              <td style="font-size:10px;color:#A8C4B2;letter-spacing:0.05em;padding-right:24px;">
+                <span style="display:inline-block;width:4px;height:4px;border-radius:50%;background:${accentLight};vertical-align:middle;margin-right:6px;"></span>
+                ${devices} of 20 devices
+              </td>
+              <td style="font-size:10px;color:#A8C4B2;letter-spacing:0.05em;">
+                <span style="display:inline-block;width:4px;height:4px;border-radius:50%;background:${accentLight};vertical-align:middle;margin-right:6px;"></span>
+                Taronga Sydney
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+
+        <!-- Body -->
+        <tr><td style="padding:36px 44px;">
+
+          <!-- Booking detail rows -->
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#F7F4EF;border-radius:14px;overflow:hidden;margin-bottom:24px;">
+            <tr>
+              <td style="padding:14px 20px;border-bottom:1px solid #ECE7DD;">
+                <span style="font-size:10px;font-weight:700;color:#6B6B62;letter-spacing:0.08em;text-transform:uppercase;">Date</span>
+                <span style="float:right;font-size:14px;font-weight:700;color:#1A1A17;">${dateStr}</span>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:14px 20px;border-bottom:1px solid #ECE7DD;">
+                <span style="font-size:10px;font-weight:700;color:#6B6B62;letter-spacing:0.08em;text-transform:uppercase;">Devices Requested</span>
+                <span style="float:right;font-size:14px;font-weight:700;color:#1A1A17;">${devices} <span style="font-weight:400;color:#6B6B62;font-size:12px;">of 20 available</span></span>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:14px 20px;border-bottom:1px solid #ECE7DD;">
+                <span style="font-size:10px;font-weight:700;color:#6B6B62;letter-spacing:0.08em;text-transform:uppercase;">Session Type</span>
+                <span style="float:right;font-size:14px;font-weight:700;color:#1A1A17;">${isZooSnooz ? '🌙 ZooSnooz Night' : '☀️ Standard Excursion'}</span>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:14px 20px;${note ? 'border-bottom:1px solid #ECE7DD;' : ''}">
+                <span style="font-size:10px;font-weight:700;color:#6B6B62;letter-spacing:0.08em;text-transform:uppercase;">Teacher</span>
+                <span style="float:right;font-size:13px;color:#1A1A17;">${teacher}</span>
+              </td>
+            </tr>
+            ${note ? `<tr>
+              <td style="padding:14px 20px;">
+                <span style="display:block;font-size:10px;font-weight:700;color:#6B6B62;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px;">Note</span>
+                <span style="font-size:13px;color:#3D3D38;line-height:1.6;">${note}</span>
+              </td>
+            </tr>` : ''}
+          </table>
+
+          <!-- CTA -->
+          <p style="margin:0 0 20px;font-size:13px;color:#6B6B62;line-height:1.65;">Manage this booking from the staff portal under the <strong style="color:#1A1A17;">Bookings</strong> tab.</p>
+          <a href="https://tarongatracka.web.app/adminDashboard" style="display:inline-block;padding:13px 28px;background:linear-gradient(135deg,#1A5238,#071E14);color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;border-radius:8px;letter-spacing:0.04em;">Open Staff Portal →</a>
+
+        </td></tr>
+
+        <!-- Footer -->
+        <tr><td style="background:#F7F4EF;border-top:1px solid #ECE7DD;padding:20px 44px;">
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="font-size:11px;color:#1A5238;font-weight:700;letter-spacing:0.06em;">TARONGA TRACKA</td>
+              <td align="right" style="font-size:10px;color:#A8C4B2;letter-spacing:0.04em;">For the Wild</td>
+            </tr>
+          </table>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
 exports.onDeviceBookingCreated = onDocumentCreated(
   { document: 'deviceBookings/{bookingId}', region: 'australia-southeast1' },
   async (event) => {
     const b = event.data?.data();
     if (!b) return;
 
-    const dateStr = b.date || 'unknown date';
     const resend = new Resend(process.env.RESEND_API_KEY);
     try {
       await resend.emails.send({
         from: 'Taronga Tracka <noreply@tarongatracka.com.au>',
         to: BOOKING_NOTIFY_EMAIL,
-        subject: `Device booking: ${b.schoolName || 'Unknown school'} · ${dateStr}`,
-        html: `<!DOCTYPE html>
-<html lang="en"><body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background:#ffffff;">
-  <table width="100%" cellpadding="0" cellspacing="0">
-    <tr><td style="background:#0A2F1F;padding:24px 32px;">
-      <p style="margin:0;color:#ffffff;font-size:20px;font-weight:bold;">Taronga Tracka</p>
-      <p style="margin:4px 0 0;color:#a8c8b0;font-size:13px;">New device booking</p>
-    </td></tr>
-    <tr><td style="padding:32px;color:#222222;">
-      <h2 style="margin:0 0 16px;font-size:20px;color:#0A2F1F;">${b.schoolName || 'Unknown school'} booked Tracka devices</h2>
-      <table cellpadding="6" cellspacing="0" style="font-size:14px;line-height:1.5;">
-        <tr><td style="color:#666;">Date</td><td><strong>${dateStr}</strong></td></tr>
-        <tr><td style="color:#666;">Devices</td><td><strong>${b.devices || '?'}</strong> of 20</td></tr>
-        <tr><td style="color:#666;">Teacher</td><td>${b.teacherEmail || 'unknown'}</td></tr>
-        ${b.note ? `<tr><td style="color:#666;">Note</td><td>${String(b.note).slice(0, 500)}</td></tr>` : ''}
-      </table>
-      <p style="margin:24px 0 0;font-size:13px;color:#666;">Manage bookings in the staff portal under Device Bookings.</p>
-    </td></tr>
-  </table>
-</body></html>`,
+        subject: `📱 Device booking: ${b.schoolName || 'Unknown school'} · ${b.date || 'unknown date'}`,
+        html: buildBookingEmailHtml(b),
       });
     } catch (err) {
       console.error('Booking notification email failed:', err);
