@@ -29,29 +29,84 @@ const FORMAT_COLORS = {
   'Persuasive Writing':   '#BE185D',
 };
 
+// ── Evidence icon SVGs ────────────────────────────────────────────────────────
+const IcoChart = () => (
+  <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+    <rect x="1.5" y="9" width="3" height="6" rx="1"/>
+    <rect x="6.5" y="5" width="3" height="10" rx="1"/>
+    <rect x="11.5" y="1.5" width="3" height="13.5" rx="1"/>
+  </svg>
+);
+const IcoCheck = () => (
+  <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+    <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.6"/>
+    <path d="M5.5 8.2l2 2 3-3.4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+const IcoDoc = () => (
+  <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+    <path d="M3.5 2a1 1 0 011-1h5l4 4v9a1 1 0 01-1 1h-8a1 1 0 01-1-1V2z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
+    <path d="M9.5 1v4H13.5M5.5 8h5M5.5 11h3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+);
+const IcoPin = () => (
+  <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+    <path d="M8 1.5C5.52 1.5 3.5 3.52 3.5 6c0 3.75 4.5 8.5 4.5 8.5S12.5 9.75 12.5 6c0-2.48-2.02-4.5-4.5-4.5z" stroke="currentColor" strokeWidth="1.5"/>
+    <circle cx="8" cy="6" r="1.5" stroke="currentColor" strokeWidth="1.5"/>
+  </svg>
+);
+const IcoCalc = () => (
+  <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+    <rect x="2.5" y="1.5" width="11" height="13" rx="1.5" stroke="currentColor" strokeWidth="1.5"/>
+    <path d="M5 5.5h6M5 8.5h2M9 8.5h2M5 11.5h2M9 11.5h2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+);
+const IcoPencil = () => (
+  <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+    <path d="M11.5 1.5l3 3-9 9H2.5v-3l9-9z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
+    <path d="M9.5 3.5l3 3" stroke="currentColor" strokeWidth="1.5"/>
+  </svg>
+);
+const IcoQuote = () => (
+  <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+    <path d="M2 3h12a.5.5 0 01.5.5v7a.5.5 0 01-.5.5H9.5L7 14V11H2a.5.5 0 01-.5-.5v-7A.5.5 0 012 3z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
+    <path d="M5 7h6M5 9h3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+);
+const IcoLines = () => (
+  <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+    <path d="M2 4h12M2 7.5h12M2 11h8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+  </svg>
+);
+const IcoCompare = () => (
+  <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+    <path d="M2 5.5h12M10.5 3l3 2.5-3 2.5M13.5 10.5H1.5M5.5 8l-3 2.5 3 2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
 // ── In-app evidence ───────────────────────────────────────────────────────────
 const APP_EVIDENCE = {
   science: [
-    { metric: 'Observation Score',  icon: '📊', what: 'AI-scored observation across Behaviour, Detail and Writing — each /5.' },
-    { metric: 'Quiz Result',        icon: '✅', what: 'Stage-differentiated MCQ with the specific distractor chosen recorded.' },
-    { metric: 'Written Response',   icon: '📝', what: 'The student\'s own unedited words — portfolio, moderation or report-ready.' },
-    { metric: 'Animals Visited',    icon: '🦁', what: 'Which enclosures the student engaged with — a field study participation log.' },
+    { metric: 'Observation Score',  icon: <IcoChart />,   what: 'AI-scored observation across Behaviour, Detail and Writing, each out of 5.' },
+    { metric: 'Quiz Result',        icon: <IcoCheck />,   what: 'Stage-differentiated MCQ with the specific distractor chosen recorded.' },
+    { metric: 'Written Response',   icon: <IcoDoc />,     what: 'The student\'s own unedited words, portfolio, moderation or report-ready.' },
+    { metric: 'Animals Visited',    icon: <IcoPin />,     what: 'Which enclosures the student engaged with, a field study participation log.' },
   ],
   maths: [
-    { metric: 'Written Working',    icon: '🔢', what: 'Step-by-step working for the stage-matched maths task — method, not just answer.' },
-    { metric: 'Quiz Result',        icon: '✅', what: 'Calculation MCQ with error-based distractors — reveals the exact misconception.' },
-    { metric: 'Score Override',     icon: '✏️', what: 'Override the AI score to apply your professional judgement on partial working.' },
+    { metric: 'Written Working',    icon: <IcoCalc />,    what: 'Step-by-step working for the stage-matched maths task, method not just answer.' },
+    { metric: 'Quiz Result',        icon: <IcoCheck />,   what: 'Calculation MCQ with error-based distractors, reveals the exact misconception.' },
+    { metric: 'Score Override',     icon: <IcoPencil />,  what: 'Override the AI score to apply your professional judgement on partial working.' },
   ],
   english: [
-    { metric: 'Written Response',   icon: '📝', what: 'Creative or analytical piece using language techniques matched to stage.' },
-    { metric: 'Language & Technique Score', icon: '🎨', what: 'AI-assessed against stage-appropriate technique use — review alongside text.' },
-    { metric: 'Written Expression Score',   icon: '✍️', what: 'Sentence structure, vocabulary and cohesion — useful as pre/post comparison.' },
-    { metric: 'Quiz Result',        icon: '✅', what: 'Metalanguage identification question — tests technique knowledge at stage level.' },
+    { metric: 'Written Response',          icon: <IcoDoc />,     what: 'Creative or analytical piece using language techniques matched to stage.' },
+    { metric: 'Language & Technique Score', icon: <IcoQuote />,  what: 'AI-assessed against stage-appropriate technique use, review alongside text.' },
+    { metric: 'Written Expression Score',   icon: <IcoLines />,  what: 'Sentence structure, vocabulary and cohesion, useful as pre/post comparison.' },
+    { metric: 'Quiz Result',               icon: <IcoCheck />,   what: 'Metalanguage identification question, tests technique knowledge at stage level.' },
   ],
   pdhpe: [
-    { metric: 'Written Response',   icon: '📝', what: 'Connects animal behaviour or anatomy to human health, movement or wellbeing.' },
-    { metric: 'Quiz Result',        icon: '✅', what: 'Stage-matched health/movement question — records correct answer and distractor.' },
-    { metric: 'Comparison Score',   icon: '🔗', what: 'How well the student connected animal to human — proxy for understanding, not recall.' },
+    { metric: 'Written Response',   icon: <IcoDoc />,     what: 'Connects animal behaviour or anatomy to human health, movement or wellbeing.' },
+    { metric: 'Quiz Result',        icon: <IcoCheck />,   what: 'Stage-matched health/movement question, records correct answer and distractor.' },
+    { metric: 'Comparison Score',   icon: <IcoCompare />, what: 'How well the student connected animal to human, a proxy for understanding not recall.' },
   ],
 };
 
@@ -133,7 +188,7 @@ const POST_TASKS = {
   ],
   english: [
     {
-      title: 'Observation Piece — Revised & Extended',
+      title: 'Observation Piece: Revised & Extended',
       stages: ['S2', 'S3'],
       format: 'Creative Writing',
       desc: 'Students identify one technique they used in their in-app response, then revise and extend the piece to three paragraphs with peer editing.',
@@ -278,7 +333,7 @@ export default function AssessmentIdeasScreen() {
               <div style={{ display:'flex', flexWrap:'wrap', gap:'0.6rem', marginBottom:'1.75rem' }}>
                 {evidenceItems.map(ev => (
                   <div key={ev.metric} style={{ background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.12)', borderRadius:10, padding:'0.6rem 0.85rem', display:'flex', alignItems:'flex-start', gap:'0.55rem', maxWidth:240 }}>
-                    <span style={{ fontSize:'1rem', lineHeight:1, marginTop:'0.1rem', flexShrink:0 }}>{ev.icon}</span>
+                    <span style={{ display:'flex', alignItems:'center', marginTop:'0.1rem', flexShrink:0, color:'rgba(255,255,255,0.75)' }}>{ev.icon}</span>
                     <div>
                       <div style={{ fontSize:'0.75rem', fontWeight:700, color:'white', marginBottom:'0.15rem' }}>{ev.metric}</div>
                       <div style={{ fontSize:'0.68rem', color:'#A8C4B2', lineHeight:1.5 }}>{ev.what}</div>
@@ -331,8 +386,10 @@ export default function AssessmentIdeasScreen() {
                 style={{ width:'100%', padding:'0.7rem', borderRadius:8, border:'none', background:'linear-gradient(135deg,#1A5238,#2E7D55)', color:'white', fontSize:'0.8rem', fontWeight:700, cursor:'pointer', letterSpacing:'0.03em' }}>
                 Print AT Notification →
               </button>
-              <div style={{ fontSize:'0.65rem', color:'rgba(255,255,255,0.4)', marginTop:'0.5rem', textAlign:'center' }}>
-                {filterKla === 'all' ? 'Science' : activeKla?.label} · Stage {printStage}
+              <div style={{ fontSize:'0.65rem', color:'rgba(255,255,255,0.4)', marginTop:'0.5rem', textAlign:'center', display:'flex', alignItems:'center', justifyContent:'center', gap:'0.3rem' }}>
+                {filterKla === 'all' ? 'Science' : activeKla?.label}
+                <svg width="3" height="3" viewBox="0 0 3 3"><circle cx="1.5" cy="1.5" r="1.5" fill="rgba(255,255,255,0.3)"/></svg>
+                Stage {printStage}
               </div>
             </div>
           </div>
@@ -375,20 +432,25 @@ export default function AssessmentIdeasScreen() {
       <div style={{ maxWidth:1180, margin:'0 auto', padding:'2rem 1.5rem 3rem' }}>
 
         {/* Section heading */}
-        <div style={{ display:'flex', alignItems:'baseline', gap:'1rem', marginBottom:'1.25rem' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', marginBottom:'1.25rem', flexWrap:'wrap' }}>
           <h3 style={{ margin:0, fontSize:'1.1rem', fontWeight:700, color:'#1A1A17' }}>
             Post-Visit Assessment Tasks
           </h3>
-          <span style={{ fontSize:'0.78rem', color:'#6B6B62' }}>
+          <span style={{ display:'flex', alignItems:'center', gap:'0.4rem', fontSize:'0.78rem', color:'#6B6B62' }}>
             {visibleTasks.length} task{visibleTasks.length !== 1 ? 's' : ''}
-            {filterKla !== 'all' ? ` · ${activeKla?.label}` : ''}
-            {filterStage !== 'all' ? ` · Stage ${filterStage}` : ''}
+            {filterKla !== 'all' && <><svg width="3" height="3" viewBox="0 0 3 3"><circle cx="1.5" cy="1.5" r="1.5" fill="#9A9A92"/></svg>{activeKla?.label}</>}
+            {filterStage !== 'all' && <><svg width="3" height="3" viewBox="0 0 3 3"><circle cx="1.5" cy="1.5" r="1.5" fill="#9A9A92"/></svg>Stage {filterStage}</>}
           </span>
         </div>
 
         {visibleTasks.length === 0 && (
           <div style={{ textAlign:'center', padding:'4rem 2rem', color:'#6B6B62' }}>
-            <div style={{ fontSize:'2.5rem', marginBottom:'0.75rem' }}>🔍</div>
+            <div style={{ display:'flex', justifyContent:'center', marginBottom:'0.75rem' }}>
+              <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                <circle cx="21" cy="21" r="14" stroke="#CBD5CC" strokeWidth="2.5"/>
+                <path d="M31 31l10 10" stroke="#CBD5CC" strokeWidth="2.5" strokeLinecap="round"/>
+              </svg>
+            </div>
             <p style={{ margin:0, fontWeight:600 }}>No tasks match that filter combination.</p>
           </div>
         )}
@@ -455,7 +517,12 @@ export default function AssessmentIdeasScreen() {
 
         {/* Footer tip */}
         <div style={{ marginTop:'2rem', background:'white', border:'1px solid #E5E2DA', borderRadius:12, padding:'1rem 1.25rem', display:'flex', gap:'0.85rem', alignItems:'flex-start' }}>
-          <div style={{ fontSize:'1.1rem', flexShrink:0 }}>💡</div>
+          <div style={{ flexShrink:0, marginTop:'0.1rem' }}>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M10 2.5C7.24 2.5 5 4.74 5 7.5c0 1.93.99 3.62 2.5 4.59V15h5v-2.91C14.01 11.12 15 9.43 15 7.5c0-2.76-2.24-5-5-5z" stroke="#D97706" strokeWidth="1.4" strokeLinejoin="round"/>
+              <path d="M7.5 15.5h5M8.5 18h3" stroke="#D97706" strokeWidth="1.4" strokeLinecap="round"/>
+            </svg>
+          </div>
           <div>
             <div style={{ fontWeight:700, color:'#1A1A17', fontSize:'0.83rem', marginBottom:'0.2rem' }}>Using AI scores as evidence</div>
             <p style={{ margin:0, fontSize:'0.77rem', color:'#6B6B62', lineHeight:1.65 }}>
