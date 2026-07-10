@@ -7,6 +7,11 @@ const PHASES = [
     label: 'Before Your Visit',
     steps: [
       {
+        id: 'create-account',
+        title: 'Create a teacher account',
+        body: 'Visit the Taronga Tracka teacher portal and sign in with your school email address. A magic link will be sent to your inbox — click it to verify and access your dashboard.',
+      },
+      {
         id: 'setup-class',
         title: 'Set up your class',
         body: 'Create your class in the teacher portal, selecting the stage and key learning area for your visit. Your class join code is generated instantly.',
@@ -14,7 +19,7 @@ const PHASES = [
       {
         id: 'setup-devices',
         title: 'Set up devices',
-        body: 'Decide whether students will use department devices or Taronga Tracka devices on the day.',
+        body: 'Decide whether students will use department devices or Taronga Tracka devices on the day. Taronga Tracka devices can be booked via the Devices tab in your teacher portal.',
         important: 'Department devices: have students log in at school on the morning of your visit.',
       },
     ],
@@ -27,6 +32,17 @@ const PHASES = [
         id: 'wifi',
         title: 'Connect to Taronga WiFi',
         body: 'Students connect their devices to the Taronga WiFi in the Institute of Science and Learning at the start of your session.',
+      },
+      {
+        id: 'navigate-app',
+        title: 'Open Taronga Tracka',
+        body: 'Taronga Tracka devices: open the Taronga Tracka app. Department devices: open a browser and go to tarongatracka.com.au',
+        url: 'tarongatracka.com.au',
+      },
+      {
+        id: 'join-class',
+        title: 'Join your class',
+        body: 'Students tap Join a Class and enter the student code for your class. The code is shown on the right-hand side of your class card in My Classes on your teacher dashboard.',
       },
       {
         id: 'nicknames',
@@ -92,6 +108,7 @@ export default function TeacherGuideScreen() {
   const [done, setDone] = useState(() => {
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch { return {}; }
   });
+  const [showUrl, setShowUrl] = useState(false);
 
   useEffect(() => {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(done)); } catch { /* ignore */ }
@@ -104,7 +121,19 @@ export default function TeacherGuideScreen() {
   let stepNo = 0;
 
   return (
-    <div className="lms-page">
+    <div className="lms-page" style={{ position:'relative' }}>
+
+      {/* Fullscreen URL overlay */}
+      {showUrl && (
+        <div onClick={() => setShowUrl(false)}
+          style={{ position:'fixed', inset:0, background:'#071E14', zIndex:9999, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', cursor:'pointer' }}>
+          <p style={{ color:'rgba(168,196,178,0.7)', fontSize:'0.8rem', fontWeight:700, letterSpacing:'0.18em', textTransform:'uppercase', marginBottom:'1.5rem' }}>Open in browser</p>
+          <div className="taronga-title" style={{ fontSize:'clamp(2.2rem, 6vw, 5rem)', color:'white', letterSpacing:'0.04em', fontWeight:400, textAlign:'center', padding:'0 1rem' }}>
+            tarongatracka.com.au
+          </div>
+          <p style={{ color:'rgba(255,255,255,0.25)', fontSize:'0.8rem', marginTop:'2.5rem', letterSpacing:'0.06em' }}>Tap anywhere to close</p>
+        </div>
+      )}
 
       {/* Top bar */}
       <div className="lms-topbar">
@@ -206,6 +235,13 @@ export default function TeacherGuideScreen() {
                         <div style={{ flex:1, minWidth:0, paddingBottom: isLastOverall ? 0 : '1.35rem', paddingTop:'0.35rem', opacity: checked ? 0.55 : 1, transition:'opacity 0.25s' }}>
                           <div style={{ fontSize:'0.92rem', fontWeight:700, color:'var(--t-deep)', marginBottom:'0.2rem' }}>{step.title}</div>
                           <p style={{ margin:0, fontSize:'0.79rem', color:'var(--t-charcoal)', lineHeight:1.6 }}>{step.body}</p>
+                          {step.url && (
+                            <button onClick={e => { e.stopPropagation(); setShowUrl(true); }}
+                              style={{ marginTop:'0.55rem', display:'inline-flex', alignItems:'center', gap:'0.4rem', background:'var(--t-deep)', color:'white', border:'none', borderRadius:8, padding:'0.42rem 0.9rem', fontSize:'0.73rem', fontWeight:700, cursor:'pointer', letterSpacing:'0.02em' }}>
+                              <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="1.5" width="13" height="13" rx="2" stroke="currentColor" strokeWidth="1.6"/><path d="M5 5.5h6M5 8h6M5 10.5h4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
+                              Show URL fullscreen
+                            </button>
+                          )}
                           {step.important && (
                             <p style={{ margin:'0.4rem 0 0', fontSize:'0.74rem', color:'#B45309', lineHeight:1.55, fontWeight:600 }}>
                               ⚠ {step.important}
