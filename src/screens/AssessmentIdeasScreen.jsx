@@ -515,21 +515,6 @@ export default function AssessmentIdeasScreen() {
           })}
         </div>
 
-        {/* Footer tip */}
-        <div style={{ marginTop:'2rem', background:'white', border:'1px solid #E5E2DA', borderRadius:12, padding:'1rem 1.25rem', display:'flex', gap:'0.85rem', alignItems:'flex-start' }}>
-          <div style={{ flexShrink:0, marginTop:'0.1rem' }}>
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <path d="M10 2.5C7.24 2.5 5 4.74 5 7.5c0 1.93.99 3.62 2.5 4.59V15h5v-2.91C14.01 11.12 15 9.43 15 7.5c0-2.76-2.24-5-5-5z" stroke="#D97706" strokeWidth="1.4" strokeLinejoin="round"/>
-              <path d="M7.5 15.5h5M8.5 18h3" stroke="#D97706" strokeWidth="1.4" strokeLinecap="round"/>
-            </svg>
-          </div>
-          <div>
-            <div style={{ fontWeight:700, color:'#1A1A17', fontSize:'0.83rem', marginBottom:'0.2rem' }}>Using AI scores as evidence</div>
-            <p style={{ margin:0, fontSize:'0.77rem', color:'#6B6B62', lineHeight:1.65 }}>
-              Every AI score in Class Insights is a starting point, not a final judgement. Use the <strong>score override</strong> on any student's response to apply your own professional marking. The AI rationale and improvement tips feed directly into written feedback or report comments.
-            </p>
-          </div>
-        </div>
       </div>
 
       <style>{`
