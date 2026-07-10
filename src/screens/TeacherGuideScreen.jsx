@@ -103,6 +103,145 @@ const LOCATIONS = [
   { id:'school',   label:'Your School',        available:false },
 ];
 
+function openTeacherGuidePdf() {
+  const origin = window.location.origin;
+  let stepNo = 0;
+
+  const phasesHtml = PHASES.map(phase => {
+    const stepsHtml = phase.steps.map(step => {
+      stepNo += 1;
+      const n = stepNo;
+      return `
+      <div class="step">
+        <div class="step-num">${n}</div>
+        <div class="step-body">
+          <div class="step-title">${step.title}</div>
+          <p class="step-text">${step.body}</p>
+          ${step.url ? `<div class="step-url">${step.url}</div>` : ''}
+          ${step.important ? `<p class="step-important">&#9888; ${step.important}</p>` : ''}
+          ${step.tip ? `<p class="step-tip">&#10022; ${step.tip}</p>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+
+    return `
+    <div class="phase">
+      <div class="phase-hd">
+        <span class="phase-label">${phase.label}</span>
+        <div class="phase-rule"></div>
+      </div>
+      ${stepsHtml}
+    </div>`;
+  }).join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Taronga Tracka — Teacher Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+@font-face {
+  font-family:'TarongaHeadline';
+  src:url('${origin}/images/TarongaHeadline-Regular.ttf') format('truetype');
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+@page{margin:14mm}
+body{font-family:'DM Sans',system-ui,sans-serif;font-size:10pt;line-height:1.65;color:#1A1A17;background:#EDEAE3;-webkit-font-smoothing:antialiased}
+.page{max-width:760px;margin:28px auto;background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 20px 70px rgba(7,30,20,0.15)}
+
+.print-btn{position:fixed;top:18px;right:18px;background:#1A5238;color:#fff;border:none;padding:9px 20px;border-radius:40px;font-family:'DM Sans',sans-serif;font-size:8pt;font-weight:700;letter-spacing:0.06em;cursor:pointer;z-index:999;box-shadow:0 4px 16px rgba(0,0,0,0.18)}
+.print-btn:hover{opacity:0.88}
+
+/* Header */
+.hdr{background:#071E14;padding:32px 44px 24px;position:relative;overflow:hidden}
+.hdr-glow{position:absolute;top:-80px;right:-80px;width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,rgba(46,125,85,0.35) 0%,transparent 70%);pointer-events:none}
+.hdr-inner{display:flex;align-items:center;justify-content:space-between;gap:20px;position:relative}
+.hdr-left{display:flex;align-items:center;gap:14px}
+.hdr-logo{height:44px;width:auto}
+.hdr-brand-name{font-family:'TarongaHeadline','DM Sans',sans-serif;font-size:14pt;font-weight:normal;color:#fff;letter-spacing:0.07em;line-height:1.1}
+.hdr-brand-sub{font-size:7.5pt;color:#A8C4B2;letter-spacing:0.1em;margin-top:3px;text-transform:uppercase}
+.hdr-badge{display:inline-block;background:#1A5238;color:#fff;font-size:7pt;font-weight:800;letter-spacing:0.14em;text-transform:uppercase;padding:5px 14px;border-radius:40px}
+
+/* Body */
+.body{padding:36px 44px 44px}
+.intro{font-size:9.5pt;color:#4A4A42;line-height:1.7;background:#F0F7F3;border-left:3px solid #1A5238;border-radius:0 8px 8px 0;padding:14px 18px;margin-bottom:28px}
+
+/* Phase */
+.phase{margin-bottom:28px}
+.phase-hd{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.phase-label{font-size:6.5pt;font-weight:800;color:#1A5238;text-transform:uppercase;letter-spacing:0.2em;white-space:nowrap}
+.phase-rule{flex:1;height:1px;background:#E8F2EC}
+
+/* Step */
+.step{display:flex;gap:14px;margin-bottom:16px}
+.step:last-child{margin-bottom:0}
+.step-num{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#1A5238,#2E7D55);color:#fff;font-size:9pt;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.step-body{flex:1;padding-top:3px}
+.step-title{font-size:9.5pt;font-weight:700;color:#071E14;margin-bottom:3px}
+.step-text{font-size:8.5pt;color:#4A4A42;line-height:1.6;margin:0}
+.step-url{margin-top:6px;font-family:'TarongaHeadline','DM Sans',sans-serif;font-size:11pt;color:#1A5238;letter-spacing:0.03em}
+.step-important{margin-top:5px;font-size:8pt;color:#B45309;font-weight:600;line-height:1.5}
+.step-tip{margin-top:5px;font-size:8pt;color:#1A5238;font-weight:600;line-height:1.5}
+
+/* Footer */
+.ftr{background:#071E14;padding:18px 44px;display:flex;align-items:center;justify-content:space-between}
+.ftr-left{display:flex;align-items:center;gap:12px}
+.ftr-logo{height:26px;width:auto;opacity:0.9}
+.ftr-div{width:1px;height:18px;background:rgba(168,196,178,0.3)}
+.ftr-name{font-family:'TarongaHeadline','DM Sans',sans-serif;font-size:9.5pt;color:#fff;letter-spacing:0.05em}
+.ftr-right{font-size:7.5pt;color:#4A7C61;text-align:right;line-height:1.6}
+
+@media print{
+  body{background:#fff}
+  .page{max-width:none;margin:0;border-radius:0;box-shadow:none}
+  .print-btn{display:none!important}
+  .hdr,.step-num,.hdr-glow,.hdr-badge,.intro{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .step{page-break-inside:avoid}
+  .phase{page-break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<button class="print-btn" onclick="window.print()">Print / Save PDF</button>
+<div class="page">
+  <div class="hdr">
+    <div class="hdr-glow"></div>
+    <div class="hdr-inner">
+      <div class="hdr-left">
+        <img src="${origin}/images/logo.png" alt="Taronga" class="hdr-logo" onerror="this.style.display='none'">
+        <div>
+          <div class="hdr-brand-name">TARONGA TRACKA</div>
+          <div class="hdr-brand-sub">Teacher Guide · Running Your Session</div>
+        </div>
+      </div>
+      <span class="hdr-badge">Taronga Zoo Sydney</span>
+    </div>
+  </div>
+
+  <div class="body">
+    <p class="intro">This guide walks you through every step of running a Taronga Tracka session — from setting up your class before the visit through to submitting your class at the end. Tick off each step as you go using the interactive checklist in the teacher portal.</p>
+    ${phasesHtml}
+  </div>
+
+  <div class="ftr">
+    <div class="ftr-left">
+      <img src="${origin}/images/logo.png" alt="" class="ftr-logo" onerror="this.style.display='none'">
+      <div class="ftr-div"></div>
+      <span class="ftr-name">Taronga Tracka</span>
+    </div>
+    <div class="ftr-right">Teacher Guide · Taronga Zoo Sydney<br>taronga.org.au · Education Programs</div>
+  </div>
+</div>
+</body>
+</html>`;
+
+  const blob = new Blob([html], { type: 'text/html' });
+  const url  = URL.createObjectURL(blob);
+  const win  = window.open(url, '_blank');
+  if (win) setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+
 export default function TeacherGuideScreen() {
   const { setCurrentScreen } = useApp();
   const [done, setDone] = useState(() => {
@@ -128,7 +267,7 @@ export default function TeacherGuideScreen() {
         <div onClick={() => setShowUrl(false)}
           style={{ position:'fixed', inset:0, background:'#071E14', zIndex:9999, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', cursor:'pointer' }}>
           <p style={{ color:'rgba(168,196,178,0.7)', fontSize:'0.8rem', fontWeight:700, letterSpacing:'0.18em', textTransform:'uppercase', marginBottom:'1.5rem' }}>Open in browser</p>
-          <div className="taronga-title" style={{ fontSize:'clamp(2.2rem, 6vw, 5rem)', color:'white', letterSpacing:'0.04em', fontWeight:400, textAlign:'center', padding:'0 1rem' }}>
+          <div className="taronga-title" style={{ fontSize:'clamp(3.5rem, 10vw, 9rem)', color:'white', letterSpacing:'0.04em', fontWeight:400, textAlign:'center', padding:'0 1rem', lineHeight:1.1 }}>
             tarongatracka.com.au
           </div>
           <p style={{ color:'rgba(255,255,255,0.25)', fontSize:'0.8rem', marginTop:'2.5rem', letterSpacing:'0.06em' }}>Tap anywhere to close</p>
@@ -189,8 +328,15 @@ export default function TeacherGuideScreen() {
                   Taronga Zoo Sydney · Tap each step number as you complete it
                 </p>
               </div>
-              <div style={{ fontSize:'0.74rem', fontWeight:800, color: allDone ? 'var(--t-mid)' : 'var(--t-slate)', background: allDone ? '#D6E9DD' : 'var(--t-foam)', padding:'0.35rem 0.85rem', borderRadius:999, flexShrink:0 }}>
-                {allDone ? 'Ready to track!' : `${doneCount} / ${ALL_STEPS.length}`}
+              <div style={{ display:'flex', alignItems:'center', gap:'0.6rem', flexShrink:0 }}>
+                <button onClick={openTeacherGuidePdf}
+                  style={{ display:'inline-flex', alignItems:'center', gap:'0.4rem', background:'var(--t-deep)', color:'white', border:'none', borderRadius:8, padding:'0.42rem 0.9rem', fontSize:'0.73rem', fontWeight:700, cursor:'pointer', letterSpacing:'0.02em' }}>
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 1v9m0 0L5 7m3 3 3-3M2 12v1a1 1 0 001 1h10a1 1 0 001-1v-1" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  Save as PDF
+                </button>
+                <div style={{ fontSize:'0.74rem', fontWeight:800, color: allDone ? 'var(--t-mid)' : 'var(--t-slate)', background: allDone ? '#D6E9DD' : 'var(--t-foam)', padding:'0.35rem 0.85rem', borderRadius:999 }}>
+                  {allDone ? 'Ready to track!' : `${doneCount} / ${ALL_STEPS.length}`}
+                </div>
               </div>
             </div>
 
