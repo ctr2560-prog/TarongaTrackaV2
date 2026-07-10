@@ -216,6 +216,9 @@ export default function AccessibilityScreen() {
             <button className="lms-nav-item" onClick={() => window.open('/taronga-accessibility-map.pdf', '_blank')}>
               <span className="lms-nav-icon"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 1v9m0 0L5 7m3 3 3-3M2 12v1a1 1 0 001 1h10a1 1 0 001-1v-1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></span> Accessibility Map
             </button>
+            <button className="lms-nav-item" onClick={() => window.open('/taronga-visual-story.pdf', '_blank')}>
+              <span className="lms-nav-icon"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 1v9m0 0L5 7m3 3 3-3M2 12v1a1 1 0 001 1h10a1 1 0 001-1v-1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></span> Visual Story
+            </button>
           </nav>
         </div>
 
