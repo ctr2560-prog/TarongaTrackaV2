@@ -247,3 +247,78 @@ exports.onDeviceBookingCreated = onDocumentCreated(
     }
   }
 );
+
+// ── Weekly mentor report email ────────────────────────────────────────────────
+const MENTOR_REPORT_EMAIL = 'cameron.rodgers3@det.nsw.edu.au';
+
+function buildMentorReportHtml(reportText) {
+  const safe = reportText
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const body = safe.split('\n').map(line => {
+    const l = line.trim();
+    if (!l) return '';
+    if (l.startsWith('- ')) {
+      return `<tr><td style="padding:2px 0 2px 8px;font-size:14px;line-height:1.6;color:#222222;">&bull;&nbsp; ${l.slice(2)}</td></tr>`;
+    }
+    return `<tr><td style="padding:14px 0 4px;font-size:15px;font-weight:bold;color:#0A2F1F;">${l}</td></tr>`;
+  }).join('');
+  return `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Taronga Tracka weekly update</title></head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background:#ffffff;">
+  <table width="100%" cellpadding="0" cellspacing="0">
+    <tr>
+      <td style="background:#0A2F1F;padding:24px 32px;">
+        <p style="margin:0;color:#ffffff;font-size:20px;font-weight:bold;">Taronga Tracka</p>
+        <p style="margin:4px 0 0;color:#a8c8b0;font-size:13px;">Weekly progress update</p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:28px 32px;">
+        <table cellpadding="0" cellspacing="0">${body}</table>
+        <hr style="border:none;border-top:1px solid #dddddd;margin:24px 0 12px;">
+        <p style="margin:0;font-size:12px;color:#666666;">Automated weekly summary generated from the Taronga Tracka project history.</p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
+exports.sendMentorReport = onRequest(
+  { region: 'australia-southeast1', invoker: 'public' },
+  async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type');
+
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    const { token, report, subject } = req.body || {};
+    if (!process.env.MENTOR_REPORT_TOKEN || token !== process.env.MENTOR_REPORT_TOKEN) {
+      res.status(401).json({ error: 'Unauthorised' });
+      return;
+    }
+    if (!report || typeof report !== 'string' || report.length > 20000) {
+      res.status(400).json({ error: 'A report body is required.' });
+      return;
+    }
+
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    try {
+      await resend.emails.send({
+        from: 'Taronga Tracka <noreply@tarongatracka.com.au>',
+        to: MENTOR_REPORT_EMAIL,
+        subject: subject || 'Taronga Tracka — Weekly Update',
+        html: buildMentorReportHtml(report),
+      });
+    } catch (err) {
+      console.error('Mentor report email failed:', err);
+      res.status(500).json({ error: 'Failed to send email.' });
+      return;
+    }
+
+    res.json({ success: true });
+  }
+);
