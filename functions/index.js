@@ -296,7 +296,7 @@ exports.sendMentorReport = onRequest(
     if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
     if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
 
-    const { token, report, subject } = req.body || {};
+    const { token, report, subject, notifyMentor } = req.body || {};
     if (!process.env.MENTOR_REPORT_TOKEN || token !== process.env.MENTOR_REPORT_TOKEN) {
       res.status(401).json({ error: 'Unauthorised' });
       return;
@@ -311,7 +311,7 @@ exports.sendMentorReport = onRequest(
       await resend.emails.send({
         from: 'Taronga Tracka <noreply@tarongatracka.com.au>',
         to: MENTOR_REPORT_EMAIL,
-        cc: MENTOR_REPORT_CC,
+        ...(notifyMentor ? { cc: MENTOR_REPORT_CC } : {}),
         subject: subject || 'Taronga Tracka — Weekly Update',
         html: buildMentorReportHtml(report),
       });
