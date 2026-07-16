@@ -242,7 +242,7 @@ export function openAssessmentTaskNotification(subject, stage, taskType, taskDat
 
   // Content
   const taskTypeLabel    = isPostVisit ? 'Post-Visit Assessment Task' : 'In-Excursion Assessment Task';
-  const submissionMethod = isPostVisit ? 'Written submission to teacher (Part B) + app quiz score (Part A)' : 'Via Taronga Tracka app (quiz + written observation)';
+  const submissionMethod = isPostVisit ? 'Submission to your teacher (format as specified below)' : 'Via Taronga Tracka app (quiz + written observation)';
   const taskTitle        = isPostVisit ? (taskData?.title || 'Post-Visit Task') : 'In-Excursion Observation';
   const taskFormat       = isPostVisit ? (taskData?.format || 'Written') : 'In-app written observation';
   const partBDescription = isPostVisit
@@ -252,31 +252,44 @@ export function openAssessmentTaskNotification(subject, stage, taskType, taskDat
     ? (PART_A_DESC[subject]?.postVisit || PART_A_DESC.science.postVisit)
     : (PART_A_DESC[subject]?.excursion || PART_A_DESC.science.excursion);
 
-  const criteria   = CRITERIA[subject]?.[stageNum] || CRITERIA[subject]?.[4] || [];
+  const criteria = (isPostVisit && taskData?.criteria)
+    ? taskData.criteria
+    : (CRITERIA[subject]?.[stageNum] || CRITERIA[subject]?.[4] || []);
   const nesaVerbs  = NESA_VERBS[subject] || NESA_VERBS.science;
   const outcomes   = (NSW_OUTCOMES[subject]?.[stageNum] || []).slice(0, 3);
   const markPartA  = 5;
   const markPartB  = isPostVisit ? 25 : 15;
-  const markTotal  = markPartA + markPartB;
-  const markingRows = isPostVisit
-    ? (MARKING_POST_VISIT[subject] || MARKING_POST_VISIT.science)
-    : (MARKING_IN_EXCURSION[subject] || MARKING_IN_EXCURSION.science);
+  const markTotal  = isPostVisit ? markPartB : markPartA + markPartB;
+  const markingRows = (isPostVisit && taskData?.marking)
+    ? [
+        { grade: 'A', range: '21–25', desc: taskData.marking[0] },
+        { grade: 'B', range: '16–20', desc: taskData.marking[1] },
+        { grade: 'C', range: '11–15', desc: taskData.marking[2] },
+        { grade: 'D', range: '6–10',  desc: taskData.marking[3] },
+        { grade: 'E', range: '1–5',   desc: taskData.marking[4] },
+        { grade: 'N', range: '0',     desc: 'Non-attempt or non-serious attempt.' },
+      ]
+    : isPostVisit
+      ? (MARKING_POST_VISIT[subject] || MARKING_POST_VISIT.science)
+      : (MARKING_IN_EXCURSION[subject] || MARKING_IN_EXCURSION.science);
 
   // Stage expectations for resources section
   const stageExp = STAGE_EXPECTATIONS[subject]?.[stageNum] || STAGE_EXPECTATIONS[subject]?.[4];
 
-  const resources = isPostVisit ? [
-    'Your written observation recorded in the Taronga Tracka app (Class Insights)',
-    'Class notes and any handouts provided during the excursion',
-    `NSW ${meta.label} syllabus`,
-    'Your textbook and classroom resources',
-    'Teacher-approved websites and reference materials',
-  ] : [
-    'Taronga Tracka app (provided on excursion devices)',
-    'Animal exhibit signage and information panels',
-    'Your excursion workbook (if provided by your teacher)',
-    `Sentence starters: ${(stageExp?.starters || []).join(' / ')}`,
-  ];
+  const resources = (isPostVisit && taskData?.resources)
+    ? taskData.resources
+    : isPostVisit ? [
+        'Your written observation recorded in the Taronga Tracka app (Class Insights)',
+        'Class notes and any handouts provided during the excursion',
+        `NSW ${meta.label} syllabus`,
+        'Your textbook and classroom resources',
+        'Teacher-approved websites and reference materials',
+      ] : [
+        'Taronga Tracka app (provided on excursion devices)',
+        'Animal exhibit signage and information panels',
+        'Your excursion workbook (if provided by your teacher)',
+        `Sentence starters: ${(stageExp?.starters || []).join(' / ')}`,
+      ];
 
   const feedbackInfo = [
     'Your teacher will return your marked work with written comments.',
@@ -932,7 +945,7 @@ body {
       </div>` : ''}
       <div class="meta-field">
         <div class="meta-label">Worth</div>
-        <div class="meta-value">${markTotal} marks total<br><span style="font-size:8pt;font-weight:400;color:#6B6B62">Part A: ${markPartA} marks · Part B: ${markPartB} marks</span></div>
+        <div class="meta-value">${markTotal} marks total${isPostVisit ? '' : `<br><span style="font-size:8pt;font-weight:400;color:#6B6B62">Part A: ${markPartA} marks · Part B: ${markPartB} marks</span>`}</div>
       </div>
     </div>
   </div>
@@ -944,6 +957,19 @@ body {
       <div class="sec-kicker">Task</div>
       <div class="sec-title">${taskTitle}</div>
       <div class="sec-rule"></div>
+      ${isPostVisit ? `
+      <div class="task-desc">${partBDescription}</div>
+      ${(taskData?.steps || []).length ? `
+      <div style="margin-top:20px">
+        <div style="font-size:9pt;font-weight:800;color:${BRAND.forest};text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px">What You Need To Do</div>
+        <div class="feedback-list">
+          ${taskData.steps.map((s, i) => `
+          <div class="feedback-row">
+            <span class="feedback-num">${String(i + 1).padStart(2, '0')}</span>
+            <span>${s}</span>
+          </div>`).join('')}
+        </div>
+      </div>` : ''}` : `
       <p style="font-size:9pt;color:#3D3D38;margin-bottom:16px;line-height:1.65">This task has <strong>two components</strong>. Both parts must be completed to receive full marks.</p>
       <div class="part-block" style="border:1.5px solid ${accentBorder};border-radius:12px;overflow:hidden;margin-bottom:14px">
         <div class="part-hd" style="background:${accentLight};border-bottom:1px solid ${accentBorder};padding:10px 18px;display:flex;align-items:center;gap:12px">
@@ -958,7 +984,7 @@ body {
           <span style="font-size:9pt;font-weight:700;color:${BRAND.forest}">Written Response — ${markPartB} marks</span>
         </div>
         <div style="padding:14px 18px;font-size:9pt;color:${BRAND.charcoal};line-height:1.7">${partBDescription}</div>
-      </div>
+      </div>`}
     </div>
 
     <!-- Assessment Criteria -->
@@ -966,7 +992,11 @@ body {
       <div class="sec-kicker">Assessment Criteria</div>
       <div class="sec-title">What You Will Be Assessed On</div>
       <div class="sec-rule"></div>
-
+      ${isPostVisit ? `
+      <div class="criteria-lead">You will be assessed on how well you:</div>
+      <ul class="criteria-list">
+        ${criteriaHtml}
+      </ul>` : `
       <div style="margin-bottom:18px">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
           <span style="background:${accent};color:#fff;font-size:7pt;font-weight:800;letter-spacing:0.12em;padding:3px 11px;border-radius:20px">PART A</span>
@@ -987,7 +1017,7 @@ body {
         <ul class="criteria-list">
           ${criteriaHtml}
         </ul>
-      </div>
+      </div>`}
     </div>
 
     <!-- NESA Verbs -->
@@ -1095,7 +1125,23 @@ body {
       <div class="sec-kicker">Marking Criteria</div>
       <div class="sec-title">Grade Descriptors — ${markTotal} Marks Total</div>
       <div class="sec-rule"></div>
-
+      ${isPostVisit ? `
+      <table class="mark-table">
+        <thead>
+          <tr>
+            <th>Grade</th>
+            <th>Descriptor</th>
+            <th>Marks</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${markingHtml}
+          <tr class="mark-final-row">
+            <td colspan="2">Total mark</td>
+            <td style="text-align:center">_____ / ${markTotal}</td>
+          </tr>
+        </tbody>
+      </table>` : `
       <!-- Part A marking -->
       <div style="margin-bottom:24px">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
@@ -1159,7 +1205,7 @@ body {
           <td style="background:${BRAND.forest};color:#fff;padding:12px 18px;font-weight:700;font-size:9pt;border-radius:8px 0 0 8px">Total Mark &nbsp;<span style="font-size:8pt;font-weight:400;opacity:0.75">(Part A + Part B)</span></td>
           <td style="background:${BRAND.forest};color:#fff;padding:12px 18px;font-weight:700;font-size:10pt;text-align:center;border-radius:0 8px 8px 0;min-width:110px">_____ / ${markTotal}</td>
         </tr>
-      </table>
+      </table>`}
     </div>
 
   </div><!-- /body -->

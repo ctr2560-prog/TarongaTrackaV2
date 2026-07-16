@@ -120,6 +120,7 @@ export default function ZooSnoozScreen() {
   const [obsText,    setObsText]    = useState('');
   const [obsLock,    setObsLock]    = useState(20);
   const [obsOpen,    setObsOpen]    = useState(false);
+  const [hintsOpen,  setHintsOpen]  = useState(false);
 
   // ── Video ─────────────────────────────────────────────────────────────────
   const [vidReady,      setVidReady]      = useState(false);
@@ -325,6 +326,7 @@ export default function ZooSnoozScreen() {
     setObsText('');
     setObsLock(20);
     setObsOpen(false);
+    setHintsOpen(false);
     setVidReady(false);
     setZzRecording(false);
     setZzCountdown(10);
@@ -725,9 +727,9 @@ export default function ZooSnoozScreen() {
         if (cancelled) { resolve(); return; }
         const end = performance.now() + ms;
         let raf, settled = false;
-        function finish() { if (!settled) { settled = true; resolve(); } }
+        function finish() { if (!settled) { settled = true; if (raf) cancelAnimationFrame(raf); resolve(); } }
         function tick() {
-          if (cancelled) { finish(); return; }
+          if (cancelled || settled) { finish(); return; }
           drawFn();
           if (performance.now() < end) { raf = requestAnimationFrame(tick); } else { finish(); }
         }
@@ -815,18 +817,25 @@ export default function ZooSnoozScreen() {
           await new Promise(resolve => {
             const videoEl = document.createElement('video');
             videoEl.src = videoSrc; videoEl.playsInline = true; videoEl.muted = true; videoEl.preload = 'auto';
-            let rafId = null, abSrc = null, lastFrameTime = 0;
-            const guard = setTimeout(() => { cleanup(); resolve(); }, 15000);
-            function cleanup() {
+            let rafId = null, abSrc = null, lastFrameTime = 0, started = false, done = false;
+            let guard = setTimeout(finish, 20000);
+            function finish() {
+              if (done) return;
+              done = true;
               clearTimeout(guard);
               if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
               if (abSrc) { try { abSrc.stop(); abSrc.disconnect(); } catch(e) {} abSrc = null; }
+              // Release the media element so the browser's decoder pool frees up for the next clip
+              try { videoEl.pause(); videoEl.removeAttribute('src'); videoEl.load(); } catch(e) {}
+              resolve();
             }
-            if (audioDest && audioDecodedBuffers[animal.id]) {
-              try { abSrc = audioCtx.createBufferSource(); abSrc.buffer = audioDecodedBuffers[animal.id]; abSrc.connect(audioDest); abSrc.start(); } catch(e) { abSrc = null; }
+            function startAudio() {
+              if (audioDest && audioDecodedBuffers[animal.id]) {
+                try { abSrc = audioCtx.createBufferSource(); abSrc.buffer = audioDecodedBuffers[animal.id]; abSrc.connect(audioDest); abSrc.start(); } catch(e) { abSrc = null; }
+              }
             }
             function drawFrame() {
-              if (cancelled || videoEl.ended) { cleanup(); resolve(); return; }
+              if (cancelled || done || videoEl.ended) { finish(); return; }
               if (videoEl.paused) { rafId = requestAnimationFrame(drawFrame); return; }
               const now = performance.now();
               if (now - lastFrameTime < 33) { rafId = requestAnimationFrame(drawFrame); return; } // ~30fps cap
@@ -885,10 +894,20 @@ export default function ZooSnoozScreen() {
               }
               rafId = requestAnimationFrame(drawFrame);
             }
-            videoEl.onended = () => { cleanup(); resolve(); };
-            videoEl.onerror = () => { cleanup(); resolve(); };
+            videoEl.onended = finish;
+            videoEl.onerror = finish;
             videoEl.oncanplay = () => {
-              videoEl.play().then(() => { rafId = requestAnimationFrame(drawFrame); }).catch(() => { cleanup(); resolve(); });
+              if (started || done) return;
+              started = true;
+              videoEl.oncanplay = null;
+              videoEl.play().then(() => {
+                // Re-arm the guard around actual playback length; start audio in sync with video
+                clearTimeout(guard);
+                const dur = (isFinite(videoEl.duration) && videoEl.duration > 0) ? videoEl.duration : 12;
+                guard = setTimeout(finish, (dur + 5) * 1000);
+                startAudio();
+                rafId = requestAnimationFrame(drawFrame);
+              }).catch(finish);
             };
             videoEl.load();
           });
@@ -1521,9 +1540,9 @@ export default function ZooSnoozScreen() {
                 {stageData.keeperInsight || zzAnimal.keeperInsight}
               </p>
             </div>
-            <div className="zz-card">
-              <div style={{ color:'var(--zz-muted)', fontSize:'0.78rem', marginBottom:'0.5rem' }}>Your mission</div>
-              <p style={{ color:'var(--zz-text)', fontSize:'0.88rem', lineHeight:1.6, margin:0 }}>{zzAnimal.interaction.instruction}</p>
+            <div style={{ background:'rgba(46,125,85,0.12)', border:'1.5px solid rgba(74,158,107,0.4)', borderRadius:'16px', padding:'1.5rem 1.25rem', textAlign:'center' }}>
+              <div style={{ fontSize:'0.6rem', fontWeight:800, color:'rgba(168,196,178,0.7)', textTransform:'uppercase', letterSpacing:'0.2em', marginBottom:'0.75rem' }}>Your Mission</div>
+              <p style={{ color:'white', fontSize:'1.2rem', fontWeight:700, lineHeight:1.55, margin:0 }}>{zzAnimal.interaction.instruction}</p>
             </div>
             <button onClick={() => setZzPhase('interaction')} className="zz-btn">Begin Mission →</button>
           </div>
@@ -1724,8 +1743,8 @@ export default function ZooSnoozScreen() {
               const rDist      = rs?.totalDist || 0;
               const rMaxSpeed  = rs?.maxSpeed  || 0;
               const rFootfalls = rs?.footfalls || 0;
-              const speedLabel = rMaxSpeed>=0.55?'CHARGE':rMaxSpeed>=0.28?'TROT':rStarted?'WALK':' - ';
-              const speedColor = rMaxSpeed>=0.55?'#FBBF24':rMaxSpeed>=0.28?'#A8C4B2':'#4A9E6B';
+              const speedLabel = rMaxSpeed>=1.2?'CHARGE':rMaxSpeed>=0.5?'TROT':rStarted?'WALK':' - ';
+              const speedColor = rMaxSpeed>=1.2?'#FBBF24':rMaxSpeed>=0.5?'#A8C4B2':'#4A9E6B';
 
               function drawFootprint(ctx, x, y, angle, sn) {
                 ctx.save(); ctx.globalAlpha = 0.42+sn*0.25; ctx.fillStyle = '#1A5238';
@@ -1779,7 +1798,7 @@ export default function ZooSnoozScreen() {
                     const dt=Math.max(16,now-r.lastMoveAt),speed=dist/dt;
                     r.totalDist+=dist; if(speed>r.maxSpeed)r.maxSpeed=speed;
                     r.lastAngle=Math.atan2(dy,dx);
-                    const sn=Math.min(1,speed/0.65);
+                    const sn=Math.min(1,speed/1.5);
                     const colR=Math.round(46+sn*(251-46)),colG=Math.round(158+sn*(191-158)),colB=Math.round(107+sn*(36-107));
                     const col=`rgb(${colR},${colG},${colB})`;
                     r.ctx.save(); r.ctx.strokeStyle=col; r.ctx.lineWidth=11+sn*9; r.ctx.lineCap='round';
@@ -1788,12 +1807,12 @@ export default function ZooSnoozScreen() {
                     r.ctx.save(); r.ctx.strokeStyle=`rgba(255,255,255,${0.05+sn*0.2})`; r.ctx.lineWidth=1.5; r.ctx.lineCap='round';
                     r.ctx.beginPath(); r.ctx.moveTo(r.lastX,r.lastY); r.ctx.lineTo(x,y); r.ctx.stroke(); r.ctx.restore();
                     r.footfallAccum+=dist;
-                    if(r.footfallAccum>=55){
-                      r.footfallAccum-=55; r.footfalls++;
+                    if(r.footfallAccum>=90){
+                      r.footfallAccum-=90; r.footfalls++;
                       drawFootprint(r.ctx,x,y,r.lastAngle+Math.PI/2,sn);
                       r.ctx.save(); r.ctx.strokeStyle=`rgba(${colR},${colG},${colB},0.28)`; r.ctx.lineWidth=1;
-                      r.ctx.beginPath(); r.ctx.arc(x,y,22,0,Math.PI*2); r.ctx.stroke(); r.ctx.restore();
-                      if(now-r.lastVibrateAt>220){r.lastVibrateAt=now;try{navigator.vibrate(sn>0.55?[10,5,10,5,10]:sn>0.28?[25]:[55]);}catch(ex){}}
+                      r.ctx.beginPath(); r.ctx.arc(x,y,28,0,Math.PI*2); r.ctx.stroke(); r.ctx.restore();
+                      if(now-r.lastVibrateAt>380){r.lastVibrateAt=now;try{navigator.vibrate(sn>0.8?[12,6,12,6,12]:sn>0.45?[35]:[70]);}catch(ex){}}
                     }
                     if(r.pathPoints.length<180)r.pathPoints.push([Math.round(x),Math.round(y)]);
                   }
@@ -2331,14 +2350,41 @@ export default function ZooSnoozScreen() {
                   : `Describe what you observe - what is the ${lastName} doing? What do you notice? Then write what the keeper said when you asked them your question.`;
                 return (
                   <>
-                    {/* Prompt + keeper question card */}
+                    {/* Observation prompt */}
                     <div className="zz-card">
-                      <p style={{ color:'var(--zz-text)', fontSize:'0.95rem', lineHeight:1.6, margin:'0 0 0.85rem', fontWeight:600 }}>{obsPrompt}</p>
-                      <div style={{ background:'rgba(46,125,85,0.12)', borderRadius:'10px', padding:'0.7rem 0.85rem', borderLeft:'3px solid rgba(46,125,85,0.55)' }}>
-                        <p style={{ fontSize:'0.6rem', fontWeight:800, color:'rgba(168,196,178,0.9)', textTransform:'uppercase', letterSpacing:'0.12em', margin:'0 0 0.3rem' }}>Then ask a Taronga keeper:</p>
-                        <p style={{ fontSize:'0.84rem', fontStyle:'italic', color:'rgba(255,255,255,0.8)', lineHeight:1.45, margin:'0 0 0.3rem' }}>"{keeperQ}"</p>
-                        <p style={{ fontSize:'0.68rem', color:'rgba(168,196,178,0.6)', margin:0 }}>Include what they tell you in your response below.</p>
-                      </div>
+                      <p style={{ color:'var(--zz-text)', fontSize:'0.95rem', lineHeight:1.6, margin:0, fontWeight:600 }}>{obsPrompt}</p>
+                    </div>
+
+                    {/* Keeper question */}
+                    <div style={{ background:'rgba(46,125,85,0.12)', border:'1.5px solid rgba(74,158,107,0.4)', borderRadius:'12px', padding:'1rem 1.1rem' }}>
+                      <p style={{ fontSize:'0.58rem', fontWeight:800, color:'rgba(168,196,178,0.8)', textTransform:'uppercase', letterSpacing:'0.16em', margin:'0 0 0.45rem' }}>Ask a Taronga keeper</p>
+                      <p style={{ fontSize:'0.92rem', fontStyle:'italic', color:'white', lineHeight:1.5, margin:0 }}>"{keeperQ}"</p>
+                    </div>
+
+                    {/* Hint toggle */}
+                    <div>
+                      <button
+                        onClick={() => setHintsOpen(o => !o)}
+                        style={{ width:'100%', display:'flex', justifyContent:'space-between', alignItems:'center', background:'rgba(46,125,85,0.1)', border:'1px solid rgba(74,158,107,0.3)', borderRadius: hintsOpen ? '10px 10px 0 0' : '10px', padding:'0.65rem 1rem', cursor:'pointer', color:'#4A9E6B', fontWeight:700, fontSize:'0.82rem', textAlign:'left' }}>
+                        <span>Need a hint?</span>
+                        <span style={{ fontSize:'0.7rem', opacity:0.7 }}>{hintsOpen ? '▲' : '▼'}</span>
+                      </button>
+                      {hintsOpen && (
+                        <div style={{ background:'rgba(46,125,85,0.07)', border:'1px solid rgba(74,158,107,0.3)', borderTop:'none', borderRadius:'0 0 10px 10px', padding:'0.75rem 1rem' }}>
+                          {tip.points && tip.points.length > 0 && (
+                            <>
+                              <p style={{ fontSize:'0.65rem', fontWeight:700, color:'#4A9E6B', textTransform:'uppercase', letterSpacing:'0.08em', margin:'0 0 0.35rem' }}>Your response should include:</p>
+                              <ul style={{ margin:'0 0 0.65rem', paddingLeft:'1.1rem', fontSize:'0.8rem', color:'rgba(255,255,255,0.6)', lineHeight:1.8 }}>
+                                {tip.points.map((pt, i) => <li key={i}>{pt}</li>)}
+                              </ul>
+                            </>
+                          )}
+                          <p style={{ fontSize:'0.65rem', fontWeight:700, color:'#4A9E6B', textTransform:'uppercase', letterSpacing:'0.08em', margin:'0 0 0.25rem' }}>Sentence starters:</p>
+                          {tip.starters.map((s, i) => (
+                            <p key={i} style={{ fontSize:'0.78rem', fontStyle:'italic', color:'rgba(255,255,255,0.55)', margin:'0.1rem 0' }}>"{s}"</p>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
                     {/* Textarea */}
@@ -2352,20 +2398,6 @@ export default function ZooSnoozScreen() {
                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:'-0.5rem' }}>
                       <span style={{ color: wordCount >= minWords ? '#4A9E6B' : 'rgba(255,255,255,0.35)', fontSize:'0.75rem', fontWeight:600 }}>{wordCount}/{minWords} words {wordCount >= minWords ? '✓' : ''}</span>
                       <span style={{ fontSize:'0.65rem', color:'rgba(255,255,255,0.3)' }}>Use scientific language to score higher</span>
-                    </div>
-
-                    {/* Scaffold tip */}
-                    <div style={{ background:'rgba(46,125,85,0.08)', border:'1px solid rgba(46,125,85,0.25)', borderRadius:'10px', padding:'0.75rem 0.9rem' }}>
-                      <p style={{ fontSize:'0.65rem', fontWeight:700, color:'rgba(168,196,178,0.85)', textTransform:'uppercase', letterSpacing:'0.1em', margin:'0 0 0.35rem' }}>{tip.header}</p>
-                      {tip.points.length > 0 && (
-                        <ul style={{ margin:'0 0 0.4rem', paddingLeft:'1rem', fontSize:'0.78rem', color:'rgba(255,255,255,0.6)', lineHeight:1.75 }}>
-                          {tip.points.map((pt, i) => <li key={i}>{pt}</li>)}
-                        </ul>
-                      )}
-                      <p style={{ fontSize:'0.68rem', fontWeight:600, color:'rgba(168,196,178,0.7)', margin:'0 0 0.2rem' }}>Sentence starters:</p>
-                      {tip.starters.map((s, i) => (
-                        <p key={i} style={{ fontSize:'0.72rem', color:'rgba(255,255,255,0.5)', margin:'0.1rem 0', paddingLeft:'0.5rem', fontStyle:'italic' }}>"{s}"</p>
-                      ))}
                     </div>
 
                     <button

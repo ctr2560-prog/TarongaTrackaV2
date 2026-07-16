@@ -9,6 +9,7 @@ import { normaliseCode, safeStudentId } from '../utils/helpers';
 import { useApp } from '../context/AppContext';
 import { ZOOSNOOZ_ANIMALS } from '../data/zoosnoozAnimals';
 import { openTeacherInfoSheet } from '../utils/teacherInfoSheet';
+import { openZooSnoozInfoSheet } from '../utils/zoosnoozInfoSheet';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -417,6 +418,11 @@ export default function ClassDetailsScreen() {
             {['science', 'maths', 'pdhpe', 'english'].includes(cls.subject) && (
               <button className="lms-nav-item" onClick={() => openTeacherInfoSheet(cls.subject, cls.stage)}>
                 <span className="lms-nav-icon"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><rect x="3" y="1" width="10" height="14" rx="1.5" stroke="currentColor" strokeWidth="1.5"/><path d="M6 5h4M6 8h4M6 11h2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg></span> Teacher Info Sheet
+              </button>
+            )}
+            {isZZ && (
+              <button className="lms-nav-item" onClick={() => openZooSnoozInfoSheet(cls.stage)}>
+                <span className="lms-nav-icon"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><rect x="3" y="1" width="10" height="14" rx="1.5" stroke="currentColor" strokeWidth="1.5"/><path d="M6 5h4M6 8h4M6 11h2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg></span> ZooSnooz Info Sheet
               </button>
             )}
             {isZZ && (
@@ -858,64 +864,8 @@ export default function ClassDetailsScreen() {
                         <RadarSVG avgB={avgB} avgD={avgD} avgW={avgW} dark={false} labels={isMaths ? ['Method','Accuracy','Comms'] : isPdhpe ? ['Compare','Understand','Comms'] : undefined} />
                       </div>
                     )}
-                    {/* ── Student table ── */}
-                    {isZZ ? (
-                      <div style={{ background:'linear-gradient(160deg,#020D06 0%,#040F08 100%)', borderRadius:'var(--t-r-lg)', border:'1px solid rgba(46,125,85,0.3)', overflow:'hidden', marginBottom:'1.5rem' }}>
-                        <div style={{ padding:'0.75rem 1rem', background:'linear-gradient(135deg,#071E14,#0A2F1F)', borderBottom:'1px solid rgba(46,125,85,0.25)', display:'flex', alignItems:'center', gap:'0.65rem' }}>
-                          <span>🌙</span>
-                          <span style={{ fontSize:'0.85rem', fontWeight:700, color:'white' }}>ZooSnooz Night Program</span>
-                          <span style={{ fontSize:'0.72rem', color:'rgba(184,212,192,0.65)', marginLeft:'auto' }}>{students.length} students · {ZOOSNOOZ_ANIMALS.length} animals</span>
-                        </div>
-                        <div style={{ overflowX:'auto' }}>
-                          <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'0.88rem' }}>
-                            <thead>
-                              <tr style={{ borderBottom:'1px solid rgba(46,125,85,0.25)' }}>
-                                {['Student','Points','Quiz %','Animals','Submitted','Actions'].map(h => (
-                                  <th key={h} style={{ textAlign:h==='Student'?'left':'center', padding:'0.65rem 0.75rem', fontWeight:600, color:'#4A9E6B', fontSize:'0.75rem', textTransform:'uppercase', letterSpacing:'0.05em' }}>{h}</th>
-                                ))}
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {students.length === 0 ? (
-                                <tr><td colSpan={6} style={{ textAlign:'center', padding:'2rem', color:'rgba(184,212,192,0.4)', fontSize:'0.85rem' }}>No students yet.</td></tr>
-                              ) : students.map((s,i) => {
-                                const zzMap = resolveZzData(s);
-                                const completedIds = ZOOSNOOZ_ANIMALS.filter(a => zzMap[a.id]).map(a => a.id);
-                                const completedCount = completedIds.length;
-                                const allDone = completedCount === ZOOSNOOZ_ANIMALS.length;
-                                const zzPts   = s.zzTotalPoints ?? 0;
-                                const correct = completedIds.filter(id => {
-                                  const d = zzMap[id];
-                                  return d.quizCorrect === true || d.quizResults?.[0]?.correctOnFirstAttempt === true;
-                                }).length;
-                                const quizPct = completedCount > 0
-                                  ? Math.round((correct / completedCount) * 100)
-                                  : (s.quizPercentage != null ? s.quizPercentage : null);
-                                return (
-                                  <tr key={i} style={{ borderBottom:'1px solid rgba(46,125,85,0.1)', background: allDone?'rgba(46,125,85,0.08)':i%2===0?'rgba(255,255,255,0.02)':'transparent' }}>
-                                    <td style={{ padding:'0.8rem 0.75rem', color:'#D4EDE0', fontWeight:600 }}>{s.name}{allDone&&<span style={{ marginLeft:'0.4rem', fontSize:'0.6rem', background:'#2E7D55', color:'white', borderRadius:'4px', padding:'0.1rem 0.35rem', fontWeight:700, verticalAlign:'middle' }}>Done</span>}</td>
-                                    <td style={{ padding:'0.8rem 0.75rem', textAlign:'center', fontWeight:700, color:'#A8C4B2' }}>{completedCount>0?zzPts:<span style={{ color:'rgba(255,255,255,0.2)' }}> - </span>}</td>
-                                    <td style={{ padding:'0.8rem 0.75rem', textAlign:'center', fontWeight:600, color:'#4A9E6B' }}>{quizPct!==null?`${quizPct}%`:<span style={{ color:'rgba(255,255,255,0.2)' }}> - </span>}</td>
-                                    <td style={{ padding:'0.8rem 0.75rem', textAlign:'center' }}>
-                                      <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'0.2rem' }}>
-                                        <div style={{ width:'48px', height:'4px', background:'rgba(46,125,85,0.2)', borderRadius:'3px', overflow:'hidden' }}><div style={{ height:'100%', width:`${(completedCount/ZOOSNOOZ_ANIMALS.length)*100}%`, background:'#2E7D55', borderRadius:'3px' }}/></div>
-                                        <span style={{ fontSize:'0.7rem', fontWeight:700, color:'#4A9E6B' }}>{completedCount}/{ZOOSNOOZ_ANIMALS.length}</span>
-                                      </div>
-                                    </td>
-                                    <td style={{ padding:'0.8rem 0.75rem', textAlign:'center', color:'rgba(184,212,192,0.5)', fontSize:'0.82rem' }}>
-                                      {s.completedAt ? new Date(s.completedAt.toDate?.() || s.completedAt).toLocaleDateString('en-AU',{day:'numeric',month:'short'}) : ' - '}
-                                    </td>
-                                    <td style={{ padding:'0.8rem 0.75rem', textAlign:'center' }}>
-                                      {completedCount>0 ? <button onClick={() => setObsModal({...s, isZZ:true})} style={{ background:'rgba(46,125,85,0.18)', color:'#A8C4B2', border:'1px solid rgba(46,125,85,0.35)', padding:'0.25rem 0.55rem', borderRadius:'var(--t-r-xs)', fontSize:'0.75rem', fontWeight:600, cursor:'pointer' }}>View</button> : <span style={{ color:'rgba(255,255,255,0.2)', fontSize:'0.72rem' }}> - </span>}
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    ) : (
+                    {/* ── Student table (day mode) ── */}
+                    {(
                       <div style={{ background:'var(--t-chalk)', borderRadius:'var(--t-r-lg)', boxShadow:'var(--t-shadow-sm)', overflow:'hidden', border:'1px solid var(--t-stone)', marginBottom:'1rem' }}>
                         <div style={{ display:'grid', gridTemplateColumns:'1.4fr 0.6fr 0.6fr 0.6fr 0.85fr 1.4fr 0.75fr 1.1fr', background:'var(--t-forest)', padding:'0.6rem 1rem' }}>
                           {['Student','Points','Badges','Quiz %','Observations','Conservation Statement','Status','Actions'].map(h => (
@@ -1077,6 +1027,65 @@ export default function ClassDetailsScreen() {
                   </div>
                 );
               })()}
+
+              {/* ── ZooSnooz student table ── */}
+              {isZZ && (
+                <div style={{ background:'linear-gradient(160deg,#020D06 0%,#040F08 100%)', borderRadius:'var(--t-r-lg)', border:'1px solid rgba(46,125,85,0.3)', overflow:'hidden', marginBottom:'1.5rem' }}>
+                  <div style={{ padding:'0.75rem 1rem', background:'linear-gradient(135deg,#071E14,#0A2F1F)', borderBottom:'1px solid rgba(46,125,85,0.25)', display:'flex', alignItems:'center', gap:'0.65rem' }}>
+                    <span>🌙</span>
+                    <span style={{ fontSize:'0.85rem', fontWeight:700, color:'white' }}>ZooSnooz Night Program</span>
+                    <span style={{ fontSize:'0.72rem', color:'rgba(184,212,192,0.65)', marginLeft:'auto' }}>{students.length} students · {ZOOSNOOZ_ANIMALS.length} animals</span>
+                  </div>
+                  <div style={{ overflowX:'auto' }}>
+                    <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'0.88rem' }}>
+                      <thead>
+                        <tr style={{ borderBottom:'1px solid rgba(46,125,85,0.25)' }}>
+                          {['Student','Points','Quiz %','Animals','Submitted','Actions'].map(h => (
+                            <th key={h} style={{ textAlign:h==='Student'?'left':'center', padding:'0.65rem 0.75rem', fontWeight:600, color:'#4A9E6B', fontSize:'0.75rem', textTransform:'uppercase', letterSpacing:'0.05em' }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {students.length === 0 ? (
+                          <tr><td colSpan={6} style={{ textAlign:'center', padding:'2rem', color:'rgba(184,212,192,0.4)', fontSize:'0.85rem' }}>No students yet.</td></tr>
+                        ) : students.map((s,i) => {
+                          const zzMap = resolveZzData(s);
+                          const completedIds = ZOOSNOOZ_ANIMALS.filter(a => zzMap[a.id]).map(a => a.id);
+                          const completedCount = completedIds.length;
+                          const allDone = completedCount === ZOOSNOOZ_ANIMALS.length;
+                          const zzPts   = s.zzTotalPoints ?? 0;
+                          const correct = completedIds.filter(id => {
+                            const d = zzMap[id];
+                            return d.quizCorrect === true || d.quizResults?.[0]?.correctOnFirstAttempt === true;
+                          }).length;
+                          const quizPct = completedCount > 0
+                            ? Math.round((correct / completedCount) * 100)
+                            : (s.quizPercentage != null ? s.quizPercentage : null);
+                          return (
+                            <tr key={i} style={{ borderBottom:'1px solid rgba(46,125,85,0.1)', background: allDone?'rgba(46,125,85,0.08)':i%2===0?'rgba(255,255,255,0.02)':'transparent' }}>
+                              <td style={{ padding:'0.8rem 0.75rem', color:'#D4EDE0', fontWeight:600 }}>{s.name}{allDone&&<span style={{ marginLeft:'0.4rem', fontSize:'0.6rem', background:'#2E7D55', color:'white', borderRadius:'4px', padding:'0.1rem 0.35rem', fontWeight:700, verticalAlign:'middle' }}>Done</span>}</td>
+                              <td style={{ padding:'0.8rem 0.75rem', textAlign:'center', fontWeight:700, color:'#A8C4B2' }}>{completedCount>0?zzPts:<span style={{ color:'rgba(255,255,255,0.2)' }}> - </span>}</td>
+                              <td style={{ padding:'0.8rem 0.75rem', textAlign:'center', fontWeight:600, color:'#4A9E6B' }}>{quizPct!==null?`${quizPct}%`:<span style={{ color:'rgba(255,255,255,0.2)' }}> - </span>}</td>
+                              <td style={{ padding:'0.8rem 0.75rem', textAlign:'center' }}>
+                                <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'0.2rem' }}>
+                                  <div style={{ width:'48px', height:'4px', background:'rgba(46,125,85,0.2)', borderRadius:'3px', overflow:'hidden' }}><div style={{ height:'100%', width:`${(completedCount/ZOOSNOOZ_ANIMALS.length)*100}%`, background:'#2E7D55', borderRadius:'3px' }}/></div>
+                                  <span style={{ fontSize:'0.7rem', fontWeight:700, color:'#4A9E6B' }}>{completedCount}/{ZOOSNOOZ_ANIMALS.length}</span>
+                                </div>
+                              </td>
+                              <td style={{ padding:'0.8rem 0.75rem', textAlign:'center', color:'rgba(184,212,192,0.5)', fontSize:'0.82rem' }}>
+                                {s.completedAt ? new Date(s.completedAt.toDate?.() || s.completedAt).toLocaleDateString('en-AU',{day:'numeric',month:'short'}) : ' - '}
+                              </td>
+                              <td style={{ padding:'0.8rem 0.75rem', textAlign:'center' }}>
+                                {completedCount>0 ? <button onClick={() => setObsModal({...s, isZZ:true})} style={{ background:'rgba(46,125,85,0.18)', color:'#A8C4B2', border:'1px solid rgba(46,125,85,0.35)', padding:'0.25rem 0.55rem', borderRadius:'var(--t-r-xs)', fontSize:'0.75rem', fontWeight:600, cursor:'pointer' }}>View</button> : <span style={{ color:'rgba(255,255,255,0.2)', fontSize:'0.72rem' }}> - </span>}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
 
               {/* ── Student Groups (day mode) ── */}
               {!isZZ && students.length > 0 && obsCnt > 0 && (() => {
