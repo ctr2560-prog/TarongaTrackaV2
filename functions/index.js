@@ -250,6 +250,7 @@ exports.onDeviceBookingCreated = onDocumentCreated(
 
 // ── Weekly mentor report email ────────────────────────────────────────────────
 const MENTOR_REPORT_EMAIL = 'cameron.rodgers3@det.nsw.edu.au';
+const MENTOR_REPORT_CC = 'pmaguire@zoo.nsw.gov.au';
 
 function buildMentorReportHtml(reportText) {
   const safe = reportText
@@ -310,6 +311,7 @@ exports.sendMentorReport = onRequest(
       await resend.emails.send({
         from: 'Taronga Tracka <noreply@tarongatracka.com.au>',
         to: MENTOR_REPORT_EMAIL,
+        cc: MENTOR_REPORT_CC,
         subject: subject || 'Taronga Tracka — Weekly Update',
         html: buildMentorReportHtml(report),
       });
