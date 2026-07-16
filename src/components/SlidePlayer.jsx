@@ -360,7 +360,7 @@ function BrainBreakSlide({ slide }) {
 // ─── Applied Learning / Planning slide ───────────────────────────────────────
 
 const PRE_INSTRUCTIONS = [
-  'Look at the Taronga zoo map on your device or on the board — find the enclosures you\'ll visit today.',
+  'Look at the Taronga zoo map on your device or on the board — find the enclosures you\'ll visit on the excursion.',
   'In your exercise book or on the planning sheet, write down 3 animals you most want to observe.',
   'For each animal, write ONE specific thing you will focus on — a behaviour, a feature, or a question.',
   'Open Taronga Tracka and check your student code is working before you leave school.',

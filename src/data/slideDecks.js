@@ -18,7 +18,7 @@ const BRAIN_BREAKS = [
   },
   {
     name: 'Safari Sketch',
-    instruction: 'You have exactly 60 seconds to draw an animal from today\'s visit. No words — just drawing. Show the class and see who can guess it fastest. Most creative wins!',
+    instruction: 'You have exactly 60 seconds to draw a Taronga Zoo animal. No words — just drawing. Show the class and see who can guess it fastest. Most creative wins!',
   },
   {
     name: 'Conservation Countdown',
@@ -42,7 +42,7 @@ const BRAIN_BREAKS = [
   },
   {
     name: 'Zoo Emoji',
-    instruction: 'Using only emojis (or quick sketches if no device), describe an animal you observed at the zoo today. Show a partner — can they decode your message and name the animal?',
+    instruction: 'Using only emojis (or quick sketches if no device), describe an animal from Taronga Zoo. Show a partner — can they decode your message and name the animal?',
   },
 ]
 
@@ -141,7 +141,7 @@ const CONTENT = {
       ],
       exitPre: [
         'Name one animal you already know about and describe one feature that helps it survive.',
-        'What question do you most want to answer at the zoo tomorrow?',
+        'What question do you most want to answer on the excursion?',
       ],
       exitPost: [
         'Name one feature of the animal you observed and explain WHY it helps the animal survive.',
@@ -531,7 +531,7 @@ const CONTENT = {
         'Choose 4 animals from your Taronga visit. Create a data poster showing: a tally chart of their features, a column or picture graph comparing a measurement (height, mass, or lifespan), and one number pattern you found in the data. Present your poster and explain what your data tells us.',
       ],
       exitPre: [
-        'Write one thing you could count or measure at the zoo tomorrow.',
+        'Write one thing you could count or measure on the excursion.',
         'Continue this pattern: 5, 10, 20, 40, ___, ___ — what is the rule?',
       ],
       exitPost: [
@@ -715,7 +715,7 @@ const CONTENT = {
         },
       ],
       preChecklist: [
-        'Review algebraic substitution — you\'ll use the Tracka scoring formula today',
+        'Review algebraic substitution — you\'ll use the Tracka scoring formula at the zoo',
         'Design a data collection sheet to record your score per animal',
         'Think about: what financial decisions does a zookeeper make daily?',
         'Estimate: what does it cost to feed a large mammal for one year?',
@@ -892,7 +892,7 @@ const CONTENT = {
         {
           heading: 'Sharing Our Best Sentences',
           bullets: [
-            'The best way to improve as a writer is to study writing that works — and today we have a whole classroom full of real animal observations to learn from. Read your favourite sentence from your Tracka observation aloud: the class will identify what made it powerful — was it a strong verb, a precise adjective, a specific physical detail, or an unexpected comparison that brought the animal to life in an unexpected way?',
+            'The best way to improve as a writer is to study writing that works — and we now have a whole classroom full of real animal observations from the excursion to learn from. Read your favourite sentence from your Tracka observation aloud: the class will identify what made it powerful — was it a strong verb, a precise adjective, a specific physical detail, or an unexpected comparison that brought the animal to life in an unexpected way?',
             'After each sentence is shared, the class will find the single strongest word choice and add it to our class verb and adjective wall. Then everyone will take one sentence from their own observation and upgrade it using a suggestion or technique they\'ve noticed in a classmate\'s writing — because the goal is not just to celebrate what\'s already good, but to get better at making deliberate language choices.',
           ],
         },
@@ -1314,10 +1314,10 @@ const CONTENT = {
       ],
       exitPre: [
         'Write one way your health needs are similar to an animal\'s and one way they are different.',
-        'Which animal movement do you most want to observe tomorrow and why?',
+        'Which animal movement do you most want to observe on the excursion and why?',
       ],
       exitPost: [
-        'Name one movement you saw an animal doing today. Explain WHY you think it was moving that way.',
+        'Name one movement you saw an animal doing at Taronga Zoo. Explain WHY you think it was moving that way.',
         'Write one way your health is similar to an animal\'s health and one way it is different.',
       ],
     },
@@ -1414,7 +1414,7 @@ const CONTENT = {
         'Name one biomechanical term and describe how you could observe it in an animal\'s movement.',
       ],
       exitPost: [
-        'Describe one animal movement you observed today using at least two biomechanical terms.',
+        'Describe one animal movement you observed at Taronga Zoo using at least two biomechanical terms.',
         'Explain in two sentences how protecting this animal\'s habitat could benefit human health.',
       ],
     },
@@ -1533,7 +1533,7 @@ const CONTENT = {
           'What makes advocacy evidence-based? How is evidence-based advocacy fundamentally different from advocacy that relies primarily on emotional appeal — and are they ever in tension?',
           'When you use Taronga Tracka to record your observation, you are producing knowledge within an institution\'s framework. Whose knowledge does the scoring system privilege — and what types of animal knowledge does it structurally marginalise?',
         ],
-        trackaNotes: 'At Stage 5, your Tracka data is the starting point for a rigorous investigation, not an end in itself. Record your observation with the biomechanical question you formed today clearly in mind. After the visit you\'ll use your observation as evidence in a critical advocacy project examining both performance and equity dimensions of conservation.',
+        trackaNotes: 'At Stage 5, your Tracka data is the starting point for a rigorous investigation, not an end in itself. Record your observation with the biomechanical question you formed in this lesson clearly in mind. After the visit you\'ll use your observation as evidence in a critical advocacy project examining both performance and equity dimensions of conservation.',
         teacherNote: 'At Stage 5, students should arrive at the zoo with a specific analytical question in each domain — biomechanical, equity and advocacy. This pre-framing is essential for a rich, purposeful investigation rather than general observation.',
       },
       postDiscussion: {

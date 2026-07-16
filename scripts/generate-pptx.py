@@ -39,13 +39,13 @@ SUBJ_LABELS = {
 ANIMALS = ['Tiger', 'Lion', 'Giraffe', 'Gorilla', 'Chimpanzee', 'Dingo', 'Koala', 'Sea Lion']
 BRAIN_BREAKS = [
     ('Animal Charades', 'Split into pairs. One person acts out an animal from Taronga Zoo — no sounds! Can your partner guess in 30 seconds?'),
-    ('Safari Sketch', 'You have 60 seconds to draw an animal from today\'s visit. Show your class and see if they can guess it!'),
+    ('Safari Sketch', 'You have 60 seconds to draw a Taronga Zoo animal. Show your class and see if they can guess it!'),
     ('Conservation Countdown', 'Stand up! Call out one fact about any Taronga animal. Sit down once you\'ve shared. Keep going until everyone is seated.'),
     ('Animal Alphabet', 'Starting from A, take turns naming an animal. Skip a letter and you\'re out! How far can the class get?'),
     ('Keeper Questions', 'Imagine you\'re a zookeeper. What are three questions you\'d ask to learn more about an animal\'s health?'),
     ('Habitat Hustle', 'On the count of 3, everyone move like you\'re in a jungle / ocean / savanna / rainforest — teacher calls the habitat!'),
     ('Species Showdown', 'Two animals enter, one wins. Vote: which animal has the BEST adaptation for survival — and defend your answer!'),
-    ('Zoo Emoji', 'Using only emojis, describe an animal you saw today. Show a partner — can they decode your message?'),
+    ('Zoo Emoji', 'Using only emojis, describe an animal from Taronga Zoo. Show a partner — can they decode your message?'),
 ]
 
 # ─── Content database ───────────────────────────────────────────────────────
@@ -329,7 +329,7 @@ CONTENT = {
                 ('Emotional wellbeing', ['Did you see any animals that seemed stressed or bored?', 'What does enrichment mean for zoo animals? (puzzle feeders, new objects, social time)', 'Humans need enrichment too! What\'s YOUR version of enrichment?', 'Discuss: how does school provide enrichment for your brain and body?']),
             ],
             'action': ('Health & Movement Poster', 'Create an A3 poster comparing the health and movement needs of one Taronga Zoo animal to a human. Include: 3 types of movement each animal/human does and why, 2 emotions shown through body language, a "day in the life" comparing the animal\'s routine to yours, and one thing YOU could do to support this animal\'s health (donate, raise awareness, change a habit). Make it colourful and include drawings or printed images.'),
-            'exit_q': ['Name one movement you saw an animal doing today. Why do you think it was moving that way?', 'Write one way your health is similar to an animal\'s health and one way it\'s different.'],
+            'exit_q': ['Name one movement you saw an animal doing at Taronga Zoo. Why do you think it was moving that way?', 'Write one way your health is similar to an animal\'s health and one way it\'s different.'],
         },
         3: {
             'topic': 'Physical Activity, Movement Skills & Health Choices',
@@ -350,7 +350,7 @@ CONTENT = {
                 ('Movement reflection', ['Review your Tracka observation — which aspect of movement did you describe best?', 'Upgrade one sentence using a biomechanical term (leverage, momentum, equilibrium)', 'Share: what was the most surprising movement behaviour you observed?']),
             ],
             'action': ('Animal-Inspired Movement Program', 'Design a 4-week movement/fitness program for Stage 3 students inspired by 4 animals from Taronga Zoo. For each week/animal: describe the animal\'s key movement quality, design 3 fitness activities inspired by this movement (with diagrams), explain the health benefit of this type of movement for humans, and link to the "One Health" concept. Present as a program booklet with a cover page, animal images, clear instructions, and a conclusion about the connection between wildlife and human health.'),
-            'exit_q': ['Describe one animal movement you observed today using at least two biomechanical terms.', 'Explain in two sentences how protecting this animal\'s habitat could benefit human health.'],
+            'exit_q': ['Describe one animal movement you observed at Taronga Zoo using at least two biomechanical terms.', 'Explain in two sentences how protecting this animal\'s habitat could benefit human health.'],
         },
         4: {
             'topic': 'Movement Concepts, Fitness & Health Advocacy',
@@ -557,7 +557,7 @@ def make_video_slide(prs, subject, timing, subj_color):
              size=20, bold=True, color=C_WHITE, align=PP_ALIGN.CENTER)
 
     if timing == 'pre':
-        vid_desc = 'Insert a short clip introducing the animals students will observe today.\nSuggested: Taronga keeper video, National Geographic clip, or animal documentary excerpt.\nAim for 2–4 minutes — pause at key moments to discuss.'
+        vid_desc = 'Insert a short clip introducing the animals students will observe on the excursion.\nSuggested: Taronga keeper video, National Geographic clip, or animal documentary excerpt.\nAim for 2–4 minutes — pause at key moments to discuss.'
     else:
         vid_desc = 'Insert a short clip reviewing the animals students observed at the zoo.\nSuggested: student video from the visit, Taronga social media, or conservation documentary.\nAim for 2–4 minutes — use as a reflection anchor.'
 
