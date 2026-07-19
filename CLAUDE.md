@@ -52,15 +52,20 @@ taronga-tracka-vite/
 │   │   ├── animalsMaths.js       # Maths subject animal configs
 │   │   ├── animalsPdhpe.js       # PDHPE subject animal configs
 │   │   ├── tigerMCQ.js           # Tiger MCQ data
+│   │   ├── subjectMeta.js        # SUBJ_META, STAGES, prePostDocId(), toCanvaEmbedUrl() — shared by admin Pre/Post tab + Resource Hub
 │   │   └── nswPublicSchools.json # School name autocomplete list
 │   └── utils/
-│       ├── teacherInfoSheet.js   # EXHIBITS, SCORING, STAGE_EXPECTATIONS, NSW_OUTCOMES
-│       ├── scoring.js            # buildObservationScore + subject variants
-│       └── helpers.js            # normaliseCode, safeStudentId, getMinWords, isLowQualityResponse
+│       ├── teacherInfoSheet.js         # EXHIBITS, SCORING, STAGE_EXPECTATIONS, NSW_OUTCOMES
+│       ├── scoring.js                  # buildObservationScore + subject variants
+│       ├── helpers.js                  # normaliseCode, safeStudentId, getMinWords, isLowQualityResponse
+│       └── assessmentTaskNotification.js  # Generates unique printable AT Notification docs per task
 ├── functions/
-│   └── index.js              # Cloud Functions: sendMagicLink, onDeviceBookingCreated
+│   └── index.js              # Cloud Functions: sendMagicLink, onDeviceBookingCreated, sendMentorReport
+├── scripts/
+│   └── generate-pptx.py      # Builds 32 downloadable PPTX lesson decks — legacy, not wired into the app anymore (see Pre/Post-Visit Lessons section)
 ├── public/                   # Static assets served as-is
 │   ├── images/               # logo.png, taronga-zoo-white.png, animal photos, map
+│   ├── resources/pptx/       # 32 generated PPTX lesson decks (pre/post × subject × stage)
 │   └── *.pdf                 # Venue safety, accessibility PDFs
 ├── firestore.rules
 ├── firebase.json             # Hosting, Functions, Firestore config
@@ -154,6 +159,7 @@ The staff portal uses code-based login (no Firebase Auth), so **any collection t
 | `zoosnooz_docs/{docId}` | ZooSnooz portal/NFC summary records — doc ID: `{classCode}_{studentId}` |
 | `deviceBookings/{bookingId}` | Tracka device booking calendar entries |
 | `resources/{docId}` | (Reserved for future resource library) |
+| `prePostLinks/{subject}_{stage}_{timing}` | Admin-managed Canva pre/post-visit lesson links — see Pre/Post-Visit Lessons section |
 
 ### ZooSnooz student data location
 ZooSnooz per-animal data lives on the **student document** at `classes/{classCode}/students/{studentId}` under the `zoosnooz` field:
@@ -174,6 +180,7 @@ A summary is also written to `zoosnooz_docs/{classCode}_{studentId}` for the NFC
 |---|---|---|
 | `sendMagicLink` | HTTPS (public) | Generates Firebase email sign-in link, sends via Resend |
 | `onDeviceBookingCreated` | Firestore `onDocumentCreated` on `deviceBookings/{id}` | Emails `ctr2560@gmail.com` with booking details |
+| `sendMentorReport` | HTTPS (public, token-gated via `MENTOR_REPORT_TOKEN` env var) | Sends the weekly mentor report email to `ctr2560@gmail.com` — see Weekly Mentor Report Automation section |
 
 Deploy: `firebase deploy --only functions`
 
@@ -270,6 +277,56 @@ Do not create a `storage.rules` file locally without also wiring it into `fireba
 
 ---
 
+## Assessment Ideas & AT Notifications
+
+`AssessmentIdeasScreen.jsx` (screen: `assessmentIdeas`, launched from `teacherDashboard`) gives teachers two things per subject/stage: **in-app evidence** (what Tracka already captures — quiz + observation) and **post-visit tasks** — a curated bank of 20 hand-written tasks (5 per subject × 4 subjects: science, maths, english, pdhpe) defined in `POST_TASKS` inside the screen file.
+
+Each task in `POST_TASKS` carries:
+- `title`, `stages`, `format`, `desc`, `appLink` — the task card shown in the UI
+- `steps` — 4–6 numbered "What You Need To Do" instructions, student-facing, unique per task
+- `criteria` — 3 task-specific assessment criteria
+- `marking` — 5 grade descriptors (A–E) unique to the task
+- `resources` — a resources list unique to the task
+
+**`assessmentTaskNotification.js`** (`openAssessmentTaskNotification(subject, stage, taskType, taskData)`) generates a printable, branded HTML document opened in a new tab (blob URL, same pattern as `teacherInfoSheet.js` and `TeacherGuideScreen.jsx`'s PDF export).
+
+- `taskType: 'in-excursion'` → generic per-subject quiz+observation document (Part A quiz / Part B written, using `CRITERIA`/`MARKING_IN_EXCURSION`/`IN_EXCURSION_DESC` lookup tables).
+- `taskType: 'post-visit'` → **unique document per task**, built entirely from `taskData` (the specific `POST_TASKS` entry): task description, "What You Need To Do" steps, task-specific criteria, and a single A–E marking table out of 25 marks — **no quiz/Part A structure at all**, since post-visit tasks aren't quiz-based.
+
+**Gotcha:** these are two structurally different documents (excursion = two-part quiz+written; post-visit = single task, single mark scheme). Don't assume they share a template beyond the shared header/footer/declaration/feedback sections.
+
+---
+
+## Pre/Post-Visit Lessons — Canva Embed Links (replaced the old in-app slide decks, 2026-07-19)
+
+The old 32 in-app slide decks (`src/data/slideDecks.js` + `SlidePlayer.jsx`) were **removed entirely**. Cameron builds the actual lesson content himself in Canva; the app now just stores and surfaces Canva share links.
+
+- **Firestore collection**: `prePostLinks/{subject}_{stage}_{timing}` (e.g. `science_4_pre`) — fields: `subject`, `stage`, `timing` (`'pre'|'post'`), `title`, `description`, `canvaUrl`, `updatedAt`. Rules are open read/write (`firestore.rules`) since the staff portal is code-based with no Firebase Auth, same pattern as other staff-managed collections.
+- **Admin side**: `PrePostLinksTab` in `AdminDashboardScreen.jsx` (tab id `prePost`, label "Pre/Post Lessons"). One row per NSW stage (2–5) × subject tab, each row has Pre-Visit / Post-Visit mini-forms (title, description, Canva URL, Save). Saving with a blank URL deletes the Firestore doc — that's the mechanism that hides a subject/stage from teachers.
+- **Teacher side**: `ResourceHubScreen.jsx` fetches `prePostLinks` on mount and only renders cards for docs that have a non-empty `canvaUrl` — teachers never see a subject/stage until Cameron has saved a link for it. Filter pills (When/KLA/Stage) are derived from whatever lessons actually exist, not a fixed list.
+- **Presenting**: clicking a card opens `CanvaEmbedPlayer` (bottom of `ResourceHubScreen.jsx`), a full-screen overlay with an `<iframe>`. `toCanvaEmbedUrl()` in `src/data/subjectMeta.js` appends `?embed` (or `&embed`) to the saved Canva share link if not already present — Canva's iframe embed requires that param. There's also an "Open in Canva ↗" link in the overlay header as a fallback.
+- **Shared metadata**: `src/data/subjectMeta.js` holds `SUBJ_META` (subject colors/labels), `STAGES`, `prePostDocId()`, `toCanvaEmbedUrl()`, and `IMAGE_LIBRARY` (curated list of existing `public/images/*` photos, grouped by category) — imported by both the admin tab and the Resource Hub so subject styling stays consistent.
+- **Card image picker**: each Pre/Post entry in the admin tab has an optional `image` field (stored on the `prePostLinks` doc) chosen from `IMAGE_LIBRARY` via a thumbnail grid picker (no upload — just existing on-file assets). If set, `LessonCard` in `ResourceHubScreen.jsx` renders it as the card's background photo instead of the plain subject-color gradient. To add a new pickable image, just add an entry to `IMAGE_LIBRARY` in `subjectMeta.js` pointing at a file already in `public/images/`.
+- **`IMAGE_LIBRARY` has 3 categories**: "Mission Animals" (the app's own `/images/{animalId}.jpg` assets, also used by missions elsewhere), "More Zoo Animals (stock)" (10 supplementary species not tied to any mission — elephant, meerkat, snow leopard, red panda, Tasmanian devil, echidna, wombat, platypus, Komodo dragon, Galápagos tortoise — sourced from Wikimedia Commons under CC licenses, files named `stock-*.jpg`, attribution in `public/images/STOCK_CREDITS.md`), and "Zoo & Habitat" (location/map shots). Real official Taronga Zoo photography wasn't used for the stock set since those are copyrighted zoo assets, not freely licensed — Wikimedia Commons CC-licensed wildlife photos were used instead as the closest safe substitute. If Cameron gets actual licensed Taronga photos later, they can just be dropped into `public/images/` and added to `IMAGE_LIBRARY` the same way.
+- **`generate-pptx.py` / `public/resources/pptx/`** are untouched leftovers from the old deck system — not wired into anything in-app anymore, left as-is (out of scope for this change, ask before touching).
+
+### PPTX export — `scripts/generate-pptx.py` — STALE, diverged from the in-app decks
+This Python script builds the 32 downloadable PowerPoint files in `public/resources/pptx/`. It has its **own independent, older copy** of the content (`CONTENT` dict in the script, not sourced from `slideDecks.js`). It predates the discussion-slide/mini-overview/reflection-activity rework above — it still uses the old project-brief `action` field, has no `app-preview` or proper `discussion` slide, and its brain breaks/content are the earlier, less-refined versions. **Do not assume it matches the in-app experience.** Bringing it into parity is a full rewrite of comparable size to the in-app rework — this was deferred by explicit user decision (2026-07-19); ask before investing in it. To regenerate after any future edits: `python3 scripts/generate-pptx.py` (writes into `public/resources/pptx/`, needs a rebuild + deploy to go live).
+
+---
+
+## Weekly Mentor Report Automation
+
+Cameron gets a weekly dot-point progress email summarising the week's Taronga Tracka work, for his own review and to copy-paste to his mentor.
+
+- **Cloud Function**: `sendMentorReport` in `functions/index.js` — accepts `{ token, subject, report }`, sends via Resend to `ctr2560@gmail.com` only (no DET/mentor address — those were tried and abandoned, see below). `buildMentorReportHtml()` wraps the plain-text report in a branded template with the Taronga logo (right-aligned, 72px) in the header banner and a "For the Wild" lockup in the footer banner, opens with "Hi Paul,", and uses `bgcolor` attributes + `color-scheme`/`supported-color-schemes` meta tags to survive Outlook's dark-mode colour remapping when pasted. No automation-disclosure footer — the whole email is designed to be select-all-copied straight into a new email to his mentor.
+- **Where it actually runs**: **locally on Cameron's Mac**, not in the cloud. `~/.taronga-mentor-report/generate-and-send.sh` does `git log --since="7 days ago"` on the repo, invokes `claude -p` (headless mode, `--allowedTools`, `--dangerously-skip-permissions`) to turn the commit log into non-technical dot points, then POSTs to the Cloud Function. Scheduled via a macOS `launchd` job at `~/Library/LaunchAgents/com.tarongatracka.mentorreport.plist`, firing **Friday 7:30am** local time. Logs to `~/.taronga-mentor-report/last-run.log`.
+- **Why not a cloud routine**: the first attempt used a claude.ai scheduled routine (RemoteTrigger), but the cloud sandbox couldn't make any outbound network call at all (not even to the Firebase function directly) — every scheduled/manual test fired the agent but zero requests ever reached Resend. Moved to local `launchd` + headless `claude -p`, which has full network access since it runs on Cameron's own machine already trusted for `git push` etc. **Caveat**: only fires if the Mac is on and awake at 7:30am Friday — it does not queue/catch up if missed.
+- **Manual run**: `bash ~/.taronga-mentor-report/generate-and-send.sh` — same script the scheduled job uses, so a manual run and the Friday run always produce identical results. Also runnable via the `/mentor-report` slash command (`~/.claude/commands/mentor-report.md`, installed at user level so it works regardless of launch directory).
+- **DET email history**: originally sent to `cameron.rodgers3@det.nsw.edu.au` and CC'd `pmaguire@zoo.nsw.gov.au` directly. Resend reported "delivered" but nothing arrived — a strict education/government mail gateway silently accepting-then-dropping mail from an unfamiliar sending domain is the likely cause. Abandoned in favour of Gmail-only + manual copy-paste.
+
+---
+
 ## Key Screens
 
 ### Student flow
@@ -312,15 +369,16 @@ ZooSnooz internal screens (`zzScreen` values): `map` → `animal` (phases: insig
 | `createClass` | `CreateClassScreen.jsx` | Create class form; sets stage, subject, session type, access code |
 | `classDetails` | `ClassDetailsScreen.jsx` | Per-class analytics, student list, RadarSVG, ZooSnooz data, info sheet |
 | `teacherGuide` | `TeacherGuideScreen.jsx` | Timeline checklist, 4 phases, tap-to-tick, localStorage progress |
+| `assessmentIdeas` | `AssessmentIdeasScreen.jsx` | In-app evidence + 20 post-visit tasks per subject; generates unique printable AT Notification docs |
 | `teacherMap` | `TeacherMapScreen.jsx` | Zoo map with student pins, zoom in/out, starts at 0.8 scale |
 | `curriculumAlignment` | `CurriculumAlignmentScreen.jsx` | NSW outcomes, exhibit flip cards, by subject/stage |
-| `resourceHub` | `ResourceHubScreen.jsx` | Downloadable resource list with search + category filter |
+| `resourceHub` | `ResourceHubScreen.jsx` | Canva-embedded pre/post-visit lessons (admin-managed via `prePostLinks`) + downloadable static resource list |
 | `excursionPlan` | `ExcursionPlanScreen.jsx` | 9 flip-tile planning checklist with real links |
 | `deviceBooking` | `DeviceBookingScreen.jsx` | Teacher-facing device calendar wrapper |
 | `accessibility` | `AccessibilityScreen.jsx` | 6-need accessibility guide, pre-visit checklist, PDF downloads |
 | `conservationGallery` | `ConservationGalleryScreen.jsx` | Polaroid masonry wall of approved submissions |
 | `adminLogin` | `AdminLoginScreen.jsx` | Staff access code entry |
-| `adminDashboard` | `AdminDashboardScreen.jsx` | Staff portal: 5 tabs — Overview, Classes, Challenges, Feedback, Bookings |
+| `adminDashboard` | `AdminDashboardScreen.jsx` | Staff portal: Overview, Analytics, ZooSnooz, Review, Pre/Post Lessons, Challenges, Bookings, Users, Control Room tabs |
 | `adminClassView` | `AdminClassViewScreen.jsx` | Staff view of a specific class's detail |
 | `publicEntry` | `PublicEntryScreen.jsx` | Public mode entry — alias only, no class code; sets `appMode='public'` |
 | `publicAnimal` | `PublicAnimalScreen.jsx` | Public animal info card |
@@ -561,3 +619,11 @@ The `dist/` folder is the hosting target. Always run `npm run build` before `fir
 13. **ZooSnooz data is duplicated** — animal scores live on the student doc under `zoosnooz.{animalId}` AND a summary is written to `zoosnooz_docs/{classCode}_{studentId}`. Keep both in sync when modifying the submission flow.
 
 14. **`docViewCode` triggers DocumentaryViewer** — set `docViewCode` in AppContext to render the souvenir card screen. Clearing it (set to `null`) returns to the normal app. The NFC URL format is `zzv_{animalId}_{classCode}_{studentId}`.
+
+15. **Post-visit AT Notification docs are per-task, not per-subject.** `openAssessmentTaskNotification(..., 'post-visit', taskData)` must always be called with the full `POST_TASKS` entry as `taskData` — it has no generic post-visit fallback content the way the in-excursion path does. If a task is added to `POST_TASKS` without `steps`/`criteria`/`marking`/`resources`, the generated document will silently render with missing sections.
+
+16. **Pre/post-visit lesson content is now entirely Canva-based, built by Cameron.** The old class-agnostic-content constraint applied to the removed in-app slide decks; it no longer applies since the app just embeds whatever Canva design is linked.
+
+17. **`generate-pptx.py` / `public/resources/pptx/` are legacy and disconnected.** They predate the Canva-embed Pre/Post-Visit Lessons system and aren't referenced anywhere in-app anymore. Don't assume editing one affects the other.
+
+18. **The mentor report script (`~/.taronga-mentor-report/generate-and-send.sh`) lives outside the repo**, in the user's home directory, along with the `launchd` plist in `~/Library/LaunchAgents/`. Neither is version-controlled. If Cameron sets up a new machine, both need to be recreated — the script content and plist are documented in full in the Weekly Mentor Report Automation section above.

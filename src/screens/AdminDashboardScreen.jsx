@@ -7,6 +7,7 @@ import { db, storage } from '../firebase';
 import { ref as storageRef, getDownloadURL } from 'firebase/storage';
 import { useApp } from '../context/AppContext';
 import { ZOOSNOOZ_ANIMALS } from '../data/zoosnoozAnimals';
+import { SUBJ_META, STAGES, prePostDocId, IMAGE_LIBRARY } from '../data/subjectMeta';
 import { getCurrentQuestionTexts } from '../utils/helpers';
 import DeviceBookingCalendar, { DEVICE_CAPACITY } from '../components/DeviceBookingCalendar';
 
@@ -1979,6 +1980,185 @@ function UsersTab({ classes }) {
   );
 }
 
+// ─── Tab: Pre/Post Lessons ────────────────────────────────────────────────────
+function PrePostLinksTab() {
+  const [links,    setLinks]    = useState({});   // docId -> { title, description, canvaUrl, image }
+  const [loading,  setLoading]  = useState(true);
+  const [drafts,   setDrafts]   = useState({});   // docId -> in-progress edits
+  const [saving,   setSaving]   = useState({});   // docId -> bool
+  const [saved,    setSaved]    = useState({});   // docId -> bool (brief confirmation flash)
+  const [openSubject, setOpenSubject] = useState('science');
+  const [imagePickerOpen, setImagePickerOpen] = useState({});   // docId -> bool
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      try {
+        const snap = await getDocs(collection(db, 'prePostLinks'));
+        const map = {};
+        snap.docs.forEach(d => { map[d.id] = d.data(); });
+        if (!cancelled) { setLinks(map); setDrafts(map); }
+      } catch (e) { console.error('Failed to load pre/post links:', e); }
+      if (!cancelled) setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  function updateDraft(docId, field, value) {
+    setDrafts(prev => ({ ...prev, [docId]: { ...(prev[docId] || {}), [field]: value } }));
+  }
+
+  async function saveEntry(subject, stage, timing) {
+    const docId = prePostDocId(subject, stage, timing);
+    const draft = drafts[docId] || {};
+    const canvaUrl = (draft.canvaUrl || '').trim();
+    setSaving(prev => ({ ...prev, [docId]: true }));
+    try {
+      if (!canvaUrl) {
+        await deleteDoc(doc(db, 'prePostLinks', docId));
+        setLinks(prev => { const next = { ...prev }; delete next[docId]; return next; });
+      } else {
+        const data = {
+          subject, stage, timing,
+          title: (draft.title || '').trim(),
+          description: (draft.description || '').trim(),
+          canvaUrl,
+          image: draft.image || '',
+          updatedAt: serverTimestamp(),
+        };
+        await setDoc(doc(db, 'prePostLinks', docId), data, { merge: true });
+        setLinks(prev => ({ ...prev, [docId]: data }));
+      }
+      setSaved(prev => ({ ...prev, [docId]: true }));
+      setTimeout(() => setSaved(prev => ({ ...prev, [docId]: false })), 1800);
+    } catch (e) {
+      alert('Failed to save: ' + e.message);
+    }
+    setSaving(prev => ({ ...prev, [docId]: false }));
+  }
+
+  if (loading) {
+    return <div style={{ textAlign:'center', padding:'3rem', color:'var(--t-slate)' }}>Loading…</div>;
+  }
+
+  const savedCount = Object.keys(links).length;
+
+  return (
+    <div>
+      <div style={{ background:'white', borderRadius:'var(--t-r-lg)', border:'1px solid var(--t-stone)', boxShadow:'var(--t-shadow-sm)', padding:'1.4rem 1.5rem', marginBottom:'1.25rem' }}>
+        <div style={{ display:'flex', alignItems:'baseline', justifyContent:'space-between', gap:'0.75rem', flexWrap:'wrap' }}>
+          <h2 style={{ margin:0, fontSize:'1.05rem', fontWeight:800, color:'var(--t-deep)' }}>Pre/Post-Visit Lessons</h2>
+          <span style={{ fontSize:'0.72rem', color:'var(--t-slate)', fontWeight:600 }}>{savedCount} of 32 slots have a saved link</span>
+        </div>
+        <p style={{ margin:'0.4rem 0 0', fontSize:'0.8rem', color:'var(--t-slate)', lineHeight:1.6 }}>
+          Paste a Canva share link for each subject/stage/timing combination. Teachers only see a subject and stage in the Resource Hub once a link is saved here — leave the URL blank and save to remove it from the teacher view.
+        </p>
+      </div>
+
+      {/* Subject tabs */}
+      <div style={{ display:'flex', gap:'0.4rem', marginBottom:'1rem', flexWrap:'wrap' }}>
+        {Object.entries(SUBJ_META).map(([key, meta]) => {
+          const count = STAGES.reduce((n, s) => n + (['pre','post'].filter(t => links[prePostDocId(key, s, t)]).length), 0);
+          return (
+            <button key={key} onClick={() => setOpenSubject(key)}
+              style={{ padding:'0.5rem 1rem', borderRadius:999,
+                border: openSubject===key ? 'none' : `1.5px solid ${meta.border}`,
+                background: openSubject===key ? meta.color : meta.light,
+                color: openSubject===key ? 'white' : meta.color,
+                fontSize:'0.8rem', fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>
+              {meta.label} <span style={{ opacity:0.75, fontWeight:600 }}>({count}/8)</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Stage rows for the selected subject */}
+      <div style={{ display:'flex', flexDirection:'column', gap:'0.9rem' }}>
+        {STAGES.map(stage => (
+          <div key={stage} style={{ background:'white', borderRadius:'var(--t-r-lg)', border:'1px solid var(--t-stone)', boxShadow:'var(--t-shadow-sm)', overflow:'hidden' }}>
+            <div style={{ padding:'0.6rem 1.1rem', background:'var(--t-canvas)', borderBottom:'1px solid var(--t-stone)', fontWeight:800, fontSize:'0.8rem', color:'var(--t-deep)' }}>
+              Stage {stage}
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(280px, 1fr))', gap:'1px', background:'var(--t-stone)' }}>
+              {['pre', 'post'].map(timing => {
+                const docId = prePostDocId(openSubject, stage, timing);
+                const draft = drafts[docId] || {};
+                const isSavedLive = !!links[docId]?.canvaUrl;
+                return (
+                  <div key={timing} style={{ background:'white', padding:'0.9rem 1.1rem', display:'flex', flexDirection:'column', gap:'0.5rem' }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:'0.5rem' }}>
+                      <span style={{ fontSize:'0.68rem', fontWeight:800, letterSpacing:'0.06em', textTransform:'uppercase', color: timing==='pre' ? '#0369A1' : '#BE185D' }}>
+                        {timing === 'pre' ? 'Pre-Visit' : 'Post-Visit'}
+                      </span>
+                      {isSavedLive && <span style={{ fontSize:'0.62rem', fontWeight:700, color:'#2E7D55', background:'rgba(46,125,85,0.12)', borderRadius:999, padding:'0.1rem 0.5rem' }}>● live for teachers</span>}
+                    </div>
+                    <input placeholder="Title (e.g. Ecosystems Pre-Visit Lesson)" value={draft.title || ''}
+                      onChange={e => updateDraft(docId, 'title', e.target.value)}
+                      style={{ padding:'0.45rem 0.6rem', borderRadius:8, border:'1px solid var(--t-stone)', fontSize:'0.8rem', fontFamily:'inherit' }} />
+                    <textarea placeholder="Short description shown to teachers" value={draft.description || ''}
+                      onChange={e => updateDraft(docId, 'description', e.target.value)} rows={2}
+                      style={{ padding:'0.45rem 0.6rem', borderRadius:8, border:'1px solid var(--t-stone)', fontSize:'0.8rem', fontFamily:'inherit', resize:'vertical' }} />
+                    <input placeholder="Canva share link (https://www.canva.com/design/...)" value={draft.canvaUrl || ''}
+                      onChange={e => updateDraft(docId, 'canvaUrl', e.target.value)}
+                      style={{ padding:'0.45rem 0.6rem', borderRadius:8, border:'1px solid var(--t-stone)', fontSize:'0.8rem', fontFamily:'inherit' }} />
+
+                    {/* Card image picker */}
+                    <div style={{ display:'flex', alignItems:'center', gap:'0.6rem' }}>
+                      <div style={{ width:44, height:44, borderRadius:8, overflow:'hidden', background:'var(--t-canvas)', border:'1px solid var(--t-stone)', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                        {draft.image
+                          ? <img src={draft.image} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                          : <span style={{ fontSize:'0.6rem', color:'var(--t-ash)' }}>None</span>}
+                      </div>
+                      <button onClick={() => setImagePickerOpen(prev => ({ ...prev, [docId]: !prev[docId] }))}
+                        style={{ padding:'0.35rem 0.8rem', borderRadius:8, border:'1px solid var(--t-stone)', background:'white', color:'var(--t-deep)', fontSize:'0.74rem', fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>
+                        {imagePickerOpen[docId] ? 'Close' : 'Choose image'}
+                      </button>
+                      {draft.image && (
+                        <button onClick={() => updateDraft(docId, 'image', '')}
+                          style={{ padding:'0.35rem 0.6rem', borderRadius:8, border:'none', background:'none', color:'var(--t-slate)', fontSize:'0.72rem', fontWeight:600, cursor:'pointer', textDecoration:'underline', fontFamily:'inherit' }}>
+                          Remove
+                        </button>
+                      )}
+                    </div>
+
+                    {imagePickerOpen[docId] && (
+                      <div style={{ border:'1px solid var(--t-stone)', borderRadius:8, padding:'0.6rem', maxHeight:220, overflowY:'auto', background:'var(--t-canvas)' }}>
+                        {IMAGE_LIBRARY.map(cat => (
+                          <div key={cat.category} style={{ marginBottom:'0.6rem' }}>
+                            <div style={{ fontSize:'0.62rem', fontWeight:800, color:'var(--t-slate)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'0.35rem' }}>{cat.category}</div>
+                            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(56px, 1fr))', gap:'0.4rem' }}>
+                              {cat.items.map(img => (
+                                <button key={img.src} title={img.label}
+                                  onClick={() => { updateDraft(docId, 'image', img.src); setImagePickerOpen(prev => ({ ...prev, [docId]: false })); }}
+                                  style={{ padding:0, border: draft.image===img.src ? '2px solid var(--t-mid)' : '2px solid transparent', borderRadius:8, cursor:'pointer', background:'none', overflow:'hidden', height:48 }}>
+                                  <img src={img.src} alt={img.label} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <div style={{ display:'flex', alignItems:'center', gap:'0.6rem' }}>
+                      <button onClick={() => saveEntry(openSubject, stage, timing)} disabled={saving[docId]}
+                        style={{ padding:'0.4rem 1rem', borderRadius:8, border:'none', background:'var(--t-mid)', color:'white', fontSize:'0.76rem', fontWeight:700, cursor: saving[docId] ? 'default' : 'pointer', opacity: saving[docId] ? 0.6 : 1, fontFamily:'inherit' }}>
+                        {saving[docId] ? 'Saving…' : 'Save'}
+                      </button>
+                      {saved[docId] && <span style={{ fontSize:'0.75rem', color:'#2E7D55', fontWeight:700 }}>Saved ✓</span>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── Tab: Challenges ─────────────────────────────────────────────────────────
 function normalizeSchoolId(name) {
   return name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
@@ -2377,8 +2557,8 @@ export default function AdminDashboardScreen() {
     finally { setCreatingNight(false); }
   };
 
-  const tabs = ['overview', 'analytics', 'zoosnooz', 'review', 'challenges', 'bookings', 'users', 'controlRoom'];
-  const tabLabels = { overview:'Overview', analytics:'Analytics', zoosnooz:'🌙 ZooSnooz', review:'Review', challenges:'Challenges', bookings:'Bookings', users:'Users', controlRoom:'🔒 Control Room' };
+  const tabs = ['overview', 'analytics', 'zoosnooz', 'review', 'prePost', 'challenges', 'bookings', 'users', 'controlRoom'];
+  const tabLabels = { overview:'Overview', analytics:'Analytics', zoosnooz:'🌙 ZooSnooz', review:'Review', prePost:'Pre/Post Lessons', challenges:'Challenges', bookings:'Bookings', users:'Users', controlRoom:'🔒 Control Room' };
 
   return (
     <div style={{ position:'fixed', inset:0, background:'var(--t-canvas)', display:'flex', flexDirection:'column' }}>
@@ -2436,6 +2616,7 @@ export default function AdminDashboardScreen() {
           {tab === 'analytics'   && <AnalyticsTab classes={classes} />}
           {tab === 'zoosnooz'    && <ZooSnoozAdminTab classes={classes} />}
           {tab === 'review'      && <ReviewTab classes={classes} />}
+          {tab === 'prePost'     && <PrePostLinksTab />}
           {tab === 'challenges'  && <ChallengesTab />}
           {tab === 'bookings'    && <BookingsTab />}
           {tab === 'users'       && <UsersTab classes={classes} />}
