@@ -249,8 +249,10 @@ exports.onDeviceBookingCreated = onDocumentCreated(
 );
 
 // ── Weekly mentor report email ────────────────────────────────────────────────
-const MENTOR_REPORT_EMAIL = 'cameron.rodgers3@det.nsw.edu.au';
-const MENTOR_REPORT_CC = 'pmaguire@zoo.nsw.gov.au';
+// Sent to Cameron's own inbox only. Designed to be select-all-copied and pasted
+// into a fresh email to his mentor — hence the "Hi Paul," greeting baked in and
+// no automation disclosure in the body.
+const MENTOR_REPORT_EMAIL = 'ctr2560@gmail.com';
 
 function buildMentorReportHtml(reportText) {
   const safe = reportText
@@ -265,20 +267,46 @@ function buildMentorReportHtml(reportText) {
   }).join('');
   return `<!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Taronga Tracka weekly update</title></head>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="color-scheme" content="light">
+<meta name="supported-color-schemes" content="light">
+<title>Taronga Tracka &amp; Wildly weekly update</title>
+</head>
 <body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background:#ffffff;">
-  <table width="100%" cellpadding="0" cellspacing="0">
+  <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;">
     <tr>
-      <td style="background:#0A2F1F;padding:24px 32px;">
-        <p style="margin:0;color:#ffffff;font-size:20px;font-weight:bold;">Taronga Tracka</p>
-        <p style="margin:4px 0 0;color:#a8c8b0;font-size:13px;">Weekly progress update</p>
+      <td bgcolor="#0A2F1F" style="background-color:#0A2F1F;padding:28px 32px;">
+        <table width="100%" cellpadding="0" cellspacing="0">
+          <tr>
+            <td valign="middle" align="left" bgcolor="#0A2F1F" style="background-color:#0A2F1F;">
+              <p style="margin:0;color:#ffffff;font-size:20px;font-weight:bold;">Taronga Tracka &amp; Wildly</p>
+              <p style="margin:4px 0 0;color:#a8c8b0;font-size:13px;">Weekly progress update</p>
+            </td>
+            <td valign="middle" align="right" bgcolor="#0A2F1F" style="background-color:#0A2F1F;">
+              <table cellpadding="0" cellspacing="0"><tr>
+                <td valign="middle" style="padding-right:14px;">
+                  <img src="https://tarongatracka.web.app/images/logo.png" alt="Taronga Tracka" height="64" style="display:block;height:64px;width:auto;border:0;">
+                </td>
+                <td valign="middle" style="padding-left:14px;border-left:1px solid rgba(255,255,255,0.25);">
+                  <img src="https://tarongatracka.web.app/images/wildly-logo-white.png" alt="Wildly by Taronga" height="48" style="display:block;height:48px;width:auto;border:0;">
+                </td>
+              </tr></table>
+            </td>
+          </tr>
+        </table>
       </td>
     </tr>
     <tr>
       <td style="padding:28px 32px;">
+        <p style="margin:0 0 18px;font-size:15px;color:#222222;">Hi Paul,</p>
         <table cellpadding="0" cellspacing="0">${body}</table>
-        <hr style="border:none;border-top:1px solid #dddddd;margin:24px 0 12px;">
-        <p style="margin:0;font-size:12px;color:#666666;">Automated weekly summary generated from the Taronga Tracka project history.</p>
+      </td>
+    </tr>
+    <tr>
+      <td bgcolor="#0A2F1F" style="background-color:#0A2F1F;padding:16px 32px;">
+        <img src="https://tarongatracka.web.app/images/taronga-zoo-white.png" alt="Taronga Zoo — For the Wild" height="24" style="display:block;height:24px;width:auto;border:0;">
       </td>
     </tr>
   </table>
@@ -296,7 +324,7 @@ exports.sendMentorReport = onRequest(
     if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
     if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
 
-    const { token, report, subject, notifyMentor } = req.body || {};
+    const { token, report, subject } = req.body || {};
     if (!process.env.MENTOR_REPORT_TOKEN || token !== process.env.MENTOR_REPORT_TOKEN) {
       res.status(401).json({ error: 'Unauthorised' });
       return;
@@ -311,7 +339,6 @@ exports.sendMentorReport = onRequest(
       await resend.emails.send({
         from: 'Taronga Tracka <noreply@tarongatracka.com.au>',
         to: MENTOR_REPORT_EMAIL,
-        ...(notifyMentor ? { cc: MENTOR_REPORT_CC } : {}),
         subject: subject || 'Taronga Tracka — Weekly Update',
         html: buildMentorReportHtml(report),
       });
