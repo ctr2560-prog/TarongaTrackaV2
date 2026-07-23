@@ -126,7 +126,7 @@ export default function ZooYardScreen() {
         } catch (e) { console.warn('ZooYard badge write failed:', e); }
       }
 
-      setZyCompleted(prev => ({ ...prev, [zyAnimal.id]: { points, quizCorrect: !!mcqCorrect } }));
+      setZyCompleted(prev => ({ ...prev, [zyAnimal.id]: { points, quizCorrect: !!mcqCorrect, behaviour: scoreResult.behaviour, detail: scoreResult.detail, writing: scoreResult.writing } }));
       setBadgeReveal({ animal: zyAnimal, ...badgeData });
       setZyPhase('badge');
     } finally {
@@ -425,6 +425,103 @@ export default function ZooYardScreen() {
     );
   }
 
+  if (zyScreen === 'collection') {
+    const totalDoneColl = Object.keys(zyCompleted).length;
+    const quizFirstTryColl = Object.values(zyCompleted).filter(c => c.quizCorrect).length;
+    return (
+      <div style={{ minHeight:'100vh', background:'#0A2F1F', color:'white', paddingBottom:'2rem' }}>
+        <div style={{ background:'linear-gradient(to bottom,rgba(10,47,31,0.98),rgba(7,30,20,0.95))', borderBottom:'1px solid rgba(46,125,85,0.25)', padding:'0.75rem 1rem', display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:50, backdropFilter:'blur(12px)' }}>
+          <button onClick={() => setZyScreen('habitats')}
+            style={{ background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.22)', color:'white', padding:'0.45rem 1rem', borderRadius:999, cursor:'pointer', fontSize:'0.85rem', fontWeight:600 }}>
+            ← Back
+          </button>
+          <h1 className="taronga-title" style={{ fontSize:'1.4rem', color:'white', letterSpacing:'0.05em', margin:0 }}>
+            Habitat Badges
+          </h1>
+          <div style={{ width:'70px' }} />
+        </div>
+
+        <div style={{ padding:'1.25rem 1rem', maxWidth:600, margin:'0 auto' }}>
+          {ZOOYARD_ANIMALS.map(animal => {
+            const badge = zyCompleted[animal.id];
+            const earned = !!badge;
+            const b = badge?.behaviour || 0;
+            const d = badge?.detail    || 0;
+            const w = badge?.writing   || 0;
+            return (
+              <div key={animal.id} style={{ background: earned ? 'linear-gradient(135deg,rgba(46,125,85,0.22),rgba(10,47,31,0.9))' : 'rgba(255,255,255,0.04)', border: earned ? '1px solid rgba(46,125,85,0.4)' : '1px solid rgba(255,255,255,0.1)', borderRadius:16, marginBottom:'0.85rem', overflow:'hidden', display:'flex', gap:'1rem', padding:'1rem', alignItems:'flex-start' }}>
+                <div style={{ flexShrink:0, width:72, height:72, borderRadius:'50%', backgroundImage: earned ? `url(/images/badge-${animal.id}.png)` : 'none', backgroundSize:'contain', backgroundRepeat:'no-repeat', backgroundPosition:'center', backgroundColor: earned ? 'transparent' : 'rgba(255,255,255,0.04)', border: earned ? '2px solid rgba(46,125,85,0.5)' : '2px solid rgba(255,255,255,0.08)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.4rem' }}>
+                  {!earned && <span style={{ opacity:0.4 }}>🔒</span>}
+                </div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'0.35rem' }}>
+                    <div>
+                      <h3 style={{ margin:0, fontSize:'1rem', fontWeight:700, color: earned ? 'white' : 'rgba(255,255,255,0.35)' }}>{animal.name}</h3>
+                      <p style={{ margin:0, fontSize:'0.72rem', color:'rgba(255,255,255,0.5)', fontStyle:'italic' }}>{animal.habitatLabel}</p>
+                    </div>
+                    {earned && (
+                      <div style={{ background:'rgba(46,125,85,0.3)', border:'1px solid rgba(46,125,85,0.4)', borderRadius:20, padding:'0.2rem 0.65rem', fontSize:'0.85rem', fontWeight:800, color:'#7EC89A', whiteSpace:'nowrap' }}>
+                        {badge.points} pts
+                      </div>
+                    )}
+                  </div>
+                  {earned ? (
+                    <>
+                      <div style={{ display:'flex', gap:'0.4rem', marginBottom:'0.5rem' }}>
+                        {[['Behaviour', b, '#4A9E6B'], ['Detail', d, '#38BDF8'], ['Writing', w, '#F472B6']].map(([label, val, color]) => (
+                          <div key={label} style={{ flex:1 }}>
+                            <div style={{ fontSize:'0.58rem', fontWeight:700, color:'rgba(255,255,255,0.45)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:2 }}>{label}</div>
+                            <div style={{ height:5, background:'rgba(255,255,255,0.08)', borderRadius:3, overflow:'hidden' }}>
+                              <div style={{ height:'100%', width:`${(val/5)*100}%`, background:color, borderRadius:3 }} />
+                            </div>
+                            <div style={{ fontSize:'0.65rem', color, fontWeight:700, marginTop:2 }}>{val}/5</div>
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ background: badge.quizCorrect ? 'rgba(74,158,107,0.2)' : 'rgba(239,68,68,0.15)', border: `1px solid ${badge.quizCorrect ? 'rgba(74,158,107,0.4)' : 'rgba(239,68,68,0.3)'}`, borderRadius:20, padding:'0.15rem 0.6rem', fontSize:'0.68rem', fontWeight:700, color: badge.quizCorrect ? '#4A9E6B' : '#FCA5A5', display:'inline-block' }}>
+                        {badge.quizCorrect ? '✓ Quiz +20' : '✗ Quiz +0'}
+                      </div>
+                    </>
+                  ) : (
+                    <p style={{ margin:'0.25rem 0 0', fontSize:'0.8rem', color:'rgba(255,255,255,0.3)', fontStyle:'italic' }}>Not yet explored</p>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div style={{ maxWidth:600, margin:'0 auto', padding:'0 1rem' }}>
+          <div style={{ background:'linear-gradient(135deg,rgba(46,125,85,0.2),rgba(10,47,31,0.5))', border:'1px solid rgba(46,125,85,0.3)', borderRadius:16, padding:'1.25rem 1.5rem', display:'flex', justifyContent:'space-around', alignItems:'center', flexWrap:'wrap', gap:'1rem' }}>
+            <div style={{ textAlign:'center' }}>
+              <div style={{ fontSize:'1.8rem', fontWeight:800, color:'#F4C542' }}>{totalPoints}</div>
+              <div style={{ fontSize:'0.65rem', fontWeight:700, color:'rgba(255,255,255,0.45)', textTransform:'uppercase', letterSpacing:'0.06em' }}>Total Points</div>
+            </div>
+            <div style={{ width:1, height:40, background:'rgba(46,125,85,0.3)' }} />
+            <div style={{ textAlign:'center' }}>
+              <div style={{ fontSize:'1.8rem', fontWeight:800, color:'white' }}>
+                {totalDoneColl}<span style={{ fontSize:'1.1rem', opacity:0.4 }}>/{ZOOYARD_ANIMALS.length}</span>
+              </div>
+              <div style={{ fontSize:'0.65rem', fontWeight:700, color:'rgba(255,255,255,0.45)', textTransform:'uppercase', letterSpacing:'0.06em' }}>Habitats</div>
+            </div>
+            <div style={{ width:1, height:40, background:'rgba(46,125,85,0.3)' }} />
+            <div style={{ textAlign:'center' }}>
+              <div style={{ fontSize:'1.8rem', fontWeight:800, color:'#4A9E6B' }}>
+                {quizFirstTryColl}<span style={{ fontSize:'1.1rem', opacity:0.4 }}>/{totalDoneColl}</span>
+              </div>
+              <div style={{ fontSize:'0.65rem', fontWeight:700, color:'rgba(255,255,255,0.45)', textTransform:'uppercase', letterSpacing:'0.06em' }}>Quiz First Try</div>
+            </div>
+          </div>
+
+          <button onClick={goHome}
+            style={{ width:'100%', marginTop:'1rem', background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.22)', color:'white', padding:'0.75rem 1rem', borderRadius:999, cursor:'pointer', fontSize:'0.85rem', fontWeight:700 }}>
+            🏠 Home
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // ── Habitat picker (default) ─────────────────────────────────────────────
   return (
     <div style={{ position:'fixed', inset:0, background:'linear-gradient(135deg, var(--jungle-deep) 0%, var(--jungle-mid) 50%, var(--jungle-light) 100%)', overflowY:'auto' }}>
@@ -446,7 +543,7 @@ export default function ZooYardScreen() {
             style={{ background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.22)', color:'white', padding:'0.4rem 0.85rem', borderRadius:999, cursor:'pointer', fontSize:'0.78rem', fontWeight:700, whiteSpace:'nowrap' }}>
             🏠 Home
           </button>
-          <button className="student-points-chip" disabled style={{ cursor:'default' }}>
+          <button className="student-points-chip" onClick={() => setZyScreen('collection')}>
             <div className="pts-value">{totalPoints}</div>
             <div className="pts-label">{Object.keys(zyCompleted).length}/{ZOOYARD_ANIMALS.length} Habitats</div>
           </button>
