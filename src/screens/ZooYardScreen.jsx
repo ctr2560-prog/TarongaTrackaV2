@@ -257,7 +257,7 @@ export default function ZooYardScreen() {
     const attestTheme = ZOOYARD_HABITAT_THEME[zyAnimal.habitatArea] || ZOOYARD_HABITAT_THEME.bushland;
     return (
       <div style={{ position:'fixed', inset:0, background:attestTheme.bgGradient, display:'flex', alignItems:'center', justifyContent:'center', padding:'1.5rem', overflow:'hidden' }}>
-        <HomeButton dark onHome={goHome} />
+        <HomeButton dark onHome={backToHabitats} />
         <video
           key={attestTheme.videoBg}
           autoPlay loop muted playsInline
@@ -285,7 +285,7 @@ export default function ZooYardScreen() {
   if (zyAnimal && zyPhase === 'video') {
     return (
       <div style={{ position:'fixed', inset:0, background:'#071E14', display:'flex', flexDirection:'column' }}>
-        <HomeButton dark onHome={goHome} />
+        <HomeButton dark onHome={backToHabitats} />
         <div style={{ padding:'0.9rem 1.2rem', color:'white', fontWeight:700 }}>{zyAnimal.name} · {zyAnimal.habitatLabel}</div>
         <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', padding:'1rem' }}>
           {zyAnimal.videoUrl ? (
@@ -313,7 +313,7 @@ export default function ZooYardScreen() {
     const theme = ZOOYARD_HABITAT_THEME[zyAnimal.habitatArea] || ZOOYARD_HABITAT_THEME.bushland;
     return (
       <div style={{ position:'fixed', inset:0, background:theme.bgGradient, display:'flex', flexDirection:'column', fontFamily:'var(--t-font)', overflow:'hidden' }}>
-        <HomeButton dark onHome={goHome} />
+        <HomeButton dark onHome={backToHabitats} />
 
         <video
           key={theme.videoBg}
@@ -379,7 +379,7 @@ export default function ZooYardScreen() {
     const prompt = zyAnimal.writingPromptByStage[classStage] || zyAnimal.writingPromptByStage[4];
     return (
       <div style={{ position:'fixed', inset:0, background:'#F0EDE6', display:'flex', flexDirection:'column', fontFamily:'var(--t-font)' }}>
-        <HomeButton dark onHome={goHome} />
+        <HomeButton dark onHome={backToHabitats} />
         <div style={{ background:zyAnimal.habitatColor, padding:'0.9rem 1.2rem', color:'white', fontWeight:700 }}>{zyAnimal.name} · Write it up</div>
         <div style={{ flex:1, overflowY:'auto', padding:'1.5rem 1.2rem', maxWidth:520, margin:'0 auto', width:'100%', boxSizing:'border-box' }}>
           <p style={{ fontSize:'1.05rem', color:'#0A2F1F', marginBottom:'1rem', lineHeight:1.5, fontWeight:600 }}>{prompt}</p>
@@ -403,7 +403,7 @@ export default function ZooYardScreen() {
   if (zyAnimal && zyPhase === 'badge' && badgeReveal) {
     return (
       <div style={{ position:'fixed', inset:0, background:'linear-gradient(160deg,#071E14,#0D3322,#1A5238)', display:'flex', alignItems:'center', justifyContent:'center', padding:'1.5rem' }}>
-        <HomeButton dark onHome={goHome} />
+        <HomeButton dark onHome={backToHabitats} />
         <div className="animate-scale-in" style={{ background:'white', borderRadius:20, padding:'2rem 1.75rem', maxWidth:420, width:'100%', textAlign:'center' }}>
           <img src={badgeReveal.animal.image} alt="" style={{ width:88, height:88, objectFit:'cover', borderRadius:'50%', margin:'0 auto 1rem', display:'block', border:`4px solid ${badgeReveal.animal.habitatColor}` }} />
           <h2 className="taronga-title" style={{ fontSize:'1.5rem', color:'#0A2F1F', marginBottom:'0.3rem' }}>{badgeReveal.animal.name} Badge Earned!</h2>
@@ -515,7 +515,7 @@ export default function ZooYardScreen() {
 
           <button onClick={goHome}
             style={{ width:'100%', marginTop:'1rem', background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.22)', color:'white', padding:'0.75rem 1rem', borderRadius:999, cursor:'pointer', fontSize:'0.85rem', fontWeight:700 }}>
-            🏠 Home
+            🚪 Log Out
           </button>
         </div>
       </div>
@@ -539,10 +539,6 @@ export default function ZooYardScreen() {
               <span style={{ color:'white', fontSize:'0.82rem', fontWeight:600 }}>👤 {studentName}</span>
             </div>
           )}
-          <button onClick={goHome}
-            style={{ background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.22)', color:'white', padding:'0.4rem 0.85rem', borderRadius:999, cursor:'pointer', fontSize:'0.78rem', fontWeight:700, whiteSpace:'nowrap' }}>
-            🏠 Home
-          </button>
           <button className="student-points-chip" onClick={() => setZyScreen('collection')}>
             <div className="pts-value">{totalPoints}</div>
             <div className="pts-label">{Object.keys(zyCompleted).length}/{ZOOYARD_ANIMALS.length} Habitats</div>
