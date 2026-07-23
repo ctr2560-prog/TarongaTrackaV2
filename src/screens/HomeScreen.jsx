@@ -24,12 +24,11 @@ const MODES = [
   },
   {
     id: 'school',
-    label: 'At School',
+    label: 'ZooYard',
     accent: '#4ecbcb',
-    tag: 'Coming Soon',
-    comingSoon: true,
-    summary: 'A virtual zoo that brings the full Taronga experience into your classroom.',
-    detail: 'Can\'t make it to the zoo? Taronga Tracka will recreate the complete zoo experience in your classroom. Students track virtual animals, complete digital missions and earn badges - building their own virtual Taronga from their desks.',
+    tag: 'At School',
+    summary: 'Build your habitat, right here at school - no GPS, no zoo visit required.',
+    detail: 'Can\'t make it to the zoo? ZooYard brings three real Taronga habitats into your classroom. Students explore bushland, rainforest and savannah, complete science activities for each animal, then take on a real citizen science task to protect wildlife at their own school.',
     image: '/images/screenshots/mode-school.jpg',
   },
 ];

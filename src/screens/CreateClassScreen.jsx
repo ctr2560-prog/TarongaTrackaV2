@@ -67,6 +67,7 @@ export default function CreateClassScreen() {
   const [showWwzModal,    setShowWwzModal]    = useState(false);
 
   const isZooSnooz = newLocation === 'zoosnooz-sydney';
+  const isZooYard  = newLocation === 'school';
 
   const createClass = async () => {
     if (!newClassName.trim() || !schoolName) return;
@@ -76,22 +77,23 @@ export default function CreateClassScreen() {
     try {
       const code        = generateClassCode();
       const sessionDate = new Date().toISOString().split('T')[0];
-      const sessionType = isZooSnooz ? 'zoosnooz' : 'standard';
+      const sessionType = isZooYard ? 'zooyard' : isZooSnooz ? 'zoosnooz' : 'standard';
       const VENUES = { 'taronga-sydney':'Taronga Sydney', 'zoosnooz-sydney':'Taronga Sydney', 'dubbo':'Taronga Dubbo', 'school':'School' };
       const venue = VENUES[newLocation] || 'Taronga Zoo';
+      const subject = isZooYard ? 'science' : isZooSnooz ? null : newSubject;
 
       await setDoc(doc(db, 'teachers', teacherEmail, 'classes', code), {
         classCode: code, className: newClassName.trim(), schoolName,
         stage: newClassStage, accessCodeUsed: null,
         venue, createdAt: serverTimestamp(), archived: false,
         sessionClosed: false, sessionDate, sessionType,
-        location: newLocation, subject: isZooSnooz ? null : newSubject,
+        location: newLocation, subject,
       });
       await setDoc(doc(db, 'classes', code), {
         classCode: code, className: newClassName.trim(), schoolName,
         stage: newClassStage, teacherEmail, accessCodeUsed: null,
         venue, createdAt: serverTimestamp(), sessionClosed: false, sessionDate, sessionType,
-        location: newLocation, subject: isZooSnooz ? null : newSubject,
+        location: newLocation, subject,
       });
 
       // Award location-specific expedition points once per school (non-blocking)
@@ -129,7 +131,7 @@ export default function CreateClassScreen() {
     }
   };
 
-  const displaySubject = isZooSnooz ? 'science' : newSubject;
+  const displaySubject = (isZooSnooz || isZooYard) ? 'science' : newSubject;
   const subjectData  = NSW_OUTCOMES[displaySubject];
   const outcomes     = subjectData?.[newClassStage] || [];
   const syllabusName = subjectData?.syllabus?.[newClassStage] || '';
@@ -177,11 +179,19 @@ export default function CreateClassScreen() {
                 <option value="taronga-sydney">Taronga Sydney — Zoo Visit</option>
                 <option value="zoosnooz-sydney">ZooSnooz — Taronga Sydney</option>
                 <option value="dubbo" disabled>Taronga Dubbo (Coming Soon)</option>
-                <option value="school" disabled>Your School (Coming Soon)</option>
+                <option value="school">Your School — ZooYard</option>
               </select>
 
+              {isZooYard && (
+                <div style={{ background:'#f0f7f2', border:'1px solid #b6d9c3', borderRadius:'10px', padding:'0.9rem 1rem', marginBottom:'1rem' }}>
+                  <p style={{ margin:0, fontSize:'0.8rem', color:'#1a4a2a', lineHeight:1.6 }}>
+                    ZooYard runs entirely at school — no GPS, no zoo visit. Students explore three habitats (bushland, rainforest, savannah), then complete a Habitat Hero citizen science task. Science only for now.
+                  </p>
+                </div>
+              )}
+
               {/* Subject */}
-              {newLocation !== 'zoosnooz-sydney' && (
+              {newLocation !== 'zoosnooz-sydney' && !isZooYard && (
                 <>
                   <label style={{ display:'block', fontSize:'0.78rem', fontWeight:700, color:'var(--t-deep)', marginBottom:'0.3rem', textTransform:'uppercase', letterSpacing:'0.05em' }}>Subject</label>
                   <select value={newSubject} onChange={e => setNewSubject(e.target.value)} style={{ ...inputStyle, appearance:'auto', cursor:'pointer' }}

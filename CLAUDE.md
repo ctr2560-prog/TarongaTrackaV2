@@ -6,6 +6,8 @@ Taronga Tracka is an educational field-study app for school excursions to Tarong
 
 There is also **ZooSnooz** — a separate night-mode variant with NFC stations, keeper interactions, video recording, and a documentary stitching pipeline, sharing the same codebase.
 
+There is also **ZooYard** — a self-attest, no-GPS "at school" program for classes that can't visit the zoo (built for NSW DoE devices, which block geolocation). Students work through three habitats in their own schoolyard, then complete a citizen science task. See the ZooYard Deep Reference section below.
+
 Live URL: deployed to Firebase Hosting (project: `tarongatracka`), region: `australia-southeast1`.
 
 ---
@@ -160,6 +162,7 @@ The staff portal uses code-based login (no Firebase Auth), so **any collection t
 | `deviceBookings/{bookingId}` | Tracka device booking calendar entries |
 | `resources/{docId}` | (Reserved for future resource library) |
 | `prePostLinks/{subject}_{stage}_{timing}` | Admin-managed Canva pre/post-visit lesson links — see Pre/Post-Visit Lessons section |
+| `citizenScienceSubmissions/{submissionId}` | ZooYard "Habitat Hero" photo submissions — see ZooYard Deep Reference section |
 
 ### ZooSnooz student data location
 ZooSnooz per-animal data lives on the **student document** at `classes/{classCode}/students/{studentId}` under the `zoosnooz` field:
@@ -275,6 +278,63 @@ match /zoosnooz/{allPaths=**} {
 ```
 Do not create a `storage.rules` file locally without also wiring it into `firebase.json` under a `"storage"` key, otherwise it will be silently ignored.
 
+**Note (2026-07-20):** the new ZooYard `citizenScienceEvidence/` upload path worked immediately in production with no manual Console rule change — the live Console rules appear to already be broadly permissive (or match new top-level folders), not narrowly scoped to just `zoosnooz/`. Still verify in the Console if a new Storage path ever fails silently.
+
+---
+
+## ZooYard — Deep Reference
+
+ZooYard is a self-attest, single-session, no-GPS program built for classes that can't visit the zoo (NSW DoE devices block geolocation, so the daytime GPS-proximity flow can't run in a classroom). It's a third `sessionType` alongside `standard`/`zoosnooz`, fully isolated — it shares zero mutable state with the other two flows, only pure helpers like `buildObservationScore`.
+
+### How a class becomes ZooYard
+`CreateClassScreen.jsx`: teacher selects location **"Your School — ZooYard"** (`value="school"` — this option already existed in the dropdown, previously disabled as a "Coming Soon" placeholder for exactly this feature). This sets `isZooYard` → `sessionType: 'zooyard'`, `subject: 'science'` (hardcoded, subject dropdown hidden — Science-only for v1, same treatment as ZooSnooz's hidden dropdown), `location: 'school'` → venue label `"School"`. `EXPEDITION_AWARDS['school']` already existed too (20 pts, one-time per school).
+
+### Routing
+`App.jsx` `Router()`: `if (sessionType === 'zooyard') return <ZooYardScreen />;`, mirroring the ZooSnooz short-circuit — this means `ZooYardScreen.jsx` is fully self-contained and the daytime `currentScreen` switch never runs for a ZooYard class.
+
+### Content (`src/data/zooyardAnimals.js`)
+Three animals, deliberately reusing the **same ids** as `src/data/animals.js` (`koala`, `tiger`, `giraffe`) to get their existing photos/badge art for free, and because koala/giraffe already have hand-tuned keyword-scoring branches in `scoreObservation()` (tiger falls through to the generic fallback — fine, just less tailored feedback). Safe to reuse ids because a ZooYard class is a completely separate `classes/{code}` document — no student doc ever mixes ZooYard and daytime data.
+
+Each entry: `habitatArea`/`habitatLabel` (bushland/rainforest/savannah), `selfAttestPrompt` + `selfAttestQuestion` (the "find a tree, are you ready?" self-report — no GPS check at all), `videoUrl` (null until Cameron records real footage — `ZooYardScreen` shows a "Video coming soon" placeholder card when unset), `activity` (single MCQ + fact), `writingPromptByStage` (stages 2–5, conservation-flavoured).
+
+`ZOOYARD_CITIZEN_SCIENCE_TASK` — the single "Habitat Hero" task (build one small wildlife feature at school: leaf pile, native plant, bug hotel, water dish, no-mow patch) that unlocks once all three habitats are complete.
+
+### `ZooYardScreen.jsx` — self-contained sub-router
+Mirrors `ZooSnoozScreen.jsx`'s pattern exactly: own local component state (no `StudentContext` badges/foundAnimals), cascading `if (phase === ...) return <JSX/>` blocks rather than a switch. Top-level phase (`zyScreen`/`setZyScreen`: `'habitats' | 'citizenScience' | 'done'`) lives in `AppContext.jsx` next to `zzScreen` so it survives the screen's own re-renders; per-animal phase (`attest → video → activity → written → badge`) is local `useState`.
+
+Flow: habitat picker (3 cards, any order) → self-attest confirm → video/placeholder → single MCQ → written response (scored via `buildObservationScore(text, animalId, classStage, 'science')`, points formula same as ZooSnooz: `Math.round((behaviour+detail+writing)/15*100) + (quizCorrect?20:0)`) → badge reveal → back to picker. Once all 3 done, a "Habitat Hero unlocked!" banner appears; the citizen science task collects a photo (client `uploadBytes` to `citizenScienceEvidence/{classCode}/{studentId}-{timestamp}.{ext}`) + optional note, writes to `citizenScienceSubmissions` (see below) and marks `zooyard.sessionCompleted`/`totalPoints` on the student doc, then a `ZzDoneScreen`-style completion screen with `StudentFeedbackModal`.
+
+### Student doc shape
+`classes/{code}/students/{id}`, field `zooyard`:
+```js
+zooyard: {
+  koala:  { completed: true, points, behaviour, detail, writing, quizCorrect, observation, updatedAt },
+  tiger:  { ... }, giraffe: { ... },
+  sessionCompleted: true, totalPoints,
+  citizenScience: { status: 'pending'|'approved'|'denied', photoUrl, note, submittedAt },
+}
+```
+**Gotcha:** the per-animal write uses `updateDoc(ref, { [\`zooyard.${animalId}\`]: {...} })`, **not** `setDoc(ref, {...}, {merge:true})`. This matters: Firestore's `setDoc(...,{merge:true})` treats a dotted string key like `'zooyard.koala'` as a **literal field name containing dots**, not a nested path — it does NOT nest under a `zooyard` map. Only `updateDoc()` parses dotted keys as nested field paths.
+
+**This exact bug was confirmed in production for ZooSnooz too (2026-07-23) and fixed.** `ZooSnoozScreen.jsx`'s two per-animal writes (`zoosnooz.{animalId}` badge data, and the later `zoosnooz.{animalId}.videoURL`/`videoCompleted` upload-completion write) used the same flawed `setDoc(...,{merge:true})` pattern — verified against real student documents showing literal top-level fields like `"zoosnooz.tiger"` instead of a nested map. Both call sites were switched to `updateDoc()`, live-tested end-to-end (joined the real "6t" class, completed Sun Bear, confirmed the resulting doc has a genuine nested `zoosnooz: { 'sun-bear': {...} }` map, confirmed `ZooSnoozAdminTab`'s clips list picks it up via the "primary" path). Existing pre-fix student documents keep their old flat dotted fields (harmless, untouched) — the admin analytics already had fallbacks reading `zzBadges`/`quizPercentage`/`zzTotalPoints` (written correctly and independently by `zzFinalSubmit` from in-memory state) for exactly this reason, so nothing was ever visibly broken; this fix just makes the "primary" per-animal path real again instead of always silently failing over.
+
+### Citizen science moderation (`citizenScienceSubmissions` collection)
+```js
+{
+  classCode, studentId, studentName, teacherEmail, schoolName,  // denormalized at submit time
+  program: 'zooyard', taskId: 'habitat-hero',
+  photoUrl, note,
+  status: 'pending' | 'approved' | 'denied',
+  submittedAt, reviewedAt, reviewedBy,  // reviewedBy: 'staff' | teacherEmail
+}
+```
+Rules: `allow read, write, delete: if true` — same open pattern as `challengeSubmissions` (staff portal is code-based, no Firebase Auth). Moderation split by UI, not database rules (matches the app's existing trust model):
+- **Staff** (`ZooYardAdminTab` in `AdminDashboardScreen.jsx`, tab `'zooyard'`) can approve or deny any submission. Approving awards **+30 pts to the school leaderboard** (`schools/{schoolId}.totalPoints`), same pattern as `challengeSubmissions` approval — not a retroactive rewrite of the student's own record.
+- **Teachers** (new section in `ClassDetailsScreen.jsx`, gated on `isZY = cls.sessionType === 'zooyard'`) can view their own class's submissions (query scoped to `classCode`) and **deny or delete** — no approve button rendered. This is a genuinely new capability; `challengeSubmissions` has no teacher-moderation precedent to compare against.
+
+### Class details / GPS panel
+`ClassDetailsScreen.jsx` gates the GPS toggle panel and the old daytime "Class Insights" (badge-array-based analytics) with `!isZY` — both are meaningless for ZooYard (no GPS check ever happens; badges live under `zooyard`, not the shared `badges` array). Stat cards get a ZooYard-specific branch: Students / Avg Points / Habitat Badges / Completed, reading `student.zooyard?.totalPoints`/`sessionCompleted`/`{animalId}.completed`. Note **Avg Points only reflects fully-submitted sessions** — `zooyard.totalPoints` is written once, at citizen science submission, not incrementally per animal, so an in-progress student shows 0 there even after earning badges.
+
 ---
 
 ## Assessment Ideas & AT Notifications
@@ -363,11 +423,12 @@ ZooSnooz internal screens (`zzScreen` values): `map` → `animal` (phases: insig
 | `collection` | `CollectionScreen.jsx` | All found animals + badges + total points; triggers `completeActivity` |
 | `submissionComplete` | `SubmissionCompleteScreen.jsx` | Confetti screen; shows `StudentFeedbackModal` after 600ms |
 | `zoosnooz` | `ZooSnoozScreen.jsx` | Entire ZooSnooz night experience (~2500 lines) |
+| `zooyard` | `ZooYardScreen.jsx` | Entire ZooYard self-attest school experience — see ZooYard Deep Reference |
 | `documentaryViewer` | `DocumentaryViewer.jsx` | NFC souvenir card; triggered by `docViewCode` in AppContext |
 | `teacherLogin` | `TeacherLoginScreen.jsx` | Magic link email entry |
 | `teacherDashboard` | `TeacherDashboardScreen.jsx` | Quick actions, class cards, resource cards, challenge tile |
 | `createClass` | `CreateClassScreen.jsx` | Create class form; sets stage, subject, session type, access code |
-| `classDetails` | `ClassDetailsScreen.jsx` | Per-class analytics, student list, RadarSVG, ZooSnooz data, info sheet |
+| `classDetails` | `ClassDetailsScreen.jsx` | Per-class analytics, student list, RadarSVG, ZooSnooz data, ZooYard Habitat Hero moderation, info sheet |
 | `teacherGuide` | `TeacherGuideScreen.jsx` | Timeline checklist, 4 phases, tap-to-tick, localStorage progress |
 | `assessmentIdeas` | `AssessmentIdeasScreen.jsx` | In-app evidence + 20 post-visit tasks per subject; generates unique printable AT Notification docs |
 | `teacherMap` | `TeacherMapScreen.jsx` | Zoo map with student pins, zoom in/out, starts at 0.8 scale |
@@ -378,7 +439,7 @@ ZooSnooz internal screens (`zzScreen` values): `map` → `animal` (phases: insig
 | `accessibility` | `AccessibilityScreen.jsx` | 6-need accessibility guide, pre-visit checklist, PDF downloads |
 | `conservationGallery` | `ConservationGalleryScreen.jsx` | Polaroid masonry wall of approved submissions |
 | `adminLogin` | `AdminLoginScreen.jsx` | Staff access code entry |
-| `adminDashboard` | `AdminDashboardScreen.jsx` | Staff portal: Overview, Analytics, ZooSnooz, Review, Pre/Post Lessons, Challenges, Bookings, Users, Control Room tabs |
+| `adminDashboard` | `AdminDashboardScreen.jsx` | Staff portal: Overview, Analytics, ZooSnooz, ZooYard, Review, Pre/Post Lessons, Challenges, Bookings, Users, Control Room tabs |
 | `adminClassView` | `AdminClassViewScreen.jsx` | Staff view of a specific class's detail |
 | `publicEntry` | `PublicEntryScreen.jsx` | Public mode entry — alias only, no class code; sets `appMode='public'` |
 | `publicAnimal` | `PublicAnimalScreen.jsx` | Public animal info card |
@@ -443,10 +504,12 @@ Key state exposed via `useApp()`:
 | `signOutTeacher` | fn | Signs out and navigates to `home` |
 | `clearStudentSession` | fn | Clears student localStorage + resets student state |
 | `adminAccessCode` | string | Staff portal code; in-memory only (not persisted) |
-| `demoMode` | boolean | Demo flag; disables GPS requirement |
+| `demoMode` | boolean | Demo flag; bypasses teacher-auth redirects (e.g. `demo@zoo` login) — does NOT affect student GPS requirement, despite the name |
 | `docViewCode` | string\|null | Triggers `DocumentaryViewer` when set; format `zzv_{animalId}_{classCode}_{studentId}` |
 | `zzScreen` | string | ZooSnooz internal sub-router screen |
 | `setZzScreen` | fn | Navigate within ZooSnooz |
+| `zyScreen` | string | ZooYard internal sub-router screen (`'habitats'\|'citizenScience'\|'done'`) |
+| `setZyScreen` | fn | Navigate within ZooYard |
 
 ---
 

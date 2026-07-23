@@ -89,6 +89,14 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    // ── ZooYard citizen science submissions ───────────────────────────────────
+    // Students (no Firebase Auth) create submissions. Staff portal approves/denies
+    // without Firebase Auth (code-based login). Teachers deny/delete their own
+    // class's submissions — scoped client-side, same trust model as challengeSubmissions.
+    match /citizenScienceSubmissions/{submissionId} {
+      allow read, write, delete: if true;
+    }
+
     // ── Device bookings ───────────────────────────────────────────────────────
     // Teachers view the calendar and create bookings (Firebase Auth required).
     // Staff portal manages bookings without Firebase Auth (code-based login).

@@ -90,6 +90,40 @@ export default function ClassDetailsScreen() {
 
   const [studentActionBusy, setStudentActionBusy] = useState({});
 
+  // ZooYard citizen science submissions for this class
+  const [zySubmissions, setZySubmissions] = useState([]);
+  const [zySubBusy,     setZySubBusy]     = useState({});
+
+  useEffect(() => {
+    if (!selectedClass) return;
+    const code = normaliseCode(selectedClass);
+    const q = query(collection(db, 'citizenScienceSubmissions'), where('classCode', '==', code));
+    const unsub = onSnapshot(q, snap => {
+      const rows = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      rows.sort((a, b) => (b.submittedAt?.toMillis?.() || 0) - (a.submittedAt?.toMillis?.() || 0));
+      setZySubmissions(rows);
+    });
+    return () => unsub();
+  }, [selectedClass]);
+
+  const denyZySubmission = async (sub) => {
+    if (!window.confirm(`Deny this Habitat Hero submission from ${sub.studentName}?`)) return;
+    setZySubBusy(p => ({ ...p, [sub.id]: true }));
+    try {
+      await updateDoc(doc(db, 'citizenScienceSubmissions', sub.id), { status: 'denied', reviewedAt: serverTimestamp(), reviewedBy: teacherEmail });
+    } catch (e) { alert('Deny failed: ' + e.message); }
+    setZySubBusy(p => ({ ...p, [sub.id]: false }));
+  };
+
+  const deleteZySubmission = async (sub) => {
+    if (!window.confirm(`Permanently delete this submission from ${sub.studentName}? This cannot be undone.`)) return;
+    setZySubBusy(p => ({ ...p, [sub.id]: true }));
+    try {
+      await deleteDoc(doc(db, 'citizenScienceSubmissions', sub.id));
+    } catch (e) { alert('Delete failed: ' + e.message); }
+    setZySubBusy(p => ({ ...p, [sub.id]: false }));
+  };
+
   const deleteStudent = async (s) => {
     if (!window.confirm(`Delete ${s.name}'s session? This cannot be undone.`)) return;
     setStudentActionBusy(p => ({ ...p, [s.id]: 'deleting' }));
@@ -203,6 +237,7 @@ export default function ClassDetailsScreen() {
   );
 
   const isZZ = cls.sessionType === 'zoosnooz';
+  const isZY = cls.sessionType === 'zooyard';
   const totalStudents  = students.length;
   const avgPoints      = totalStudents > 0 ? Math.round(students.reduce((s,st)=>s+(st.totalPoints||0),0)/totalStudents) : 0;
   const totalBadges    = students.reduce((s,st)=>s+(st.badges?.length||0),0);
@@ -466,8 +501,8 @@ export default function ClassDetailsScreen() {
             )}
           </div>
 
-          <p className="lms-nav-group-label" style={{ marginTop:'1.25rem' }}>Settings</p>
-          <div style={{ padding:'0 0.75rem 0.5rem' }}>
+          {!isZY && <p className="lms-nav-group-label" style={{ marginTop:'1.25rem' }}>Settings</p>}
+          {!isZY && <div style={{ padding:'0 0.75rem 0.5rem' }}>
             <div style={{
               borderRadius:'var(--t-r-md)',
               border: cls.gpsEnabled ? '1.5px solid rgba(34,197,94,0.3)' : '1.5px solid #F59E0B',
@@ -519,7 +554,7 @@ export default function ClassDetailsScreen() {
                 {cls.gpsEnabled ? '🔓 Disable GPS (Dept Devices)' : '📍 Enable GPS (GPS Devices)'}
               </button>
             </div>
-          </div>
+          </div>}
 
           <p className="lms-nav-group-label" style={{ marginTop:'1rem' }}>Actions</p>
           <nav className="lms-nav">
@@ -565,6 +600,21 @@ export default function ClassDetailsScreen() {
                       <div key={s.l} className="lms-stat-card animate-fade-in-up" style={{ borderTopColor:s.c, background:'rgba(255,255,255,0.04)', border:'1px solid rgba(46,125,85,0.2)' }}>
                         <div className="lms-stat-val" style={{ color:s.c, fontSize:'1.6rem' }}>{s.v}</div>
                         <div className="lms-stat-label" style={{ color:'rgba(184,212,192,0.6)' }}>{s.l}</div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })() : isZY ? (() => {
+                const zyHabitats  = ['koala', 'tiger', 'giraffe'];
+                const zyCompleted = students.filter(s => s.zooyard?.sessionCompleted).length;
+                const zyAvgPts    = students.length > 0 ? Math.round(students.reduce((s,st)=>s+(st.zooyard?.totalPoints||0),0)/students.length) : 0;
+                const zyBadges    = students.reduce((sum,s) => sum + zyHabitats.filter(id => s.zooyard?.[id]?.completed).length, 0);
+                return (
+                  <div className="lms-stat-grid" style={{ gridTemplateColumns:'repeat(4,1fr)', marginBottom:'1.75rem' }}>
+                    {[{l:'Students',v:totalStudents,c:'#3B82F6'},{l:'Avg Points',v:zyAvgPts,c:'#F59E0B'},{l:'Habitat Badges',v:zyBadges,c:'#2E7D55'},{l:'Completed',v:zyCompleted,c:'#10B981'}].map(s=>(
+                      <div key={s.l} className="lms-stat-card animate-fade-in-up" style={{ borderTopColor:s.c }}>
+                        <div className="lms-stat-val" style={{ color:s.c, fontSize:'1.6rem' }}>{s.v}</div>
+                        <div className="lms-stat-label">{s.l}</div>
                       </div>
                     ))}
                   </div>
@@ -768,8 +818,50 @@ export default function ClassDetailsScreen() {
                 );
               })()}
 
+              {/* ── ZooYard Habitat Hero submissions ── */}
+              {isZY && (
+                <div style={{ background:'var(--t-chalk)', borderRadius:'var(--t-r-md)', padding:'1.15rem', marginBottom:'1.75rem', border:'1px solid var(--t-stone)' }}>
+                  <h3 style={{ fontSize:'0.9rem', fontWeight:700, color:'var(--t-deep)', margin:'0 0 0.9rem' }}>🌱 Habitat Hero Submissions</h3>
+                  {zySubmissions.length === 0 ? (
+                    <p style={{ fontSize:'0.82rem', color:'var(--t-ash)', fontStyle:'italic', margin:0 }}>No submissions from this class yet.</p>
+                  ) : (
+                    <div style={{ display:'flex', flexDirection:'column', gap:'0.6rem' }}>
+                      {zySubmissions.map(sub => (
+                        <div key={sub.id} style={{ display:'grid', gridTemplateColumns:'auto 1fr auto', gap:'0.9rem', alignItems:'center', background:'white', border:'1px solid var(--t-mist)', borderRadius:'var(--t-r-sm)', padding:'0.7rem 0.9rem' }}>
+                          {sub.photoUrl && <img src={sub.photoUrl} alt="" style={{ width:52, height:52, objectFit:'cover', borderRadius:8 }} />}
+                          <div style={{ minWidth:0 }}>
+                            <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', flexWrap:'wrap' }}>
+                              <span style={{ fontWeight:700, fontSize:'0.84rem', color:'var(--t-deep)' }}>{sub.studentName}</span>
+                              <span style={{ fontSize:'0.63rem', fontWeight:700, padding:'0.12rem 0.45rem', borderRadius:'var(--t-r-pill)',
+                                color: sub.status === 'approved' ? '#166534' : sub.status === 'denied' ? '#991B1B' : '#92400E',
+                                background: sub.status === 'approved' ? '#DCFCE7' : sub.status === 'denied' ? '#FEE2E2' : '#FEF3C7' }}>
+                                {sub.status}
+                              </span>
+                            </div>
+                            {sub.note && <p style={{ margin:'0.2rem 0 0', fontSize:'0.76rem', color:'var(--t-slate)', fontStyle:'italic' }}>"{sub.note}"</p>}
+                          </div>
+                          <div style={{ display:'flex', gap:'0.4rem' }}>
+                            <button onClick={() => denyZySubmission(sub)} disabled={zySubBusy[sub.id] || sub.status === 'denied'}
+                              style={{ padding:'0.3rem 0.7rem', borderRadius:'var(--t-r-pill)', border:'1px solid var(--t-stone)', background:'white', color:'var(--t-slate)', fontSize:'0.7rem', fontWeight:600, cursor:'pointer' }}>
+                              Deny
+                            </button>
+                            <button onClick={() => deleteZySubmission(sub)} disabled={zySubBusy[sub.id]}
+                              style={{ padding:'0.3rem 0.7rem', borderRadius:'var(--t-r-pill)', border:'1px solid #FCA5A5', background:'white', color:'#DC2626', fontSize:'0.7rem', fontWeight:600, cursor:'pointer' }}>
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <p style={{ margin:'0.9rem 0 0', fontSize:'0.72rem', color:'var(--t-ash)', lineHeight:1.5 }}>
+                    You can deny or delete submissions from your own class. Final approval (which awards points) is handled by the Taronga staff team.
+                  </p>
+                </div>
+              )}
+
               {/* ── Class Insights (day mode) ── */}
-              {!isZZ && students.length > 0 && (() => {
+              {!isZZ && !isZY && students.length > 0 && (() => {
                 const animalCounts = {};
                 students.forEach(s => (s.badges||[]).forEach(b => { if(b.animal) animalCounts[b.animal]=(animalCounts[b.animal]||0)+1; }));
                 const topAnimals = Object.entries(animalCounts).sort((a,b)=>b[1]-a[1]).slice(0,6);

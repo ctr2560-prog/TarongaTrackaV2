@@ -1473,6 +1473,141 @@ function ZooSnoozAdminTab({ classes }) {
   );
 }
 
+// ─── Tab: ZooYard ─────────────────────────────────────────────────────────────
+function ZooYardAdminTab({ classes }) {
+  const zyClasses = classes.filter(c => c.sessionType === 'zooyard');
+
+  const [submissions, setSubmissions] = useState([]);
+  const [filter,       setFilter]     = useState('pending');
+  const [actioning,    setActioning]  = useState(null);
+  const [lightbox,     setLightbox]   = useState(null);
+
+  useEffect(() => {
+    const q = query(collection(db, 'citizenScienceSubmissions'), orderBy('submittedAt', 'desc'));
+    return onSnapshot(q, snap => setSubmissions(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+  }, []);
+
+  const approve = async (sub) => {
+    setActioning(sub.id);
+    try {
+      await updateDoc(doc(db, 'citizenScienceSubmissions', sub.id), { status: 'approved', reviewedAt: serverTimestamp(), reviewedBy: 'staff' });
+      if (sub.schoolName) {
+        const sid = sub.schoolName.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+        await setDoc(doc(db, 'schools', sid), { name: sub.schoolName, totalPoints: increment(30), lastUpdated: serverTimestamp() }, { merge: true });
+      }
+    } catch (e) { alert('Approval failed: ' + e.message); }
+    setActioning(null);
+  };
+
+  const deny = async (sub) => {
+    if (!window.confirm(`Deny this Habitat Hero submission from ${sub.studentName}?`)) return;
+    setActioning(sub.id);
+    try {
+      await updateDoc(doc(db, 'citizenScienceSubmissions', sub.id), { status: 'denied', reviewedAt: serverTimestamp(), reviewedBy: 'staff' });
+    } catch (e) { alert('Deny failed: ' + e.message); }
+    setActioning(null);
+  };
+
+  const filtered = filter === 'all' ? submissions : submissions.filter(s => s.status === filter);
+  const pendingCount = submissions.filter(s => s.status === 'pending').length;
+
+  const statusStyle = (s) => {
+    if (s === 'approved') return { color:'#166534', background:'#DCFCE7', border:'1px solid #86EFAC' };
+    if (s === 'denied')   return { color:'#991B1B', background:'#FEE2E2', border:'1px solid #FCA5A5' };
+    return { color:'#92400E', background:'#FEF3C7', border:'1px solid #FCD34D' };
+  };
+
+  const fmtDate = (ts) => {
+    if (!ts) return '—';
+    const d = ts.toDate ? ts.toDate() : new Date(ts);
+    return d.toLocaleDateString('en-AU', { day:'numeric', month:'short', year:'numeric' });
+  };
+
+  return (
+    <div>
+      {/* Classes */}
+      <div style={{ background:'white', borderRadius:'var(--t-r-lg)', border:'1px solid var(--t-stone)', padding:'1.25rem', marginBottom:'1.5rem' }}>
+        <h3 style={{ fontSize:'0.9rem', fontWeight:700, color:'var(--t-deep)', margin:'0 0 1rem', textTransform:'uppercase', letterSpacing:'0.06em' }}>ZooYard Classes</h3>
+        {zyClasses.length === 0 ? (
+          <p style={{ fontSize:'0.82rem', color:'var(--t-ash)', fontStyle:'italic' }}>No ZooYard classes yet.</p>
+        ) : (
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(240px, 1fr))', gap:'0.6rem' }}>
+            {zyClasses.map(c => (
+              <div key={c.classCode} style={{ padding:'0.7rem 0.9rem', borderRadius:'var(--t-r-sm)', background:'var(--t-chalk)', border:'1px solid var(--t-mist)' }}>
+                <div style={{ fontWeight:700, color:'var(--t-deep)', fontSize:'0.85rem' }}>{c.className}</div>
+                <div style={{ fontSize:'0.75rem', color:'var(--t-slate)' }}>{c.schoolName} · Stage {c.stage} · {c.studentCount} student{c.studentCount!==1?'s':''}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Habitat Hero submissions */}
+      <div style={{ background:'white', borderRadius:'var(--t-r-lg)', border:'1px solid var(--t-stone)', padding:'1.25rem' }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'1rem', gap:'1rem', flexWrap:'wrap' }}>
+          <h3 style={{ fontSize:'0.9rem', fontWeight:700, color:'var(--t-deep)', margin:0, textTransform:'uppercase', letterSpacing:'0.06em' }}>
+            Habitat Hero Submissions
+            {pendingCount > 0 && <span style={{ marginLeft:'0.6rem', background:'#EF4444', color:'white', fontSize:'0.65rem', fontWeight:800, padding:'0.1rem 0.5rem', borderRadius:'var(--t-r-pill)' }}>{pendingCount} pending</span>}
+          </h3>
+          <div style={{ display:'flex', gap:'0.4rem' }}>
+            {['pending','approved','denied','all'].map(f => (
+              <button key={f} onClick={() => setFilter(f)}
+                style={{ padding:'0.3rem 0.75rem', borderRadius:'var(--t-r-pill)', border:`1.5px solid ${filter===f ? 'var(--t-mid)' : 'var(--t-stone)'}`, background: filter===f ? 'var(--t-mid)' : 'white', color: filter===f ? 'white' : 'var(--t-slate)', fontSize:'0.75rem', fontWeight:600, cursor:'pointer', textTransform:'capitalize' }}>
+                {f}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {filtered.length === 0 ? (
+          <p style={{ fontSize:'0.82rem', color:'var(--t-ash)', fontStyle:'italic', textAlign:'center', padding:'2rem 0' }}>No {filter === 'all' ? '' : filter} submissions.</p>
+        ) : (
+          <div style={{ display:'flex', flexDirection:'column', gap:'0.75rem' }}>
+            {filtered.map(sub => (
+              <div key={sub.id} style={{ border:'1px solid var(--t-stone)', borderRadius:'var(--t-r-md)', overflow:'hidden' }}>
+                <div style={{ display:'grid', gridTemplateColumns:'auto 1fr auto', gap:'1rem', padding:'0.9rem 1rem', alignItems:'center' }}>
+                  {sub.photoUrl && (
+                    <img src={sub.photoUrl} alt="" onClick={() => setLightbox(sub.photoUrl)}
+                      style={{ width:64, height:64, objectFit:'cover', borderRadius:8, cursor:'pointer', flexShrink:0 }} />
+                  )}
+                  <div style={{ minWidth:0 }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:'0.6rem', marginBottom:'0.3rem', flexWrap:'wrap' }}>
+                      <span style={{ fontSize:'0.88rem', fontWeight:700, color:'var(--t-deep)' }}>{sub.studentName}</span>
+                      <span style={{ fontSize:'0.65rem', fontWeight:700, padding:'0.15rem 0.5rem', borderRadius:'var(--t-r-pill)', ...statusStyle(sub.status) }}>{sub.status}</span>
+                    </div>
+                    <div style={{ fontSize:'0.76rem', color:'var(--t-slate)', marginBottom:'0.2rem' }}>{sub.schoolName} · Class {sub.classCode} · {fmtDate(sub.submittedAt)}</div>
+                    {sub.note && <p style={{ margin:0, fontSize:'0.78rem', color:'var(--t-slate)', fontStyle:'italic' }}>"{sub.note}"</p>}
+                  </div>
+                  <div style={{ display:'flex', gap:'0.4rem', flexShrink:0 }}>
+                    {sub.status === 'pending' && (
+                      <>
+                        <button onClick={() => approve(sub)} disabled={actioning === sub.id}
+                          style={{ padding:'0.35rem 0.8rem', borderRadius:'var(--t-r-pill)', border:'none', background:'#16A34A', color:'white', fontSize:'0.75rem', fontWeight:700, cursor:'pointer' }}>
+                          Approve
+                        </button>
+                        <button onClick={() => deny(sub)} disabled={actioning === sub.id}
+                          style={{ padding:'0.35rem 0.8rem', borderRadius:'var(--t-r-pill)', border:'1px solid var(--t-stone)', background:'white', color:'var(--t-slate)', fontSize:'0.75rem', fontWeight:600, cursor:'pointer' }}>
+                          Deny
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {lightbox && (
+        <div onClick={() => setLightbox(null)} style={{ position:'fixed', inset:0, zIndex:9999, background:'rgba(0,0,0,0.85)', display:'flex', alignItems:'center', justifyContent:'center', padding:'2rem', cursor:'zoom-out' }}>
+          <img src={lightbox} alt="" style={{ maxWidth:'100%', maxHeight:'100%', borderRadius:12 }} />
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Tab: Overview ────────────────────────────────────────────────────────────
 function OverviewTab({ classes, loading, onClassClick }) {
   const [dateFilter,    setDateFilter]    = useState('all');
@@ -2557,8 +2692,8 @@ export default function AdminDashboardScreen() {
     finally { setCreatingNight(false); }
   };
 
-  const tabs = ['overview', 'analytics', 'zoosnooz', 'review', 'prePost', 'challenges', 'bookings', 'users', 'controlRoom'];
-  const tabLabels = { overview:'Overview', analytics:'Analytics', zoosnooz:'🌙 ZooSnooz', review:'Review', prePost:'Pre/Post Lessons', challenges:'Challenges', bookings:'Bookings', users:'Users', controlRoom:'🔒 Control Room' };
+  const tabs = ['overview', 'analytics', 'zoosnooz', 'zooyard', 'review', 'prePost', 'challenges', 'bookings', 'users', 'controlRoom'];
+  const tabLabels = { overview:'Overview', analytics:'Analytics', zoosnooz:'🌙 ZooSnooz', zooyard:'🌳 ZooYard', review:'Review', prePost:'Pre/Post Lessons', challenges:'Challenges', bookings:'Bookings', users:'Users', controlRoom:'🔒 Control Room' };
 
   return (
     <div style={{ position:'fixed', inset:0, background:'var(--t-canvas)', display:'flex', flexDirection:'column' }}>
@@ -2615,6 +2750,7 @@ export default function AdminDashboardScreen() {
           {tab === 'overview'    && <OverviewTab classes={classes} loading={loading} onClassClick={code=>{setSelectedAdminClass(code);setCurrentScreen('adminClassView');}} />}
           {tab === 'analytics'   && <AnalyticsTab classes={classes} />}
           {tab === 'zoosnooz'    && <ZooSnoozAdminTab classes={classes} />}
+          {tab === 'zooyard'     && <ZooYardAdminTab classes={classes} />}
           {tab === 'review'      && <ReviewTab classes={classes} />}
           {tab === 'prePost'     && <PrePostLinksTab />}
           {tab === 'challenges'  && <ChallengesTab />}

@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import { useStudent } from '../context/StudentContext';
 import { ZOOSNOOZ_ANIMALS } from '../data/zoosnoozAnimals';
 import StudentFeedbackModal from '../components/StudentFeedbackModal';
-import { doc, setDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
 import { ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
 import { normaliseCode, safeStudentId, getMinWords } from '../utils/helpers';
@@ -403,9 +403,10 @@ export default function ZooSnoozScreen() {
       const code = normaliseCode(classCode);
       const sid  = safeStudentId(studentName);
       try {
-        await setDoc(doc(db, 'classes', code, 'students', sid),
-          { [`zoosnooz.${zzAnimal.id}`]: { completed: true, ...badgeData, videoCompleted: !!videoURL, updatedAt: serverTimestamp() } },
-          { merge: true }
+        // updateDoc (not setDoc+merge) so the dotted key nests under zoosnooz.{animalId}
+        // rather than becoming a literal field name containing dots.
+        await updateDoc(doc(db, 'classes', code, 'students', sid),
+          { [`zoosnooz.${zzAnimal.id}`]: { completed: true, ...badgeData, videoCompleted: !!videoURL, updatedAt: serverTimestamp() } }
         );
       } catch (e) { console.warn('Badge write:', e); }
     }
@@ -494,9 +495,8 @@ export default function ZooSnoozScreen() {
               const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
               const code = normaliseCode(classCode);
               const sid  = safeStudentId(studentName);
-              await setDoc(doc(db, 'classes', code, 'students', sid),
-                { [`zoosnooz.${animalId}.videoURL`]: downloadURL, [`zoosnooz.${animalId}.videoCompleted`]: true },
-                { merge: true }
+              await updateDoc(doc(db, 'classes', code, 'students', sid),
+                { [`zoosnooz.${animalId}.videoURL`]: downloadURL, [`zoosnooz.${animalId}.videoCompleted`]: true }
               );
               setZzUploadProgress(prev => ({ ...prev, [animalId]: 'done' }));
             } catch(e) {

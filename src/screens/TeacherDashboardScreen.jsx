@@ -677,7 +677,7 @@ export default function TeacherDashboardScreen() {
                           </p>
                           {(cls.location || cls.subject) && (
                             <p className="lms-class-meta" style={{ marginTop:'0.15rem', color:'var(--t-sage)' }}>
-                              {cls.location && <span style={{ fontWeight:600 }}>{{ 'taronga-sydney':'Taronga Sydney', 'zoosnooz-sydney':'ZooSnooz · Sydney', 'dubbo':'Taronga Dubbo', 'school':'Your School' }[cls.location] || cls.location}</span>}
+                              {cls.location && <span style={{ fontWeight:600 }}>{{ 'taronga-sydney':'Taronga Sydney', 'zoosnooz-sydney':'ZooSnooz · Sydney', 'dubbo':'Taronga Dubbo', 'school':'ZooYard · School' }[cls.location] || cls.location}</span>}
                               {cls.location && cls.subject && <span style={{ color:'var(--t-ash)' }}> · </span>}
                               {cls.subject && <span style={{ textTransform:'capitalize', color:'var(--t-slate)' }}>{cls.subject}</span>}
                             </p>

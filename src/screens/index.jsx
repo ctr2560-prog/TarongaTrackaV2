@@ -28,6 +28,7 @@ export { default as AssessmentIdeasScreen }   from './AssessmentIdeasScreen';
 export { default as ConservationGalleryScreen } from './ConservationGalleryScreen';
 export { default as DeviceBookingScreen }     from './DeviceBookingScreen';
 export { default as ZooSnoozScreen }          from './ZooSnoozScreen';
+export { default as ZooYardScreen }           from './ZooYardScreen';
 export { default as DocumentaryViewer }       from './DocumentaryViewer';
 export { default as ComingSoonScreen }        from './ComingSoonScreen';
 export { default as PublicEntryScreen }       from './PublicEntryScreen';
