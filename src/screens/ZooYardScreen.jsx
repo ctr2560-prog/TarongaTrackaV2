@@ -254,10 +254,18 @@ export default function ZooYardScreen() {
 
   // ── Per-animal phases ────────────────────────────────────────────────────
   if (zyAnimal && zyPhase === 'attest') {
+    const attestTheme = ZOOYARD_HABITAT_THEME[zyAnimal.habitatArea] || ZOOYARD_HABITAT_THEME.bushland;
     return (
-      <div style={{ position:'fixed', inset:0, background:`linear-gradient(160deg, #071E14, ${zyAnimal.habitatColor}55)`, display:'flex', alignItems:'center', justifyContent:'center', padding:'1.5rem' }}>
+      <div style={{ position:'fixed', inset:0, background:attestTheme.bgGradient, display:'flex', alignItems:'center', justifyContent:'center', padding:'1.5rem', overflow:'hidden' }}>
         <HomeButton dark onHome={goHome} />
-        <div className="animate-scale-in" style={{ background:'white', borderRadius:20, padding:'2rem 1.75rem', maxWidth:420, width:'100%', textAlign:'center' }}>
+        <video
+          key={attestTheme.videoBg}
+          autoPlay loop muted playsInline
+          src={attestTheme.videoBg}
+          style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover' }}
+        />
+        <div style={{ position:'absolute', inset:0, background:'linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.3) 40%, rgba(0,0,0,0.6) 100%)' }} />
+        <div className="animate-scale-in" style={{ position:'relative', background:'white', borderRadius:20, padding:'2rem 1.75rem', maxWidth:420, width:'100%', textAlign:'center' }}>
           <div style={{ fontSize:'2.5rem', marginBottom:'0.5rem' }}>📍</div>
           <h2 className="taronga-title" style={{ fontSize:'1.5rem', color:'#0A2F1F', marginBottom:'0.5rem' }}>{zyAnimal.habitatLabel}</h2>
           <p style={{ color:'#3A4A3F', fontSize:'0.95rem', lineHeight:1.6, marginBottom:'1.5rem' }}>{zyAnimal.selfAttestPrompt}</p>
