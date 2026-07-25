@@ -18,7 +18,7 @@ Live URL: deployed to Firebase Hosting (project: `tarongatracka`), region: `aust
 |---|---|
 | Framework | React 18 + Vite |
 | State | React Context (no Redux/Zustand) |
-| Backend | Firebase — Firestore, Auth (email magic link), Storage, Functions v2 |
+| Backend | Firebase — Firestore, Auth (email + password), Storage, Functions v2 |
 | Email | Resend API (via Cloud Functions) |
 | Hosting | Firebase Hosting (`dist/` folder) |
 | Runtime (Functions) | Node.js 22 |
@@ -136,9 +136,12 @@ There are **three separate auth systems** — they do not share a Firebase Auth 
 
 | User type | Auth mechanism |
 |---|---|
-| **Teachers** | Firebase Auth — passwordless magic link email (`sendMagicLink` Cloud Function + Resend) |
+| **Teachers** | Firebase Auth — email + password (`TeacherLoginScreen.jsx`, client-side `signInWithEmailAndPassword`/`createUserWithEmailAndPassword`/`sendPasswordResetEmail`). Password-based on purpose — an earlier magic-link approach (`sendMagicLink` Cloud Function) was abandoned because NSW DoE email filtering breaks link-based sign-in; that function is still deployed but is dead code, not called from anywhere in `src/`. |
 | **Students** | No auth — class code + chosen alias stored in `localStorage` |
 | **Staff (Taronga admin)** | Code-based — access code checked against `adminAccess` Firestore collection; no Firebase Auth |
+
+### Taronga Education ecosystem — shared login (in progress)
+Tracka is the foundation of a wider "Taronga Education" ecosystem — one login (email + password) intended to grant access to Tracka, **Wildly by Taronga** (`/Users/cameronrodgers/wildly`, separate repo/Firebase project `wildly-762f5`, no live users yet), and future products. `TeacherLoginScreen.jsx` is branded accordingly (both product logos, "Multiple applications, one log-in") and every successful sign-in/registration merges `products: arrayUnion('tracka')` into the `teachers/{email}` doc, so the collection can track ecosystem-wide app access without a rename or migration — the collection is still called `teachers` (not `educators`) by deliberate choice, to avoid migrating live teacher data for a cosmetic rename. Wildly repointing at this same Firebase project/backend, and merging Firestore rules, is a deferred follow-up phase, not yet done.
 
 ### Firestore rules gotcha
 The staff portal uses code-based login (no Firebase Auth), so **any collection the staff portal reads or writes must have `allow ... if true`** — you cannot use `request.auth != null` for those paths. This is intentional; security comes from the access code being secret.
@@ -181,9 +184,10 @@ A summary is also written to `zoosnooz_docs/{classCode}_{studentId}` for the NFC
 
 | Function | Trigger | What it does |
 |---|---|---|
-| `sendMagicLink` | HTTPS (public) | Generates Firebase email sign-in link, sends via Resend |
 | `onDeviceBookingCreated` | Firestore `onDocumentCreated` on `deviceBookings/{id}` | Emails `ctr2560@gmail.com` with booking details |
 | `sendMentorReport` | HTTPS (public, token-gated via `MENTOR_REPORT_TOKEN` env var) | Sends the weekly mentor report email to `ctr2560@gmail.com` — see Weekly Mentor Report Automation section |
+
+**Note:** `sendMagicLink` is still deployed but is dead code — teacher auth moved to email+password (see Authentication Model section) and nothing in `src/` calls it anymore. Left in place rather than deleted; safe to remove in a future cleanup.
 
 Deploy: `firebase deploy --only functions`
 
