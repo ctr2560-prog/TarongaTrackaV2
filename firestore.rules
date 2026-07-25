@@ -119,5 +119,54 @@ service cloud.firestore {
       allow read: if true;
       allow write: if true;
     }
+
+    // ── Wildly by Taronga ──────────────────────────────────────────────────────
+    // Wildly shares this Firebase project (and the `teachers/{email}` identity
+    // above) rather than having its own — see taronga-tracka-vite CLAUDE.md,
+    // "Taronga Education ecosystem" section. isWildlyStaff() mirrors Wildly's
+    // former standalone isStaff() check, just against the shared teacher doc.
+    function isWildlyStaff() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/teachers/$(request.auth.token.email))
+        && get(/databases/$(database)/documents/teachers/$(request.auth.token.email)).data.role in [
+          "Education Staff", "Curriculum Leader", "School Leader"
+        ];
+    }
+
+    match /dashboardConfig/{docId} {
+      allow read: if true;
+      allow write: if isWildlyStaff();
+    }
+
+    match /contentItems/{docId} {
+      allow read: if true;
+      allow write: if isWildlyStaff();
+    }
+
+    match /professionalLearning/{docId} {
+      allow read: if true;
+      allow write: if isWildlyStaff();
+    }
+
+    match /tarongaTvVideos/{docId} {
+      allow read: if true;
+      allow write: if isWildlyStaff();
+    }
+
+    match /upcomingEvents/{docId} {
+      allow read: if true;
+      allow write: if isWildlyStaff();
+    }
+
+    match /liveSessions/{docId} {
+      allow read: if true;
+      allow create, update, delete: if request.auth != null;
+    }
+
+    match /liveResponses/{docId} {
+      allow read: if request.auth != null;
+      allow create, update: if true;
+      allow delete: if isWildlyStaff();
+    }
   }
 }
