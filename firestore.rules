@@ -1,3 +1,10 @@
+// ⚠️ THIS IS THE ONLY CANONICAL FIRESTORE RULES FILE for the shared
+// "tarongatracka" project — used by both Taronga Tracka and Wildly by
+// Taronga (/Users/cameronrodgers/wildly, separate repo, no local rules
+// file of its own by design). Only ever deploy rules from THIS repo
+// (`firebase deploy --only firestore:rules`, run from taronga-tracka-vite).
+// If a firestore.rules file ever reappears in the Wildly repo, delete it —
+// don't deploy it. See CLAUDE.md "Taronga Education ecosystem" section.
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
