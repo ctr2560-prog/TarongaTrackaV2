@@ -69,6 +69,60 @@ const FEATURES = [
   },
 ];
 
+// `fx`/`fy` are the focal point (in % of the shared Wildly dashboard screenshot) of
+// the part of the real interface each offering lives in, so the rail doubles as a
+// product tour. See wildlyFraming() for how they become a transform.
+const WILDLY_OFFERINGS = [
+  {
+    id: 'journey',
+    label: 'Before, During & After',
+    teaser: 'The whole dashboard',
+    desc: 'Resources for every stage of the journey - prepare your class, support them on the day, and keep the learning going once you\'re back in the classroom.',
+    fx: 50, fy: 45, zoom: 1.02,
+    icon: <><circle cx="4" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="20" cy="12" r="2"/><path d="M6 12h4M14 12h4"/></>,
+  },
+  {
+    id: 'programs',
+    label: 'Unit Programs & Assessment',
+    teaser: 'Explore by subject',
+    desc: 'Ready-to-teach unit programs and assessment tasks, written to the NSW syllabus. Hours of planning and marking preparation already done for you.',
+    fx: 55, fy: 88, zoom: 1.7,
+    icon: <><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h8M8 17h4"/></>,
+  },
+  {
+    id: 'action',
+    label: 'Student Action Tasks',
+    teaser: 'Start a learning path',
+    desc: 'Real conservation challenges students can take on themselves - turning what they learned at the zoo into action at school and at home.',
+    fx: 33, fy: 50, zoom: 2,
+    icon: <><path d="M12 20v-7"/><path d="M12 13c0-4 3-7 7-7 0 4-3 7-7 7z"/><path d="M12 15c0-3-2.5-5-5.5-5 0 3 2.5 5 5.5 5z"/></>,
+  },
+  {
+    id: 'pl',
+    label: 'Professional Learning',
+    teaser: 'In the main navigation',
+    desc: 'Build your own practice with Taronga-led professional learning on conservation, sustainability and nature-based teaching.',
+    fx: 49, fy: 5,  zoom: 2.3,
+    icon: <><path d="M4 6h7a2 2 0 0 1 2 2v11a2 2 0 0 0-2-2H4z"/><path d="M20 6h-7a2 2 0 0 0-2 2v11a2 2 0 0 1 2-2h7z"/></>,
+  },
+  {
+    id: 'tv',
+    label: 'Taronga TV',
+    teaser: 'In the main navigation',
+    desc: 'Stream keeper stories, animal footage and behind-the-scenes films from across Taronga - classroom-ready, any time of year.',
+    fx: 39, fy: 5,  zoom: 2.3,
+    icon: <><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M10 10.5l4.5 3-4.5 3z"/><path d="M8 3l3 3M16 3l-3 3"/></>,
+  },
+  {
+    id: 'live',
+    label: 'Live Recommendations',
+    teaser: 'Fed by your class reports',
+    desc: 'Wildly reads your class\'s Tracka engagement and suggests what to teach next - so your follow-up lessons match what your students actually explored.',
+    fx: 7,  fy: 22, zoom: 2.2,
+    icon: <><path d="M4 14a8 8 0 0 1 8-8"/><path d="M8 16a4 4 0 0 1 4-4"/><circle cx="12" cy="18" r="1.5"/></>,
+  },
+];
+
 const STEPS = [
   { n:'01', label:'Create a Class',              role:'teacher', desc:'Set up your class in the teacher portal and receive a unique join code in seconds.' },
   { n:'02', label:'Students Join',               role:'student', desc:'Students enter the class code on arrival to connect instantly to your group.' },
@@ -108,6 +162,102 @@ function BrowserFrame({ src, alt = '' }) {
       <div style={{ aspectRatio:'16/9', overflow:'hidden' }}>
         <img src={src} alt={alt} style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:'top', display:'block' }} />
       </div>
+    </div>
+  );
+}
+
+// Centres the focal point in the frame, clamped so a focal point near an edge of the
+// screenshot pans as far as it can rather than exposing blank space past the image.
+function wildlyFraming({ fx, fy, zoom }) {
+  const half = 50 / zoom;
+  const clamp = v => Math.min(Math.max(v, half), 100 - half);
+  return `scale(${zoom}) translate(${(50 - clamp(fx)).toFixed(2)}%, ${(50 - clamp(fy)).toFixed(2)}%)`;
+}
+
+function WildlySection() {
+  const [activeId, setActiveId] = useState(WILDLY_OFFERINGS[0].id);
+  const [revealed, setRevealed] = useState(false);
+  const rootRef = useRef(null);
+
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { setRevealed(true); io.disconnect(); }
+    }, { threshold: 0.15 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  const active = WILDLY_OFFERINGS.find(o => o.id === activeId);
+  const activeIndex = WILDLY_OFFERINGS.findIndex(o => o.id === activeId);
+
+  const onRailKey = e => {
+    const dir = e.key === 'ArrowDown' ? 1 : e.key === 'ArrowUp' ? -1 : 0;
+    if (!dir) return;
+    e.preventDefault();
+    const next = (activeIndex + dir + WILDLY_OFFERINGS.length) % WILDLY_OFFERINGS.length;
+    setActiveId(WILDLY_OFFERINGS[next].id);
+  };
+
+  return (
+    <div ref={rootRef} style={{ width:'100%', maxWidth:'min(92vw, 960px)', padding:'0 1.5rem', marginTop:'3rem' }}>
+      <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', marginBottom:'1.6rem' }}>
+        <div style={{ flex:1, height:'1px', background:'rgba(255,255,255,0.07)' }} />
+        <span style={{ fontSize:'0.56rem', fontWeight:900, color:'rgba(255,255,255,0.22)', textTransform:'uppercase', letterSpacing:'0.3em', whiteSpace:'nowrap' }}>Beyond the Visit</span>
+        <div style={{ flex:1, height:'1px', background:'rgba(255,255,255,0.07)' }} />
+      </div>
+
+      <div className={revealed ? 'wildly-lead wildly-in' : 'wildly-lead'} style={{ marginBottom:'1.75rem' }}>
+        <div style={{ display:'inline-flex', alignItems:'center', gap:'0.4rem', background:'rgba(80,200,160,0.1)', border:'1px solid rgba(80,200,160,0.22)', borderRadius:'99px', padding:'0.28rem 0.8rem', marginBottom:'1rem' }}>
+          <div style={{ width:'5px', height:'5px', borderRadius:'50%', background:'#50c8a0', flexShrink:0 }} />
+          <span style={{ fontSize:'0.62rem', fontWeight:800, color:'#50c8a0', textTransform:'uppercase', letterSpacing:'0.2em' }}>Online Learning Platform</span>
+        </div>
+        <h3 className="taronga-title" style={{ fontSize:'clamp(2rem,4.6vw,3.1rem)', color:'white', margin:'0 0 0.6rem', letterSpacing:'-0.01em', lineHeight:1.05 }}>
+          Wildly by Taronga
+        </h3>
+        <p style={{ fontSize:'clamp(0.9rem,1.35vw,1.08rem)', color:'rgba(255,255,255,0.55)', lineHeight:1.75, margin:0, maxWidth:'700px', textWrap:'pretty' }}>
+          One log-in extends your excursion into a full teaching program - curriculum-aligned, teacher-first, and connected straight to what your class did in Tracka.
+        </p>
+      </div>
+
+      <div className="wildly-split">
+        <div className="wildly-rail" role="tablist" aria-orientation="vertical" aria-label="What's inside Wildly" onKeyDown={onRailKey}>
+          {WILDLY_OFFERINGS.map((o, i) => {
+            const on = o.id === activeId;
+            return (
+              <button key={o.id} role="tab" aria-selected={on} tabIndex={on ? 0 : -1}
+                className={`wildly-row${on ? ' wildly-row-on' : ''}${revealed ? ' wildly-in' : ''}`}
+                style={{ animationDelay: `${0.06 * i + 0.1}s` }}
+                onClick={() => setActiveId(o.id)} onMouseEnter={() => setActiveId(o.id)}>
+                <span className="wildly-bar" />
+                <svg className="wildly-ico" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">{o.icon}</svg>
+                <span className="wildly-label">{o.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className={revealed ? 'wildly-stage wildly-in' : 'wildly-stage'} style={{ animationDelay:'0.18s' }}>
+          <div className="wildly-frame">
+            <img src="/images/screenshots/app-wildly.jpg" alt="The Wildly by Taronga teacher dashboard"
+              style={{ transform: wildlyFraming(active) }} />
+            <span className="wildly-corner wildly-c-tl" /><span className="wildly-corner wildly-c-tr" />
+            <span className="wildly-corner wildly-c-bl" /><span className="wildly-corner wildly-c-br" />
+            <span key={activeId} className="wildly-sweep" />
+            <span className="wildly-teaser">{active.teaser}</span>
+          </div>
+          <div key={activeId} className="wildly-detail">
+            <div className="wildly-detail-title">{active.label}</div>
+            <p className="wildly-detail-body">{active.desc}</p>
+          </div>
+        </div>
+      </div>
+
+      <a href="https://wildlybytaronga.com.au" target="_blank" rel="noopener noreferrer" className="wildly-cta">
+        Explore Wildly
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}><path d="M7 17L17 7"/><path d="M7 7h10v10"/></svg>
+      </a>
     </div>
   );
 }
@@ -455,6 +605,8 @@ export default function HomeScreen() {
               </div>
             </div>
 
+            <WildlySection />
+
             <div style={{ position:'absolute', bottom:'1.4rem', left:'50%', transform:'translateX(-50%)', opacity:0.25, animation:'lm-bob 2.6s ease-in-out infinite', pointerEvents:'none' }}>
               <svg width="16" height="9" viewBox="0 0 18 10" fill="none"><path d="M1 1L9 9L17 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
             </div>
@@ -563,6 +715,97 @@ export default function HomeScreen() {
           50%       { opacity:1;  transform:scale(1.35); }
         }
         .mission-scroll::-webkit-scrollbar { display:none; }
+
+        @keyframes wildly-in    { 0% { opacity:0; transform:translateY(14px); } 100% { opacity:1; transform:translateY(0); } }
+        @keyframes wildly-sweep { 0% { opacity:0; transform:translateY(-100%); } 35% { opacity:1; } 100% { opacity:0; transform:translateY(100%); } }
+        @keyframes wildly-fade  { 0% { opacity:0; transform:translateY(6px); } 100% { opacity:1; transform:translateY(0); } }
+
+        .wildly-lead, .wildly-row, .wildly-stage { opacity:0; }
+        .wildly-in { animation: wildly-in 0.6s cubic-bezier(0.22,1,0.36,1) both; }
+
+        .wildly-split { display:grid; grid-template-columns: minmax(0,0.82fr) minmax(0,1.18fr); gap:1.5rem; align-items:stretch; }
+
+        .wildly-rail { display:flex; flex-direction:column; justify-content:space-between; gap:0.1rem; }
+        .wildly-row {
+          position:relative; display:flex; align-items:center; gap:0.7rem;
+          width:100%; padding:0.82rem 0.75rem 0.82rem 1rem; text-align:left;
+          background:none; border:0; border-radius:10px; cursor:pointer;
+          color:rgba(255,255,255,0.34); transition:color 0.25s, background 0.25s;
+        }
+        .wildly-row + .wildly-row { box-shadow: inset 0 1px 0 rgba(255,255,255,0.05); }
+        .wildly-row:hover  { color:rgba(255,255,255,0.72); }
+        .wildly-row-on     { color:#fff; background:rgba(80,200,160,0.07); }
+        .wildly-row:focus-visible { outline:2px solid #7fe0bb; outline-offset:-2px; }
+        .wildly-bar {
+          position:absolute; left:0; top:50%; width:2px; height:0; border-radius:2px;
+          background:#50c8a0; transform:translateY(-50%);
+          transition:height 0.32s cubic-bezier(0.22,1,0.36,1);
+        }
+        .wildly-row-on .wildly-bar { height:62%; }
+        .wildly-ico    { flex-shrink:0; opacity:0.5; transition:opacity 0.25s, color 0.25s; }
+        .wildly-row-on .wildly-ico { opacity:1; color:#50c8a0; }
+        .wildly-label  { font-size:clamp(0.84rem,1.15vw,0.97rem); font-weight:700; letter-spacing:-0.005em; line-height:1.3; }
+
+        .wildly-frame {
+          position:relative; aspect-ratio:16/9; overflow:hidden; border-radius:14px;
+          background:#0b1a13; border:1px solid rgba(80,200,160,0.2);
+        }
+        .wildly-frame img {
+          width:100%; height:100%; object-fit:cover; display:block;
+          transition: transform 0.75s cubic-bezier(0.4,0,0.2,1);
+        }
+        .wildly-frame::after {
+          content:''; position:absolute; inset:0; pointer-events:none; border-radius:14px;
+          box-shadow: inset 0 0 34px 10px rgba(5,20,14,0.55);
+        }
+        .wildly-corner {
+          position:absolute; z-index:2; width:16px; height:16px; pointer-events:none;
+          border:2px solid #7fe0bb; filter:drop-shadow(0 0 4px rgba(5,20,14,0.9));
+        }
+        .wildly-c-tl { top:9px;    left:9px;  border-right:0; border-bottom:0; border-radius:4px 0 0 0; }
+        .wildly-c-tr { top:9px;    right:9px; border-left:0;  border-bottom:0; border-radius:0 4px 0 0; }
+        .wildly-c-bl { bottom:9px; left:9px;  border-right:0; border-top:0;    border-radius:0 0 0 4px; }
+        .wildly-c-br { bottom:9px; right:9px; border-left:0;  border-top:0;    border-radius:0 0 4px 0; }
+        .wildly-sweep {
+          position:absolute; inset:0; pointer-events:none;
+          background:linear-gradient(180deg, transparent 0%, rgba(80,200,160,0.16) 50%, transparent 100%);
+          animation: wildly-sweep 0.75s ease-out both;
+        }
+        .wildly-teaser {
+          position:absolute; z-index:2; left:34px; bottom:10px; padding:0.24rem 0.6rem;
+          font-size:0.56rem; font-weight:900; letter-spacing:0.18em; text-transform:uppercase;
+          color:#7fe0bb; background:rgba(5,20,14,0.82); border:1px solid rgba(80,200,160,0.28);
+          border-radius:99px; backdrop-filter:blur(6px);
+        }
+
+        .wildly-detail { padding:1.1rem 0.2rem 0; animation: wildly-fade 0.4s ease both; }
+        .wildly-detail-title { font-size:clamp(1rem,1.5vw,1.18rem); font-weight:800; color:#fff; letter-spacing:-0.01em; margin-bottom:0.4rem; }
+        .wildly-detail-body  { font-size:clamp(0.8rem,1.1vw,0.92rem); color:rgba(255,255,255,0.5); line-height:1.72; margin:0; }
+
+        .wildly-cta {
+          display:inline-flex; align-items:center; gap:0.5rem; margin-top:1.9rem;
+          padding:0.72rem 1.45rem; border-radius:var(--t-r-pill);
+          border:1.5px solid rgba(80,200,160,0.38); background:rgba(80,200,160,0.09);
+          color:#50c8a0; text-decoration:none; font-weight:700; font-size:0.8rem;
+          text-transform:uppercase; letter-spacing:0.1em; transition:all 0.22s;
+        }
+        .wildly-cta:hover { background:rgba(80,200,160,0.2); color:#7fe0bb; transform:translateY(-1px); }
+        .wildly-cta:focus-visible { outline:2px solid #7fe0bb; outline-offset:3px; }
+
+        @media (max-width: 720px) {
+          .wildly-split { grid-template-columns:1fr; gap:1.1rem; }
+          .wildly-stage { order:-1; }
+          .wildly-detail { padding-top:0.9rem; }
+          /* Stacked, the detail sits right above the highlighted rail row that names it. */
+          .wildly-detail-title { display:none; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .wildly-in, .wildly-detail { animation:none; opacity:1; }
+          .wildly-lead, .wildly-row, .wildly-stage { opacity:1; }
+          .wildly-frame img { transition:none; }
+          .wildly-sweep { display:none; }
+        }
       `}</style>
     </>
   );
