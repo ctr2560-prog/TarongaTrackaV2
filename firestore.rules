@@ -34,10 +34,20 @@ service cloud.firestore {
     }
 
     // ── Teacher data ─────────────────────────────────────────────────────────
-    // Teacher profile document (email, commsOptIn, etc.)
-    // Read is open so the staff portal (code-based login, no Firebase Auth) can list teachers.
+    // Teacher profile document (email, commsOptIn, role, etc.)
+    // `get` (single doc, known email) stays open — Tracka's own AppContext and
+    // Wildly's per-teacher checks rely on reading one doc by a known/authenticated
+    // email. `list` (the whole collection at once) is restricted to real
+    // Firebase-authenticated staff via isWildlyStaff() (defined below) — it used
+    // to be open too, which meant anyone with the Firestore SDK could enumerate
+    // every teacher's email/school/role with zero login. The staff portal's own
+    // "Users" tab is code-based (no Firebase Auth) and can no longer do this `list`
+    // directly — it now goes through the server-verified `getAdminTeacherRoster`
+    // Cloud Function instead (functions/index.js), which re-checks the admin
+    // access code with the Admin SDK before returning the roster.
     match /teachers/{email} {
-      allow read: if true;
+      allow get: if true;
+      allow list: if isWildlyStaff();
       allow write: if request.auth != null && request.auth.token.email == email;
 
       // Each teacher's class list subcollection

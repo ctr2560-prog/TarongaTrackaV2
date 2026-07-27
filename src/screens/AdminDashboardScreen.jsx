@@ -1990,24 +1990,46 @@ function ControlRoomTab({ adminAccessCode }) {
 
 // ─── Tab: Users ──────────────────────────────────────────────────────────────
 function UsersTab({ classes }) {
+  const { adminAccessCode } = useApp();
   const [copied,          setCopied]          = useState(false);
-  const [profiles,        setProfiles]        = useState({});
+  const [roster,          setRoster]          = useState([]);
   const [profLoading,     setProfLoading]     = useState(true);
-  const [registeredEmails, setRegisteredEmails] = useState([]);
 
-  // Load all registered teacher accounts from the teachers collection
+  // Roster + comms opt-in now come from a single server-verified Cloud Function
+  // call instead of a direct client-side `list`/per-doc `get` on the `teachers`
+  // collection. That collection's Firestore rule used to be `allow read: if true`
+  // so this code-based (no Firebase Auth) staff portal could see every teacher —
+  // but that also meant anyone with the Firestore SDK could enumerate the entire
+  // teacher database with zero login. `getAdminTeacherRoster` re-checks this same
+  // admin access code server-side (Admin SDK bypasses Firestore rules), so the
+  // rule can now restrict `list` to real Firebase-authenticated staff instead.
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      setProfLoading(true);
       try {
-        const snap = await getDocs(collection(db, 'teachers'));
-        if (!cancelled) {
-          setRegisteredEmails(snap.docs.map(d => (d.data().email || d.id).toLowerCase()));
-        }
-      } catch { /* non-fatal */ }
+        const res = await fetch('https://australia-southeast1-tarongatracka.cloudfunctions.net/getAdminTeacherRoster', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: adminAccessCode }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || 'Failed to load teacher roster');
+        if (!cancelled) setRoster(data.teachers || []);
+      } catch (err) {
+        console.error('Failed to load teacher roster:', err);
+        if (!cancelled) setRoster([]);
+      } finally {
+        if (!cancelled) setProfLoading(false);
+      }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [adminAccessCode]);
+
+  const registeredEmails = useMemo(
+    () => roster.map(t => (t.email || '').toLowerCase()).filter(Boolean),
+    [roster],
+  );
 
   const teachers = useMemo(() => {
     const map = {};
@@ -2028,22 +2050,16 @@ function UsersTab({ classes }) {
       .sort((a, b) => a.email.localeCompare(b.email));
   }, [classes, registeredEmails]);
 
-  useEffect(() => {
-    if (!teachers.length) { setProfLoading(false); return; }
-    let cancelled = false;
-    (async () => {
-      setProfLoading(true);
-      const profs = {};
-      await Promise.all(teachers.map(async t => {
-        try {
-          const snap = await getDoc(doc(db, 'teachers', t.email));
-          profs[t.email] = { commsOptIn: snap.exists() ? (snap.data().commsOptIn ?? null) : null };
-        } catch { profs[t.email] = { commsOptIn: null }; }
-      }));
-      if (!cancelled) { setProfiles(profs); setProfLoading(false); }
-    })();
-    return () => { cancelled = true; };
-  }, [teachers]);
+  const profiles = useMemo(() => {
+    const byLowerEmail = {};
+    roster.forEach(t => { if (t.email) byLowerEmail[t.email.toLowerCase()] = t; });
+    const out = {};
+    teachers.forEach(t => {
+      const match = byLowerEmail[t.email.toLowerCase()];
+      out[t.email] = { commsOptIn: match ? (match.commsOptIn ?? null) : null };
+    });
+    return out;
+  }, [teachers, roster]);
 
   const optInEmails = teachers.filter(t => profiles[t.email]?.commsOptIn === true).map(t => t.email);
 

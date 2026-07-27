@@ -314,6 +314,65 @@ function buildMentorReportHtml(reportText) {
 </html>`;
 }
 
+// ── Admin teacher roster (server-verified) ────────────────────────────────────
+// The staff portal uses code-based login (no Firebase Auth), so it can't satisfy
+// Firestore rules like `isWildlyStaff()`. Direct client reads of the `teachers`
+// collection used to be `allow read: if true` so the portal's Users tab could
+// list every registered teacher — but that also meant anyone with the Firestore
+// SDK could enumerate the entire teacher database with zero login. This function
+// moves that one read behind a server-side access-code check (Admin SDK bypasses
+// rules), so the Firestore rule for `teachers` can restrict `list` to real
+// Firebase-authenticated staff (see firestore.rules) while this stays the only
+// way the code-based admin portal can still see the full roster.
+exports.getAdminTeacherRoster = onRequest(
+  { region: 'australia-southeast1', invoker: 'public' },
+  async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type');
+
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    const { code } = req.body || {};
+    if (!code || typeof code !== 'string') {
+      res.status(400).json({ error: 'An access code is required.' });
+      return;
+    }
+
+    const db = admin.firestore();
+
+    try {
+      const codeSnap = await db.collection('adminAccess').doc(code.trim().toLowerCase()).get();
+      if (!codeSnap.exists || codeSnap.data().active !== true) {
+        res.status(403).json({ error: 'Invalid or inactive access code.' });
+        return;
+      }
+    } catch (err) {
+      console.error('Admin code verification failed:', err);
+      res.status(500).json({ error: 'Failed to verify access code.' });
+      return;
+    }
+
+    try {
+      const snap = await db.collection('teachers').get();
+      const teachers = snap.docs.map((d) => {
+        const data = d.data() || {};
+        return {
+          email: data.email || d.id,
+          schoolName: data.schoolName || null,
+          commsOptIn: data.commsOptIn ?? null,
+          role: data.role || null,
+        };
+      });
+      res.json({ teachers });
+    } catch (err) {
+      console.error('Failed to load teacher roster:', err);
+      res.status(500).json({ error: 'Failed to load teacher roster.' });
+    }
+  }
+);
+
 exports.sendMentorReport = onRequest(
   { region: 'australia-southeast1', invoker: 'public' },
   async (req, res) => {
