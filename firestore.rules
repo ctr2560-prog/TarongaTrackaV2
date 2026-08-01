@@ -33,6 +33,15 @@ service cloud.firestore {
       }
     }
 
+    // Collection-group read for `students`, so staff dashboards (e.g. Wildly's
+    // Overview) can run an aggregate count across all classes. Additive and
+    // read-only — direct-path read/write is already granted under classes above,
+    // and writes are unaffected. Only enables the collectionGroup('students')
+    // query; no new data is exposed beyond what the classes rule already allows.
+    match /{path=**}/students/{studentId} {
+      allow read: if true;
+    }
+
     // ── Teacher data ─────────────────────────────────────────────────────────
     // Teacher profile document (email, commsOptIn, role, etc.)
     // `get` (single doc, known email) stays open — Tracka's own AppContext and
