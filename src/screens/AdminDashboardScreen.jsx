@@ -7,6 +7,7 @@ import { db, storage } from '../firebase';
 import { ref as storageRef, getDownloadURL } from 'firebase/storage';
 import { useApp } from '../context/AppContext';
 import { ZOOSNOOZ_ANIMALS } from '../data/zoosnoozAnimals';
+import { ZOOYARD_ANIMALS } from '../data/zooyardAnimals';
 import { SUBJ_META, STAGES, prePostDocId, IMAGE_LIBRARY } from '../data/subjectMeta';
 import { getCurrentQuestionTexts } from '../utils/helpers';
 import DeviceBookingCalendar, { DEVICE_CAPACITY } from '../components/DeviceBookingCalendar';
@@ -22,7 +23,7 @@ function generateCode() {
 const GREEN = '#2E7D55';
 const AXES_DEG = [270, 30, 150];
 
-const LOCATION_LABELS = { 'taronga-sydney':'Taronga Sydney', 'zoosnooz-sydney':'ZooSnooz · Sydney', 'dubbo':'Taronga Dubbo', 'school':'Your School' };
+const LOCATION_LABELS = { 'taronga-sydney':'Taronga Sydney', 'zoosnooz-sydney':'ZooSnooz · Sydney', 'dubbo':'Taronga Dubbo', 'school':'ZooYard · At School' };
 const SUBJECT_LABELS  = { science:'Science', maths:'Mathematics', english:'English', geography:'Geography', pdhpe:'PDHPE' };
 
 function AnalyticsTab({ classes }) {
@@ -60,10 +61,10 @@ function AnalyticsTab({ classes }) {
 
   const viewClasses = useMemo(() => {
     let c = classes;
-    if (view === 'daily')    c = c.filter(x => x.sessionType !== 'zoosnooz' && x.location !== 'dubbo' && x.location !== 'school');
+    if (view === 'daily')    c = c.filter(x => x.sessionType !== 'zoosnooz' && x.sessionType !== 'zooyard' && x.location !== 'dubbo' && x.location !== 'school');
     else if (view === 'zoosnooz') c = c.filter(x => x.sessionType === 'zoosnooz' || x.location === 'zoosnooz-sydney');
     else if (view === 'dubbo')   c = c.filter(x => x.location === 'dubbo');
-    else if (view === 'school')  c = c.filter(x => x.location === 'school');
+    else if (view === 'school')  c = c.filter(x => x.sessionType === 'zooyard' || x.location === 'school');
     if (subjectFilter !== 'all') c = c.filter(x => x.subject === subjectFilter);
     return c;
   }, [classes, view, subjectFilter]);
@@ -71,10 +72,10 @@ function AnalyticsTab({ classes }) {
   const viewStudents = useMemo(() => {
     if (!students) return [];
     let s = students;
-    if (view === 'daily')    s = s.filter(st => st._sessionType !== 'zoosnooz' && st._location !== 'dubbo' && st._location !== 'school');
+    if (view === 'daily')    s = s.filter(st => st._sessionType !== 'zoosnooz' && st._sessionType !== 'zooyard' && st._location !== 'dubbo' && st._location !== 'school');
     else if (view === 'zoosnooz') s = s.filter(st => st._sessionType === 'zoosnooz' || st._location === 'zoosnooz-sydney');
     else if (view === 'dubbo')   s = s.filter(st => st._location === 'dubbo');
-    else if (view === 'school')  s = s.filter(st => st._location === 'school');
+    else if (view === 'school')  s = s.filter(st => st._sessionType === 'zooyard' || st._location === 'school');
     if (subjectFilter !== 'all') s = s.filter(st => st._subject === subjectFilter);
     if (timeFilter !== 'all') {
       const cutoff = new Date();
@@ -118,7 +119,21 @@ function AnalyticsTab({ classes }) {
       if (!currentTextsCache[cacheKey]) currentTextsCache[cacheKey] = getCurrentQuestionTexts(q.aid, q.subject);
       return currentTextsCache[cacheKey].has(q.qtext);
     });
-    const avgQuiz = qRates.length > 0 ? Math.round(qRates.reduce((s, q) => s + (q.correct / q.total * 100), 0) / qRates.length) : null;
+    // ZooYard has one MCQ per habitat stored as a `quizCorrect` boolean rather than a
+    // quizResults array, so it can't go through qMap. One rate per habitat keeps the
+    // weighting comparable to the per-question rates above.
+    const zyRates = ZOOYARD_ANIMALS.map(a => {
+      let correct = 0, totalQ = 0;
+      viewStudents.forEach(st => {
+        const d = st.zooyard?.[a.id];
+        if (!d?.completed) return;
+        totalQ++;
+        if (d.quizCorrect === true) correct++;
+      });
+      return { correct, total: totalQ };
+    }).filter(q => q.total > 0);
+    const allRates = [...qRates, ...zyRates];
+    const avgQuiz = allRates.length > 0 ? Math.round(allRates.reduce((s, q) => s + (q.correct / q.total * 100), 0) / allRates.length) : null;
     return { total, students, completed, badges, avgQuiz, zzCount };
   }, [viewClasses, viewStudents]);
 
@@ -126,9 +141,14 @@ function AnalyticsTab({ classes }) {
     const counts = {};
     viewStudents.forEach(st => {
       const isZz = st._sessionType === 'zoosnooz' || !!(st.zzBadges?.length || st.zoosnooz);
+      const isZy = st._sessionType === 'zooyard' || !!st.zooyard;
       if (isZz) {
         ZOOSNOOZ_ANIMALS.forEach(a => {
           if (st.zoosnooz?.[a.id]?.completed) counts[a.name] = (counts[a.name] || 0) + 1;
+        });
+      } else if (isZy) {
+        ZOOYARD_ANIMALS.forEach(a => {
+          if (st.zooyard?.[a.id]?.completed) counts[a.name] = (counts[a.name] || 0) + 1;
         });
       } else {
         (st.badges || []).forEach(b => { const nm = b.animal || b.animalId || 'Unknown'; counts[nm] = (counts[nm] || 0) + 1; });
@@ -147,6 +167,12 @@ function AnalyticsTab({ classes }) {
           const correct = attempted.filter(a => st.zoosnooz[a.id].quizCorrect === true).length;
           p = Math.round((correct / attempted.length) * 100);
         }
+      } else if (st.zooyard) {
+        const attempted = ZOOYARD_ANIMALS.filter(a => st.zooyard[a.id]?.completed);
+        if (attempted.length > 0) {
+          const correct = attempted.filter(a => st.zooyard[a.id].quizCorrect === true).length;
+          p = Math.round((correct / attempted.length) * 100);
+        }
       } else {
         p = st.quizPercent ?? st.quizPercentage ?? null;
       }
@@ -161,7 +187,14 @@ function AnalyticsTab({ classes }) {
     const add = (o) => { if (!o) return; bS += o.behaviour||0; dS += o.detail||0; wS += o.writing||0; n++; };
     viewStudents.forEach(st => {
       const isZz = st._sessionType === 'zoosnooz' || !!(st.zzBadges?.length || st.zoosnooz);
-      if (isZz) {
+      const isZy = st._sessionType === 'zooyard' || !!st.zooyard;
+      if (isZy && !isZz) {
+        // ZooYard writes behaviour/detail/writing flat on zooyard.{animalId}, not under observationScore.
+        ZOOYARD_ANIMALS.forEach(a => {
+          const d = st.zooyard?.[a.id];
+          if (d?.completed && typeof d.behaviour === 'number') add(d);
+        });
+      } else if (isZz) {
         if (st.zzBadges?.length) {
           // Completed session - zzBadges array written on submit
           st.zzBadges.forEach(b => add(b.observationScore));
@@ -342,7 +375,7 @@ function AnalyticsTab({ classes }) {
   const totalStudentsAll = viewClasses.reduce((s, c) => s + c.studentCount, 0);
   const maxVisit  = animalVisits[0]?.[1] || 1;
   const maxBucket = Math.max(...quizBuckets, 1);
-  const viewLabel = { total:'Total', daily:'Daily', zoosnooz:'ZooSnooz', dubbo:'Taronga Dubbo', school:'Your School' }[view] || 'Total';
+  const viewLabel = { total:'Total', daily:'Daily', zoosnooz:'ZooSnooz', dubbo:'Taronga Dubbo', school:'ZooYard' }[view] || 'Total';
 
   return (
     <div style={{ display:'flex', gap:'1.5rem', alignItems:'flex-start' }}>
@@ -350,7 +383,7 @@ function AnalyticsTab({ classes }) {
       {/* VIEW sidebar */}
       <div style={{ width:155, flexShrink:0, background:'var(--t-chalk)', borderRadius:'var(--t-r-md)', padding:'1rem', border:'1px solid var(--t-stone)' }}>
         <div style={{ fontSize:'0.62rem', fontWeight:700, color:'var(--t-ash)', textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:'0.6rem' }}>VIEW</div>
-        {[['total','Total'],['daily','Daily'],['zoosnooz','🌙 ZooSnooz'],['dubbo','Taronga Dubbo'],['school','Your School']].map(([val,label]) => (
+        {[['total','Total'],['daily','Daily'],['zoosnooz','🌙 ZooSnooz'],['dubbo','Taronga Dubbo'],['school','🌱 ZooYard']].map(([val,label]) => (
           <button key={val} onClick={() => setView(val)}
             style={{ display:'block', width:'100%', textAlign:'left', padding:'0.5rem 0.75rem', marginBottom:'0.2rem', borderRadius:'var(--t-r-sm)', border:'none', background: view===val ? GREEN : 'transparent', color: view===val ? 'white' : 'var(--t-slate)', fontWeight: view===val ? 700 : 500, cursor:'pointer', fontSize:'0.82rem', fontFamily:'inherit' }}>
             {label}
@@ -2618,7 +2651,10 @@ export default function AdminDashboardScreen() {
             const hasZzStudents = studentsSnap.docs.some(s => s.data().zzSessionComplete === true || s.data().zoosnooz);
             studentsSnap.docs.forEach(studentDoc => {
               const sd = studentDoc.data();
-              const isComplete = sd.completed === true || sd.zzSessionComplete === true;
+              // ZooYard tracks completion/badges/quiz under `zooyard`, with no top-level
+              // `completed` flag or `badges` array, so it needs its own branch here.
+              const zyDone = ZOOYARD_ANIMALS.filter(a => sd.zooyard?.[a.id]?.completed);
+              const isComplete = sd.completed === true || sd.zzSessionComplete === true || sd.zooyard?.sessionCompleted === true;
               if (isComplete) {
                 completedCount++;
                 let qPct = null;
@@ -2629,10 +2665,13 @@ export default function AdminDashboardScreen() {
                     qPct = Math.round((correct / attempted.length) * 100);
                   }
                 }
+                if (qPct === null && zyDone.length > 0) {
+                  qPct = Math.round((zyDone.filter(a => sd.zooyard[a.id].quizCorrect === true).length / zyDone.length) * 100);
+                }
                 if (qPct === null) qPct = sd.quizPercent ?? sd.quizPercentage ?? null;
                 if (qPct !== null) { quizSum += qPct; quizCount++; }
               }
-              totalBadges += sd.badges?.length || 0;
+              totalBadges += (sd.badges?.length || 0) + zyDone.length;
             });
             return {
               classCode: classDoc.id, className: d.className || '',
