@@ -8,10 +8,44 @@ import { ref as storageRef, getDownloadURL } from 'firebase/storage';
 import { normaliseCode, safeStudentId } from '../utils/helpers';
 import { useApp } from '../context/AppContext';
 import { ZOOSNOOZ_ANIMALS } from '../data/zoosnoozAnimals';
+import { ZOOYARD_ANIMALS } from '../data/zooyardAnimals';
 import { openTeacherInfoSheet } from '../utils/teacherInfoSheet';
 import { openZooSnoozInfoSheet } from '../utils/zoosnoozInfoSheet';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
+
+// ZooYard writes scores flat on `zooyard.{animalId}` ({ behaviour, detail, writing, quizCorrect,
+// points, ... }) rather than nesting them under `observationScore` the way daytime/ZooSnooz do.
+// Everything the teacher analytics needs is derived per-habitat so it stays live as students
+// work — `zooyard.totalPoints` is only stamped once at citizen-science submit and would read 0
+// for anyone still mid-session.
+function buildZyStats(student) {
+  const zy = student?.zooyard || {};
+  const done = ZOOYARD_ANIMALS.map(a => ({ animal: a, d: zy[a.id] })).filter(x => x.d?.completed);
+  const points = done.reduce((sum, x) => sum + (x.d.points || 0), 0);
+  const scored = done.filter(x => typeof x.d.behaviour === 'number');
+  const totals = scored.reduce((acc, x) => ({
+    b: acc.b + (x.d.behaviour || 0),
+    d: acc.d + (x.d.detail    || 0),
+    w: acc.w + (x.d.writing   || 0),
+  }), { b: 0, d: 0, w: 0 });
+  const quizCorrect = done.filter(x => x.d.quizCorrect === true).length;
+  return {
+    raw: student,
+    name: student.name || student.id,
+    habitats: done.length,
+    points,
+    obsCount: scored.length,
+    totals,
+    avgScore: scored.length ? (totals.b + totals.d + totals.w) / (3 * scored.length) : null,
+    quizCorrect,
+    quizTotal: done.length,
+    quizPct: done.length ? Math.round((quizCorrect / done.length) * 100) : null,
+    observations: done.filter(x => x.d.observation).length,
+    sessionCompleted: !!zy.sessionCompleted,
+    citizenScience: zy.citizenScience || null,
+  };
+}
 
 function RadarSVG({ avgB, avgD, avgW, dark, labels }) {
   const [labelB, labelD, labelW] = labels || ['Behaviour', 'Detail', 'Writing'];
@@ -93,6 +127,7 @@ export default function ClassDetailsScreen() {
   // ZooYard citizen science submissions for this class
   const [zySubmissions, setZySubmissions] = useState([]);
   const [zySubBusy,     setZySubBusy]     = useState({});
+  const [zyAllObsOpen,  setZyAllObsOpen]  = useState(false);
 
   useEffect(() => {
     if (!selectedClass) return;
@@ -605,13 +640,16 @@ export default function ClassDetailsScreen() {
                   </div>
                 );
               })() : isZY ? (() => {
-                const zyHabitats  = ['koala', 'tiger', 'giraffe'];
-                const zyCompleted = students.filter(s => s.zooyard?.sessionCompleted).length;
-                const zyAvgPts    = students.length > 0 ? Math.round(students.reduce((s,st)=>s+(st.zooyard?.totalPoints||0),0)/students.length) : 0;
-                const zyBadges    = students.reduce((sum,s) => sum + zyHabitats.filter(id => s.zooyard?.[id]?.completed).length, 0);
+                const stats       = students.map(buildZyStats);
+                const zyCompleted = stats.filter(s => s.sessionCompleted).length;
+                const zyBadges    = stats.reduce((sum, s) => sum + s.habitats, 0);
+                const zyAvgPts    = stats.length > 0 ? Math.round(stats.reduce((sum, s) => sum + s.points, 0) / stats.length) : 0;
+                const qAttempted  = stats.reduce((sum, s) => sum + s.quizTotal, 0);
+                const qCorrect    = stats.reduce((sum, s) => sum + s.quizCorrect, 0);
+                const zyAvgQuiz   = qAttempted > 0 ? Math.round((qCorrect / qAttempted) * 100) : 0;
                 return (
-                  <div className="lms-stat-grid" style={{ gridTemplateColumns:'repeat(4,1fr)', marginBottom:'1.75rem' }}>
-                    {[{l:'Students',v:totalStudents,c:'#3B82F6'},{l:'Avg Points',v:zyAvgPts,c:'#F59E0B'},{l:'Habitat Badges',v:zyBadges,c:'#2E7D55'},{l:'Completed',v:zyCompleted,c:'#10B981'}].map(s=>(
+                  <div className="lms-stat-grid" style={{ gridTemplateColumns:'repeat(5,1fr)', marginBottom:'1.75rem' }}>
+                    {[{l:'Students',v:totalStudents,c:'#3B82F6'},{l:'Avg Points',v:zyAvgPts,c:'#F59E0B'},{l:'Habitat Badges',v:zyBadges,c:'#2E7D55'},{l:'Completed',v:zyCompleted,c:'#10B981'},{l:'Avg Quiz %',v:`${zyAvgQuiz}%`,c:'#7C3AED'}].map(s=>(
                       <div key={s.l} className="lms-stat-card animate-fade-in-up" style={{ borderTopColor:s.c }}>
                         <div className="lms-stat-val" style={{ color:s.c, fontSize:'1.6rem' }}>{s.v}</div>
                         <div className="lms-stat-label">{s.l}</div>
@@ -812,6 +850,251 @@ export default function ClassDetailsScreen() {
                             </div>
                           ))}
                         </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* ── ZooYard Class Insights ── */}
+              {isZY && students.length > 0 && (() => {
+                const stats  = students.map(buildZyStats);
+                const scored = stats.filter(s => s.obsCount > 0);
+                const obsCnt = stats.reduce((n, s) => n + s.obsCount, 0);
+                const sumB   = stats.reduce((n, s) => n + s.totals.b, 0);
+                const sumD   = stats.reduce((n, s) => n + s.totals.d, 0);
+                const sumW   = stats.reduce((n, s) => n + s.totals.w, 0);
+                const zyAvgB = obsCnt ? +(sumB / obsCnt).toFixed(1) : 0;
+                const zyAvgD = obsCnt ? +(sumD / obsCnt).toFixed(1) : 0;
+                const zyAvgW = obsCnt ? +(sumW / obsCnt).toFixed(1) : 0;
+
+                const habitatCounts = ZOOYARD_ANIMALS.map(a => ({
+                  label: a.habitatLabel,
+                  name:  a.name,
+                  count: students.filter(s => s.zooyard?.[a.id]?.completed).length,
+                  quiz:  students.filter(s => s.zooyard?.[a.id]?.quizCorrect === true).length,
+                }));
+                const maxHabitat = Math.max(...habitatCounts.map(h => h.count), 1);
+
+                const quizBuckets = { '0–25':0, '26–50':0, '51–75':0, '76–100':0 };
+                stats.forEach(s => {
+                  if (s.quizPct == null) return;
+                  if (s.quizPct <= 25) quizBuckets['0–25']++;
+                  else if (s.quizPct <= 50) quizBuckets['26–50']++;
+                  else if (s.quizPct <= 75) quizBuckets['51–75']++;
+                  else quizBuckets['76–100']++;
+                });
+                const maxQBucket = Math.max(...Object.values(quizBuckets), 1);
+
+                const domainList = [
+                  { key:'behaviour', label:'Behaviour', icon:'B', avg:zyAvgB, color:'#059669' },
+                  { key:'detail',    label:'Detail',    icon:'D', avg:zyAvgD, color:'#0284C7' },
+                  { key:'writing',   label:'Writing',   icon:'W', avg:zyAvgW, color:'#2E7D55' },
+                ];
+                const sorted    = [...domainList].sort((a,b) => b.avg - a.avg);
+                const strongest = sorted[0], weakest = sorted[sorted.length - 1];
+
+                let lowB=0, lowD=0, lowW=0;
+                students.forEach(s => ZOOYARD_ANIMALS.forEach(a => {
+                  const d = s.zooyard?.[a.id];
+                  if (!d?.completed || typeof d.behaviour !== 'number') return;
+                  if ((d.behaviour||0) < 3) lowB++;
+                  if ((d.detail   ||0) < 3) lowD++;
+                  if ((d.writing  ||0) < 3) lowW++;
+                }));
+                const pct = n => obsCnt > 0 ? Math.round(n / obsCnt * 100) : 0;
+
+                const support    = scored.filter(s => s.avgScore < 2.5);
+                const developing = scored.filter(s => s.avgScore >= 2.5 && s.avgScore <= 3.5);
+                const proficient = scored.filter(s => s.avgScore > 3.5);
+
+                const action = weakest.key === 'behaviour'
+                  ? 'Help students name the specific feature or behaviour they can see in their schoolyard habitat.'
+                  : weakest.key === 'detail'
+                  ? 'Encourage students to add specific evidence from their own habitat - what they saw, heard or measured.'
+                  : 'Support students to write complete sentences that explain why the habitat feature helps the animal.';
+
+                return (
+                  <div style={{ marginBottom:'1rem' }}>
+                    <h3 style={{ fontSize:'0.95rem', marginBottom:'0.75rem', color:'var(--t-deep)', letterSpacing:'-0.01em', fontWeight:700 }}>Class Insights</h3>
+
+                    <div style={nightStyle()}>
+                      <p style={{ fontSize:'0.68rem', fontWeight:700, color:'var(--t-slate)', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:'0.7rem' }}>Habitats Completed</p>
+                      {habitatCounts.map(h => (
+                        <div key={h.name} style={{ marginBottom:'0.6rem' }}>
+                          <div style={{ display:'flex', justifyContent:'space-between', fontSize:'0.78rem', color:'#555', marginBottom:'0.2rem' }}>
+                            <span>{h.label} <span style={{ color:'#999' }}>· {h.name}</span></span>
+                            <span style={{ fontWeight:700, color:'var(--t-mid)' }}>{h.count}/{totalStudents}</span>
+                          </div>
+                          <div style={{ height:'7px', borderRadius:'4px', background:'#EEE', overflow:'hidden' }}>
+                            <div style={{ height:'100%', width:`${(h.count/maxHabitat)*100}%`, background:'linear-gradient(90deg,var(--t-mid),var(--t-eucalyptus))', borderRadius:'4px', transition:'width 0.4s' }} />
+                          </div>
+                          <p style={{ margin:'0.2rem 0 0', fontSize:'0.68rem', color:'#999' }}>{h.count > 0 ? `${Math.round(h.quiz/h.count*100)}% got the quiz right first try` : 'Not started'}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div style={nightStyle()}>
+                      <p style={{ fontSize:'0.68rem', fontWeight:700, color:'var(--t-slate)', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:'0.7rem' }}>Quiz Distribution</p>
+                      <div style={{ display:'flex', alignItems:'flex-end', gap:'0.6rem', height:'110px', paddingBottom:'0.2rem' }}>
+                        {Object.entries(quizBuckets).map(([label,val]) => (
+                          <div key={label} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:'0.25rem' }}>
+                            <span style={{ fontSize:'0.72rem', fontWeight:700, color:'var(--t-mid)' }}>{val}</span>
+                            <div style={{ width:'100%', height:`${Math.max((val/maxQBucket)*80, val>0?6:0)}px`, background:'linear-gradient(180deg,var(--t-eucalyptus),var(--t-mid))', borderRadius:'4px 4px 0 0', transition:'height 0.4s' }} />
+                            <span style={{ fontSize:'0.65rem', color:'#999', textAlign:'center', lineHeight:1.2 }}>{label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {obsCnt > 0 && (
+                      <>
+                        <div style={{ ...nightStyle(), display:'flex', flexDirection:'column', alignItems:'center' }}>
+                          <p style={{ fontSize:'0.72rem', fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'0.5rem', alignSelf:'flex-start' }}>Writing Scores</p>
+                          <RadarSVG avgB={zyAvgB} avgD={zyAvgD} avgW={zyAvgW} dark={false} />
+                        </div>
+
+                        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.6rem', marginBottom:'0.7rem' }}>
+                          <div style={{ background:'rgba(46,125,85,0.08)', border:'1px solid rgba(46,125,85,0.25)', borderRadius:'var(--t-r-md)', padding:'0.9rem 1rem' }}>
+                            <p style={{ fontSize:'0.65rem', fontWeight:700, color:'var(--t-mid)', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:'0.3rem' }}>Strength</p>
+                            <p style={{ fontSize:'0.8rem', fontWeight:700, color:'var(--t-deep)', margin:'0 0 0.2rem' }}>{strongest.icon} {strongest.label} ({strongest.avg}/5)</p>
+                          </div>
+                          <div style={{ background:'rgba(245,158,11,0.08)', border:'1px solid rgba(245,158,11,0.28)', borderRadius:'var(--t-r-md)', padding:'0.9rem 1rem' }}>
+                            <p style={{ fontSize:'0.65rem', fontWeight:700, color:'#B45309', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:'0.3rem' }}>Focus Area</p>
+                            <p style={{ fontSize:'0.8rem', fontWeight:700, color:'var(--t-deep)', margin:'0 0 0.2rem' }}>{weakest.icon} {weakest.label} ({weakest.avg}/5)</p>
+                          </div>
+                        </div>
+
+                        <div style={{ background:'rgba(59,130,246,0.06)', border:'1px solid rgba(59,130,246,0.2)', borderRadius:'var(--t-r-md)', padding:'0.95rem 1.15rem', marginBottom:'0.7rem' }}>
+                          <p style={{ fontSize:'0.65rem', fontWeight:700, color:'#2563EB', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:'0.3rem' }}>Suggested Next Step</p>
+                          <p style={{ fontSize:'0.78rem', color:'#555', fontWeight:600, margin:0, lineHeight:1.5 }}>{action}</p>
+                        </div>
+
+                        <div style={nightStyle()}>
+                          <p style={{ fontSize:'0.68rem', fontWeight:700, color:'var(--t-slate)', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:'0.75rem' }}>Domain Averages</p>
+                          {domainList.map(d => (
+                            <div key={d.key} style={{ marginBottom:'0.6rem' }}>
+                              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', fontSize:'0.82rem', marginBottom:'0.22rem' }}>
+                                <span style={{ color:'var(--t-deep)', fontWeight:500 }}>{d.icon} {d.label}</span>
+                                <span style={{ fontWeight:700, color:d.color }}>{d.avg}/5</span>
+                              </div>
+                              <div style={{ height:'6px', background:'#EEE', borderRadius:'3px', overflow:'hidden' }}>
+                                <div style={{ height:'100%', width:`${(d.avg/5)*100}%`, background:d.color, borderRadius:'3px', transition:'width 0.5s ease' }} />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div style={nightStyle()}>
+                          <p style={{ fontSize:'0.68rem', fontWeight:700, color:'var(--t-slate)', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:'0.65rem' }}>Common Issues</p>
+                          {[[pct(lowB),'of responses showed low behaviour identification'],[pct(lowD),'of responses showed low supporting detail'],[pct(lowW),'of responses contained no explanation language']].map(([p,label]) => (
+                            <div key={label} style={{ display:'flex', alignItems:'baseline', gap:'0.65rem', marginBottom:'0.45rem' }}>
+                              <span style={{ fontSize:'0.88rem', fontWeight:700, color:'#DC2626', minWidth:'2.8rem' }}>{p}%</span>
+                              <span style={{ fontSize:'0.78rem', color:'#555', lineHeight:1.4 }}>{label}</span>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div style={nightStyle()}>
+                          <p style={{ fontSize:'0.68rem', fontWeight:700, color:'var(--t-slate)', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:'0.65rem' }}>Student Groups</p>
+                          {[
+                            { key:'zy-support',    label:'Support',    list:support,    bg:'rgba(239,68,68,0.06)',  border:'rgba(239,68,68,0.28)',  color:'#DC2626', tip:'Work with these students on naming a behaviour and adding one specific detail.' },
+                            { key:'zy-developing', label:'Developing', list:developing, bg:'rgba(245,158,11,0.07)', border:'rgba(245,158,11,0.3)',  color:'#B45309', tip:'Encourage more specific habitat detail and a clearer explanation.' },
+                            { key:'zy-proficient', label:'Proficient', list:proficient, bg:'rgba(46,125,85,0.08)',  border:'rgba(46,125,85,0.3)',   color:'var(--t-mid)', tip:'Extend by asking students to explain why their habitat feature matters for conservation.' },
+                          ].map(g => (
+                            <div key={g.key} style={{ marginBottom:'0.5rem' }}>
+                              <button onClick={() => setExpandedGroup(expandedGroup===g.key ? null : g.key)}
+                                style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', background:g.bg, border:`1px solid ${g.border}`, borderRadius:'var(--t-r-xs)', padding:'0.55rem 0.75rem', cursor:g.list.length>0?'pointer':'default', textAlign:'left' }}>
+                                <div style={{ display:'flex', alignItems:'center', gap:'0.5rem' }}>
+                                  <span style={{ fontSize:'0.78rem', fontWeight:700, color:g.color }}>{g.label}</span>
+                                  <span style={{ fontSize:'0.72rem', background:'rgba(0,0,0,0.05)', color:g.color, borderRadius:'var(--t-r-sm)', padding:'0.05rem 0.4rem', fontWeight:700 }}>{g.list.length}</span>
+                                </div>
+                                {g.list.length>0 && <span style={{ fontSize:'0.75rem', color:g.color, opacity:0.7 }}>{expandedGroup===g.key?'▴':'▾'}</span>}
+                              </button>
+                              {expandedGroup===g.key && g.list.length>0 && (
+                                <div style={{ background:g.bg, borderLeft:`3px solid ${g.border}`, borderRadius:'0 0 8px 8px', padding:'0.6rem 0.75rem', marginTop:'-2px' }}>
+                                  <p style={{ fontSize:'0.72rem', color:g.color, fontStyle:'italic', margin:'0 0 0.4rem', lineHeight:1.4 }}>{g.tip}</p>
+                                  <div style={{ display:'flex', flexWrap:'wrap', gap:'0.3rem' }}>
+                                    {g.list.map((s,i) => <span key={i} style={{ fontSize:'0.72rem', background:'white', border:'1px solid var(--t-stone)', borderRadius:'var(--t-r-pill)', padding:'0.15rem 0.55rem', color:'var(--t-deep)', fontWeight:600 }}>{s.name}</span>)}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+
+                    <div style={{ background:'var(--t-chalk)', borderRadius:'var(--t-r-lg)', boxShadow:'var(--t-shadow-sm)', overflow:'hidden', border:'1px solid var(--t-stone)', marginBottom:'1rem' }}>
+                      <div style={{ display:'grid', gridTemplateColumns:'1.5fr 0.7fr 0.8fr 0.7fr 0.9fr 1fr', background:'var(--t-forest)', padding:'0.6rem 1rem' }}>
+                        {['Student','Points','Habitats','Quiz %','Observations','Status'].map(h => (
+                          <div key={h} style={{ color:'rgba(255,255,255,0.8)', fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em' }}>{h}</div>
+                        ))}
+                      </div>
+                      {stats.map((s, i) => (
+                        <div key={s.name} style={{ display:'grid', gridTemplateColumns:'1.5fr 0.7fr 0.8fr 0.7fr 0.9fr 1fr', padding:'0.7rem 1rem', borderTop:'1px solid var(--t-stone)', alignItems:'center', background: i%2===0 ? 'var(--t-chalk)' : 'var(--t-parchment)' }}>
+                          <div style={{ display:'flex', alignItems:'center', gap:'0.55rem' }}>
+                            <div style={{ width:'28px', height:'28px', borderRadius:'50%', background: s.sessionCompleted ? 'linear-gradient(135deg,var(--t-mid),var(--t-eucalyptus))' : 'linear-gradient(135deg,#aaa,#ccc)', display:'flex', alignItems:'center', justifyContent:'center', color:'white', fontSize:'0.72rem', fontWeight:700, flexShrink:0 }}>{String(s.name).charAt(0).toUpperCase()}</div>
+                            <span style={{ fontWeight:600, color:'var(--t-deep)', fontSize:'0.88rem' }}>{s.name}</span>
+                          </div>
+                          <div style={{ fontSize:'0.85rem', fontWeight:700, color:'var(--t-mid)' }}>{s.points}</div>
+                          <div style={{ fontSize:'0.85rem', color:'#555' }}>{s.habitats}/{ZOOYARD_ANIMALS.length}</div>
+                          <div style={{ fontSize:'0.85rem', color:'#555' }}>{s.quizPct == null ? ' - ' : `${s.quizPct}%`}</div>
+                          <div>
+                            {s.habitats > 0 ? (
+                              <button onClick={() => setObsModal({ ...s.raw, isZY:true })}
+                                style={{ background:'var(--t-deep)', color:'white', border:'none', padding:'0.25rem 0.6rem', borderRadius:'6px', fontSize:'0.72rem', fontWeight:600, cursor:'pointer' }}>
+                                View ({s.observations})
+                              </button>
+                            ) : <span style={{ color:'#bbb', fontSize:'0.75rem' }}> - </span>}
+                          </div>
+                          <div>
+                            <span style={{ fontSize:'0.68rem', fontWeight:700, padding:'0.15rem 0.55rem', borderRadius:'var(--t-r-pill)',
+                              color:   s.sessionCompleted ? '#166534' : s.habitats > 0 ? '#92400E' : '#6B6B62',
+                              background: s.sessionCompleted ? '#DCFCE7' : s.habitats > 0 ? '#FEF3C7' : '#F1F0EC' }}>
+                              {s.sessionCompleted ? 'Complete' : s.habitats > 0 ? 'In progress' : 'Not started'}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {obsCnt > 0 && (
+                      <div style={{ marginBottom:'1rem', borderRadius:'var(--t-r-md)', border:'1px solid var(--t-stone)', background:'var(--t-chalk)', overflow:'hidden' }}>
+                        <button onClick={() => setZyAllObsOpen(o => !o)}
+                          style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0.7rem 1.2rem', background:'linear-gradient(135deg,var(--t-foam) 0%,#E4EFE8 100%)', border:'none', cursor:'pointer', textAlign:'left' }}>
+                          <span style={{ fontWeight:700, fontSize:'0.9rem', color:'var(--t-deep)' }}>All Written Responses ({obsCnt})</span>
+                          <span style={{ fontSize:'0.75rem', color:'var(--t-mid)' }}>{zyAllObsOpen ? '▴' : '▾'}</span>
+                        </button>
+                        {zyAllObsOpen && (
+                          <div style={{ padding:'0.9rem 1.2rem 1.2rem' }}>
+                            {ZOOYARD_ANIMALS.map(animal => {
+                              const rows = students
+                                .map(s => ({ name: s.name || s.id, d: s.zooyard?.[animal.id] }))
+                                .filter(r => r.d?.completed && r.d.observation?.trim());
+                              if (!rows.length) return null;
+                              return (
+                                <div key={animal.id} style={{ marginBottom:'1.1rem' }}>
+                                  <p style={{ fontSize:'0.68rem', fontWeight:700, color:'var(--t-mid)', textTransform:'uppercase', letterSpacing:'0.07em', margin:'0 0 0.5rem' }}>
+                                    {animal.habitatLabel} · {animal.name} ({rows.length})
+                                  </p>
+                                  {rows.map(r => (
+                                    <div key={r.name} style={{ background:'white', border:'1px solid var(--t-mist)', borderRadius:'var(--t-r-sm)', padding:'0.65rem 0.85rem', marginBottom:'0.45rem' }}>
+                                      <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', flexWrap:'wrap', marginBottom:'0.3rem' }}>
+                                        <span style={{ fontSize:'0.8rem', fontWeight:700, color:'var(--t-deep)' }}>{r.name}</span>
+                                        {[['B','behaviour','#059669'],['D','detail','#0284C7'],['W','writing','#2E7D55']].map(([lbl,key,col]) => (
+                                          <span key={key} style={{ fontSize:'0.65rem', background:'var(--t-parchment)', borderRadius:'5px', padding:'0.1rem 0.4rem', color:col, fontWeight:700 }}>{lbl}: {r.d[key] ?? 0}/5</span>
+                                        ))}
+                                        <span style={{ fontSize:'0.7rem' }}>{r.d.quizCorrect ? '✅' : '❌'}</span>
+                                      </div>
+                                      <p style={{ fontSize:'0.83rem', color:'#444', lineHeight:1.6, margin:0, fontStyle:'italic', whiteSpace:'pre-wrap' }}>"{r.d.observation}"</p>
+                                    </div>
+                                  ))}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -1419,6 +1702,76 @@ export default function ClassDetailsScreen() {
                       </div>
                     );
                   })}
+                </div>
+              </>
+            ) : obsModal.isZY ? (
+              <>
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'1.2rem 1.4rem 0.8rem', borderBottom:'1px solid #F0EDE8', position:'sticky', top:0, background:'white', zIndex:1 }}>
+                  <div>
+                    <h3 style={{ fontSize:'1.1rem', fontWeight:700, color:'var(--t-deep)', margin:0 }}>🌱 ZooYard Observations</h3>
+                    <p style={{ fontSize:'0.78rem', color:'#888', margin:'0.15rem 0 0' }}>{obsModal.name}</p>
+                  </div>
+                  <button onClick={()=>setObsModal(null)} style={{ background:'none', border:'none', fontSize:'1.4rem', color:'#aaa', cursor:'pointer', lineHeight:1, padding:'0.2rem 0.4rem' }}>×</button>
+                </div>
+                <div style={{ padding:'1rem 1.4rem 1.4rem', display:'flex', flexDirection:'column', gap:'0.8rem' }}>
+                  {ZOOYARD_ANIMALS.map(animal => {
+                    const d = obsModal.zooyard?.[animal.id];
+                    const done = !!d?.completed;
+                    const opts = animal.activity?.options || [];
+                    const correctText = opts[animal.activity?.correct] || '';
+                    return (
+                      <div key={animal.id} style={{ background: done ? '#F7FAF8' : '#FAFAF8', border:`1px solid ${done ? 'var(--t-mist)' : 'var(--t-stone)'}`, borderRadius:'12px', padding:'0.9rem 1rem' }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', marginBottom: done ? '0.6rem' : 0 }}>
+                          <span style={{ width:'20px', height:'20px', borderRadius:'50%', background: done ? '#2E7D55' : '#E5E3DC', color: done ? 'white' : '#aaa', fontSize:'0.7rem', fontWeight:700, display:'inline-flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{done ? '✓' : '–'}</span>
+                          <div style={{ minWidth:0 }}>
+                            <div style={{ fontSize:'0.88rem', fontWeight:700, color: done ? 'var(--t-deep)' : '#aaa' }}>{animal.name}</div>
+                            <div style={{ fontSize:'0.68rem', color:'#999' }}>{animal.habitatLabel}</div>
+                          </div>
+                          {done && <span style={{ marginLeft:'auto', fontSize:'0.75rem', fontWeight:700, color:'var(--sunset-orange)' }}>{d.points || 0} pts</span>}
+                        </div>
+
+                        {done && (
+                          <div style={{ paddingLeft:'1.6rem' }}>
+                            <div style={{ display:'flex', gap:'0.4rem', flexWrap:'wrap', marginBottom:'0.6rem' }}>
+                              {[['B','behaviour','#059669'],['D','detail','#0284C7'],['W','writing','#2E7D55']].map(([lbl,key,col]) => (
+                                <span key={key} style={{ fontSize:'0.7rem', background:'white', border:'1px solid var(--t-stone)', borderRadius:'6px', padding:'0.2rem 0.55rem', color:col, fontWeight:700 }}>{lbl}: {d[key] ?? 0}/5</span>
+                              ))}
+                            </div>
+
+                            {d.habitatPhotoUrl && (
+                              <div style={{ marginBottom:'0.7rem' }}>
+                                <div style={{ fontSize:'0.6rem', fontWeight:700, color:'var(--t-slate)', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:'0.25rem' }}>Their spot</div>
+                                <a href={d.habitatPhotoUrl} target="_blank" rel="noopener noreferrer">
+                                  <img src={d.habitatPhotoUrl} alt="" style={{ width:'100%', maxHeight:170, objectFit:'cover', borderRadius:10, display:'block' }} />
+                                </a>
+                              </div>
+                            )}
+                            <div style={{ fontSize:'0.6rem', fontWeight:700, color:'var(--t-slate)', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:'0.25rem' }}>Written response</div>
+                            {d.observation?.trim() ? (
+                              <p style={{ fontSize:'0.84rem', color:'#444', lineHeight:1.6, margin:'0 0 0.7rem', fontStyle:'italic', whiteSpace:'pre-wrap' }}>"{d.observation}"</p>
+                            ) : (
+                              <p style={{ fontSize:'0.8rem', color:'#bbb', margin:'0 0 0.7rem', fontStyle:'italic' }}>No written response recorded.</p>
+                            )}
+
+                            <div style={{ display:'flex', alignItems:'flex-start', gap:'0.45rem', background: d.quizCorrect ? '#F0FAF4' : '#FEF6F6', border:`1px solid ${d.quizCorrect ? '#CDEBD9' : '#F6D5D5'}`, borderRadius:'8px', padding:'0.5rem 0.65rem' }}>
+                              <span style={{ fontSize:'0.8rem', lineHeight:1.3, flexShrink:0 }}>{d.quizCorrect ? '✅' : '❌'}</span>
+                              <div style={{ minWidth:0 }}>
+                                <div style={{ fontSize:'0.72rem', fontWeight:700, color: d.quizCorrect ? '#166534' : '#B91C1C' }}>
+                                  Quiz {d.quizCorrect ? 'correct first try' : 'incorrect first try'}
+                                </div>
+                                {correctText && <div style={{ fontSize:'0.72rem', color:'#666', marginTop:'0.1rem', lineHeight:1.45 }}>Answer: {correctText}</div>}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {!ZOOYARD_ANIMALS.some(a => obsModal.zooyard?.[a.id]?.completed) && (
+                    <p style={{ fontSize:'0.85rem', color:'#999', fontStyle:'italic', textAlign:'center', margin:'0.5rem 0' }}>
+                      This student hasn't completed any habitats yet.
+                    </p>
+                  )}
                 </div>
               </>
             ) : (
