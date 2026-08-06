@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { useStudent } from '../context/StudentContext';
 import { ZOOYARD_ANIMALS, ZOOYARD_CITIZEN_SCIENCE_TASK, ZOOYARD_HABITAT_THEME } from '../data/zooyardAnimals';
@@ -6,8 +6,8 @@ import StudentFeedbackModal from '../components/StudentFeedbackModal';
 import { doc, getDoc, setDoc, updateDoc, addDoc, collection, serverTimestamp, increment } from 'firebase/firestore';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
-import { normaliseCode, safeStudentId, getMinWords } from '../utils/helpers';
-import { buildObservationScore } from '../utils/scoring';
+import { normaliseCode, safeStudentId, getMinWords, getStageScaffoldTip } from '../utils/helpers';
+import { buildObservationScore, isLowQualityResponse } from '../utils/scoring';
 
 function HomeButton({ dark, onHome }) {
   return (
@@ -61,7 +61,16 @@ export default function ZooYardScreen() {
   const [mcqRevealed, setMcqRevealed] = useState(false);
 
   const [obsText, setObsText] = useState('');
+  const [obsError, setObsError] = useState('');
+  const [hintsOpen, setHintsOpen] = useState(false);
   const [savingObs, setSavingObs] = useState(false);
+
+  const [hydrating, setHydrating] = useState(true);
+  const [habitatPhotos, setHabitatPhotos] = useState({});  // { [animalId]: downloadURL }
+  const [attestFile, setAttestFile] = useState(null);
+  const [attestPreview, setAttestPreview] = useState(null);
+  const [attestUploading, setAttestUploading] = useState(false);
+  const [attestError, setAttestError] = useState('');
 
   const [csFile, setCsFile] = useState(null);
   const [csPreview, setCsPreview] = useState(null);
@@ -72,12 +81,47 @@ export default function ZooYardScreen() {
   const allDone = ZOOYARD_ANIMALS.every(a => zyCompleted[a.id]);
   const totalPoints = Object.values(zyCompleted).reduce((s, c) => s + (c.points || 0), 0);
 
+  // Rehydrate from Firestore on mount. Without this a refresh, a locked iPad or a lesson
+  // split across periods resets the picker to "Tap to begin", re-locks Habitat Hero, and
+  // lets a student overwrite a habitat they had already finished.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!studentName || !classCode) { setHydrating(false); return; }
+      try {
+        const snap = await getDoc(doc(db, 'classes', normaliseCode(classCode), 'students', safeStudentId(studentName)));
+        const zy = snap.exists() ? (snap.data().zooyard || {}) : {};
+        if (cancelled) return;
+        const done = {}, photos = {};
+        ZOOYARD_ANIMALS.forEach(a => {
+          const d = zy[a.id];
+          if (!d?.completed) return;
+          done[a.id] = {
+            points: d.points || 0, quizCorrect: !!d.quizCorrect,
+            behaviour: d.behaviour ?? 0, detail: d.detail ?? 0, writing: d.writing ?? 0,
+          };
+          if (d.habitatPhotoUrl) photos[a.id] = d.habitatPhotoUrl;
+        });
+        setZyCompleted(done);
+        setHabitatPhotos(photos);
+        if (zy.sessionCompleted || zy.citizenScience) setZyScreen('done');
+      } catch (e) {
+        console.warn('ZooYard resume failed:', e);
+      } finally {
+        if (!cancelled) setHydrating(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [classCode, studentName, setZyScreen]);
+
   function openAnimal(animal) {
     if (zyCompleted[animal.id]) return;
     setZyAnimal(animal);
     setZyPhase('attest');
     setMcqAnswer(null); setMcqCorrect(null); setMcqRevealed(false);
-    setObsText('');
+    setObsText(''); setObsError('');
+    setHintsOpen(false);
+    setAttestFile(null); setAttestPreview(null); setAttestError('');
   }
 
   function backToHabitats() {
@@ -101,6 +145,15 @@ export default function ZooYardScreen() {
 
   async function submitWritten() {
     if (!zyAnimal || savingObs) return;
+
+    // The scorers already floor gibberish to 1/1/1, but silently — a student could submit
+    // keyboard mash and still collect a badge plus the 20-point quiz bonus with no feedback.
+    if (isLowQualityResponse(obsText)) {
+      setObsError('That does not look like a full answer yet. Write a sentence about what you can actually see - tap "Need a hint?" for sentence starters.');
+      setHintsOpen(true);
+      return;
+    }
+    setObsError('');
     setSavingObs(true);
     try {
       const scoreResult = buildObservationScore(obsText, zyAnimal.id, classStage, 'science');
@@ -113,6 +166,8 @@ export default function ZooYardScreen() {
         behaviour: scoreResult.behaviour, detail: scoreResult.detail, writing: scoreResult.writing,
         observation: obsText,
       };
+      const photoUrl = habitatPhotos[zyAnimal.id];
+      if (photoUrl) badgeData.habitatPhotoUrl = photoUrl;
 
       if (studentName && classCode) {
         const code = normaliseCode(classCode);
@@ -120,9 +175,15 @@ export default function ZooYardScreen() {
         try {
           // updateDoc (not setDoc+merge) so the dotted key nests under zooyard.{animalId}
           // rather than becoming a literal field name containing dots.
-          await updateDoc(doc(db, 'classes', code, 'students', sid),
-            { [`zooyard.${zyAnimal.id}`]: { completed: true, ...badgeData, updatedAt: serverTimestamp() } }
-          );
+          // totalPoints is written on every habitat (not just at Habitat Hero submit) so the
+          // field is trustworthy for a student who never finishes the citizen science task.
+          const runningTotal = ZOOYARD_ANIMALS.reduce((sum, a) => (
+            sum + (a.id === zyAnimal.id ? points : (zyCompleted[a.id]?.points || 0))
+          ), 0);
+          await updateDoc(doc(db, 'classes', code, 'students', sid), {
+            [`zooyard.${zyAnimal.id}`]: { completed: true, ...badgeData, updatedAt: serverTimestamp() },
+            'zooyard.totalPoints': runningTotal,
+          });
         } catch (e) { console.warn('ZooYard badge write failed:', e); }
       }
 
@@ -131,6 +192,40 @@ export default function ZooYardScreen() {
       setZyPhase('badge');
     } finally {
       setSavingObs(false);
+    }
+  }
+
+  function onAttestFileChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAttestFile(file);
+    setAttestPreview(URL.createObjectURL(file));
+    setAttestError('');
+  }
+
+  // The photo is encouraged but never blocking - a denied camera permission or a school
+  // device without a camera must not be able to stall a student mid-lesson.
+  async function continueFromAttest() {
+    if (attestUploading) return;
+    if (!attestFile) { setZyPhase('video'); return; }
+    setAttestUploading(true);
+    setAttestError('');
+    try {
+      const code = normaliseCode(classCode);
+      const sid  = safeStudentId(studentName);
+      const ext  = (attestFile.name.split('.').pop() || 'jpg').toLowerCase();
+      const path = `zooyardHabitats/${code}/${sid}-${zyAnimal.id}-${Date.now()}.${ext}`;
+      const snap = await uploadBytes(storageRef(storage, path), attestFile);
+      const url  = await getDownloadURL(snap.ref);
+      setHabitatPhotos(prev => ({ ...prev, [zyAnimal.id]: url }));
+      setZyPhase('video');
+    } catch (err) {
+      console.warn('ZooYard habitat photo upload failed:', err);
+      setAttestError('Could not save that photo. Tap "Yes, I\'m ready" again to continue without it.');
+      setAttestFile(null);
+      setAttestPreview(null);
+    } finally {
+      setAttestUploading(false);
     }
   }
 
@@ -190,6 +285,23 @@ export default function ZooYardScreen() {
     } finally {
       setCsUploading(false);
     }
+  }
+
+  // Held until the resume read finishes so the picker never flashes "Tap to begin" for a
+  // habitat the student has already completed.
+  if (hydrating) {
+    return (
+      <div style={{ position:'fixed', inset:0, background:'linear-gradient(135deg, var(--jungle-deep) 0%, var(--jungle-mid) 50%, var(--jungle-light) 100%)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'1.25rem' }}>
+        <img src="/images/logo.png" alt="" style={{ height:64, width:'auto', opacity:0.9 }} onError={e => e.target.style.display='none'} />
+        <div style={{ display:'flex', gap:8 }}>
+          {[0,1,2].map(i => (
+            <div key={i} style={{ width:8, height:8, borderRadius:'50%', background:'rgba(255,255,255,0.7)', animation:'zy-pulse 1.2s ease-in-out infinite', animationDelay:`${i*0.2}s` }} />
+          ))}
+        </div>
+        <p style={{ color:'rgba(255,255,255,0.75)', fontSize:'0.75rem', letterSpacing:'0.12em', textTransform:'uppercase', fontWeight:600, margin:0 }}>Loading your ZooYard</p>
+        <style>{`@keyframes zy-pulse { 0%,80%,100% { opacity:0.3; transform:scale(0.85); } 40% { opacity:1; transform:scale(1.15); } }`}</style>
+      </div>
+    );
   }
 
   // ── Done screen ──────────────────────────────────────────────────────────
@@ -269,12 +381,33 @@ export default function ZooYardScreen() {
           <div style={{ fontSize:'2.5rem', marginBottom:'0.5rem' }}>📍</div>
           <h2 className="taronga-title" style={{ fontSize:'1.5rem', color:'#0A2F1F', marginBottom:'0.5rem' }}>{zyAnimal.habitatLabel}</h2>
           <p style={{ color:'#3A4A3F', fontSize:'0.95rem', lineHeight:1.6, marginBottom:'1.5rem' }}>{zyAnimal.selfAttestPrompt}</p>
-          <p style={{ fontWeight:700, color:'#0A2F1F', marginBottom:'1.25rem' }}>{zyAnimal.selfAttestQuestion}</p>
-          <button onClick={() => setZyPhase('video')}
-            style={{ width:'100%', padding:'0.85rem', borderRadius:999, border:'none', background:zyAnimal.habitatColor, color:'white', fontSize:'0.95rem', fontWeight:800, cursor:'pointer', marginBottom:'0.6rem', textTransform:'uppercase', letterSpacing:'0.05em' }}>
-            Yes, I'm ready
+          <p style={{ fontWeight:700, color:'#0A2F1F', marginBottom:'1rem' }}>{zyAnimal.selfAttestQuestion}</p>
+
+          {/* Photo turns the self-attest tick-box into evidence the teacher can mark the
+              written response against - the prompts ask students to describe this spot. */}
+          <label style={{ display:'block', cursor: attestUploading ? 'default' : 'pointer', marginBottom:'0.85rem' }}>
+            {attestPreview ? (
+              <img src={attestPreview} alt="" style={{ width:'100%', maxHeight:170, objectFit:'cover', borderRadius:12, display:'block' }} />
+            ) : (
+              <div style={{ border:`2px dashed ${zyAnimal.habitatColor}66`, background:'#FAFAF8', borderRadius:12, padding:'1.1rem 1rem', textAlign:'center' }}>
+                <div style={{ fontSize:'1.6rem', lineHeight:1, marginBottom:'0.35rem' }}>📷</div>
+                <div style={{ fontSize:'0.86rem', fontWeight:700, color:'#0A2F1F' }}>Take a photo of your spot</div>
+                <div style={{ fontSize:'0.74rem', color:'#6B6B62', marginTop:'0.15rem' }}>You will write about it in a moment</div>
+              </div>
+            )}
+            <input type="file" accept="image/*" capture="environment" disabled={attestUploading}
+              onChange={onAttestFileChange} style={{ display:'none' }} />
+          </label>
+          {attestPreview && (
+            <p style={{ fontSize:'0.74rem', color:'#6B6B62', margin:'-0.5rem 0 0.85rem' }}>Tap the photo to retake it.</p>
+          )}
+          {attestError && <p style={{ color:'#DC2626', fontSize:'0.8rem', margin:'0 0 0.7rem' }}>{attestError}</p>}
+
+          <button onClick={continueFromAttest} disabled={attestUploading}
+            style={{ width:'100%', padding:'0.85rem', borderRadius:999, border:'none', background: attestUploading ? '#CCC' : zyAnimal.habitatColor, color:'white', fontSize:'0.95rem', fontWeight:800, cursor: attestUploading ? 'not-allowed' : 'pointer', marginBottom:'0.6rem', textTransform:'uppercase', letterSpacing:'0.05em' }}>
+            {attestUploading ? 'Saving photo…' : "Yes, I'm ready"}
           </button>
-          <button onClick={backToHabitats} style={{ background:'none', border:'none', color:'#6B6B62', fontSize:'0.85rem', cursor:'pointer' }}>
+          <button onClick={backToHabitats} disabled={attestUploading} style={{ background:'none', border:'none', color:'#6B6B62', fontSize:'0.85rem', cursor: attestUploading ? 'not-allowed' : 'pointer' }}>
             ← Not yet, go back
           </button>
         </div>
@@ -336,7 +469,7 @@ export default function ZooYardScreen() {
           </div>
 
           {/* Question card */}
-          <div style={{ width:'100%', maxWidth:480, background:theme.cardGradient, backdropFilter:'blur(4px)', borderRadius:20, padding:'1.5rem 1.4rem', boxShadow:'0 16px 40px rgba(0,0,0,0.28)' }}>
+          <div style={{ width:'100%', maxWidth:480, background:theme.cardGradient, borderRadius:20, padding:'1.5rem 1.4rem', boxShadow:'0 16px 40px rgba(0,0,0,0.28)' }}>
             <h2 style={{ fontSize:'1.1rem', color:'#0A2F1F', marginBottom:'1.15rem', lineHeight:1.45, fontWeight:700 }}>{a.question}</h2>
             {a.options.map((opt, idx) => {
               const isSelected = mcqAnswer === idx;
@@ -377,13 +510,51 @@ export default function ZooYardScreen() {
     const minWords = getMinWords(classStage);
     const wordCount = obsText.trim().match(/\b\w+\b/g)?.length || 0;
     const prompt = zyAnimal.writingPromptByStage[classStage] || zyAnimal.writingPromptByStage[4];
+    const tip = getStageScaffoldTip(classStage);
+    const writtenTheme = ZOOYARD_HABITAT_THEME[zyAnimal.habitatArea] || ZOOYARD_HABITAT_THEME.bushland;
     return (
       <div style={{ position:'fixed', inset:0, background:'#F0EDE6', display:'flex', flexDirection:'column', fontFamily:'var(--t-font)' }}>
         <HomeButton dark onHome={backToHabitats} />
         <div style={{ background:zyAnimal.habitatColor, padding:'0.9rem 1.2rem', color:'white', fontWeight:700 }}>{zyAnimal.name} · Write it up</div>
         <div style={{ flex:1, overflowY:'auto', padding:'1.5rem 1.2rem', maxWidth:520, margin:'0 auto', width:'100%', boxSizing:'border-box' }}>
           <p style={{ fontSize:'1.05rem', color:'#0A2F1F', marginBottom:'1rem', lineHeight:1.5, fontWeight:600 }}>{prompt}</p>
-          <textarea value={obsText} onChange={e => setObsText(e.target.value)} rows={7}
+
+          <div style={{ marginBottom:'1rem' }}>
+            <button onClick={() => setHintsOpen(o => !o)}
+              style={{ width:'100%', display:'flex', justifyContent:'space-between', alignItems:'center', background:writtenTheme.accentSoft, border:`1px solid ${writtenTheme.accentBorder}`, borderRadius: hintsOpen ? '10px 10px 0 0' : '10px', padding:'0.7rem 1rem', cursor:'pointer', color:writtenTheme.accent, fontWeight:700, fontSize:'0.85rem', textAlign:'left', fontFamily:'inherit' }}>
+              <span>💡 Need a hint?</span>
+              <span style={{ fontSize:'0.7rem' }}>{hintsOpen ? '▲' : '▼'}</span>
+            </button>
+            {hintsOpen && (
+              <div style={{ background:writtenTheme.accentSoft, border:`1px solid ${writtenTheme.accentBorder}`, borderTop:'none', borderRadius:'0 0 10px 10px', padding:'0.8rem 1rem' }}>
+                {tip.points.length > 0 && (
+                  <>
+                    <p style={{ fontSize:'0.72rem', fontWeight:700, color:writtenTheme.accent, textTransform:'uppercase', letterSpacing:'0.05em', margin:'0 0 0.35rem' }}>{tip.header}</p>
+                    <ul style={{ margin:'0 0 0.7rem', paddingLeft:'1.1rem', fontSize:'0.82rem', color:'#3A4A3F', lineHeight:1.8 }}>
+                      {tip.points.map((pt, i) => <li key={i}>{pt}</li>)}
+                    </ul>
+                  </>
+                )}
+                <p style={{ fontSize:'0.72rem', fontWeight:700, color:writtenTheme.accent, textTransform:'uppercase', letterSpacing:'0.05em', margin:'0 0 0.25rem' }}>Sentence starters:</p>
+                {tip.starters.map((s, i) => (
+                  <p key={i} style={{ fontSize:'0.82rem', color:'#3A4A3F', margin:'0.15rem 0', paddingLeft:'0.5rem', fontStyle:'italic' }}>"{s}"</p>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {habitatPhotos[zyAnimal.id] && (
+            <div style={{ marginBottom:'1rem' }}>
+              <div style={{ fontSize:'0.68rem', fontWeight:700, color:'var(--t-slate,#6B6B62)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'0.35rem' }}>Your spot</div>
+              <img src={habitatPhotos[zyAnimal.id]} alt="" style={{ width:'100%', maxHeight:180, objectFit:'cover', borderRadius:12, display:'block' }} />
+            </div>
+          )}
+
+          {obsError && (
+            <p style={{ background:'#FEF2F2', border:'1px solid #FCA5A5', color:'#B91C1C', fontSize:'0.82rem', lineHeight:1.5, borderRadius:10, padding:'0.7rem 0.9rem', margin:'0 0 0.85rem' }}>{obsError}</p>
+          )}
+
+          <textarea value={obsText} onChange={e => { setObsText(e.target.value); if (obsError) setObsError(''); }} rows={7}
             placeholder="Write your response here..."
             style={{ width:'100%', padding:'0.9rem', borderRadius:12, border:'1px solid #D8D4C8', fontSize:'0.95rem', fontFamily:'inherit', resize:'vertical', boxSizing:'border-box', lineHeight:1.6 }} />
           <div style={{ textAlign:'right', fontSize:'0.78rem', color: wordCount >= minWords ? '#2E7D55' : '#A8B4AC', marginTop:'0.4rem', fontWeight:600 }}>
