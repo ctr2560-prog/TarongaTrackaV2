@@ -74,6 +74,7 @@ export function AppProvider({ children }) {
   const [sessionType,   setSessionType]   = useState(_savedSession);
   const [zzScreen,      setZzScreen]      = useState('map');      // ZooSnooz sub-router
   const [zyScreen,      setZyScreen]      = useState('habitats'); // ZooYard sub-router
+  const [evScreen,      setEvScreen]      = useState('map');      // Evolve sub-router
   const [appMode,       setAppMode]       = useState(() => localStorage.getItem('tarongaAppMode') || 'school');
 
   // ── Student identity ──────────────────────────────────────────────────────
@@ -137,6 +138,7 @@ export function AppProvider({ children }) {
       sessionType,   setSessionType,
       zzScreen,      setZzScreen,
       zyScreen,      setZyScreen,
+      evScreen,      setEvScreen,
       appMode,       setAppMode,
       studentName,   setStudentName,
       classCode,     setClassCode,

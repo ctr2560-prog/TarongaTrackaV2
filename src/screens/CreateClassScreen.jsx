@@ -68,6 +68,7 @@ export default function CreateClassScreen() {
 
   const isZooSnooz = newLocation === 'zoosnooz-sydney';
   const isZooYard  = newLocation === 'school';
+  const isEvolve   = newLocation === 'evolve-sydney';
 
   const createClass = async () => {
     if (!newClassName.trim() || !schoolName) return;
@@ -77,10 +78,10 @@ export default function CreateClassScreen() {
     try {
       const code        = generateClassCode();
       const sessionDate = new Date().toISOString().split('T')[0];
-      const sessionType = isZooYard ? 'zooyard' : isZooSnooz ? 'zoosnooz' : 'standard';
-      const VENUES = { 'taronga-sydney':'Taronga Sydney', 'zoosnooz-sydney':'Taronga Sydney', 'dubbo':'Taronga Dubbo', 'school':'School' };
+      const sessionType = isEvolve ? 'evolve' : isZooYard ? 'zooyard' : isZooSnooz ? 'zoosnooz' : 'standard';
+      const VENUES = { 'taronga-sydney':'Taronga Sydney', 'zoosnooz-sydney':'Taronga Sydney', 'evolve-sydney':'Taronga Sydney', 'dubbo':'Taronga Dubbo', 'school':'School' };
       const venue = VENUES[newLocation] || 'Taronga Zoo';
-      const subject = isZooYard ? 'science' : isZooSnooz ? null : newSubject;
+      const subject = isEvolve ? 'life-ready' : isZooYard ? 'science' : isZooSnooz ? null : newSubject;
 
       await setDoc(doc(db, 'teachers', teacherEmail, 'classes', code), {
         classCode: code, className: newClassName.trim(), schoolName,
@@ -131,7 +132,7 @@ export default function CreateClassScreen() {
     }
   };
 
-  const displaySubject = (isZooSnooz || isZooYard) ? 'science' : newSubject;
+  const displaySubject = isEvolve ? 'life-ready' : (isZooSnooz || isZooYard) ? 'science' : newSubject;
   const subjectData  = NSW_OUTCOMES[displaySubject];
   const outcomes     = subjectData?.[newClassStage] || [];
   const syllabusName = subjectData?.syllabus?.[newClassStage] || '';
@@ -180,6 +181,7 @@ export default function CreateClassScreen() {
                 <option value="zoosnooz-sydney">ZooSnooz — Taronga Sydney</option>
                 <option value="dubbo" disabled>Taronga Dubbo (Coming Soon)</option>
                 <option value="school">Your School — ZooYard</option>
+                <option value="evolve-sydney">Taronga Sydney — Evolve (Stage 6)</option>
               </select>
 
               {isZooYard && (
@@ -190,8 +192,16 @@ export default function CreateClassScreen() {
                 </div>
               )}
 
+              {isEvolve && (
+                <div style={{ background:'#fdf5e8', border:'1px solid #e6c88a', borderRadius:'10px', padding:'0.9rem 1rem', marginBottom:'1rem' }}>
+                  <p style={{ margin:0, fontSize:'0.8rem', color:'#5b3d15', lineHeight:1.6 }}>
+                    Evolve is a Stage 6 twilight excursion supporting Life Ready. Students walk five chapters — lion, kangaroo, tiger, giraffe, koala — writing a reflection and filming a piece to camera at each, which stitch into one short film they keep. No points, badges or marks. Filming consent applies, same as ZooSnooz.
+                  </p>
+                </div>
+              )}
+
               {/* Subject */}
-              {newLocation !== 'zoosnooz-sydney' && !isZooYard && (
+              {newLocation !== 'zoosnooz-sydney' && !isZooYard && !isEvolve && (
                 <>
                   <label style={{ display:'block', fontSize:'0.78rem', fontWeight:700, color:'var(--t-deep)', marginBottom:'0.3rem', textTransform:'uppercase', letterSpacing:'0.05em' }}>Subject</label>
                   <select value={newSubject} onChange={e => setNewSubject(e.target.value)} style={{ ...inputStyle, appearance:'auto', cursor:'pointer' }}

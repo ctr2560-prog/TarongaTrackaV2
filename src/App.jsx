@@ -10,7 +10,7 @@ import {
   AdminLoginScreen, AdminDashboardScreen, AdminClassViewScreen,
   PublicHomeScreen, PublicHomeExtScreen, PublicEntryScreen,
   PublicAnimalScreen, PublicMissionScreen, PublicLeaderboardScreen,
-  ZooSnoozScreen, ZooYardScreen, DocumentaryViewer, ComingSoonScreen,
+  ZooSnoozScreen, ZooYardScreen, EvolveScreen, DocumentaryViewer, ComingSoonScreen,
 } from './screens';
 
 const PRELOAD_IMAGES = [
@@ -70,6 +70,7 @@ function Router() {
 
   // ZooYard (self-attest, no-GPS school program) has its own sub-router
   if (sessionType === 'zooyard') return <ZooYardScreen />;
+  if (sessionType === 'evolve')  return <EvolveScreen />;
 
   switch (currentScreen) {
     case 'home':                 return <HomeScreen />;

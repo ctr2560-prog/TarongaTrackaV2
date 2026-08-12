@@ -8,6 +8,8 @@ There is also **ZooSnooz** — a separate night-mode variant with NFC stations, 
 
 There is also **ZooYard** — a self-attest, no-GPS "at school" program for classes that can't visit the zoo (built for NSW DoE devices, which block geolocation). Students work through three habitats in their own schoolyard, then complete a citizen science task. See the ZooYard Deep Reference section below.
 
+There is also **Evolve** — a Stage 6 (Year 11/12) twilight excursion supporting the Life Ready course. Five animals are five chapters of one story about leaving school; students write a reflection and film a piece to camera at each, which stitch into a single short film they keep. Deliberately has no points, badges or marks. See the Evolve Deep Reference section below.
+
 Live URL: deployed to Firebase Hosting (project: `tarongatracka`), region: `australia-southeast1`.
 
 ---
@@ -286,17 +288,26 @@ Triggered when student taps "Create Documentary" from the ZooSnooz collection sc
 - That URL is caught by the SPA rewrite → `DocumentaryViewer.jsx` reads the `docViewCode` from AppContext, parses the `zzv_` prefix, fetches the student's Firestore doc, and renders a souvenir card (animal photo, observation, badge, scores, conservation fact)
 - `docViewCode` is set in AppContext and triggers `DocumentaryViewer` to render in place of the normal screen
 
-### Firebase Storage rules — IMPORTANT WARNING
+### Firebase Storage rules
 
-**There is no `storage.rules` file in the repo.** Storage rules are managed directly in the Firebase Console. The ZooSnooz video upload path `zoosnooz/` must be publicly writable (or at minimum writable by unauthenticated users, since students have no Firebase Auth). If uploads start failing, check the Firebase Console Storage rules — they likely need:
-```
-match /zoosnooz/{allPaths=**} {
-  allow read, write: if true;
-}
-```
-Do not create a `storage.rules` file locally without also wiring it into `firebase.json` under a `"storage"` key, otherwise it will be silently ignored.
+**`storage.rules` now exists in the repo** (added 2026-08-12) and is wired into `firebase.json` under the `"storage"` key. Deploy with `firebase deploy --only storage`.
 
-**Note (2026-07-20):** the new ZooYard `citizenScienceEvidence/` upload path worked immediately in production with no manual Console rule change — the live Console rules appear to already be broadly permissive (or match new top-level folders), not narrowly scoped to just `zoosnooz/`. Still verify in the Console if a new Storage path ever fails silently.
+⚠️ The file is only honoured *because* of that `firebase.json` key. A `storage.rules` file without it is silently ignored.
+
+**Every upload path the ecosystem uses must be listed there**, or writes fail with `storage/unauthorized` and — because uploads are backgrounded — the failure is invisible unless you check the console log:
+
+| Path | Written by | Auth |
+|---|---|---|
+| `zoosnooz/` | ZooSnooz clips + documentary | none (students) |
+| `evolve/` | Evolve clips + film | none (students) |
+| `zooyardHabitats/` | ZooYard attest photos | none (students) |
+| `citizenScienceEvidence/` | ZooYard Habitat Hero photos | none (students) |
+| `challengeEvidence/` | Class challenge photos | teacher (Firebase Auth) |
+| `resources/` | **Wildly** resource PDFs | Wildly staff (Firebase Auth) |
+
+`resources/` belongs to **Wildly**, which shares this Firebase project. Removing it breaks Wildly's PDF uploads — check both repos before narrowing this file.
+
+**Correction (2026-08-12):** an earlier note here claimed the ZooYard `citizenScienceEvidence/` path "worked immediately in production with no manual Console rule change" and that the live rules were "broadly permissive". **That was never verified and is wrong.** A direct probe of every path found only `zoosnooz/` was writable; `citizenScienceEvidence/`, `zooyardHabitats/` and `evolve/` were all denied, and `citizenScienceSubmissions` had zero documents — so no student had ever completed the task to prove it. Never assume a new Storage path works; probe it.
 
 ---
 
@@ -352,6 +363,90 @@ Rules: `allow read, write, delete: if true` — same open pattern as `challengeS
 
 ### Class details / GPS panel
 `ClassDetailsScreen.jsx` gates the GPS toggle panel and the old daytime "Class Insights" (badge-array-based analytics) with `!isZY` — both are meaningless for ZooYard (no GPS check ever happens; badges live under `zooyard`, not the shared `badges` array). Stat cards get a ZooYard-specific branch: Students / Avg Points / Habitat Badges / Completed, reading `student.zooyard?.totalPoints`/`sessionCompleted`/`{animalId}.completed`. Note **Avg Points only reflects fully-submitted sessions** — `zooyard.totalPoints` is written once, at citizen science submission, not incrementally per animal, so an in-progress student shows 0 there even after earning badges.
+
+---
+
+## Evolve — Deep Reference
+
+Evolve is a **Stage 6 (Year 11/12) twilight excursion** at Taronga Sydney, built to support the
+mandatory Life Ready course. It is a reflection on leaving school, not a quiz mode.
+
+**It is deliberately unlike every other mode: no points, no badges, no marks, no leaderboard,
+no quizzes.** The writing is a memento the student keeps. Don't "improve" it by adding scoring.
+
+### The five chapters (`src/data/evolveAnimals.js`)
+Each animal is a chapter in one narrative — past → threshold → future → legacy → responsibility —
+and the metaphor is earned by the animal's real behaviour, not decoration:
+
+| # | Animal | Chapter | Why |
+|---|---|---|---|
+| 1 | Lion | Where I come from | Cubs are raised by the whole pride and learn by watching |
+| 2 | Kangaroo | Forward only | Physically cannot hop backwards |
+| 3 | Tiger | The territory ahead | Leaves its mother at ~2 to claim its own ground |
+| 4 | Giraffe | The long view | Other animals watch giraffes for early warning — **the Advice Wall chapter** |
+| 5 | Koala | What I owe | Survival depends on human choices — **the pledge chapter** |
+
+`order` fixes the story sequence. Students unlock chapters by GPS in whatever order the zoo
+allows, but `EVOLVE_STORY_ORDER` means **the film is always assembled in narrative order
+regardless of filming order.** Capture order and story order are deliberately independent.
+
+⚠️ **Kangaroo has never existed in this app.** `latitude`/`longitude` are `null` and
+`/images/kangaroo.jpg` does not exist — coordinates, a map pin and a photo still need capturing
+on site (Australian Walkabout). Null coords mean that chapter unlocks *without* a proximity
+check rather than becoming permanently unreachable.
+
+Lion/tiger/giraffe/koala coordinates are lifted from `src/data/animals.js` so Evolve matches the
+daytime map exactly.
+
+### Flow
+`sessionType: 'evolve'` short-circuits in `App.jsx` to `EvolveScreen.jsx`, which sub-routes on
+`evScreen` (`map | chapter | film`) in AppContext. Per chapter: **insight → observe → write
+(40-word minimum) → record (30s piece to camera) → preview**.
+
+Student data lives at `classes/{code}/students/{id}` under `evolve`:
+```js
+evolve: {
+  lion: { completed, observation, reflection, chapter, order, clipURL, updatedAt },
+  kangaroo: {...}, tiger: {...}, giraffe: {...}, koala: {...},
+  filmURL, sessionCompleted, completedAt,
+}
+```
+Per-chapter writes use `updateDoc` with a dotted key — **not** `setDoc(...,{merge:true})`, which
+would create a literal field named `"evolve.lion"`. Same trap as ZooYard and ZooSnooz.
+
+On submit a keepsake record is written to `evolve_docs/{classCode}_{studentId}` holding the film
+URL and every reflection. Nothing reads it yet — that's the souvenir-link/export surface.
+
+### `src/utils/evolveFilm.js` — the stitching pipeline
+A **deliberate copy** of the ZooSnooz pipeline, not a shared abstraction, so changing Evolve can
+never regress live ZooSnooz. **They do not inherit from each other — a fix here needs applying
+there separately.** Hard-won details, all of which cost real debugging time:
+
+- **The draw loop must be rAF, with a timer watchdog.** rAF alone stops dead in a hidden tab or
+  when the screen sleeps, producing films with perfect audio and *no picture* — the cards survive
+  because they draw once synchronously and the canvas holds the image, but video needs continuous
+  redraws. A bare `setInterval` "fixes" that but drifts and bunches up, which looks choppy. The
+  current loop uses rAF when visible, a timer when hidden, plus a watchdog that restarts the loop
+  if no frame has been drawn in 400ms.
+- **A Screen Wake Lock is held for the whole stitch** for the same reason.
+- Any chapter drawing under ~5fps logs a warning naming the chapter — this used to fail silently.
+- `mr.start(500)` then an 80ms settle before the first frame, or the opening frames drop.
+- Each clip's guard timer is re-armed to the real duration once playback starts.
+- The `<video>` element is released after every clip (`removeAttribute('src'); load()`).
+- Canvas is **720×1280 portrait** at 2.5 Mbps.
+
+### Upload gating
+A student **cannot leave a chapter until its clip is fully in Storage** — the button reads
+"Waiting for your clip…" and is disabled until the upload reports `done`. Walking away mid-upload
+silently loses that chapter from the film. On failure they get "Try saving again", which re-uploads
+the blob held in memory (no re-filming); there is deliberately no skip.
+
+### Advice Wall (`evolveAdvice`) — data only, no UI yet
+The giraffe chapter's reflection is also written to `evolveAdvice` with
+`{ classCode, chapterId, advice, cohortYear, status:'pending', submittedAt }`.
+**Attributed by cohort year, never by student name** — it is written by 17-year-olds and intended
+for 12-year-olds. Staff moderation and the wall itself are not built yet. Because Wildly shares
+this Firestore project, one collection can serve both products.
 
 ---
 
@@ -693,7 +788,7 @@ The `dist/` folder is the hosting target. Always run `npm run build` before `fir
 
 10. **`drawings accepted` is wrong** — the app only accepts text/dictation for literacy. Never reintroduce "drawings accepted" claims in AccessibilityScreen or elsewhere.
 
-11. **ZooSnooz video upload requires open Storage rules** — students are unauthenticated (no Firebase Auth). Storage path `zoosnooz/` must allow unauthenticated writes. Rules are managed in Firebase Console only (no local `storage.rules` file). If video uploads fail silently, check Console Storage rules first.
+11. **Any new Storage upload path must be added to `storage.rules` and deployed** (`firebase deploy --only storage`), or writes fail silently with `storage/unauthorized` — students are unauthenticated, so student paths need `if true`. See the Firebase Storage rules section for the full path table.
 
 12. **Canvas stitching is CPU-heavy** — it runs on the main thread using `requestAnimationFrame`. On low-end devices it may be slow or fail. The fallback message ("stitching not supported on this device") handles this gracefully — do not add server-side fallbacks without a significant architecture change.
 
