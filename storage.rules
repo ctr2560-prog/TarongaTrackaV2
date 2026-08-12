@@ -1,0 +1,57 @@
+rules_version = '2';
+
+// Firebase Storage rules for the shared `tarongatracka` project.
+//
+// These used to live ONLY in the Firebase Console, which meant nobody could review them and a
+// new upload path could fail silently for weeks. Three did exactly that (ZooYard's Habitat
+// Hero photos, ZooYard's attest photos, and Evolve's clips). Keeping them here means adding a
+// folder is part of building the feature.
+//
+// ⚠️ This file is only honoured because firebase.json has a "storage" key pointing at it.
+//    Remove that key and this file is silently ignored.
+//
+// ⚠️ This project is shared with Wildly by Taronga (separate repo, same Firebase project).
+//    Wildly uploads resource PDFs to `resources/`, which relies on the catch-all below.
+//
+// Deploy with:  firebase deploy --only storage
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ── Student paths ────────────────────────────────────────────────────────
+    // Students have no Firebase Auth at all — they join with a class code and a chosen
+    // alias — so these must allow UNAUTHENTICATED writes. They are the only exception to
+    // the signed-in-write default below. Security comes from the paths being unguessable,
+    // the same trust model used throughout firestore.rules.
+
+    // ZooSnooz: per-animal night clips and the stitched documentary.
+    match /zoosnooz/{allPaths=**} {
+      allow read, write: if true;
+    }
+
+    // Evolve: per-chapter pieces to camera and the final stitched film.
+    match /evolve/{allPaths=**} {
+      allow read, write: if true;
+    }
+
+    // ZooYard: self-attest habitat photos (the student's tree / shady spot / open space).
+    match /zooyardHabitats/{allPaths=**} {
+      allow read, write: if true;
+    }
+
+    // ZooYard: Habitat Hero citizen science evidence photos.
+    match /citizenScienceEvidence/{allPaths=**} {
+      allow read, write: if true;
+    }
+
+    // ── Default ──────────────────────────────────────────────────────────────
+    // Kept EXACTLY as it was in the Console: public read, signed-in write. This is what
+    // `challengeEvidence/` (teachers) and `resources/` (Wildly staff) rely on, plus any
+    // future authenticated upload path in either repo. Do not tighten this without
+    // checking the Wildly repo too.
+    match /{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+  }
+}

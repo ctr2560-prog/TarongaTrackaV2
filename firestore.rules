@@ -127,6 +127,21 @@ service cloud.firestore {
       allow read, write, delete: if true;
     }
 
+    // ── Evolve (Stage 6) ──────────────────────────────────────────────────────
+    // Advice written at the giraffe chapter, queued for staff moderation before any
+    // younger student sees it. Students have no Firebase Auth, and the staff portal is
+    // code-based, so both ends are open — same trust model as challengeSubmissions.
+    // Documents carry a cohort year, never a student name.
+    match /evolveAdvice/{adviceId} {
+      allow read, write, delete: if true;
+    }
+
+    // Per-student Evolve keepsake record (film URL + reflections), read by the souvenir
+    // link the student keeps.
+    match /evolve_docs/{docId} {
+      allow read, write: if true;
+    }
+
     // ── Device bookings ───────────────────────────────────────────────────────
     // Teachers view the calendar and create bookings (Firebase Auth required).
     // Staff portal manages bookings without Firebase Auth (code-based login).
