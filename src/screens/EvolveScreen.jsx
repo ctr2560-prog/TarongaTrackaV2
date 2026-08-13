@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
 import { useStudent } from '../context/StudentContext';
-import { EVOLVE_CHAPTERS, EVOLVE_STORY_ORDER, EVOLVE_THEME as T, EVOLVE_MIN_WORDS } from '../data/evolveAnimals';
+import { EVOLVE_CHAPTERS, EVOLVE_STORY_ORDER, EVOLVE_CHAPTER_WORDS as WORDS, EVOLVE_THEME as T, EVOLVE_MIN_WORDS } from '../data/evolveAnimals';
 import { buildEvolveFilm, startChapterRecording, pickMimeType } from '../utils/evolveFilm';
 import { doc, getDoc, updateDoc, setDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
@@ -9,6 +9,16 @@ import { db, storage } from '../firebase';
 import { normaliseCode, safeStudentId } from '../utils/helpers';
 
 const CLIP_SECONDS = 30;
+const WATCH_SECONDS = 60;
+const INTRO_KEY = 'evolveIntroSeen';
+
+// Shown once, before the first chapter. Stage 6 students should know what they have walked
+// into and why, without reading a briefing.
+const INTRO_STEPS = [
+  { n: '1', title: 'Walk',  body: 'Five animals, five chapters of one story. Each unlocks when you get there.' },
+  { n: '2', title: 'Write', body: 'Watch for a minute, then write something honest. Nobody marks it.' },
+  { n: '3', title: 'Film',  body: 'Say one line to camera. Thirty seconds, that is all.' },
+];
 const wordCount = t => (t.trim().match(/\b[\w']+\b/g) || []).length;
 
 function Shell({ children, onHome, scroll = true }) {
@@ -21,659 +31,6 @@ function Shell({ children, onHome, scroll = true }) {
         </button>
       )}
       {children}
-    </div>
-  );
-}
-
-
-// One leg of the trail. Every segment enters at x=32 and leaves at x=32, bulging left or
-// right in between, so consecutive legs always meet no matter how tall each card is — no
-// measuring, no fixed row heights. `non-scaling-stroke` keeps the line an even 2px while the
-// viewBox stretches vertically. Walked legs are solid gold; the way ahead is dashed, the way
-// a route is drawn on a paper map.
-function Segment({ lit, side, first, last, draw, index = 0 }) {
-  const bx = side === 'l' ? 16 : 84;
-  const d = last
-    ? `M50 0 C50 22 ${bx} 26 ${bx} 52`
-    : first
-    ? `M${bx} 50 C${bx} 76 50 80 50 100`
-    : `M50 0 C50 26 ${bx} 28 ${bx} 50 C${bx} 72 50 76 50 100`;
-  // pathLength="1" normalises the curve so dash lengths and offsets are fractions of the leg,
-  // independent of how tall the card happens to be.
-  return (
-    <svg className="ev-seg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-      <path className={`ev-path ${lit ? 'ev-path-lit' : 'ev-path-dim'}${draw ? ' ev-path-draw' : ''}`}
-        d={d} pathLength="1" vectorEffect="non-scaling-stroke" />
-      {lit && !draw && (
-        <path className="ev-flow" d={d} pathLength="1" vectorEffect="non-scaling-stroke"
-          style={{ animationDelay: `${-index * 0.55}s` }} />
-      )}
-    </svg>
-  );
-}
-
-export default function EvolveScreen() {
-  const { evScreen, setEvScreen, setSessionType, setCurrentScreen, studentName, classCode, clearStudentSession } = useApp();
-  const { checkAnimalProximity, locationEnabled, enableLocation } = useStudent();
-
-  const [hydrating, setHydrating] = useState(true);
-  const [chapter, setChapter] = useState(null);
-  const [phase, setPhase] = useState('insight');          // insight | observe | write | record | preview
-  const [done, setDone] = useState({});                    // { [id]: { observation, reflection } }
-  const [clipURLs, setClipURLs] = useState({});            // { [id]: objectURL | remote URL }
-
-  const [observeText, setObserveText] = useState('');
-  const [reflectText, setReflectText] = useState('');
-  const [saving, setSaving] = useState(false);
-
-  const [recording, setRecording] = useState(false);
-  const [countdown, setCountdown] = useState(CLIP_SECONDS);
-  const [camError, setCamError] = useState('');
-  const [frontCam, setFrontCam] = useState(true);
-  const [uploadPct, setUploadPct] = useState({});
-  const [justLit, setJustLit] = useState(null);   // leg to animate after finishing a chapter
-  const pendingClipRef = useRef({});   // { [chapterId]: { blob, fileExt, contentType } } for retries
-
-  const [filmPhase, setFilmPhase] = useState('idle');      // idle | building | preview | submitting | sent
-  const [filmPct, setFilmPct] = useState(0);
-  const [filmURL, setFilmURL] = useState(null);
-  const filmBlobRef = useRef(null);
-
-  const videoRef = useRef(null);
-  const camRef = useRef(null);
-  const recRef = useRef(null);
-  const tickRef = useRef(null);
-
-  const allDone = EVOLVE_CHAPTERS.every(c => done[c.id]);
-  const filmedCount = EVOLVE_CHAPTERS.filter(c => clipURLs[c.id]).length;
-
-  // ── Resume (learned the hard way on ZooYard: never trust in-memory progress) ──
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      if (!studentName || !classCode) { setHydrating(false); return; }
-      try {
-        // getDoc never settles if the device is offline or Firestore is blocked, which would
-        // leave the student on the loading screen forever. Losing resumed progress is far
-        // better than a dead screen, so the read is raced against a timeout.
-        const snap = await Promise.race([
-          getDoc(doc(db, 'classes', normaliseCode(classCode), 'students', safeStudentId(studentName))),
-          new Promise((_, rej) => setTimeout(() => rej(new Error('evolve-resume-timeout')), 8000)),
-        ]);
-        const ev = snap.exists() ? (snap.data().evolve || {}) : {};
-        if (cancelled) return;
-        const d = {}, urls = {};
-        EVOLVE_CHAPTERS.forEach(c => {
-          const e = ev[c.id];
-          if (!e?.completed) return;
-          d[c.id] = { observation: e.observation || '', reflection: e.reflection || '' };
-          if (e.clipURL) urls[c.id] = e.clipURL;
-        });
-        setDone(d); setClipURLs(urls);
-        if (ev.filmURL) { setFilmURL(ev.filmURL); setFilmPhase('sent'); }
-      } catch (e) { console.warn('Evolve resume failed:', e); }
-      finally { if (!cancelled) setHydrating(false); }
-    })();
-    return () => { cancelled = true; };
-  }, [classCode, studentName]);
-
-  // ── Camera lifecycle ──
-  const stopCam = useCallback(() => {
-    camRef.current?.getTracks().forEach(t => t.stop());
-    camRef.current = null;
-    if (videoRef.current) videoRef.current.srcObject = null;
-  }, []);
-
-  useEffect(() => {
-    if (phase !== 'record') { stopCam(); return; }
-    let dead = false;
-    navigator.mediaDevices.getUserMedia({
-      video: { facingMode: frontCam ? 'user' : 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
-      audio: true,
-    }).then(stream => {
-      if (dead) { stream.getTracks().forEach(t => t.stop()); return; }
-      camRef.current = stream;
-      if (videoRef.current) { videoRef.current.srcObject = stream; videoRef.current.play().catch(() => {}); }
-    }).catch(err => {
-      console.warn('Evolve camera error:', err);
-      setCamError('We could not reach your camera. Check permissions, then try again.');
-    });
-    return () => { dead = true; };
-  }, [phase, frontCam, stopCam]);
-
-  useEffect(() => () => { stopCam(); clearInterval(tickRef.current); }, [stopCam]);
-
-  function openChapter(c) {
-    if (done[c.id]) return;
-    setChapter(c);
-    setPhase('insight');
-    setObserveText(''); setReflectText(''); setCamError('');
-    setCountdown(CLIP_SECONDS);
-    setEvScreen('chapter');
-  }
-
-  function backToMap() {
-    clearInterval(tickRef.current);
-    setRecording(false);
-    stopCam();
-    setChapter(null);
-    setEvScreen('map');
-  }
-
-  function goHome() {
-    if (!window.confirm('Leave Evolve? Anything you have not saved will be lost.')) return;
-    stopCam();
-    clearStudentSession();
-    setCurrentScreen('home');
-    setSessionType('standard');
-  }
-
-  // ── Recording ──
-  function beginRecord() {
-    const stream = camRef.current;
-    if (!stream || recording) return;
-    setCountdown(CLIP_SECONDS);
-    const handle = startChapterRecording(stream, {
-      onComplete: ({ blob, url, fileExt, contentType }) => {
-        setClipURLs(prev => ({ ...prev, [chapter.id]: url }));
-        setRecording(false);
-        setPhase('preview');
-        uploadClip(blob, fileExt, contentType, chapter.id);
-      },
-      onError: () => { setRecording(false); setCamError('That recording did not save. Please try again.'); },
-    });
-    if (!handle) { setCamError('Recording is not supported on this device.'); return; }
-    recRef.current = handle;
-    setRecording(true);
-    tickRef.current = setInterval(() => {
-      setCountdown(n => {
-        if (n <= 1) { clearInterval(tickRef.current); handle.stop(); return 0; }
-        return n - 1;
-      });
-    }, 1000);
-  }
-
-  function endRecord() {
-    clearInterval(tickRef.current);
-    recRef.current?.stop();
-  }
-
-  function uploadClip(blob, fileExt, contentType, chapterId) {
-    if (!studentName || !classCode) return;
-    pendingClipRef.current[chapterId] = { blob, fileExt, contentType };
-    try {
-      const code = normaliseCode(classCode);
-      const sid = safeStudentId(studentName);
-      const path = `evolve/${code}/${sid}/${chapterId}.${fileExt}`;
-      const task = uploadBytesResumable(storageRef(storage, path), blob, { contentType });
-      setUploadPct(p => ({ ...p, [chapterId]: 0 }));
-      const stuck = setTimeout(() => {
-        setUploadPct(p => (p[chapterId] === 0 ? { ...p, [chapterId]: 'error' } : p));
-      }, 12000);
-      task.on('state_changed',
-        s => {
-          const pct = s.totalBytes > 0 ? Math.round((s.bytesTransferred / s.totalBytes) * 100) : 0;
-          if (pct > 0) clearTimeout(stuck);
-          setUploadPct(p => ({ ...p, [chapterId]: pct }));
-        },
-        err => { clearTimeout(stuck); console.warn('Evolve clip upload:', err); setUploadPct(p => ({ ...p, [chapterId]: 'error' })); },
-        async () => {
-          clearTimeout(stuck);
-          try {
-            const url = await getDownloadURL(task.snapshot.ref);
-            await updateDoc(doc(db, 'classes', code, 'students', sid), { [`evolve.${chapterId}.clipURL`]: url });
-            setUploadPct(p => ({ ...p, [chapterId]: 'done' }));
-          } catch (e) { console.warn('Evolve clip URL:', e); setUploadPct(p => ({ ...p, [chapterId]: 'error' })); }
-        });
-    } catch (e) { console.warn('Evolve upload init:', e); }
-  }
-
-  function retryUpload(chapterId) {
-    const p = pendingClipRef.current[chapterId];
-    if (!p) return;
-    setUploadPct(prev => ({ ...prev, [chapterId]: 0 }));
-    uploadClip(p.blob, p.fileExt, p.contentType, chapterId);
-  }
-
-  // ── Save chapter ──
-  async function saveChapter() {
-    if (saving || !chapter) return;
-    setSaving(true);
-    try {
-      const entry = { observation: observeText.trim(), reflection: reflectText.trim() };
-      if (studentName && classCode) {
-        const code = normaliseCode(classCode);
-        const sid = safeStudentId(studentName);
-        try {
-          // updateDoc so the dotted key nests under evolve.{chapterId} rather than
-          // becoming a literal field name containing dots.
-          await updateDoc(doc(db, 'classes', code, 'students', sid), {
-            [`evolve.${chapter.id}`]: { completed: true, ...entry, chapter: chapter.chapter, order: chapter.order, updatedAt: serverTimestamp() },
-          });
-        } catch (e) { console.warn('Evolve chapter write failed:', e); }
-
-        // The giraffe chapter is the one that outlives the excursion. It goes to the
-        // moderation queue attributed by cohort year, never by student name.
-        if (chapter.isAdvice && entry.reflection) {
-          try {
-            await addDoc(collection(db, 'evolveAdvice'), {
-              classCode: code, program: 'evolve', chapterId: chapter.id,
-              advice: entry.reflection,
-              cohortYear: new Date().getFullYear(),
-              status: 'pending', submittedAt: serverTimestamp(),
-            });
-          } catch (e) { console.warn('Advice submit failed:', e); }
-        }
-      }
-      setDone(prev => ({ ...prev, [chapter.id]: entry }));
-      // The leg arriving at the NEXT stop is the one that has just been walked.
-      setJustLit(EVOLVE_STORY_ORDER.findIndex(c => c.id === chapter.id) + 1);
-      backToMap();
-    } finally { setSaving(false); }
-  }
-
-  // ── Film ──
-  const startFilm = useCallback(() => {
-    setFilmPhase('building'); setFilmPct(0); setFilmURL(null);
-    setEvScreen('film');
-  }, [setEvScreen]);
-
-  useEffect(() => {
-    if (evScreen !== 'film' || filmPhase !== 'building') return;
-    let cancelled = false;
-    (async () => {
-      const result = await buildEvolveFilm({
-        chapters: EVOLVE_STORY_ORDER,
-        clipURLs,
-        studentName,
-        theme: T,
-        onProgress: pct => { if (!cancelled) setFilmPct(pct); },
-        isCancelled: () => cancelled,
-      });
-      if (cancelled) return;
-      if (result) { filmBlobRef.current = result.blob; setFilmURL(result.url); }
-      setFilmPhase('preview');
-    })();
-    return () => { cancelled = true; };
-  }, [evScreen, filmPhase, clipURLs, studentName]);
-
-  async function submitFilm() {
-    if (filmPhase === 'submitting') return;
-    setFilmPhase('submitting');
-    try {
-      const code = normaliseCode(classCode);
-      const sid = safeStudentId(studentName);
-      let url = null;
-      if (filmBlobRef.current) {
-        const { fileExt, contentType } = pickMimeType();
-        const path = `evolve/${code}/${sid}/film.${fileExt}`;
-        const task = uploadBytesResumable(storageRef(storage, path), filmBlobRef.current, { contentType });
-        await new Promise((res, rej) => task.on('state_changed', null, rej, res));
-        url = await getDownloadURL(task.snapshot.ref);
-      }
-      const reflections = {};
-      EVOLVE_CHAPTERS.forEach(c => { if (done[c.id]) reflections[c.id] = done[c.id]; });
-      await setDoc(doc(db, 'evolve_docs', `${code}_${sid}`), {
-        classCode: code, studentId: sid, studentName,
-        cohortYear: new Date().getFullYear(),
-        filmURL: url, reflections, completedAt: serverTimestamp(),
-      }, { merge: true });
-      await updateDoc(doc(db, 'classes', code, 'students', sid), {
-        'evolve.filmURL': url, 'evolve.sessionCompleted': true, 'evolve.completedAt': serverTimestamp(),
-      });
-      setFilmURL(url || filmURL);
-      setFilmPhase('sent');
-    } catch (e) {
-      console.warn('Evolve film submit failed:', e);
-      setFilmPhase('preview');
-      window.alert('We could not save your film. Please check your connection and try again.');
-    }
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────
-  if (hydrating) {
-    return (
-      <Shell scroll={false}>
-        <div style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'1.2rem' }}>
-          <img src="/images/logo.png" alt="" style={{ height:60, opacity:0.85 }} onError={e => e.target.style.display='none'} />
-          <p style={{ color:T.textDim, fontSize:'0.72rem', letterSpacing:'0.16em', textTransform:'uppercase', fontWeight:700 }}>Loading Evolve</p>
-        </div>
-      </Shell>
-    );
-  }
-
-  // ── Film screen ──
-  if (evScreen === 'film') {
-    return (
-      <Shell onHome={goHome}>
-        <div style={{ maxWidth:520, margin:'0 auto', padding:'3.5rem 1.25rem 3rem', textAlign:'center' }}>
-          {filmPhase === 'building' && (
-            <>
-              <h2 className="taronga-title" style={{ color:T.text, fontSize:'1.8rem', marginBottom:'0.5rem' }}>Making your film</h2>
-              <p style={{ color:T.textDim, fontSize:'0.9rem', lineHeight:1.6, marginBottom:'1.75rem' }}>
-                Stitching your chapters together in order. Keep this screen open.
-              </p>
-              <div style={{ height:8, background:'rgba(0,0,0,0.3)', borderRadius:4, overflow:'hidden', marginBottom:'0.6rem' }}>
-                <div style={{ height:'100%', width:`${filmPct}%`, background:T.accent, transition:'width 0.4s' }} />
-              </div>
-              <p style={{ color:T.accent, fontWeight:700 }}>{filmPct}%</p>
-            </>
-          )}
-
-          {(filmPhase === 'preview' || filmPhase === 'submitting') && (
-            <>
-              <h2 className="taronga-title" style={{ color:T.text, fontSize:'1.8rem', marginBottom:'1rem' }}>Your film</h2>
-              {filmURL ? (
-                <video src={filmURL} controls playsInline style={{ width:'100%', borderRadius:14, marginBottom:'1.25rem', background:'#000' }} />
-              ) : (
-                <p style={{ color:T.textDim, marginBottom:'1.25rem' }}>
-                  Your device could not stitch the film, but every chapter clip has been saved.
-                </p>
-              )}
-              <button onClick={submitFilm} disabled={filmPhase === 'submitting'}
-                style={{ width:'100%', padding:'0.95rem', borderRadius:999, border:'none', background:T.accent, color:'#241503', fontWeight:800, fontSize:'0.95rem', cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'0.7rem' }}>
-                {filmPhase === 'submitting' ? 'Saving…' : 'Keep this film'}
-              </button>
-              <button onClick={() => setEvScreen('map')} style={{ background:'none', border:'none', color:T.textDim, cursor:'pointer', fontSize:'0.85rem' }}>
-                ← Back to chapters
-              </button>
-            </>
-          )}
-
-          {filmPhase === 'sent' && (
-            <>
-              <div style={{ fontSize:'2.4rem', marginBottom:'0.5rem' }}>🌅</div>
-              <h2 className="taronga-title" style={{ color:T.text, fontSize:'1.8rem', marginBottom:'0.6rem' }}>That's yours to keep</h2>
-              <p style={{ color:T.textDim, fontSize:'0.92rem', lineHeight:1.7, marginBottom:'1.5rem' }}>
-                Your film and everything you wrote have been saved. Your teacher can give you the link to keep.
-              </p>
-              {filmURL && <video src={filmURL} controls playsInline style={{ width:'100%', borderRadius:14, marginBottom:'1.25rem', background:'#000' }} />}
-              <button onClick={goHome}
-                style={{ width:'100%', padding:'0.9rem', borderRadius:999, border:`1px solid ${T.border}`, background:'rgba(0,0,0,0.25)', color:T.text, fontWeight:700, cursor:'pointer' }}>
-                Finish
-              </button>
-            </>
-          )}
-        </div>
-      </Shell>
-    );
-  }
-
-  // ── Chapter flow ──
-  if (chapter && evScreen === 'chapter') {
-    const near = chapter.latitude == null ? { nearby: true } : checkAnimalProximity(chapter);
-
-    return (
-      <Shell onHome={backToMap}>
-        <div style={{ maxWidth:560, margin:'0 auto', padding:'3.25rem 1.25rem 3rem' }}>
-          <div style={{ textAlign:'center', marginBottom:'1.5rem' }}>
-            <div style={{ fontSize:'0.66rem', fontWeight:800, letterSpacing:'0.22em', textTransform:'uppercase', color:T.accent, marginBottom:'0.4rem' }}>
-              Chapter {chapter.order} · {chapter.animalName}
-            </div>
-            <h2 className="taronga-title" style={{ color:T.text, fontSize:'clamp(1.7rem,5vw,2.2rem)', margin:0 }}>{chapter.chapter}</h2>
-          </div>
-
-          {phase === 'insight' && (
-            <>
-              <img src={chapter.image} alt="" style={{ width:'100%', height:180, objectFit:'cover', borderRadius:14, marginBottom:'1.1rem' }} onError={e => e.target.style.display='none'} />
-              <div style={{ background:T.panel, border:`1px solid ${T.border}`, borderRadius:14, padding:'1.1rem 1.2rem', marginBottom:'1rem' }}>
-                <p style={{ color:T.text, fontSize:'0.95rem', lineHeight:1.7, margin:0 }}>{chapter.insight}</p>
-              </div>
-              <div style={{ background:T.accentSoft, border:`1px solid ${T.border}`, borderRadius:14, padding:'1rem 1.2rem', marginBottom:'1.5rem' }}>
-                <div style={{ fontSize:'0.62rem', fontWeight:800, letterSpacing:'0.16em', textTransform:'uppercase', color:T.accent, marginBottom:'0.35rem' }}>Watch for</div>
-                <p style={{ color:T.text, fontSize:'0.9rem', lineHeight:1.6, margin:0 }}>{chapter.observePrompt}</p>
-              </div>
-              <button onClick={() => setPhase('observe')}
-                style={{ width:'100%', padding:'0.95rem', borderRadius:999, border:'none', background:T.accent, color:'#241503', fontWeight:800, cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.06em' }}>
-                I've watched
-              </button>
-            </>
-          )}
-
-          {phase === 'observe' && (
-            <>
-              <p style={{ color:T.text, fontSize:'1rem', lineHeight:1.6, marginBottom:'0.9rem', fontWeight:600 }}>{chapter.observePrompt}</p>
-              <textarea value={observeText} onChange={e => setObserveText(e.target.value)} rows={4}
-                placeholder="What did you actually see?"
-                style={{ width:'100%', boxSizing:'border-box', background:'rgba(0,0,0,0.28)', border:`1px solid ${T.border}`, borderRadius:12, padding:'0.85rem 1rem', color:T.text, fontSize:'0.95rem', lineHeight:1.6, resize:'vertical', fontFamily:'inherit', outline:'none', marginBottom:'1.25rem' }} />
-              <button onClick={() => setPhase('write')} disabled={wordCount(observeText) < 5}
-                style={{ width:'100%', padding:'0.95rem', borderRadius:999, border:'none', background: wordCount(observeText) < 5 ? 'rgba(255,255,255,0.15)' : T.accent, color: wordCount(observeText) < 5 ? T.textDim : '#241503', fontWeight:800, cursor: wordCount(observeText) < 5 ? 'not-allowed' : 'pointer', textTransform:'uppercase', letterSpacing:'0.06em' }}>
-                Next
-              </button>
-            </>
-          )}
-
-          {phase === 'write' && (() => {
-            const wc = wordCount(reflectText);
-            const ready = wc >= EVOLVE_MIN_WORDS;
-            return (
-              <>
-                <p style={{ color:T.text, fontSize:'1rem', lineHeight:1.7, marginBottom:'1rem', fontWeight:600 }}>{chapter.reflectionPrompt}</p>
-                {chapter.isAdvice && (
-                  <p style={{ color:T.accent, fontSize:'0.8rem', lineHeight:1.6, marginBottom:'0.9rem', background:T.accentSoft, border:`1px solid ${T.border}`, borderRadius:10, padding:'0.7rem 0.9rem' }}>
-                    If you're happy for it to be used, this one may be shown to younger students — as "Year 12", never with your name.
-                  </p>
-                )}
-                <textarea value={reflectText} onChange={e => setReflectText(e.target.value)} rows={9}
-                  placeholder={chapter.placeholder}
-                  style={{ width:'100%', boxSizing:'border-box', background:'rgba(0,0,0,0.28)', border:`1px solid ${ready ? T.accent : T.border}`, borderRadius:12, padding:'0.9rem 1rem', color:T.text, fontSize:'0.98rem', lineHeight:1.75, resize:'vertical', fontFamily:'inherit', outline:'none' }} />
-                <div style={{ textAlign:'right', fontSize:'0.78rem', color: ready ? T.accent : T.textDim, margin:'0.4rem 0 1.25rem', fontWeight:600 }}>
-                  {wc} / {EVOLVE_MIN_WORDS} words
-                </div>
-                <button onClick={() => { setCamError(''); setPhase('record'); }} disabled={!ready}
-                  style={{ width:'100%', padding:'0.95rem', borderRadius:999, border:'none', background: ready ? T.accent : 'rgba(255,255,255,0.15)', color: ready ? '#241503' : T.textDim, fontWeight:800, cursor: ready ? 'pointer' : 'not-allowed', textTransform:'uppercase', letterSpacing:'0.06em' }}>
-                  {ready ? 'To camera' : 'Keep writing'}
-                </button>
-              </>
-            );
-          })()}
-
-          {phase === 'record' && (
-            <>
-              <div style={{ background:T.accentSoft, border:`1px solid ${T.border}`, borderRadius:12, padding:'0.9rem 1.1rem', marginBottom:'1rem' }}>
-                <p style={{ color:T.text, fontSize:'0.92rem', lineHeight:1.6, margin:0 }}>{chapter.filmPrompt}</p>
-              </div>
-              <div style={{ position:'relative', borderRadius:14, overflow:'hidden', background:'#000', marginBottom:'0.9rem' }}>
-                <video ref={videoRef} playsInline muted autoPlay style={{ width:'100%', display:'block', transform: frontCam ? 'scaleX(-1)' : 'none' }} />
-                {recording && (
-                  <div style={{ position:'absolute', top:10, left:10, background:'rgba(200,30,30,0.9)', color:'white', padding:'0.25rem 0.7rem', borderRadius:999, fontSize:'0.78rem', fontWeight:800 }}>
-                    ● {countdown}s
-                  </div>
-                )}
-              </div>
-              {camError && <p style={{ color:'#FCA5A5', fontSize:'0.85rem', marginBottom:'0.8rem' }}>{camError}</p>}
-              <p style={{ color:T.textDim, fontSize:'0.78rem', lineHeight:1.5, marginBottom:'0.9rem' }}>
-                It's twilight — hold your torch up near your face so the camera can see you.
-              </p>
-              <div style={{ display:'flex', gap:'0.6rem' }}>
-                {!recording ? (
-                  <>
-                    <button onClick={() => setFrontCam(f => !f)}
-                      style={{ padding:'0.9rem 1rem', borderRadius:999, border:`1px solid ${T.border}`, background:'rgba(0,0,0,0.25)', color:T.text, fontWeight:700, cursor:'pointer', fontSize:'0.85rem' }}>
-                      Flip
-                    </button>
-                    <button onClick={beginRecord}
-                      style={{ flex:1, padding:'0.95rem', borderRadius:999, border:'none', background:T.accent, color:'#241503', fontWeight:800, cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.06em' }}>
-                      Record {CLIP_SECONDS}s
-                    </button>
-                  </>
-                ) : (
-                  <button onClick={endRecord}
-                    style={{ flex:1, padding:'0.95rem', borderRadius:999, border:'none', background:'#C1272D', color:'white', fontWeight:800, cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.06em' }}>
-                    Stop
-                  </button>
-                )}
-              </div>
-            </>
-          )}
-
-          {phase === 'preview' && (
-            <>
-              {clipURLs[chapter.id] && (
-                <video src={clipURLs[chapter.id]} controls playsInline style={{ width:'100%', borderRadius:14, marginBottom:'0.9rem', background:'#000' }} />
-              )}
-              {(() => {
-                // A clip only reaches the film once Storage has it. Until then the student
-                // stays put — walking away mid-upload silently loses that chapter's footage,
-                // and they would not find out until the film was made.
-                const up = uploadPct[chapter.id];
-                const uploading = typeof up === 'number';
-                const failed    = up === 'error';
-                const uploaded  = up === 'done';
-                const pct = uploading ? up : 0;
-
-                return (
-                  <>
-                    <div style={{ marginBottom:'1.1rem' }}>
-                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', fontSize:'0.8rem', color: failed ? '#FCA5A5' : uploaded ? T.accent : T.textDim, marginBottom:'0.35rem', fontWeight:600 }}>
-                        <span>
-                          {uploaded ? '✓ Clip saved'
-                            : failed ? 'Your clip did not save'
-                            : `Saving your clip… ${pct}%`}
-                        </span>
-                        {uploading && <span>{pct}%</span>}
-                      </div>
-                      {!failed && (
-                        <div style={{ height:6, background:'rgba(0,0,0,0.3)', borderRadius:3, overflow:'hidden' }}>
-                          <div style={{ height:'100%', width:`${uploaded ? 100 : pct}%`, background:T.accent, transition:'width 0.3s' }} />
-                        </div>
-                      )}
-                      {!uploaded && !failed && (
-                        <p style={{ fontSize:'0.74rem', color:T.textDim, margin:'0.4rem 0 0', lineHeight:1.5 }}>
-                          Keep this screen open until it finishes, or this chapter will be missing from your film.
-                        </p>
-                      )}
-                      {failed && (
-                        <p style={{ fontSize:'0.74rem', color:T.textDim, margin:'0.4rem 0 0', lineHeight:1.5 }}>
-                          Check your connection and try again. Your recording is still here.
-                        </p>
-                      )}
-                    </div>
-
-                    {failed ? (
-                      <button onClick={() => retryUpload(chapter.id)}
-                        style={{ width:'100%', padding:'0.95rem', borderRadius:999, border:'none', background:T.accent, color:'#241503', fontWeight:800, cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'0.6rem' }}>
-                        Try saving again
-                      </button>
-                    ) : (
-                      <button onClick={saveChapter} disabled={saving || !uploaded}
-                        style={{ width:'100%', padding:'0.95rem', borderRadius:999, border:'none', background: uploaded && !saving ? T.accent : 'rgba(255,255,255,0.15)', color: uploaded && !saving ? '#241503' : T.textDim, fontWeight:800, cursor: uploaded && !saving ? 'pointer' : 'not-allowed', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'0.6rem' }}>
-                        {saving ? 'Saving…' : uploaded ? 'Keep this chapter' : 'Waiting for your clip…'}
-                      </button>
-                    )}
-
-                    <button onClick={() => { setCamError(''); setPhase('record'); setCountdown(CLIP_SECONDS); }} disabled={uploading}
-                      style={{ width:'100%', padding:'0.8rem', borderRadius:999, border:`1px solid ${T.border}`, background:'none', color:T.textDim, fontWeight:600, cursor: uploading ? 'not-allowed' : 'pointer', opacity: uploading ? 0.45 : 1 }}>
-                      Record it again
-                    </button>
-                  </>
-                );
-              })()}
-            </>
-          )}
-
-          {phase !== 'insight' && chapter.latitude != null && !near.nearby && (
-            <p style={{ color:T.textDim, fontSize:'0.78rem', textAlign:'center', marginTop:'1rem' }}>
-              You've moved away from {chapter.animalName}.
-            </p>
-          )}
-        </div>
-      </Shell>
-    );
-  }
-
-  // ── Map / chapter list ──
-  const doneCount = Object.keys(done).length;
-  const WORDS = ['One', 'Two', 'Three', 'Four', 'Five'];
-
-  return (
-    <Shell onHome={goHome}>
-      {/* The page warms from deep dusk at the top to last light at the bottom, so moving down
-          the trail is literally walking toward the horizon the film closes on. */}
-      <div className="ev-horizon" />
-      <div className="ev-wrap">
-
-        <header className="ev-head">
-          <div className="ev-eyebrow">Taronga Zoo Sydney · Twilight</div>
-          <h1 className="taronga-title ev-title">Evolve</h1>
-          <p className="ev-sub">Five chapters. One story. Yours.</p>
-          {studentName && (
-            <div className="ev-progress">
-              <span className="ev-rule" />
-              <span>{studentName} · {doneCount === 0 ? 'not started' : `${WORDS[doneCount - 1]} of five`}</span>
-              <span className="ev-rule" />
-            </div>
-          )}
-        </header>
-
-        {!locationEnabled && (
-          <button onClick={() => enableLocation?.()} className="ev-gps">
-            <span className="ev-gps-dot" />
-            Turn on location so chapters unlock as you reach each animal
-          </button>
-        )}
-
-        <ol className="ev-trail">
-          {EVOLVE_STORY_ORDER.map((c, i) => {
-            const complete = !!done[c.id];
-            const near = c.latitude == null ? { nearby: true, distance: null } : checkAnimalProximity(c);
-            const locked = !complete && !near.nearby;
-            const prevDone = i === 0 || !!done[EVOLVE_STORY_ORDER[i - 1].id];
-            const state = complete ? 'done' : locked ? 'locked' : 'open';
-            return (
-              <li key={c.id} className={`ev-stop ev-${state}`} style={{ animationDelay: `${0.06 * i}s` }}>
-                <span className="ev-gutter" aria-hidden="true">
-                  <Segment lit={prevDone} side={i % 2 === 0 ? 'l' : 'r'} first={i === 0} index={i} draw={justLit === i} />
-                  <span className="ev-node" style={{ left: i % 2 === 0 ? '16%' : '84%' }}>{complete ? '✓' : ''}</span>
-                </span>
-
-                <button className="ev-card" onClick={() => !locked && !complete && openChapter(c)} disabled={complete || locked}>
-                  <span className="ev-card-text">
-                    <span className="ev-chapter">Chapter {WORDS[i]}</span>
-                    <span className="taronga-title ev-name">{c.chapter}</span>
-                    <span className="ev-meta">
-                      {complete ? 'Written and filmed'
-                        : locked ? `Walk to the ${c.animalName.toLowerCase()}${near.distance != null ? ` · ${near.distance} m away` : ''}`
-                        : c.animalName}
-                    </span>
-                  </span>
-                  <span className="ev-still" style={{ backgroundImage: `url(${c.image})` }} />
-                </button>
-              </li>
-            );
-          })}
-
-          {/* The destination sits in the horizon glow at the end of the trail. */}
-          <li className={`ev-stop ev-end ${allDone ? 'ev-open' : 'ev-locked'}`}>
-            <span className="ev-gutter" aria-hidden="true">
-              <Segment lit={allDone} side="l" last index={EVOLVE_CHAPTERS.length} draw={justLit === EVOLVE_CHAPTERS.length} />
-              <span className="ev-node ev-node-end" style={{ left: '16%' }}>✦</span>
-            </span>
-            <div className="ev-dest">
-              <span className="ev-chapter">The end of the walk</span>
-              <span className="taronga-title ev-name">Your film</span>
-              {filmPhase === 'sent' ? (
-                <>
-                  <span className="ev-meta">Saved. Yours to keep.</span>
-                  <button className="ev-cta" onClick={() => setEvScreen('film')}>Watch your film</button>
-                </>
-              ) : allDone ? (
-                <>
-                  <span className="ev-meta">
-                    {filmedCount > 0
-                      ? `${filmedCount} chapter${filmedCount === 1 ? '' : 's'} ready to become one film.`
-                      : 'Your writing is safe, but none of your clips reached us. Tell your teacher.'}
-                  </span>
-                  <button className="ev-cta" onClick={startFilm} disabled={filmedCount === 0}>Make my film</button>
-                </>
-              ) : (
-                <span className="ev-meta">Your five chapters become one short film, once the walk is done.</span>
-              )}
-            </div>
-          </li>
-        </ol>
-      </div>
-
       <style>{`
         .ev-horizon {
           position: fixed; left: 0; right: 0; bottom: 0; height: 55vh; pointer-events: none; z-index: 0;
@@ -694,6 +51,111 @@ export default function EvolveScreen() {
           color: rgba(243,237,226,0.5);
         }
         .ev-rule { flex: 0 0 44px; height: 1px; background: rgba(232,179,60,0.35); }
+
+        .ev-how {
+          background: none; border: none; cursor: pointer; font-family: inherit;
+          margin-top: 0.85rem; padding: 0; font-size: 0.72rem; font-weight: 600;
+          color: rgba(232,179,60,0.72); letter-spacing: 0.04em;
+          border-bottom: 1px solid rgba(232,179,60,0.32); padding-bottom: 1px;
+        }
+        .ev-how:hover { color: #E8B33C; }
+
+        .ev-intro { max-width: 520px; padding-top: 3.5rem; text-align: left; }
+        .ev-intro .ev-eyebrow, .ev-intro .ev-title { text-align: center; }
+        .ev-intro .ev-title { margin-bottom: 1.4rem; }
+        .ev-intro-lede {
+          font-size: 1.02rem; line-height: 1.7; color: rgba(243,237,226,0.8);
+          margin: 0 0 2.2rem; text-wrap: pretty;
+        }
+        .ev-steps { list-style: none; margin: 0 0 2rem; padding: 0; display: flex; flex-direction: column; gap: 1.25rem; }
+        .ev-step { display: flex; gap: 1rem; align-items: flex-start; }
+        .ev-step-n {
+          flex: 0 0 30px; height: 30px; border-radius: 50%; background: rgba(232,179,60,0.12);
+          border: 2px solid #E8B33C; color: #E8B33C;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 0.82rem; font-weight: 800;
+        }
+        .ev-step-t {
+          display: block; font-size: 1.02rem; font-weight: 700; color: #F3EDE2; margin-bottom: 0.15rem;
+        }
+        .ev-step-b { display: block; font-size: 0.9rem; line-height: 1.55; color: rgba(243,237,226,0.62); }
+        .ev-intro-foot {
+          font-size: 0.9rem; line-height: 1.6; color: rgba(243,237,226,0.55);
+          border-top: 1px solid rgba(232,179,60,0.2); padding-top: 1.2rem; margin: 0 0 1.8rem;
+        }
+        .ev-intro-cta { align-self: stretch; width: 100%; text-align: center; margin-top: 0; }
+
+        .ev-hero {
+          width: 100%; aspect-ratio: 3 / 2; max-height: 46vh; overflow: hidden;
+          border-radius: 18px; margin-bottom: 1.6rem; background: rgba(9,13,28,0.5);
+          box-shadow: 0 18px 50px rgba(0,0,0,0.45);
+        }
+        .ev-hero img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .ev-insight {
+          font-size: clamp(1.15rem, 4.2vw, 1.42rem); line-height: 1.55; color: #F3EDE2;
+          margin: 0 0 2rem; text-wrap: pretty; letter-spacing: 0.005em;
+        }
+        .ev-insight-cta { width: 100%; text-align: center; margin-top: 0; }
+
+        .ev-watch { text-align: center; padding-top: 0.5rem; }
+        .ev-watch-prompt {
+          font-size: clamp(1.05rem, 3.8vw, 1.28rem); line-height: 1.55; color: #F3EDE2;
+          margin: 0 0 2.2rem; text-wrap: pretty;
+        }
+        .ev-dial { position: relative; width: 190px; height: 190px; margin: 0 auto 1.6rem; }
+        .ev-dial svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+        .ev-dial circle { fill: none; stroke-width: 5; stroke-linecap: round; }
+        .ev-dial-track { stroke: rgba(243,237,226,0.13); }
+        .ev-dial-fill {
+          stroke: #E8B33C; stroke-dasharray: 1;
+          transition: stroke-dashoffset 1s linear;
+          filter: drop-shadow(0 0 7px rgba(232,179,60,0.5));
+        }
+        .ev-dial-mid {
+          position: absolute; inset: 0; display: flex; flex-direction: column;
+          align-items: center; justify-content: center; gap: 0.15rem;
+        }
+        .ev-dial-num {
+          font-size: 3.4rem; font-weight: 300; color: #F3EDE2; line-height: 1;
+          font-variant-numeric: tabular-nums;
+        }
+        .ev-dial-lbl {
+          font-size: 0.6rem; font-weight: 800; letter-spacing: 0.22em; text-transform: uppercase;
+          color: rgba(243,237,226,0.45);
+        }
+        .ev-watch-hint {
+          font-size: 0.92rem; line-height: 1.55; color: rgba(243,237,226,0.6);
+          margin: 0 0 1.8rem; text-wrap: pretty;
+        }
+        .ev-skip {
+          display: block; margin: 0.9rem auto 0; background: none; border: none; cursor: pointer;
+          font-family: inherit; font-size: 0.78rem; color: rgba(243,237,226,0.42);
+          border-bottom: 1px solid rgba(243,237,226,0.2); padding-bottom: 1px;
+        }
+        .ev-skip:hover { color: rgba(243,237,226,0.7); }
+
+        .ev-pledge {
+          border: 1.5px solid rgba(232,179,60,0.35); border-radius: 14px;
+          background: linear-gradient(180deg, rgba(232,179,60,0.09), rgba(9,13,28,0.4));
+          padding: 1.1rem 1.15rem 0.9rem; transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        .ev-pledge-on { border-color: #E8B33C; box-shadow: 0 0 26px rgba(232,179,60,0.18); }
+        .ev-pledge-lead {
+          display: block; font-size: clamp(1.5rem, 5.5vw, 1.95rem); color: #E8B33C;
+          line-height: 1; margin-bottom: 0.5rem; letter-spacing: 0.02em;
+        }
+        .ev-pledge-input {
+          width: 100%; box-sizing: border-box; background: none; border: none; outline: none;
+          color: #F3EDE2; font-family: inherit; font-size: clamp(1.05rem, 4vw, 1.25rem);
+          line-height: 1.6; resize: vertical; padding: 0;
+        }
+        .ev-pledge-input::placeholder { color: rgba(243,237,226,0.3); }
+        .ev-pledge-recall {
+          margin: 0 0 1rem; padding: 0.9rem 1.1rem; border-left: 3px solid #E8B33C;
+          background: rgba(232,179,60,0.07); border-radius: 0 10px 10px 0;
+          font-size: clamp(1rem, 3.6vw, 1.15rem); line-height: 1.5; color: #F3EDE2;
+        }
+        .ev-pledge-recall .taronga-title { color: #E8B33C; font-size: 1.15em; }
 
         .ev-gps {
           display: flex; align-items: center; gap: 0.6rem; width: 100%; text-align: left;
@@ -848,6 +310,751 @@ export default function EvolveScreen() {
           .ev-stop  { min-height: 110px; }
         }
       `}</style>
+    </div>
+  );
+}
+
+
+// One leg of the trail. Every segment enters at x=32 and leaves at x=32, bulging left or
+// right in between, so consecutive legs always meet no matter how tall each card is — no
+// measuring, no fixed row heights. `non-scaling-stroke` keeps the line an even 2px while the
+// viewBox stretches vertically. Walked legs are solid gold; the way ahead is dashed, the way
+// a route is drawn on a paper map.
+function Segment({ lit, side, first, last, draw, index = 0 }) {
+  const bx = side === 'l' ? 16 : 84;
+  const d = last
+    ? `M50 0 C50 22 ${bx} 26 ${bx} 52`
+    : first
+    ? `M${bx} 50 C${bx} 76 50 80 50 100`
+    : `M50 0 C50 26 ${bx} 28 ${bx} 50 C${bx} 72 50 76 50 100`;
+  // pathLength="1" normalises the curve so dash lengths and offsets are fractions of the leg,
+  // independent of how tall the card happens to be.
+  return (
+    <svg className="ev-seg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+      <path className={`ev-path ${lit ? 'ev-path-lit' : 'ev-path-dim'}${draw ? ' ev-path-draw' : ''}`}
+        d={d} pathLength="1" vectorEffect="non-scaling-stroke" />
+      {lit && !draw && (
+        <path className="ev-flow" d={d} pathLength="1" vectorEffect="non-scaling-stroke"
+          style={{ animationDelay: `${-index * 0.55}s` }} />
+      )}
+    </svg>
+  );
+}
+
+export default function EvolveScreen() {
+  const { evScreen, setEvScreen, setSessionType, setCurrentScreen, studentName, classCode, clearStudentSession } = useApp();
+  const { checkAnimalProximity, locationEnabled, enableLocation } = useStudent();
+
+  const [hydrating, setHydrating] = useState(true);
+  const [chapter, setChapter] = useState(null);
+  const [phase, setPhase] = useState('insight');          // insight | watch | write | record | preview
+  const [done, setDone] = useState({});                    // { [id]: { reflection } }
+  const [clipURLs, setClipURLs] = useState({});            // { [id]: objectURL | remote URL }
+
+  const [watchLeft, setWatchLeft] = useState(WATCH_SECONDS);
+  const [reflectText, setReflectText] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const [recording, setRecording] = useState(false);
+  const [countdown, setCountdown] = useState(CLIP_SECONDS);
+  const [camError, setCamError] = useState('');
+  const [frontCam, setFrontCam] = useState(true);
+  const [uploadPct, setUploadPct] = useState({});
+  const [justLit, setJustLit] = useState(null);   // leg to animate after finishing a chapter
+  const [showIntro, setShowIntro] = useState(false);
+  const pendingClipRef = useRef({});   // { [chapterId]: { blob, fileExt, contentType } } for retries
+
+  const [filmPhase, setFilmPhase] = useState('idle');      // idle | building | preview | submitting | sent
+  const [filmPct, setFilmPct] = useState(0);
+  const [filmURL, setFilmURL] = useState(null);
+  const filmBlobRef = useRef(null);
+
+  const videoRef = useRef(null);
+  const camRef = useRef(null);
+  const recRef = useRef(null);
+  const tickRef = useRef(null);
+
+  const allDone = EVOLVE_CHAPTERS.every(c => done[c.id]);
+  const filmedCount = EVOLVE_CHAPTERS.filter(c => clipURLs[c.id]).length;
+
+  // ── Resume (learned the hard way on ZooYard: never trust in-memory progress) ──
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!studentName || !classCode) { setHydrating(false); return; }
+      try {
+        // getDoc never settles if the device is offline or Firestore is blocked, which would
+        // leave the student on the loading screen forever. Losing resumed progress is far
+        // better than a dead screen, so the read is raced against a timeout.
+        const snap = await Promise.race([
+          getDoc(doc(db, 'classes', normaliseCode(classCode), 'students', safeStudentId(studentName))),
+          new Promise((_, rej) => setTimeout(() => rej(new Error('evolve-resume-timeout')), 8000)),
+        ]);
+        const ev = snap.exists() ? (snap.data().evolve || {}) : {};
+        if (cancelled) return;
+        const d = {}, urls = {};
+        EVOLVE_CHAPTERS.forEach(c => {
+          const e = ev[c.id];
+          if (!e?.completed) return;
+          d[c.id] = { reflection: e.reflection || '' };
+          if (e.clipURL) urls[c.id] = e.clipURL;
+        });
+        setDone(d); setClipURLs(urls);
+        if (!Object.keys(d).length && !localStorage.getItem(INTRO_KEY)) setShowIntro(true);
+        if (ev.filmURL) { setFilmURL(ev.filmURL); setFilmPhase('sent'); }
+      } catch (e) { console.warn('Evolve resume failed:', e); }
+      finally { if (!cancelled) setHydrating(false); }
+    })();
+    return () => { cancelled = true; };
+  }, [classCode, studentName]);
+
+  // ── Camera lifecycle ──
+  const stopCam = useCallback(() => {
+    camRef.current?.getTracks().forEach(t => t.stop());
+    camRef.current = null;
+    if (videoRef.current) videoRef.current.srcObject = null;
+  }, []);
+
+  useEffect(() => {
+    if (phase !== 'record') { stopCam(); return; }
+    let dead = false;
+    navigator.mediaDevices.getUserMedia({
+      video: { facingMode: frontCam ? 'user' : 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+      audio: true,
+    }).then(stream => {
+      if (dead) { stream.getTracks().forEach(t => t.stop()); return; }
+      camRef.current = stream;
+      if (videoRef.current) { videoRef.current.srcObject = stream; videoRef.current.play().catch(() => {}); }
+    }).catch(err => {
+      console.warn('Evolve camera error:', err);
+      setCamError('We could not reach your camera. Check permissions, then try again.');
+    });
+    return () => { dead = true; };
+  }, [phase, frontCam, stopCam]);
+
+  useEffect(() => () => { stopCam(); clearInterval(tickRef.current); }, [stopCam]);
+
+  // One minute of actually watching the animal, in place of asking them to type what they saw.
+  useEffect(() => {
+    if (phase !== 'watch') return;
+    const h = setInterval(() => setWatchLeft(n => (n <= 1 ? 0 : n - 1)), 1000);
+    return () => clearInterval(h);
+  }, [phase]);
+
+  function dismissIntro() {
+    try { localStorage.setItem(INTRO_KEY, '1'); } catch { /* private mode */ }
+    setShowIntro(false);
+  }
+
+  function openChapter(c) {
+    if (done[c.id]) return;
+    setChapter(c);
+    setPhase('insight');
+    setReflectText(''); setCamError(''); setWatchLeft(WATCH_SECONDS);
+    setCountdown(CLIP_SECONDS);
+    setEvScreen('chapter');
+  }
+
+  function backToMap() {
+    clearInterval(tickRef.current);
+    setRecording(false);
+    stopCam();
+    setChapter(null);
+    setEvScreen('map');
+  }
+
+  function goHome() {
+    if (!window.confirm('Leave Evolve? Anything you have not saved will be lost.')) return;
+    stopCam();
+    clearStudentSession();
+    setCurrentScreen('home');
+    setSessionType('standard');
+  }
+
+  // ── Recording ──
+  function beginRecord() {
+    const stream = camRef.current;
+    if (!stream || recording) return;
+    setCountdown(CLIP_SECONDS);
+    const handle = startChapterRecording(stream, {
+      onComplete: ({ blob, url, fileExt, contentType }) => {
+        setClipURLs(prev => ({ ...prev, [chapter.id]: url }));
+        setRecording(false);
+        setPhase('preview');
+        uploadClip(blob, fileExt, contentType, chapter.id);
+      },
+      onError: () => { setRecording(false); setCamError('That recording did not save. Please try again.'); },
+    });
+    if (!handle) { setCamError('Recording is not supported on this device.'); return; }
+    recRef.current = handle;
+    setRecording(true);
+    tickRef.current = setInterval(() => {
+      setCountdown(n => {
+        if (n <= 1) { clearInterval(tickRef.current); handle.stop(); return 0; }
+        return n - 1;
+      });
+    }, 1000);
+  }
+
+  function endRecord() {
+    clearInterval(tickRef.current);
+    recRef.current?.stop();
+  }
+
+  function uploadClip(blob, fileExt, contentType, chapterId) {
+    if (!studentName || !classCode) return;
+    pendingClipRef.current[chapterId] = { blob, fileExt, contentType };
+    try {
+      const code = normaliseCode(classCode);
+      const sid = safeStudentId(studentName);
+      const path = `evolve/${code}/${sid}/${chapterId}.${fileExt}`;
+      const task = uploadBytesResumable(storageRef(storage, path), blob, { contentType });
+      setUploadPct(p => ({ ...p, [chapterId]: 0 }));
+      const stuck = setTimeout(() => {
+        setUploadPct(p => (p[chapterId] === 0 ? { ...p, [chapterId]: 'error' } : p));
+      }, 12000);
+      task.on('state_changed',
+        s => {
+          const pct = s.totalBytes > 0 ? Math.round((s.bytesTransferred / s.totalBytes) * 100) : 0;
+          if (pct > 0) clearTimeout(stuck);
+          setUploadPct(p => ({ ...p, [chapterId]: pct }));
+        },
+        err => { clearTimeout(stuck); console.warn('Evolve clip upload:', err); setUploadPct(p => ({ ...p, [chapterId]: 'error' })); },
+        async () => {
+          clearTimeout(stuck);
+          try {
+            const url = await getDownloadURL(task.snapshot.ref);
+            await updateDoc(doc(db, 'classes', code, 'students', sid), { [`evolve.${chapterId}.clipURL`]: url });
+            setUploadPct(p => ({ ...p, [chapterId]: 'done' }));
+          } catch (e) { console.warn('Evolve clip URL:', e); setUploadPct(p => ({ ...p, [chapterId]: 'error' })); }
+        });
+    } catch (e) { console.warn('Evolve upload init:', e); }
+  }
+
+  function retryUpload(chapterId) {
+    const p = pendingClipRef.current[chapterId];
+    if (!p) return;
+    setUploadPct(prev => ({ ...prev, [chapterId]: 0 }));
+    uploadClip(p.blob, p.fileExt, p.contentType, chapterId);
+  }
+
+  // ── Save chapter ──
+  async function saveChapter() {
+    if (saving || !chapter) return;
+    setSaving(true);
+    try {
+      // Saved as the finished sentence, so exports, the Advice Wall and any future teacher
+      // view read "I will ..." rather than a fragment.
+      const body = reflectText.trim();
+      const entry = { reflection: chapter.pledgeLead ? `${chapter.pledgeLead} ${body}` : body };
+      if (studentName && classCode) {
+        const code = normaliseCode(classCode);
+        const sid = safeStudentId(studentName);
+        try {
+          // Individual dotted fields, NOT a whole `evolve.{id}` object. Writing the object
+          // replaces the map and destroys clipURL, which the upload has already written by
+          // this point now that a student cannot leave the chapter until it finishes.
+          await updateDoc(doc(db, 'classes', code, 'students', sid), {
+            [`evolve.${chapter.id}.completed`]:   true,
+            [`evolve.${chapter.id}.reflection`]:  entry.reflection,
+            [`evolve.${chapter.id}.chapter`]:     chapter.chapter,
+            [`evolve.${chapter.id}.order`]:       chapter.order,
+            [`evolve.${chapter.id}.updatedAt`]:   serverTimestamp(),
+          });
+        } catch (e) { console.warn('Evolve chapter write failed:', e); }
+
+        // The giraffe chapter is the one that outlives the excursion. It goes to the
+        // moderation queue attributed by cohort year, never by student name.
+        if (chapter.isAdvice && entry.reflection) {
+          try {
+            await addDoc(collection(db, 'evolveAdvice'), {
+              classCode: code, program: 'evolve', chapterId: chapter.id,
+              advice: entry.reflection,
+              cohortYear: new Date().getFullYear(),
+              status: 'pending', submittedAt: serverTimestamp(),
+            });
+          } catch (e) { console.warn('Advice submit failed:', e); }
+        }
+      }
+      setDone(prev => ({ ...prev, [chapter.id]: entry }));
+      // The leg arriving at the NEXT stop is the one that has just been walked.
+      setJustLit(EVOLVE_STORY_ORDER.findIndex(c => c.id === chapter.id) + 1);
+      backToMap();
+    } finally { setSaving(false); }
+  }
+
+  // ── Film ──
+  const startFilm = useCallback(() => {
+    setFilmPhase('building'); setFilmPct(0); setFilmURL(null);
+    setEvScreen('film');
+  }, [setEvScreen]);
+
+  useEffect(() => {
+    if (evScreen !== 'film' || filmPhase !== 'building') return;
+    let cancelled = false;
+    (async () => {
+      const result = await buildEvolveFilm({
+        chapters: EVOLVE_STORY_ORDER,
+        clipURLs,
+        studentName,
+        theme: T,
+        onProgress: pct => { if (!cancelled) setFilmPct(pct); },
+        isCancelled: () => cancelled,
+      });
+      if (cancelled) return;
+      if (result) { filmBlobRef.current = result.blob; setFilmURL(result.url); }
+      setFilmPhase('preview');
+    })();
+    return () => { cancelled = true; };
+  }, [evScreen, filmPhase, clipURLs, studentName]);
+
+  async function submitFilm() {
+    if (filmPhase === 'submitting') return;
+    setFilmPhase('submitting');
+    try {
+      const code = normaliseCode(classCode);
+      const sid = safeStudentId(studentName);
+      let url = null;
+      if (filmBlobRef.current) {
+        const { fileExt, contentType } = pickMimeType();
+        const path = `evolve/${code}/${sid}/film.${fileExt}`;
+        const task = uploadBytesResumable(storageRef(storage, path), filmBlobRef.current, { contentType });
+        await new Promise((res, rej) => task.on('state_changed', null, rej, res));
+        url = await getDownloadURL(task.snapshot.ref);
+      }
+      const reflections = {};
+      EVOLVE_CHAPTERS.forEach(c => { if (done[c.id]) reflections[c.id] = done[c.id]; });
+      await setDoc(doc(db, 'evolve_docs', `${code}_${sid}`), {
+        classCode: code, studentId: sid, studentName,
+        cohortYear: new Date().getFullYear(),
+        filmURL: url, reflections, completedAt: serverTimestamp(),
+      }, { merge: true });
+      await updateDoc(doc(db, 'classes', code, 'students', sid), {
+        'evolve.filmURL': url, 'evolve.sessionCompleted': true, 'evolve.completedAt': serverTimestamp(),
+      });
+      setFilmURL(url || filmURL);
+      setFilmPhase('sent');
+    } catch (e) {
+      console.warn('Evolve film submit failed:', e);
+      setFilmPhase('preview');
+      window.alert('We could not save your film. Please check your connection and try again.');
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  if (hydrating) {
+    return (
+      <Shell scroll={false}>
+        <div style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'1.2rem' }}>
+          <img src="/images/logo.png" alt="" style={{ height:60, opacity:0.85 }} onError={e => e.target.style.display='none'} />
+          <p style={{ color:T.textDim, fontSize:'0.72rem', letterSpacing:'0.16em', textTransform:'uppercase', fontWeight:700 }}>Loading Evolve</p>
+        </div>
+      </Shell>
+    );
+  }
+
+  // ── Opener ──
+  if (showIntro) {
+    return (
+      <Shell scroll>
+        <div className="ev-horizon" />
+        <div className="ev-wrap ev-intro">
+          <div className="ev-eyebrow">Taronga Zoo Sydney · Twilight</div>
+          <h1 className="taronga-title ev-title">Evolve</h1>
+          <p className="ev-intro-lede">
+            You are about to leave school. Tonight is a chance to put some of that down — where
+            you have come from, where you are going, and what you want to carry with you.
+          </p>
+
+          <ol className="ev-steps">
+            {INTRO_STEPS.map(st => (
+              <li key={st.n} className="ev-step">
+                <span className="ev-step-n">{st.n}</span>
+                <span>
+                  <span className="ev-step-t">{st.title}</span>
+                  <span className="ev-step-b">{st.body}</span>
+                </span>
+              </li>
+            ))}
+          </ol>
+
+          <p className="ev-intro-foot">
+            Your five clips become one short film. No marks, no points — it is yours to keep.
+          </p>
+
+          <button className="ev-cta ev-intro-cta" onClick={dismissIntro}>Start the walk</button>
+        </div>
+      </Shell>
+    );
+  }
+
+  // ── Film screen ──
+  if (evScreen === 'film') {
+    return (
+      <Shell onHome={goHome}>
+        <div style={{ maxWidth:520, margin:'0 auto', padding:'3.5rem 1.25rem 3rem', textAlign:'center' }}>
+          {filmPhase === 'building' && (
+            <>
+              <h2 className="taronga-title" style={{ color:T.text, fontSize:'1.8rem', marginBottom:'0.5rem' }}>Making your film</h2>
+              <p style={{ color:T.textDim, fontSize:'0.9rem', lineHeight:1.6, marginBottom:'1.75rem' }}>
+                Stitching your chapters together in order. Keep this screen open.
+              </p>
+              <div style={{ height:8, background:'rgba(0,0,0,0.3)', borderRadius:4, overflow:'hidden', marginBottom:'0.6rem' }}>
+                <div style={{ height:'100%', width:`${filmPct}%`, background:T.accent, transition:'width 0.4s' }} />
+              </div>
+              <p style={{ color:T.accent, fontWeight:700 }}>{filmPct}%</p>
+            </>
+          )}
+
+          {(filmPhase === 'preview' || filmPhase === 'submitting') && (
+            <>
+              <h2 className="taronga-title" style={{ color:T.text, fontSize:'1.8rem', marginBottom:'1rem' }}>Your film</h2>
+              {filmURL ? (
+                <video src={filmURL} controls playsInline style={{ width:'100%', borderRadius:14, marginBottom:'1.25rem', background:'#000' }} />
+              ) : (
+                <p style={{ color:T.textDim, marginBottom:'1.25rem' }}>
+                  Your device could not stitch the film, but every chapter clip has been saved.
+                </p>
+              )}
+              <button onClick={submitFilm} disabled={filmPhase === 'submitting'}
+                style={{ width:'100%', padding:'0.95rem', borderRadius:999, border:'none', background:T.accent, color:'#241503', fontWeight:800, fontSize:'0.95rem', cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'0.7rem' }}>
+                {filmPhase === 'submitting' ? 'Saving…' : 'Keep this film'}
+              </button>
+              <button onClick={() => setEvScreen('map')} style={{ background:'none', border:'none', color:T.textDim, cursor:'pointer', fontSize:'0.85rem' }}>
+                ← Back to chapters
+              </button>
+            </>
+          )}
+
+          {filmPhase === 'sent' && (
+            <>
+              <div style={{ fontSize:'2.4rem', marginBottom:'0.5rem' }}>🌅</div>
+              <h2 className="taronga-title" style={{ color:T.text, fontSize:'1.8rem', marginBottom:'0.6rem' }}>That's yours to keep</h2>
+              <p style={{ color:T.textDim, fontSize:'0.92rem', lineHeight:1.7, marginBottom:'1.5rem' }}>
+                Your film and everything you wrote have been saved. Your teacher can give you the link to keep.
+              </p>
+              {filmURL && <video src={filmURL} controls playsInline style={{ width:'100%', borderRadius:14, marginBottom:'1.25rem', background:'#000' }} />}
+              <button onClick={goHome}
+                style={{ width:'100%', padding:'0.9rem', borderRadius:999, border:`1px solid ${T.border}`, background:'rgba(0,0,0,0.25)', color:T.text, fontWeight:700, cursor:'pointer' }}>
+                Finish
+              </button>
+            </>
+          )}
+        </div>
+      </Shell>
+    );
+  }
+
+  // ── Chapter flow ──
+  if (chapter && evScreen === 'chapter') {
+    const near = chapter.latitude == null ? { nearby: true } : checkAnimalProximity(chapter);
+
+    return (
+      <Shell onHome={backToMap}>
+        <div style={{ maxWidth:560, margin:'0 auto', padding:'3.25rem 1.25rem 3rem' }}>
+          <div style={{ textAlign:'center', marginBottom:'1.5rem' }}>
+            <div style={{ fontSize:'0.66rem', fontWeight:800, letterSpacing:'0.22em', textTransform:'uppercase', color:T.accent, marginBottom:'0.4rem' }}>
+              Chapter {WORDS[chapter.order - 1] || chapter.order} · {chapter.animalName}
+            </div>
+            <h2 className="taronga-title" style={{ color:T.text, fontSize:'clamp(1.7rem,5vw,2.2rem)', margin:0 }}>{chapter.chapter}</h2>
+          </div>
+
+          {phase === 'insight' && (
+            <>
+              {/* One big picture and one short idea. The "watch for" line lives on the next
+                  screen where it is actually needed, so nothing competes here. */}
+              <div className="ev-hero">
+                <img src={chapter.image} alt="" onError={e => e.target.style.display = 'none'} />
+              </div>
+              <p className="ev-insight">{chapter.insight}</p>
+              <button className="ev-cta ev-insight-cta" onClick={() => { setWatchLeft(WATCH_SECONDS); setPhase('watch'); }}>
+                Start
+              </button>
+            </>
+          )}
+
+          {phase === 'watch' && (() => {
+            const done60 = watchLeft === 0;
+            const frac = (WATCH_SECONDS - watchLeft) / WATCH_SECONDS;
+            return (
+              <div className="ev-watch">
+                <p className="ev-watch-prompt">{chapter.observePrompt}</p>
+
+                <div className="ev-dial">
+                  <svg viewBox="0 0 120 120" aria-hidden="true">
+                    <circle cx="60" cy="60" r="54" className="ev-dial-track" />
+                    <circle cx="60" cy="60" r="54" className="ev-dial-fill" pathLength="1"
+                      style={{ strokeDashoffset: 1 - frac }} />
+                  </svg>
+                  <div className="ev-dial-mid">
+                    <span className="ev-dial-num">{done60 ? '✓' : watchLeft}</span>
+                    <span className="ev-dial-lbl">{done60 ? 'time up' : 'seconds'}</span>
+                  </div>
+                </div>
+
+                <p className="ev-watch-hint">
+                  {done60 ? 'Now put what you saw into words.' : 'Put the phone down and watch. No need to write anything yet.'}
+                </p>
+
+                <button className="ev-cta ev-insight-cta" disabled={!done60} onClick={() => setPhase('write')}>
+                  {done60 ? 'Now write' : 'Keep watching'}
+                </button>
+                {!done60 && (
+                  <button className="ev-skip" onClick={() => setWatchLeft(0)}>Skip the timer</button>
+                )}
+              </div>
+            );
+          })()}
+
+          {phase === 'write' && (() => {
+            const wc = wordCount(reflectText);
+            const minWords = chapter.minWords || EVOLVE_MIN_WORDS;
+            const ready = wc >= minWords;
+            return (
+              <>
+                <p style={{ color:T.text, fontSize:'1rem', lineHeight:1.7, marginBottom:'1rem', fontWeight:600 }}>{chapter.reflectionPrompt}</p>
+                {chapter.isAdvice && (
+                  <p style={{ color:T.accent, fontSize:'0.8rem', lineHeight:1.6, marginBottom:'0.9rem', background:T.accentSoft, border:`1px solid ${T.border}`, borderRadius:10, padding:'0.7rem 0.9rem' }}>
+                    If you're happy for it to be used, this one may be shown to younger students — as "Year 12", never with your name.
+                  </p>
+                )}
+                {chapter.pledgeLead ? (
+                  /* A pledge is one sentence they have to finish, not a paragraph. The fixed
+                     opener makes it a commitment and keeps it the focal point of the chapter. */
+                  <div className={`ev-pledge${ready ? ' ev-pledge-on' : ''}`}>
+                    <span className="taronga-title ev-pledge-lead">{chapter.pledgeLead}</span>
+                    <textarea value={reflectText} onChange={e => setReflectText(e.target.value)} rows={4}
+                      placeholder={chapter.placeholder} className="ev-pledge-input" />
+                  </div>
+                ) : (
+                  <textarea value={reflectText} onChange={e => setReflectText(e.target.value)} rows={9}
+                    placeholder={chapter.placeholder}
+                    style={{ width:'100%', boxSizing:'border-box', background:'rgba(0,0,0,0.28)', border:`1px solid ${ready ? T.accent : T.border}`, borderRadius:12, padding:'0.9rem 1rem', color:T.text, fontSize:'0.98rem', lineHeight:1.75, resize:'vertical', fontFamily:'inherit', outline:'none' }} />
+                )}
+                <div style={{ textAlign:'right', fontSize:'0.78rem', color: ready ? T.accent : T.textDim, margin:'0.4rem 0 1.25rem', fontWeight:600 }}>
+                  {wc} / {minWords} words
+                </div>
+                <button onClick={() => { setCamError(''); setPhase('record'); }} disabled={!ready}
+                  style={{ width:'100%', padding:'0.95rem', borderRadius:999, border:'none', background: ready ? T.accent : 'rgba(255,255,255,0.15)', color: ready ? '#241503' : T.textDim, fontWeight:800, cursor: ready ? 'pointer' : 'not-allowed', textTransform:'uppercase', letterSpacing:'0.06em' }}>
+                  {ready ? (chapter.pledgeLead ? 'Make this my pledge' : 'To camera') : 'Keep writing'}
+                </button>
+              </>
+            );
+          })()}
+
+          {phase === 'record' && (
+            <>
+              <div style={{ background:T.accentSoft, border:`1px solid ${T.border}`, borderRadius:12, padding:'0.9rem 1.1rem', marginBottom:'1rem' }}>
+                <p style={{ color:T.text, fontSize:'0.92rem', lineHeight:1.6, margin:0 }}>{chapter.filmPrompt}</p>
+              </div>
+              {chapter.pledgeLead && reflectText.trim() && (
+                /* Their own words, on screen, to read straight into the lens. */
+                <blockquote className="ev-pledge-recall">
+                  <span className="taronga-title">{chapter.pledgeLead}</span> {reflectText.trim()}
+                </blockquote>
+              )}
+              <div style={{ position:'relative', borderRadius:14, overflow:'hidden', background:'#000', marginBottom:'0.9rem' }}>
+                <video ref={videoRef} playsInline muted autoPlay style={{ width:'100%', display:'block', transform: frontCam ? 'scaleX(-1)' : 'none' }} />
+                {recording && (
+                  <div style={{ position:'absolute', top:10, left:10, background:'rgba(200,30,30,0.9)', color:'white', padding:'0.25rem 0.7rem', borderRadius:999, fontSize:'0.78rem', fontWeight:800 }}>
+                    ● {countdown}s
+                  </div>
+                )}
+              </div>
+              {camError && <p style={{ color:'#FCA5A5', fontSize:'0.85rem', marginBottom:'0.8rem' }}>{camError}</p>}
+              <p style={{ color:T.textDim, fontSize:'0.78rem', lineHeight:1.5, marginBottom:'0.9rem' }}>
+                It's twilight — hold your torch up near your face so the camera can see you.
+              </p>
+              <div style={{ display:'flex', gap:'0.6rem' }}>
+                {!recording ? (
+                  <>
+                    <button onClick={() => setFrontCam(f => !f)}
+                      style={{ padding:'0.9rem 1rem', borderRadius:999, border:`1px solid ${T.border}`, background:'rgba(0,0,0,0.25)', color:T.text, fontWeight:700, cursor:'pointer', fontSize:'0.85rem' }}>
+                      Flip
+                    </button>
+                    <button onClick={beginRecord}
+                      style={{ flex:1, padding:'0.95rem', borderRadius:999, border:'none', background:T.accent, color:'#241503', fontWeight:800, cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.06em' }}>
+                      Record {CLIP_SECONDS}s
+                    </button>
+                  </>
+                ) : (
+                  <button onClick={endRecord}
+                    style={{ flex:1, padding:'0.95rem', borderRadius:999, border:'none', background:'#C1272D', color:'white', fontWeight:800, cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.06em' }}>
+                    Stop
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+
+          {phase === 'preview' && (
+            <>
+              {clipURLs[chapter.id] && (
+                <video src={clipURLs[chapter.id]} controls playsInline style={{ width:'100%', borderRadius:14, marginBottom:'0.9rem', background:'#000' }} />
+              )}
+              {(() => {
+                // A clip only reaches the film once Storage has it. Until then the student
+                // stays put — walking away mid-upload silently loses that chapter's footage,
+                // and they would not find out until the film was made.
+                const up = uploadPct[chapter.id];
+                const uploading = typeof up === 'number';
+                const failed    = up === 'error';
+                const uploaded  = up === 'done';
+                const pct = uploading ? up : 0;
+
+                return (
+                  <>
+                    <div style={{ marginBottom:'1.1rem' }}>
+                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', fontSize:'0.8rem', color: failed ? '#FCA5A5' : uploaded ? T.accent : T.textDim, marginBottom:'0.35rem', fontWeight:600 }}>
+                        <span>
+                          {uploaded ? '✓ Clip saved'
+                            : failed ? 'Your clip did not save'
+                            : `Saving your clip… ${pct}%`}
+                        </span>
+                        {uploading && <span>{pct}%</span>}
+                      </div>
+                      {!failed && (
+                        <div style={{ height:6, background:'rgba(0,0,0,0.3)', borderRadius:3, overflow:'hidden' }}>
+                          <div style={{ height:'100%', width:`${uploaded ? 100 : pct}%`, background:T.accent, transition:'width 0.3s' }} />
+                        </div>
+                      )}
+                      {!uploaded && !failed && (
+                        <p style={{ fontSize:'0.74rem', color:T.textDim, margin:'0.4rem 0 0', lineHeight:1.5 }}>
+                          Keep this screen open until it finishes, or this chapter will be missing from your film.
+                        </p>
+                      )}
+                      {failed && (
+                        <p style={{ fontSize:'0.74rem', color:T.textDim, margin:'0.4rem 0 0', lineHeight:1.5 }}>
+                          Check your connection and try again. Your recording is still here.
+                        </p>
+                      )}
+                    </div>
+
+                    {failed ? (
+                      <button onClick={() => retryUpload(chapter.id)}
+                        style={{ width:'100%', padding:'0.95rem', borderRadius:999, border:'none', background:T.accent, color:'#241503', fontWeight:800, cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'0.6rem' }}>
+                        Try saving again
+                      </button>
+                    ) : (
+                      <button onClick={saveChapter} disabled={saving || !uploaded}
+                        style={{ width:'100%', padding:'0.95rem', borderRadius:999, border:'none', background: uploaded && !saving ? T.accent : 'rgba(255,255,255,0.15)', color: uploaded && !saving ? '#241503' : T.textDim, fontWeight:800, cursor: uploaded && !saving ? 'pointer' : 'not-allowed', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'0.6rem' }}>
+                        {saving ? 'Saving…' : uploaded ? 'Keep this chapter' : 'Waiting for your clip…'}
+                      </button>
+                    )}
+
+                    <button onClick={() => { setCamError(''); setPhase('record'); setCountdown(CLIP_SECONDS); }} disabled={uploading}
+                      style={{ width:'100%', padding:'0.8rem', borderRadius:999, border:`1px solid ${T.border}`, background:'none', color:T.textDim, fontWeight:600, cursor: uploading ? 'not-allowed' : 'pointer', opacity: uploading ? 0.45 : 1 }}>
+                      Record it again
+                    </button>
+                  </>
+                );
+              })()}
+            </>
+          )}
+
+          {phase !== 'insight' && chapter.latitude != null && !near.nearby && (
+            <p style={{ color:T.textDim, fontSize:'0.78rem', textAlign:'center', marginTop:'1rem' }}>
+              You've moved away from {chapter.animalName}.
+            </p>
+          )}
+        </div>
+      </Shell>
+    );
+  }
+
+  // ── Map / chapter list ──
+  const doneCount = Object.keys(done).length;
+
+  return (
+    <Shell onHome={goHome}>
+      {/* The page warms from deep dusk at the top to last light at the bottom, so moving down
+          the trail is literally walking toward the horizon the film closes on. */}
+      <div className="ev-horizon" />
+      <div className="ev-wrap">
+
+        <header className="ev-head">
+          <div className="ev-eyebrow">Taronga Zoo Sydney · Twilight</div>
+          <h1 className="taronga-title ev-title">Evolve</h1>
+          <p className="ev-sub">Five chapters. One story. Yours.</p>
+          <button className="ev-how" onClick={() => setShowIntro(true)}>How this works</button>
+          {studentName && (
+            <div className="ev-progress">
+              <span className="ev-rule" />
+              <span>{studentName} · {doneCount === 0 ? 'not started' : `${WORDS[doneCount - 1]} of five`}</span>
+              <span className="ev-rule" />
+            </div>
+          )}
+        </header>
+
+        {!locationEnabled && (
+          <button onClick={() => enableLocation?.()} className="ev-gps">
+            <span className="ev-gps-dot" />
+            Turn on location so chapters unlock as you reach each animal
+          </button>
+        )}
+
+        <ol className="ev-trail">
+          {EVOLVE_STORY_ORDER.map((c, i) => {
+            const complete = !!done[c.id];
+            const near = c.latitude == null ? { nearby: true, distance: null } : checkAnimalProximity(c);
+            const locked = !complete && !near.nearby;
+            const prevDone = i === 0 || !!done[EVOLVE_STORY_ORDER[i - 1].id];
+            const state = complete ? 'done' : locked ? 'locked' : 'open';
+            return (
+              <li key={c.id} className={`ev-stop ev-${state}`} style={{ animationDelay: `${0.06 * i}s` }}>
+                <span className="ev-gutter" aria-hidden="true">
+                  <Segment lit={prevDone} side={i % 2 === 0 ? 'l' : 'r'} first={i === 0} index={i} draw={justLit === i} />
+                  <span className="ev-node" style={{ left: i % 2 === 0 ? '16%' : '84%' }}>{complete ? '✓' : ''}</span>
+                </span>
+
+                <button className="ev-card" onClick={() => !locked && !complete && openChapter(c)} disabled={complete || locked}>
+                  <span className="ev-card-text">
+                    <span className="ev-chapter">Chapter {WORDS[i]}</span>
+                    <span className="taronga-title ev-name">{c.chapter}</span>
+                    <span className="ev-meta">
+                      {complete ? 'Written and filmed'
+                        : locked ? `Walk to the ${c.animalName.toLowerCase()}${near.distance != null ? ` · ${near.distance} m away` : ''}`
+                        : c.animalName}
+                    </span>
+                  </span>
+                  <span className="ev-still" style={{ backgroundImage: `url(${c.image})` }} />
+                </button>
+              </li>
+            );
+          })}
+
+          {/* The destination sits in the horizon glow at the end of the trail. */}
+          <li className={`ev-stop ev-end ${allDone ? 'ev-open' : 'ev-locked'}`}>
+            <span className="ev-gutter" aria-hidden="true">
+              <Segment lit={allDone} side="l" last index={EVOLVE_CHAPTERS.length} draw={justLit === EVOLVE_CHAPTERS.length} />
+              <span className="ev-node ev-node-end" style={{ left: '16%' }}>✦</span>
+            </span>
+            <div className="ev-dest">
+              <span className="ev-chapter">The end of the walk</span>
+              <span className="taronga-title ev-name">Your film</span>
+              {filmPhase === 'sent' ? (
+                <>
+                  <span className="ev-meta">Saved. Yours to keep.</span>
+                  <button className="ev-cta" onClick={() => setEvScreen('film')}>Watch your film</button>
+                </>
+              ) : allDone ? (
+                <>
+                  <span className="ev-meta">
+                    {filmedCount > 0
+                      ? `${filmedCount} chapter${filmedCount === 1 ? '' : 's'} ready to become one film.`
+                      : 'Your writing is safe, but none of your clips reached us. Tell your teacher.'}
+                  </span>
+                  <button className="ev-cta" onClick={startFilm} disabled={filmedCount === 0}>Make my film</button>
+                </>
+              ) : (
+                <span className="ev-meta">Your five chapters become one short film, once the walk is done.</span>
+              )}
+            </div>
+          </li>
+        </ol>
+      </div>
+
+
     </Shell>
   );
 }

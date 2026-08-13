@@ -380,11 +380,17 @@ and the metaphor is earned by the animal's real behaviour, not decoration:
 
 | # | Animal | Chapter | Why |
 |---|---|---|---|
-| 1 | Lion | Where I come from | Cubs are raised by the whole pride and learn by watching |
-| 2 | Kangaroo | Forward only | Physically cannot hop backwards |
-| 3 | Tiger | The territory ahead | Leaves its mother at ~2 to claim its own ground |
-| 4 | Giraffe | The long view | Other animals watch giraffes for early warning — **the Advice Wall chapter** |
-| 5 | Koala | What I owe | Survival depends on human choices — **the pledge chapter** |
+| 1 | Kangaroo | Forward only | Physically cannot hop backwards |
+| 2 | Koala | What I owe | Survival depends on human choices — **the pledge chapter** |
+| 3 | Giraffe | The long view | Other animals watch giraffes for early warning — **the Advice Wall chapter** |
+| 4 | Lion | Where I come from | Cubs are raised by the whole pride and learn by watching |
+| 5 | Tiger | The territory ahead | Leaves its mother at ~2 to claim its own ground |
+
+The order follows the **walking route** through the zoo (~100m between each), not a timeline —
+a student cannot reorder a zoo. That makes the arc directional rather than chronological:
+forward, outward, back down the path, home, onward. It also puts lion immediately before
+tiger, so the last two chapters run "no lion is raised by one animal" into "at two, a tiger
+walks out alone". Do not reorder without walking the route.
 
 `order` fixes the story sequence. Students unlock chapters by GPS in whatever order the zoo
 allows, but `EVOLVE_STORY_ORDER` means **the film is always assembled in narrative order
@@ -422,8 +428,19 @@ twilight was tried first and reads as sepia, and leaves the gold accent nothing 
 
 ### Flow
 `sessionType: 'evolve'` short-circuits in `App.jsx` to `EvolveScreen.jsx`, which sub-routes on
-`evScreen` (`map | chapter | film`) in AppContext. Per chapter: **insight → observe → write
-(40-word minimum) → record (30s piece to camera) → preview**.
+`evScreen` (`map | chapter | film`) in AppContext. Per chapter: **insight → watch → write →
+record → preview**.
+
+- **insight** is one big photo and one short idea, nothing else. The "what to look for" line
+  deliberately lives on the next screen, where it is actually needed.
+- **watch** is a 60-second dial. It replaced a typed "what did you see" step, which was asking
+  students to write about the same animal twice. A quiet "Skip the timer" exists because thirty
+  students on a schedule cannot always stand still for five minutes.
+- **write** takes `chapter.minWords` (default `EVOLVE_MIN_WORDS`, 40).
+- A chapter with `pledgeLead` (koala) renders the writing step as a fixed opener — **"I will"**
+  — that the student completes, with a much lower word minimum, and the finished sentence is
+  shown back on the record screen to read into the lens. Watch it, write it, say it. The saved
+  value includes the lead, so downstream reads "I will ..." rather than a fragment.
 
 Student data lives at `classes/{code}/students/{id}` under `evolve`:
 ```js
@@ -433,8 +450,14 @@ evolve: {
   filmURL, sessionCompleted, completedAt,
 }
 ```
-Per-chapter writes use `updateDoc` with a dotted key — **not** `setDoc(...,{merge:true})`, which
+Per-chapter writes use `updateDoc` with dotted keys — **not** `setDoc(...,{merge:true})`, which
 would create a literal field named `"evolve.lion"`. Same trap as ZooYard and ZooSnooz.
+
+⚠️ **Write individual dotted fields, never a whole `evolve.{id}` object.** Assigning the object
+replaces the map and destroys `clipURL`, which the upload has already written by the time the
+student can leave the chapter. This regressed once: it was masked while students could tap past
+a still-uploading clip (the URL landed after the save), and only appeared when the upload gate
+forced the save to happen last. Every chapter completed with its clip silently unreferenced.
 
 On submit a keepsake record is written to `evolve_docs/{classCode}_{studentId}` holding the film
 URL and every reflection. Nothing reads it yet — that's the souvenir-link/export surface.

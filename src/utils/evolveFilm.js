@@ -13,6 +13,8 @@
 //   * The <video> element is released after every clip or the browser's decoder pool runs out
 //     partway through a five-clip stitch.
 
+import { EVOLVE_CHAPTER_WORDS } from '../data/evolveAnimals';
+
 const MIME_CANDIDATES = [
   'video/webm;codecs=vp9,opus',
   'video/webm;codecs=vp8,opus',
@@ -251,7 +253,7 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
       ctx.beginPath(); ctx.moveTo(0, bandY + bandH); ctx.lineTo(W, bandY + bandH); ctx.stroke(); ctx.restore();
       ctx.textAlign = 'center';
       ctx.fillStyle = '#E8B33C'; ctx.font = '400 28px "DM Sans", sans-serif';
-      ctx.fillText(`Chapter ${c.order} of ${clips.length}`, W / 2, H / 2 - 118);
+      ctx.fillText(`Chapter ${EVOLVE_CHAPTER_WORDS[c.order - 1] || c.order}`, W / 2, H / 2 - 118);
       ctx.fillStyle = '#F6E8D2'; ctx.font = `bold ${finalTitleSize}px "Taronga Headline", sans-serif`;
       ctx.fillText(c.chapter, W / 2, H / 2 + 6);
       ctx.fillStyle = 'rgba(246,232,210,0.6)'; ctx.font = 'italic 26px "DM Sans", sans-serif';
@@ -346,7 +348,7 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
         ctx.beginPath(); ctx.moveTo(0, botY); ctx.lineTo(W, botY); ctx.stroke();
         ctx.textAlign = 'left';
         ctx.fillStyle = '#E8B33C'; ctx.font = '600 20px "DM Sans", sans-serif';
-        ctx.fillText(`CHAPTER ${c.order}`, 24, botY + 40);
+        ctx.fillText(`CHAPTER ${(EVOLVE_CHAPTER_WORDS[c.order - 1] || c.order).toUpperCase()}`, 24, botY + 40);
         ctx.fillStyle = '#F6E8D2'; ctx.font = 'bold 40px "Taronga Headline", sans-serif';
         ctx.fillText(c.chapter, 24, botY + 88);
         ctx.fillStyle = 'rgba(246,232,210,0.5)'; ctx.font = 'italic 20px "DM Sans", sans-serif';

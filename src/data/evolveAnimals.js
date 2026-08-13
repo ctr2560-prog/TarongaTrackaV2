@@ -4,10 +4,18 @@
 // leaderboard: the writing is a memento the student keeps, and the five clips stitch into
 // one short film about leaving school.
 //
-// Each animal is a CHAPTER in a single narrative — past, threshold, future, legacy,
-// responsibility — and the metaphor is earned by the animal's real behaviour, not decoration.
-// `order` fixes the story sequence: students unlock chapters by GPS in whatever order the zoo
-// allows, but the film is always assembled in this order (see buildEvolveFilm).
+// Each animal is a CHAPTER in a single narrative and the metaphor is earned by the animal's
+// real behaviour, not decoration.
+//
+// `order` follows the WALKING ROUTE through the zoo — kangaroo, koala, giraffe, lion, tiger,
+// roughly 100m between each — because a student cannot reorder a zoo. That makes the arc
+// DIRECTIONAL rather than chronological: forward (what I am leaving), outward (what I owe),
+// back down the path (advice to those still on it), home (who raised me), onward (where I go).
+//
+// It also puts lion immediately before tiger, so the last two chapters run "no lion is raised
+// by one animal" into "at two, a tiger walks out alone" — everyone made me, now I go with it.
+// Do not reorder these without walking the route; the map, the trail and the film all derive
+// their sequence from `order`.
 //
 // GPS coordinates for lion/tiger/giraffe/koala are lifted from src/data/animals.js so Evolve
 // matches the daytime map exactly. Kangaroo has never existed in this app — its coordinates,
@@ -16,7 +24,7 @@
 export const EVOLVE_CHAPTERS = [
   {
     id: 'lion',
-    order: 1,
+    order: 4,
     chapter: 'Where I come from',
     animalName: 'African Lion',
     scientificName: 'Panthera leo',
@@ -39,7 +47,7 @@ export const EVOLVE_CHAPTERS = [
   },
   {
     id: 'kangaroo',
-    order: 2,
+    order: 1,
     chapter: 'Forward only',
     animalName: 'Kangaroo',
     scientificName: 'Macropus rufus',
@@ -64,7 +72,7 @@ export const EVOLVE_CHAPTERS = [
   },
   {
     id: 'tiger',
-    order: 3,
+    order: 5,
     chapter: 'The territory ahead',
     animalName: 'Sumatran Tiger',
     scientificName: 'Panthera tigris sumatrae',
@@ -87,7 +95,7 @@ export const EVOLVE_CHAPTERS = [
   },
   {
     id: 'giraffe',
-    order: 4,
+    order: 3,
     chapter: 'The long view',
     animalName: 'Giraffe',
     scientificName: 'Giraffa camelopardalis',
@@ -111,7 +119,7 @@ export const EVOLVE_CHAPTERS = [
   },
   {
     id: 'koala',
-    order: 5,
+    order: 2,
     chapter: 'What I owe',
     animalName: 'Koala',
     scientificName: 'Phascolarctos cinereus',
@@ -123,16 +131,23 @@ export const EVOLVE_CHAPTERS = [
       'Whether koalas are still here in fifty years is not up to koalas. It depends almost entirely on ' +
       'choices made by people who will be adults by then. That is you, from about next year.',
     observePrompt:
-      'Look at how narrow this animal\'s requirements are — particular trees, particular leaves, particular country.',
+      'Watch what this animal actually depends on — particular trees, particular leaves, particular country. ' +
+      'Almost none of it is up to the koala.',
+    // Deliberately picks up the minute they just spent watching, then turns it on them.
     reflectionPrompt:
-      'You are about to become one of the adults whose choices decide this. Write a pledge: one thing you ' +
-      'commit to doing for the world around you once you leave school.',
+      'You just watched an animal whose survival is decided by people rather than by itself. Next year you ' +
+      'become one of those people. Finish the sentence with one thing you will actually do — small and real ' +
+      'beats big and vague.',
     filmPrompt:
-      'To camera: say your pledge out loud, starting with "I will…"',
-    placeholder: 'I will…',
+      'To camera: read your pledge out loud, starting with "I will…"',
+    placeholder: 'plant something, speak up when…, stop buying…',
     isPledge: true,
+    pledgeLead: 'I will',
+    minWords: 12,
   },
 ];
+
+export const EVOLVE_CHAPTER_WORDS = ['One', 'Two', 'Three', 'Four', 'Five'];
 
 // Ordered as the story is told, regardless of the order chapters were actually filmed in.
 export const EVOLVE_STORY_ORDER = [...EVOLVE_CHAPTERS].sort((a, b) => a.order - b.order);
