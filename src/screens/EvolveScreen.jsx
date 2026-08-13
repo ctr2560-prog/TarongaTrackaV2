@@ -25,6 +25,33 @@ function Shell({ children, onHome, scroll = true }) {
   );
 }
 
+
+// One leg of the trail. Every segment enters at x=32 and leaves at x=32, bulging left or
+// right in between, so consecutive legs always meet no matter how tall each card is — no
+// measuring, no fixed row heights. `non-scaling-stroke` keeps the line an even 2px while the
+// viewBox stretches vertically. Walked legs are solid gold; the way ahead is dashed, the way
+// a route is drawn on a paper map.
+function Segment({ lit, side, first, last, draw, index = 0 }) {
+  const bx = side === 'l' ? 16 : 84;
+  const d = last
+    ? `M50 0 C50 22 ${bx} 26 ${bx} 52`
+    : first
+    ? `M${bx} 50 C${bx} 76 50 80 50 100`
+    : `M50 0 C50 26 ${bx} 28 ${bx} 50 C${bx} 72 50 76 50 100`;
+  // pathLength="1" normalises the curve so dash lengths and offsets are fractions of the leg,
+  // independent of how tall the card happens to be.
+  return (
+    <svg className="ev-seg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+      <path className={`ev-path ${lit ? 'ev-path-lit' : 'ev-path-dim'}${draw ? ' ev-path-draw' : ''}`}
+        d={d} pathLength="1" vectorEffect="non-scaling-stroke" />
+      {lit && !draw && (
+        <path className="ev-flow" d={d} pathLength="1" vectorEffect="non-scaling-stroke"
+          style={{ animationDelay: `${-index * 0.55}s` }} />
+      )}
+    </svg>
+  );
+}
+
 export default function EvolveScreen() {
   const { evScreen, setEvScreen, setSessionType, setCurrentScreen, studentName, classCode, clearStudentSession } = useApp();
   const { checkAnimalProximity, locationEnabled, enableLocation } = useStudent();
@@ -44,6 +71,7 @@ export default function EvolveScreen() {
   const [camError, setCamError] = useState('');
   const [frontCam, setFrontCam] = useState(true);
   const [uploadPct, setUploadPct] = useState({});
+  const [justLit, setJustLit] = useState(null);   // leg to animate after finishing a chapter
   const pendingClipRef = useRef({});   // { [chapterId]: { blob, fileExt, contentType } } for retries
 
   const [filmPhase, setFilmPhase] = useState('idle');      // idle | building | preview | submitting | sent
@@ -238,6 +266,8 @@ export default function EvolveScreen() {
         }
       }
       setDone(prev => ({ ...prev, [chapter.id]: entry }));
+      // The leg arriving at the NEXT stop is the one that has just been walked.
+      setJustLit(EVOLVE_STORY_ORDER.findIndex(c => c.id === chapter.id) + 1);
       backToMap();
     } finally { setSaving(false); }
   }
@@ -553,69 +583,271 @@ export default function EvolveScreen() {
   }
 
   // ── Map / chapter list ──
+  const doneCount = Object.keys(done).length;
+  const WORDS = ['One', 'Two', 'Three', 'Four', 'Five'];
+
   return (
     <Shell onHome={goHome}>
-      <div style={{ maxWidth:640, margin:'0 auto', padding:'2.5rem 1.25rem 3rem' }}>
-        <div style={{ textAlign:'center', marginBottom:'1.5rem' }}>
-          <h1 className="taronga-title" style={{ color:T.text, fontSize:'clamp(2rem,7vw,2.8rem)', margin:'0 0 0.3rem', letterSpacing:'0.03em' }}>Evolve</h1>
-          <p style={{ color:T.accent, fontSize:'0.92rem', margin:0 }}>Five chapters. One story. Yours.</p>
-          {studentName && <p style={{ color:T.textDim, fontSize:'0.82rem', marginTop:'0.5rem' }}>{studentName} · {Object.keys(done).length}/{EVOLVE_CHAPTERS.length} chapters</p>}
-        </div>
+      {/* The page warms from deep dusk at the top to last light at the bottom, so moving down
+          the trail is literally walking toward the horizon the film closes on. */}
+      <div className="ev-horizon" />
+      <div className="ev-wrap">
+
+        <header className="ev-head">
+          <div className="ev-eyebrow">Taronga Zoo Sydney · Twilight</div>
+          <h1 className="taronga-title ev-title">Evolve</h1>
+          <p className="ev-sub">Five chapters. One story. Yours.</p>
+          {studentName && (
+            <div className="ev-progress">
+              <span className="ev-rule" />
+              <span>{studentName} · {doneCount === 0 ? 'not started' : `${WORDS[doneCount - 1]} of five`}</span>
+              <span className="ev-rule" />
+            </div>
+          )}
+        </header>
 
         {!locationEnabled && (
-          <button onClick={() => enableLocation?.()}
-            style={{ width:'100%', padding:'0.8rem', borderRadius:12, border:`1px solid ${T.border}`, background:T.accentSoft, color:T.text, fontWeight:700, cursor:'pointer', marginBottom:'1rem', fontSize:'0.85rem' }}>
-            Turn on location to unlock chapters
+          <button onClick={() => enableLocation?.()} className="ev-gps">
+            <span className="ev-gps-dot" />
+            Turn on location so chapters unlock as you reach each animal
           </button>
         )}
 
-        {allDone && filmPhase !== 'sent' && (
-          <div style={{ background:'rgba(255,255,255,0.95)', borderRadius:16, padding:'1.2rem 1.4rem', marginBottom:'1.25rem' }}>
-            <p style={{ margin:0, fontWeight:800, color:'#241503', fontSize:'1rem' }}>All five chapters done.</p>
-            <p style={{ margin:'0.25rem 0 0.9rem', color:'#6B5A44', fontSize:'0.86rem' }}>
-              {filmedCount > 0
-                ? `${filmedCount} clip${filmedCount === 1 ? '' : 's'} ready to become your film.`
-                : 'Your writing is safe, but none of your clips reached us — so there is nothing to stitch yet. Tell your teacher.'}
-            </p>
-            <button onClick={startFilm} disabled={filmedCount === 0}
-              style={{ width:'100%', padding:'0.85rem', borderRadius:999, border:'none', background: filmedCount === 0 ? '#D8CDBB' : 'linear-gradient(135deg,#C97B33,#8A4F1E)', color:'white', fontWeight:800, cursor: filmedCount === 0 ? 'not-allowed' : 'pointer', textTransform:'uppercase', letterSpacing:'0.06em' }}>
-              Make my film
-            </button>
-          </div>
-        )}
-
-        {filmPhase === 'sent' && (
-          <button onClick={() => setEvScreen('film')}
-            style={{ width:'100%', padding:'0.85rem', borderRadius:12, border:`1px solid ${T.border}`, background:T.accentSoft, color:T.text, fontWeight:700, cursor:'pointer', marginBottom:'1.25rem' }}>
-            Watch your film
-          </button>
-        )}
-
-        <div style={{ display:'flex', flexDirection:'column', gap:'0.8rem' }}>
-          {EVOLVE_STORY_ORDER.map(c => {
+        <ol className="ev-trail">
+          {EVOLVE_STORY_ORDER.map((c, i) => {
             const complete = !!done[c.id];
             const near = c.latitude == null ? { nearby: true, distance: null } : checkAnimalProximity(c);
             const locked = !complete && !near.nearby;
+            const prevDone = i === 0 || !!done[EVOLVE_STORY_ORDER[i - 1].id];
+            const state = complete ? 'done' : locked ? 'locked' : 'open';
             return (
-              <button key={c.id} onClick={() => !locked && openChapter(c)} disabled={complete || locked}
-                style={{ textAlign:'left', display:'flex', gap:'0.9rem', alignItems:'center', padding:'0.85rem', borderRadius:16, cursor: complete || locked ? 'default' : 'pointer',
-                  background: complete ? 'rgba(232,179,60,0.13)' : 'rgba(0,0,0,0.25)',
-                  border:`1px solid ${complete ? T.accent : T.border}`, opacity: locked ? 0.5 : 1 }}>
-                <div style={{ width:60, height:60, borderRadius:12, flexShrink:0, backgroundImage:`url(${c.image})`, backgroundSize:'cover', backgroundPosition:'center', background: `rgba(0,0,0,0.3) url(${c.image}) center/cover` }} />
-                <div style={{ minWidth:0, flex:1 }}>
-                  <div style={{ fontSize:'0.62rem', fontWeight:800, letterSpacing:'0.16em', textTransform:'uppercase', color:T.accent }}>Chapter {c.order}</div>
-                  <div style={{ fontSize:'1rem', fontWeight:700, color:T.text, lineHeight:1.3 }}>{c.chapter}</div>
-                  <div style={{ fontSize:'0.78rem', color:T.textDim }}>
-                    {complete ? '✓ Written and filmed'
-                      : locked ? `Walk to the ${c.animalName.toLowerCase()}${near.distance != null ? ` · ${near.distance}m away` : ''}`
-                      : c.animalName}
-                  </div>
-                </div>
-              </button>
+              <li key={c.id} className={`ev-stop ev-${state}`} style={{ animationDelay: `${0.06 * i}s` }}>
+                <span className="ev-gutter" aria-hidden="true">
+                  <Segment lit={prevDone} side={i % 2 === 0 ? 'l' : 'r'} first={i === 0} index={i} draw={justLit === i} />
+                  <span className="ev-node" style={{ left: i % 2 === 0 ? '16%' : '84%' }}>{complete ? '✓' : ''}</span>
+                </span>
+
+                <button className="ev-card" onClick={() => !locked && !complete && openChapter(c)} disabled={complete || locked}>
+                  <span className="ev-card-text">
+                    <span className="ev-chapter">Chapter {WORDS[i]}</span>
+                    <span className="taronga-title ev-name">{c.chapter}</span>
+                    <span className="ev-meta">
+                      {complete ? 'Written and filmed'
+                        : locked ? `Walk to the ${c.animalName.toLowerCase()}${near.distance != null ? ` · ${near.distance} m away` : ''}`
+                        : c.animalName}
+                    </span>
+                  </span>
+                  <span className="ev-still" style={{ backgroundImage: `url(${c.image})` }} />
+                </button>
+              </li>
             );
           })}
-        </div>
+
+          {/* The destination sits in the horizon glow at the end of the trail. */}
+          <li className={`ev-stop ev-end ${allDone ? 'ev-open' : 'ev-locked'}`}>
+            <span className="ev-gutter" aria-hidden="true">
+              <Segment lit={allDone} side="l" last index={EVOLVE_CHAPTERS.length} draw={justLit === EVOLVE_CHAPTERS.length} />
+              <span className="ev-node ev-node-end" style={{ left: '16%' }}>✦</span>
+            </span>
+            <div className="ev-dest">
+              <span className="ev-chapter">The end of the walk</span>
+              <span className="taronga-title ev-name">Your film</span>
+              {filmPhase === 'sent' ? (
+                <>
+                  <span className="ev-meta">Saved. Yours to keep.</span>
+                  <button className="ev-cta" onClick={() => setEvScreen('film')}>Watch your film</button>
+                </>
+              ) : allDone ? (
+                <>
+                  <span className="ev-meta">
+                    {filmedCount > 0
+                      ? `${filmedCount} chapter${filmedCount === 1 ? '' : 's'} ready to become one film.`
+                      : 'Your writing is safe, but none of your clips reached us. Tell your teacher.'}
+                  </span>
+                  <button className="ev-cta" onClick={startFilm} disabled={filmedCount === 0}>Make my film</button>
+                </>
+              ) : (
+                <span className="ev-meta">Your five chapters become one short film, once the walk is done.</span>
+              )}
+            </div>
+          </li>
+        </ol>
       </div>
+
+      <style>{`
+        .ev-horizon {
+          position: fixed; left: 0; right: 0; bottom: 0; height: 55vh; pointer-events: none; z-index: 0;
+          background: radial-gradient(135% 78% at 50% 100%, rgba(255,183,77,0.42) 0%, rgba(216,110,64,0.20) 34%, rgba(120,60,90,0.10) 58%, transparent 78%);
+        }
+        .ev-wrap { position: relative; z-index: 1; max-width: 660px; margin: 0 auto; padding: 3rem 1.15rem 4rem; }
+
+        .ev-head { text-align: center; margin-bottom: 2.25rem; }
+        .ev-eyebrow {
+          font-size: 0.58rem; font-weight: 800; letter-spacing: 0.26em; text-transform: uppercase;
+          color: rgba(232,179,60,0.75); margin-bottom: 0.9rem;
+        }
+        .ev-title { color: #F3EDE2; font-size: clamp(2.4rem, 9vw, 3.4rem); margin: 0 0 0.35rem; letter-spacing: 0.04em; }
+        .ev-sub { color: rgba(243,237,226,0.6); font-size: 0.95rem; margin: 0; font-style: italic; }
+        .ev-progress {
+          display: flex; align-items: center; justify-content: center; gap: 0.7rem; margin-top: 1.1rem;
+          font-size: 0.62rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase;
+          color: rgba(243,237,226,0.5);
+        }
+        .ev-rule { flex: 0 0 44px; height: 1px; background: rgba(232,179,60,0.35); }
+
+        .ev-gps {
+          display: flex; align-items: center; gap: 0.6rem; width: 100%; text-align: left;
+          background: rgba(232,179,60,0.08); border: 1px solid rgba(232,179,60,0.22);
+          border-radius: 12px; padding: 0.75rem 0.95rem; margin-bottom: 2rem; cursor: pointer;
+          color: rgba(243,237,226,0.85); font-size: 0.8rem; font-weight: 600; font-family: inherit;
+        }
+        .ev-gps-dot {
+          width: 7px; height: 7px; border-radius: 50%; background: #E8B33C; flex-shrink: 0;
+          box-shadow: 0 0 0 4px rgba(232,179,60,0.18);
+        }
+
+        .ev-trail { list-style: none; margin: 0; padding: 0; }
+        .ev-trail { --ev-gutter: 104px; }
+        .ev-stop {
+          position: relative; min-height: 146px; padding: 0 0 1.4rem calc(var(--ev-gutter) + 14px);
+          display: flex; align-items: center;
+          animation: ev-rise 0.6s cubic-bezier(0.22,1,0.36,1) both;
+        }
+        .ev-stop:last-child { padding-bottom: 0; }
+
+        /* The winding trail lives in its own gutter, so nodes can be placed as a percentage
+           of it and the whole thing rescales on a phone without recomputing anything. */
+        .ev-gutter { position: absolute; left: 0; top: 0; bottom: 0; width: var(--ev-gutter); }
+        .ev-seg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+
+        /* Dash lengths are fractions of the leg because every path carries pathLength="1". */
+        .ev-path { fill: none; stroke-linecap: round; }
+        .ev-path-lit {
+          stroke: #E8B33C; stroke-width: 2.5;
+          filter: drop-shadow(0 0 5px rgba(232,179,60,0.45));
+          animation: ev-breathe 3.8s ease-in-out infinite;
+        }
+        .ev-path-dim { stroke: rgba(243,237,226,0.26); stroke-width: 2; stroke-dasharray: 0.013 0.05; }
+
+        /* The leg you have just walked draws itself from the last stop to the new one. */
+        .ev-path-draw {
+          stroke-dasharray: 1; stroke-dashoffset: 1;
+          animation: ev-draw 1.1s cubic-bezier(0.4,0,0.2,1) forwards;
+        }
+
+        /* A brighter pulse runs down the walked route. Each leg is offset in time by its
+           position so the light reads as one continuous current, not five separate blips. */
+        .ev-flow {
+          fill: none; stroke: #FFE6A8; stroke-width: 3.5; stroke-linecap: round;
+          stroke-dasharray: 0.1 0.9;
+          filter: drop-shadow(0 0 7px rgba(255,214,120,0.95));
+          animation: ev-flow 3.4s linear infinite;
+        }
+        .ev-stop:last-child .ev-gutter { bottom: auto; height: 78px; }
+
+        .ev-node {
+          position: absolute; top: 50%; transform: translate(-50%, -50%);
+          width: 22px; height: 22px; border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 0.66rem; font-weight: 800; color: #0B1024;
+          background: #0B1024; border: 2px solid rgba(243,237,226,0.28); z-index: 1; transition: all 0.3s;
+        }
+        .ev-done   .ev-node { background: #E8B33C; border-color: #E8B33C; }
+        .ev-open   .ev-node { border-color: #E8B33C; animation: ev-pulse 2.6s ease-out infinite; }
+        .ev-locked .ev-node { border-color: rgba(243,237,226,0.2); }
+        .ev-node-end { width: 26px; height: 26px; top: 78px; font-size: 0.8rem; color: #E8B33C; }
+        .ev-end.ev-open .ev-node-end { color: #0B1024; background: #E8B33C; }
+
+        /* Every card is the same height with the still bled flush to the right edge, so the
+           five read as one set at a glance rather than five slightly different rectangles. */
+        .ev-card {
+          display: flex; align-items: stretch; gap: 0; width: 100%; height: 146px; text-align: left;
+          background: rgba(9,13,28,0.52); border: 1px solid rgba(232,179,60,0.15);
+          border-radius: 16px; padding: 0; overflow: hidden; font-family: inherit;
+          cursor: pointer; transition: border-color 0.25s, background 0.25s, transform 0.25s;
+          -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+        }
+        .ev-open .ev-card:hover { border-color: rgba(232,179,60,0.55); background: rgba(9,13,28,0.72); transform: translateY(-2px); }
+        .ev-open .ev-card:focus-visible { outline: 2px solid #E8B33C; outline-offset: 3px; }
+        .ev-done   .ev-card { cursor: default; border-color: rgba(232,179,60,0.34); background: rgba(232,179,60,0.07); }
+        .ev-locked .ev-card { cursor: default; border-color: rgba(243,237,226,0.08); background: rgba(9,13,28,0.35); }
+
+        .ev-card-text {
+          flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center;
+          gap: 0.4rem; padding: 1rem 1.1rem 1rem 1.35rem;
+        }
+        .ev-chapter {
+          font-size: 0.64rem; font-weight: 800; letter-spacing: 0.22em; text-transform: uppercase;
+          color: rgba(232,179,60,0.9);
+        }
+        .ev-locked .ev-chapter { color: rgba(243,237,226,0.3); }
+        .ev-name {
+          font-size: clamp(1.5rem, 5.4vw, 2.05rem); color: #F3EDE2; line-height: 1.1; letter-spacing: 0.015em;
+          display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+        }
+        .ev-locked .ev-name { color: rgba(243,237,226,0.4); }
+        .ev-meta {
+          font-size: 0.9rem; color: rgba(243,237,226,0.58); line-height: 1.35;
+          display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+        }
+        .ev-done .ev-meta { color: rgba(232,179,60,0.8); }
+
+        /* Portrait stills, matching the shape of the film they end up in. Locked chapters sit
+           in shadow and come into colour as the student reaches each animal. */
+        /* Bled to the card edge and feathered on its inner side, so it reads as part of the
+           card rather than a thumbnail dropped on top of it. */
+        .ev-still {
+          flex: 0 0 132px; align-self: stretch; position: relative;
+          background-size: cover; background-position: center;
+          filter: saturate(0.18) brightness(0.42) hue-rotate(-12deg); transition: filter 0.6s;
+          box-shadow: inset 46px 0 34px -28px rgba(9,13,28,0.95);
+        }
+        .ev-open .ev-still { filter: saturate(1) brightness(0.95); }
+        .ev-done .ev-still { filter: saturate(0.9) brightness(0.85); }
+
+        .ev-dest { display: flex; flex-direction: column; gap: 0.35rem; padding: 0.3rem 0 0; }
+        .ev-cta {
+          align-self: flex-start; margin-top: 0.7rem; padding: 0.8rem 1.6rem; border: none; border-radius: 999px;
+          background: linear-gradient(135deg, #FFC65A, #D86E40); color: #2A1206;
+          font-weight: 800; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.1em;
+          cursor: pointer; font-family: inherit; transition: transform 0.2s, box-shadow 0.2s;
+          box-shadow: 0 6px 22px rgba(232,179,60,0.28);
+        }
+        .ev-cta:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 10px 28px rgba(232,179,60,0.4); }
+        .ev-cta:disabled { background: rgba(243,237,226,0.16); color: rgba(243,237,226,0.45); cursor: not-allowed; box-shadow: none; }
+
+        @keyframes ev-rise  { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes ev-flow  { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+        @keyframes ev-draw  { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+        @keyframes ev-breathe {
+          0%, 100% { opacity: 0.72; }
+          50%      { opacity: 1; }
+        }
+        @keyframes ev-land {
+          0%   { transform: translate(-50%,-50%) scale(1); box-shadow: 0 0 0 0 rgba(232,179,60,0.8); }
+          45%  { transform: translate(-50%,-50%) scale(1.35); box-shadow: 0 0 0 14px rgba(232,179,60,0); }
+          100% { transform: translate(-50%,-50%) scale(1); box-shadow: 0 0 0 0 rgba(232,179,60,0); }
+        }
+        @keyframes ev-pulse {
+          0%   { box-shadow: 0 0 0 0 rgba(232,179,60,0.45); }
+          70%  { box-shadow: 0 0 0 11px rgba(232,179,60,0); }
+          100% { box-shadow: 0 0 0 0 rgba(232,179,60,0); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .ev-stop { animation: none; opacity: 1; }
+          .ev-open .ev-node, .ev-path-lit, .ev-flow { animation: none; }
+          .ev-flow { display: none; }
+          .ev-path-draw { stroke-dasharray: none; stroke-dashoffset: 0; animation: none; }
+          .ev-card, .ev-still, .ev-cta { transition: none; }
+        }
+        @media (max-width: 460px) {
+          .ev-trail { --ev-gutter: 62px; }
+          .ev-card  { height: 124px; }
+          .ev-still { flex-basis: 98px; }
+          .ev-card-text { padding: 0.85rem 0.9rem 0.85rem 1rem; gap: 0.3rem; }
+          .ev-stop  { min-height: 110px; }
+        }
+      `}</style>
     </Shell>
   );
 }

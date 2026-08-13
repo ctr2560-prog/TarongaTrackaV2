@@ -390,13 +390,35 @@ and the metaphor is earned by the animal's real behaviour, not decoration:
 allows, but `EVOLVE_STORY_ORDER` means **the film is always assembled in narrative order
 regardless of filming order.** Capture order and story order are deliberately independent.
 
-⚠️ **Kangaroo has never existed in this app.** `latitude`/`longitude` are `null` and
-`/images/kangaroo.jpg` does not exist — coordinates, a map pin and a photo still need capturing
-on site (Australian Walkabout). Null coords mean that chapter unlocks *without* a proximity
-check rather than becoming permanently unreachable.
+⚠️ **Kangaroo still has no coordinates.** The photo now exists (`/images/kangaroo.jpg`,
+added 2026-08-13), but `latitude`/`longitude` are still `null` and it has no real map pin —
+both need capturing on site (Australian Walkabout). Null coords mean that chapter unlocks
+*without* a proximity check rather than becoming permanently unreachable.
 
 Lion/tiger/giraffe/koala coordinates are lifted from `src/data/animals.js` so Evolve matches the
 daytime map exactly.
+
+### The map screen — a winding trail, not a list
+The chapter list is drawn as a **route on a map**: a gold path winding down its own gutter with
+a waypoint at each bend, solid behind you and dashed ahead (the standard cartographic
+convention). Non-obvious bits, all load-bearing:
+
+- **Each stop draws its own leg of the path**, entering and leaving at the horizontal centre of
+  the gutter, so consecutive legs always join no matter how tall a card is. No measuring, no
+  fixed row heights, no JS watching layout.
+- Every path carries **`pathLength="1"`**, which normalises dash lengths and offsets to
+  fractions of the leg. That is what lets the flow pulse and the draw-on-complete work at any
+  card height.
+- Waypoints are positioned as a **percentage of the gutter**, so the trail rescales on a phone
+  (gutter 104px → 62px) with nothing to recompute.
+- Finishing a chapter sets `justLit` to the *next* index, and that leg draws itself from the
+  last waypoint to the new one.
+- Cards are a **fixed 146px** with the title clamped to two lines, so the five read as one set.
+
+The palette is a **cool sky over a warm horizon** — deep indigo at the top through violet to
+amber at the bottom, with the film's destination sitting in the horizon glow. An all-orange
+twilight was tried first and reads as sepia, and leaves the gold accent nothing to sit against.
+`evolveFilm.js`'s `drawBg()` mirrors this gradient so the film matches the map.
 
 ### Flow
 `sessionType: 'evolve'` short-circuits in `App.jsx` to `EvolveScreen.jsx`, which sub-routes on

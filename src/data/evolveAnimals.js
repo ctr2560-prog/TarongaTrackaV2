@@ -138,16 +138,18 @@ export const EVOLVE_CHAPTERS = [
 export const EVOLVE_STORY_ORDER = [...EVOLVE_CHAPTERS].sort((a, b) => a.order - b.order);
 
 export const EVOLVE_THEME = {
-  // Twilight: low gold and long shadows. Deliberately between the daytime greens and
-  // ZooSnooz's deep night, so Evolve reads as its own time of day.
-  bgGradient: 'linear-gradient(170deg, #2A1B10 0%, #4A2C16 38%, #8A4F1E 74%, #C97B33 100%)',
-  deep: '#1E1109',
+  // Real twilight is a COOL sky over a WARM horizon — the blue hour and the golden hour in
+  // one frame. An all-orange field reads as sepia, not dusk, and leaves the gold accent with
+  // nothing to sit against. So the sky runs indigo to violet, and the warmth is held back for
+  // the horizon glow at the very bottom, where the film's destination sits.
+  bgGradient: 'linear-gradient(180deg, #070B18 0%, #121A33 34%, #23203F 62%, #3E2E3C 84%, #5A3A31 100%)',
+  deep: '#070B18',
   panel: 'rgba(255,255,255,0.06)',
   border: 'rgba(232,179,60,0.28)',
   accent: '#E8B33C',
   accentSoft: 'rgba(232,179,60,0.14)',
-  text: '#F6E8D2',
-  textDim: 'rgba(246,232,210,0.62)',
+  text: '#F3EDE2',
+  textDim: 'rgba(243,237,226,0.62)',
 };
 
 export const EVOLVE_MIN_WORDS = 40;

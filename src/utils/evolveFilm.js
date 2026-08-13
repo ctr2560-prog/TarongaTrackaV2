@@ -112,7 +112,7 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
 
   function drawBg() {
     const bg = ctx.createLinearGradient(0, 0, W, H);
-    bg.addColorStop(0, '#1E1109'); bg.addColorStop(0.45, '#4A2C16'); bg.addColorStop(1, '#8A4F1E');
+    bg.addColorStop(0, '#070B18'); bg.addColorStop(0.42, '#1B2138'); bg.addColorStop(0.78, '#3E2E3C'); bg.addColorStop(1, '#6B4232');
     ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
   }
   function drawLogoCircle(cx, cy, size) {
