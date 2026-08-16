@@ -134,28 +134,70 @@ function Shell({ children, onHome, scroll = true }) {
         }
         .ev-skip:hover { color: rgba(243,237,226,0.7); }
 
-        .ev-pledge {
+        .ev-prompt { margin-bottom: 1.5rem; }
+        .ev-prompt-lead {
+          font-size: clamp(1.15rem, 4.2vw, 1.38rem); font-weight: 700; text-align: center;
+          color: #F3EDE2; line-height: 1.45; margin: 0.4rem 0 1.4rem; text-wrap: pretty;
+        }
+        .ev-prompt-body {
+          font-size: 1rem; line-height: 1.65; color: rgba(243,237,226,0.78);
+          margin: 0 0 0.9rem; text-wrap: pretty;
+        }
+        .ev-prompt-body:last-child { margin-bottom: 0; }
+
+        /* Portrait, because the finished film is 720x1280. object-fit: cover means the
+           preview shows exactly the crop the stitcher will take. */
+        .ev-say {
+          background: rgba(232,179,60,0.08); border: 1px solid rgba(232,179,60,0.24);
+          border-radius: 12px; padding: 0.9rem 1.1rem; margin-bottom: 1rem;
+        }
+        .ev-say-label {
+          font-size: 0.56rem; font-weight: 800; letter-spacing: 0.2em; text-transform: uppercase;
+          color: rgba(232,179,60,0.8); margin-bottom: 0.4rem;
+        }
+        .ev-say-ask {
+          font-size: clamp(1rem, 3.6vw, 1.15rem); line-height: 1.45; color: #F3EDE2; margin: 0 0 0.6rem;
+        }
+        .ev-say-link {
+          font-size: 0.88rem; line-height: 1.5; color: rgba(243,237,226,0.62); margin: 0;
+          padding-top: 0.6rem; border-top: 1px solid rgba(232,179,60,0.18);
+        }
+
+        .ev-cam {
+          position: relative; aspect-ratio: 9 / 16; max-height: 58vh; width: auto; margin: 0 auto 0.9rem;
+          border-radius: 16px; overflow: hidden; background: #000;
+          box-shadow: 0 14px 40px rgba(0,0,0,0.45);
+        }
+        .ev-cam video { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .ev-cam-play { max-height: 62vh; }
+
+        .ev-write {
           border: 1.5px solid rgba(232,179,60,0.35); border-radius: 14px;
           background: linear-gradient(180deg, rgba(232,179,60,0.09), rgba(9,13,28,0.4));
           padding: 1.1rem 1.15rem 0.9rem; transition: border-color 0.3s, box-shadow 0.3s;
         }
-        .ev-pledge-on { border-color: #E8B33C; box-shadow: 0 0 26px rgba(232,179,60,0.18); }
-        .ev-pledge-lead {
+        .ev-write-on { border-color: #E8B33C; box-shadow: 0 0 26px rgba(232,179,60,0.18); }
+        .ev-write-lead {
           display: block; font-size: clamp(1.5rem, 5.5vw, 1.95rem); color: #E8B33C;
           line-height: 1; margin-bottom: 0.5rem; letter-spacing: 0.02em;
         }
-        .ev-pledge-input {
+        .ev-write-input {
           width: 100%; box-sizing: border-box; background: none; border: none; outline: none;
           color: #F3EDE2; font-family: inherit; font-size: clamp(1.05rem, 4vw, 1.25rem);
           line-height: 1.6; resize: vertical; padding: 0;
         }
-        .ev-pledge-input::placeholder { color: rgba(243,237,226,0.3); }
-        .ev-pledge-recall {
+        .ev-write-input::placeholder { color: rgba(243,237,226,0.3); }
+        .ev-count {
+          text-align: right; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.04em;
+          color: rgba(243,237,226,0.45); margin: 0.55rem 0 1.4rem; transition: color 0.3s;
+        }
+        .ev-count-on { color: #E8B33C; }
+        .ev-write-recall {
           margin: 0 0 1rem; padding: 0.9rem 1.1rem; border-left: 3px solid #E8B33C;
           background: rgba(232,179,60,0.07); border-radius: 0 10px 10px 0;
           font-size: clamp(1rem, 3.6vw, 1.15rem); line-height: 1.5; color: #F3EDE2;
         }
-        .ev-pledge-recall .taronga-title { color: #E8B33C; font-size: 1.15em; }
+        .ev-write-recall .taronga-title { color: #E8B33C; font-size: 1.15em; }
 
         .ev-gps {
           display: flex; align-items: center; gap: 0.6rem; width: 100%; text-align: left;
@@ -419,7 +461,15 @@ export default function EvolveScreen() {
     if (phase !== 'record') { stopCam(); return; }
     let dead = false;
     navigator.mediaDevices.getUserMedia({
-      video: { facingMode: frontCam ? 'user' : 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+      // Portrait to match the 720x1280 film. Without this the clip is captured landscape and
+      // the stitcher throws the sides away. `ideal` rather than `exact` so a desktop webcam
+      // that cannot do portrait still works — the preview box crops it the same way the
+      // stitcher will, so what the student frames is what ends up in the film either way.
+      video: {
+        facingMode: frontCam ? 'user' : 'environment',
+        width: { ideal: 1080 }, height: { ideal: 1920 },
+        aspectRatio: { ideal: 9 / 16 },
+      },
       audio: true,
     }).then(stream => {
       if (dead) { stream.getTracks().forEach(t => t.stop()); return; }
@@ -546,7 +596,7 @@ export default function EvolveScreen() {
       // Saved as the finished sentence, so exports, the Advice Wall and any future teacher
       // view read "I will ..." rather than a fragment.
       const body = reflectText.trim();
-      const entry = { reflection: chapter.pledgeLead ? `${chapter.pledgeLead} ${body}` : body };
+      const entry = { reflection: chapter.writeLead ? `${chapter.writeLead} ${body}` : body };
       if (studentName && classCode) {
         const code = normaliseCode(classCode);
         const sid = safeStudentId(studentName);
@@ -812,31 +862,40 @@ export default function EvolveScreen() {
             const ready = wc >= minWords;
             return (
               <>
-                <p style={{ color:T.text, fontSize:'1rem', lineHeight:1.7, marginBottom:'1rem', fontWeight:600 }}>{chapter.reflectionPrompt}</p>
+                {/* An array prompt renders as separate paragraphs, the first one lifted out
+                    bold and centred so the idea lands before the instruction. */}
+                {Array.isArray(chapter.reflectionPrompt) ? (
+                  <div className="ev-prompt">
+                    {chapter.reflectionPrompt.map((para, pi) => (
+                      <p key={pi} className={pi === 0 ? 'ev-prompt-lead' : 'ev-prompt-body'}>{para}</p>
+                    ))}
+                  </div>
+                ) : (
+                  <p style={{ color:T.text, fontSize:'1rem', lineHeight:1.7, marginBottom:'1rem', fontWeight:600 }}>{chapter.reflectionPrompt}</p>
+                )}
                 {chapter.isAdvice && (
                   <p style={{ color:T.accent, fontSize:'0.8rem', lineHeight:1.6, marginBottom:'0.9rem', background:T.accentSoft, border:`1px solid ${T.border}`, borderRadius:10, padding:'0.7rem 0.9rem' }}>
                     If you're happy for it to be used, this one may be shown to younger students — as "Year 12", never with your name.
                   </p>
                 )}
-                {chapter.pledgeLead ? (
-                  /* A pledge is one sentence they have to finish, not a paragraph. The fixed
-                     opener makes it a commitment and keeps it the focal point of the chapter. */
-                  <div className={`ev-pledge${ready ? ' ev-pledge-on' : ''}`}>
-                    <span className="taronga-title ev-pledge-lead">{chapter.pledgeLead}</span>
-                    <textarea value={reflectText} onChange={e => setReflectText(e.target.value)} rows={4}
-                      placeholder={chapter.placeholder} className="ev-pledge-input" />
-                  </div>
-                ) : (
-                  <textarea value={reflectText} onChange={e => setReflectText(e.target.value)} rows={9}
-                    placeholder={chapter.placeholder}
-                    style={{ width:'100%', boxSizing:'border-box', background:'rgba(0,0,0,0.28)', border:`1px solid ${ready ? T.accent : T.border}`, borderRadius:12, padding:'0.9rem 1rem', color:T.text, fontSize:'0.98rem', lineHeight:1.75, resize:'vertical', fontFamily:'inherit', outline:'none' }} />
-                )}
-                <div style={{ textAlign:'right', fontSize:'0.78rem', color: ready ? T.accent : T.textDim, margin:'0.4rem 0 1.25rem', fontWeight:600 }}>
-                  {wc} / {minWords} words
+                {/* Every chapter writes into the same panel, opening with its own short
+                    first-person lead in the Taronga face that the student completes. */}
+                <div className={`ev-write${ready ? ' ev-write-on' : ''}`}>
+                  {chapter.writeLead && (
+                    <span className="taronga-title ev-write-lead">{chapter.writeLead}</span>
+                  )}
+                  <textarea value={reflectText} onChange={e => setReflectText(e.target.value)}
+                    rows={chapter.isPledge ? 4 : 7}
+                    placeholder={chapter.placeholder} className="ev-write-input" />
+                </div>
+                {/* Once they clear the floor the target disappears, so a low minimum does not
+                    read as the goal and invite everyone to stop at exactly twelve words. */}
+                <div className={`ev-count${ready ? ' ev-count-on' : ''}`}>
+                  {ready ? `${wc} word${wc === 1 ? '' : 's'}` : `${wc} / ${minWords} words`}
                 </div>
                 <button onClick={() => { setCamError(''); setPhase('record'); }} disabled={!ready}
                   style={{ width:'100%', padding:'0.95rem', borderRadius:999, border:'none', background: ready ? T.accent : 'rgba(255,255,255,0.15)', color: ready ? '#241503' : T.textDim, fontWeight:800, cursor: ready ? 'pointer' : 'not-allowed', textTransform:'uppercase', letterSpacing:'0.06em' }}>
-                  {ready ? (chapter.pledgeLead ? 'Make this my pledge' : 'To camera') : 'Keep writing'}
+                  {ready ? (chapter.isPledge ? 'Make this my pledge' : 'To camera') : 'Keep writing'}
                 </button>
               </>
             );
@@ -844,17 +903,19 @@ export default function EvolveScreen() {
 
           {phase === 'record' && (
             <>
-              <div style={{ background:T.accentSoft, border:`1px solid ${T.border}`, borderRadius:12, padding:'0.9rem 1.1rem', marginBottom:'1rem' }}>
-                <p style={{ color:T.text, fontSize:'0.92rem', lineHeight:1.6, margin:0 }}>{chapter.filmPrompt}</p>
+              <div className="ev-say">
+                <div className="ev-say-label">To camera</div>
+                <p className="ev-say-ask">{chapter.filmPrompt}</p>
+                <p className="ev-say-link">{chapter.filmLink}</p>
               </div>
-              {chapter.pledgeLead && reflectText.trim() && (
+              {chapter.isPledge && reflectText.trim() && (
                 /* Their own words, on screen, to read straight into the lens. */
-                <blockquote className="ev-pledge-recall">
-                  <span className="taronga-title">{chapter.pledgeLead}</span> {reflectText.trim()}
+                <blockquote className="ev-write-recall">
+                  <span className="taronga-title">{chapter.writeLead}</span> {reflectText.trim()}
                 </blockquote>
               )}
-              <div style={{ position:'relative', borderRadius:14, overflow:'hidden', background:'#000', marginBottom:'0.9rem' }}>
-                <video ref={videoRef} playsInline muted autoPlay style={{ width:'100%', display:'block', transform: frontCam ? 'scaleX(-1)' : 'none' }} />
+              <div className="ev-cam">
+                <video ref={videoRef} playsInline muted autoPlay style={{ transform: frontCam ? 'scaleX(-1)' : 'none' }} />
                 {recording && (
                   <div style={{ position:'absolute', top:10, left:10, background:'rgba(200,30,30,0.9)', color:'white', padding:'0.25rem 0.7rem', borderRadius:999, fontSize:'0.78rem', fontWeight:800 }}>
                     ● {countdown}s
@@ -890,7 +951,9 @@ export default function EvolveScreen() {
           {phase === 'preview' && (
             <>
               {clipURLs[chapter.id] && (
-                <video src={clipURLs[chapter.id]} controls playsInline style={{ width:'100%', borderRadius:14, marginBottom:'0.9rem', background:'#000' }} />
+                <div className="ev-cam ev-cam-play">
+                  <video src={clipURLs[chapter.id]} controls playsInline />
+                </div>
               )}
               {(() => {
                 // A clip only reaches the film once Storage has it. Until then the student

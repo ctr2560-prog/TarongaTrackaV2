@@ -38,12 +38,17 @@ export const EVOLVE_CHAPTERS = [
       'itself.',
     observePrompt:
       'Watch the pride for a few minutes. Who is watching whom? Who is at the centre, and who is on the edge?',
-    reflectionPrompt:
-      'School has been your pride. Who taught you something you still carry — a teacher, a friend, a family ' +
-      'member, someone who covered for you while you were learning? Write about them, and about what they gave you.',
+    reflectionPrompt: [
+      'School has been your pride.',
+      'Who taught you something you still carry — a teacher, a friend, a family member, someone who covered for you while you were learning?',
+      'Write about them, and about what they gave you.',
+    ],
     filmPrompt:
-      'To camera: name one person from your schooling you want to thank, and say what they did.',
-    placeholder: 'The person who shaped my schooling was…',
+      'Name one person from your schooling you want to thank, and say what they did.',
+    filmLink:
+      'Then link it back to the lions — no lion is raised by one animal.',
+    writeLead: 'I learned',
+    placeholder: 'from my Year 10 English teacher that…',
   },
   {
     id: 'kangaroo',
@@ -63,12 +68,18 @@ export const EVOLVE_CHAPTERS = [
       'only moves forward.',
     observePrompt:
       'Watch how they move. Notice that every correction, every change of direction, still happens going forward.',
-    reflectionPrompt:
-      'You are standing at the point where school stops. Write honestly about where you are right now — what ' +
-      'you are ready to leave behind, and what you are afraid of losing.',
+    reflectionPrompt: [
+      'You are standing at the point where school stops.',
+      'Write honestly about where you are right now — what you are ready to leave behind, and what you are afraid of losing.',
+    ],
     filmPrompt:
-      'To camera: finish this sentence — "The thing I am leaving behind is…"',
-    placeholder: 'Right now I am…',
+      'Finish this sentence — "The thing I am leaving behind is…"',
+    // Said after the personal bit, so the spoken piece names the animal rather than relying on
+    // the on-screen lower third alone.
+    filmLink:
+      'Then link it back to the kangaroos — an animal built so that it can only ever go forward.',
+    writeLead: "I'm leaving",
+    placeholder: 'the people I see every day, the routine of…',
   },
   {
     id: 'tiger',
@@ -86,12 +97,16 @@ export const EVOLVE_CHAPTERS = [
     observePrompt:
       'Watch how the tiger uses its space — the paths it repeats, the edges it checks. This is what holding ' +
       'territory looks like.',
-    reflectionPrompt:
-      'Next year is your territory and you have never held it before. Write about what you want it to look ' +
-      'like — not the job title, but the kind of life and the kind of person.',
+    reflectionPrompt: [
+      'Next year is your territory and you have never held it before.',
+      'Write about what you want it to look like — not the job title, but the kind of life and the kind of person.',
+    ],
     filmPrompt:
-      'To camera: say what you want to be true about your life in five years.',
-    placeholder: 'The ground I want to claim is…',
+      'Say what you want to be true about your life in five years.',
+    filmLink:
+      'Then link it back to the tiger — walking out at two to claim ground it has never held.',
+    writeLead: 'I want',
+    placeholder: 'a life where…, work that…',
   },
   {
     id: 'giraffe',
@@ -109,12 +124,16 @@ export const EVOLVE_CHAPTERS = [
     observePrompt:
       'Watch where the giraffes are looking. They are almost always watching something further away than you can see.',
     // This is the chapter that outlives the excursion: approved responses go to the Advice Wall.
-    reflectionPrompt:
-      'You can see further down this road than a Year 7 can. Write advice for a student just starting high ' +
-      'school — something true, that you actually wish someone had told you.',
+    reflectionPrompt: [
+      'You can see further down this road than a Year 7 can.',
+      'Write advice for a student just starting high school — something true, that you actually wish someone had told you.',
+    ],
     filmPrompt:
-      'To camera: give one piece of advice to a student starting Year 7.',
-    placeholder: 'What I wish someone had told me is…',
+      'Give one piece of advice to a student starting Year 7.',
+    filmLink:
+      'Then link it back to the giraffes — the ones everything else watches to see what is coming.',
+    writeLead: "I wish I'd known",
+    placeholder: 'that nobody is really watching, that…',
     isAdvice: true,
   },
   {
@@ -134,16 +153,19 @@ export const EVOLVE_CHAPTERS = [
       'Watch what this animal actually depends on — particular trees, particular leaves, particular country. ' +
       'Almost none of it is up to the koala.',
     // Deliberately picks up the minute they just spent watching, then turns it on them.
-    reflectionPrompt:
-      'You just watched an animal whose survival is decided by people rather than by itself. Next year you ' +
-      'become one of those people. Finish the sentence with one thing you will actually do — small and real ' +
-      'beats big and vague.',
+    // An array renders as separate paragraphs, the first one large, bold and centred.
+    reflectionPrompt: [
+      'You just watched an animal whose survival is decided by people rather than by itself.',
+      'Next year you become one of those people.',
+      'Finish the sentence with one thing you will actually do — small and real beats big and vague.',
+    ],
     filmPrompt:
-      'To camera: read your pledge out loud, starting with "I will…"',
+      'Read your pledge out loud, starting with "I will…"',
+    filmLink:
+      'Then link it back to the koalas — an animal whose future is decided by people, not by itself.',
     placeholder: 'plant something, speak up when…, stop buying…',
     isPledge: true,
-    pledgeLead: 'I will',
-    minWords: 12,
+    writeLead: 'I will',
   },
 ];
 
@@ -167,4 +189,6 @@ export const EVOLVE_THEME = {
   textDim: 'rgba(243,237,226,0.62)',
 };
 
-export const EVOLVE_MIN_WORDS = 40;
+// A low floor on purpose: these are reflections, not essays. Students can write as much as
+// they like, but the gate is only there to stop one-word answers.
+export const EVOLVE_MIN_WORDS = 12;
