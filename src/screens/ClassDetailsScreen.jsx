@@ -9,6 +9,11 @@ import { normaliseCode, safeStudentId } from '../utils/helpers';
 import { useApp } from '../context/AppContext';
 import { ZOOSNOOZ_ANIMALS } from '../data/zoosnoozAnimals';
 import { ZOOYARD_ANIMALS } from '../data/zooyardAnimals';
+import { EVOLVE_CHAPTERS, EVOLVE_STORY_ORDER } from '../data/evolveAnimals';
+import { openEvolvePledgeSheet } from '../utils/evolvePledgeSheet';
+
+// The chapter whose writing is the pledge — surfaced as its own column for teachers.
+const EVOLVE_PLEDGE_ID = (EVOLVE_CHAPTERS.find(c => c.isPledge) || {}).id;
 import { openTeacherInfoSheet } from '../utils/teacherInfoSheet';
 import { openZooSnoozInfoSheet } from '../utils/zoosnoozInfoSheet';
 
@@ -185,6 +190,7 @@ export default function ClassDetailsScreen() {
 
   // Modals
   const [obsModal,          setObsModal]          = useState(null);
+  const [evModal,           setEvModal]           = useState(null);   // { student, view: 'writing' | 'film' }
   const [conservationModal, setConservationModal] = useState(null);
   const [expandedBreakdown, setExpandedBreakdown] = useState(null);
   const [overrideForms,     setOverrideForms]     = useState({});
@@ -273,6 +279,7 @@ export default function ClassDetailsScreen() {
 
   const isZZ = cls.sessionType === 'zoosnooz';
   const isZY = cls.sessionType === 'zooyard';
+  const isEV = cls.sessionType === 'evolve';
   const totalStudents  = students.length;
   const avgPoints      = totalStudents > 0 ? Math.round(students.reduce((s,st)=>s+(st.totalPoints||0),0)/totalStudents) : 0;
   const totalBadges    = students.reduce((s,st)=>s+(st.badges?.length||0),0);
@@ -623,8 +630,8 @@ export default function ClassDetailsScreen() {
                 <p style={{ color: isZZ ? 'rgba(184,212,192,0.65)' : 'var(--t-slate)', fontSize:'0.8rem' }}>{cls.schoolName}{cls.stage ? ` · Stage ${cls.stage}` : ''} · Code: <span style={{ fontFamily:'monospace', fontWeight:700, color: isZZ ? '#4A9E6B' : 'var(--t-mid)' }}>{cls.classCode}</span></p>
               </div>
 
-              {/* Stat cards */}
-              {isZZ ? (() => {
+              {/* Stat cards — Evolve has no points, badges or scores, so it has none. */}
+              {isEV ? null : isZZ ? (() => {
                 const zzCompleted  = students.filter(s=>s.zzSessionComplete).length;
                 const totalAnimals = students.reduce((sum,s) => sum + ZOOSNOOZ_ANIMALS.filter(a=>(s.zoosnooz||{})[a.id]?.completed).length, 0);
                 const avgPts       = students.length > 0 ? Math.round(students.reduce((s,st)=>s+(st.zzTotalPoints||0),0)/students.length) : 0;
@@ -1101,6 +1108,92 @@ export default function ClassDetailsScreen() {
                 );
               })()}
 
+              {/* ── Evolve: just the table ──────────────────────────────────────────
+                  Evolve has no points, badges or scores, so there is nothing to chart.
+                  What a teacher needs is the writing and the films, so that is all this is. */}
+              {isEV && (() => {
+                const pledged = students
+                  .map(s => ({ name: s.name || s.id, pledge: (s.evolve || {})[EVOLVE_PLEDGE_ID]?.reflection }))
+                  .filter(p => p.pledge);
+                return (
+                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'1rem', flexWrap:'wrap', marginBottom:'0.9rem' }}>
+                    <p style={{ margin:0, fontSize:'0.82rem', color:'var(--t-slate)' }}>
+                      {pledged.length} of {students.length} student{students.length === 1 ? '' : 's'} have made a pledge.
+                    </p>
+                    <button onClick={() => openEvolvePledgeSheet(cls, pledged)} disabled={pledged.length === 0}
+                      title={pledged.length ? 'One landscape certificate per student — print or save as PDF' : 'No pledges written yet'}
+                      style={{ display:'inline-flex', alignItems:'center', gap:'0.45rem', padding:'0.5rem 1rem', borderRadius:'var(--t-r-pill)', border:'none',
+                        background: pledged.length ? 'linear-gradient(135deg,#C97B33,#8A4F1E)' : 'var(--t-stone)',
+                        color: pledged.length ? 'white' : 'var(--t-ash)', fontWeight:700, fontSize:'0.78rem',
+                        cursor: pledged.length ? 'pointer' : 'not-allowed', textTransform:'uppercase', letterSpacing:'0.06em' }}>
+                      🖨 Pledge certificates
+                    </button>
+                  </div>
+                );
+              })()}
+
+              {isEV && (
+                <div style={{ background:'var(--t-chalk)', borderRadius:'var(--t-r-lg)', boxShadow:'var(--t-shadow-sm)', overflow:'hidden', border:'1px solid var(--t-stone)', marginBottom:'1rem' }}>
+                  <div style={{ display:'grid', gridTemplateColumns:'1.6fr 1fr 1fr 1.2fr', background:'var(--t-forest)', padding:'0.6rem 1rem' }}>
+                    {['Student','Pledge','Film','Actions'].map(h => (
+                      <div key={h} style={{ color:'rgba(255,255,255,0.8)', fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em' }}>{h}</div>
+                    ))}
+                  </div>
+                  {students.length === 0 ? (
+                    <div style={{ padding:'2rem 1rem', textAlign:'center' }}>
+                      <p style={{ color:'#999', fontSize:'0.85rem', fontStyle:'italic' }}>No students have joined yet.</p>
+                    </div>
+                  ) : students.map((s, i) => {
+                    const ev      = s.evolve || {};
+                    const pledge  = ev[EVOLVE_PLEDGE_ID]?.reflection || '';
+                    const written = EVOLVE_CHAPTERS.filter(c => ev[c.id]?.reflection).length;
+                    const busy    = studentActionBusy[s.id];
+                    return (
+                      <div key={s.id} style={{ display:'grid', gridTemplateColumns:'1.6fr 1fr 1fr 1.2fr', padding:'0.7rem 1rem', borderTop:'1px solid var(--t-stone)', alignItems:'center', background: i%2===0 ? 'var(--t-chalk)' : 'var(--t-parchment)' }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:'0.55rem', minWidth:0 }}>
+                          <div style={{ width:'28px', height:'28px', borderRadius:'50%', background: ev.sessionCompleted ? 'linear-gradient(135deg,#C97B33,#E8B33C)' : 'linear-gradient(135deg,#aaa,#ccc)', display:'flex', alignItems:'center', justifyContent:'center', color:'white', fontSize:'0.72rem', fontWeight:700, flexShrink:0 }}>
+                            {String(s.name || s.id).charAt(0).toUpperCase()}
+                          </div>
+                          <div style={{ minWidth:0 }}>
+                            <div style={{ fontWeight:600, color:'var(--t-deep)', fontSize:'0.88rem' }}>{s.name || s.id}</div>
+                            <div style={{ fontSize:'0.7rem', color:'var(--t-ash)' }}>{written} of {EVOLVE_CHAPTERS.length} written</div>
+                          </div>
+                        </div>
+
+                        <div>
+                          {pledge ? (
+                            <button onClick={() => setEvModal({ student: s, view: 'writing' })}
+                              style={{ background:'var(--t-deep)', color:'white', border:'none', padding:'0.25rem 0.6rem', borderRadius:'6px', fontSize:'0.72rem', fontWeight:600, cursor:'pointer' }}>
+                              View
+                            </button>
+                          ) : <span style={{ color:'#bbb', fontSize:'0.75rem' }}> - </span>}
+                        </div>
+
+                        <div>
+                          {ev.filmURL ? (
+                            <button onClick={() => setEvModal({ student: s, view: 'film' })}
+                              style={{ background:'#C97B33', color:'white', border:'none', padding:'0.25rem 0.6rem', borderRadius:'6px', fontSize:'0.72rem', fontWeight:600, cursor:'pointer' }}>
+                              Watch
+                            </button>
+                          ) : <span style={{ color:'#bbb', fontSize:'0.75rem' }}> - </span>}
+                        </div>
+
+                        <div style={{ display:'flex', alignItems:'center', gap:'0.35rem' }}>
+                          <button onClick={() => resetStudent(s)} disabled={!!busy} title="Restore to chapter list (keeps their writing)"
+                            style={{ display:'flex', alignItems:'center', gap:'0.25rem', background:'none', color:'#D97706', border:'1.5px solid #FCD34D', padding:'0.28rem 0.55rem', borderRadius:'7px', fontSize:'0.72rem', fontWeight:700, cursor:busy?'not-allowed':'pointer', opacity:busy?0.4:1, whiteSpace:'nowrap' }}>
+                            {busy==='resetting' ? '…' : <><span style={{ fontSize:'0.9rem', lineHeight:1 }}>↺</span> <span>Restore</span></>}
+                          </button>
+                          <button onClick={() => deleteStudent(s)} disabled={!!busy} title="Delete student"
+                            style={{ display:'flex', alignItems:'center', gap:'0.25rem', background:'none', color:'#DC2626', border:'1.5px solid #FECACA', padding:'0.28rem 0.55rem', borderRadius:'7px', fontSize:'0.72rem', fontWeight:700, cursor:busy?'not-allowed':'pointer', opacity:busy?0.4:1, whiteSpace:'nowrap' }}>
+                            {busy==='deleting' ? '…' : <><span style={{ fontSize:'0.85rem', lineHeight:1 }}>🗑</span> <span>Delete</span></>}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
               {/* ── ZooYard Habitat Hero submissions ── */}
               {isZY && (
                 <div style={{ background:'var(--t-chalk)', borderRadius:'var(--t-r-md)', padding:'1.15rem', marginBottom:'1.75rem', border:'1px solid var(--t-stone)' }}>
@@ -1144,7 +1237,7 @@ export default function ClassDetailsScreen() {
               )}
 
               {/* ── Class Insights (day mode) ── */}
-              {!isZZ && !isZY && students.length > 0 && (() => {
+              {!isZZ && !isZY && !isEV && students.length > 0 && (() => {
                 const animalCounts = {};
                 students.forEach(s => (s.badges||[]).forEach(b => { if(b.animal) animalCounts[b.animal]=(animalCounts[b.animal]||0)+1; }));
                 const topAnimals = Object.entries(animalCounts).sort((a,b)=>b[1]-a[1]).slice(0,6);
@@ -1640,6 +1733,65 @@ export default function ClassDetailsScreen() {
       )}
 
       {/* ── Observations modal ── */}
+      {evModal && (() => {
+        const ev = evModal.student.evolve || {};
+        const name = evModal.student.name || evModal.student.id;
+        const close = () => setEvModal(null);
+        return (
+          <div onClick={close} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.55)', zIndex:100, display:'flex', alignItems:'center', justifyContent:'center', padding:'1.5rem' }}>
+            <div onClick={e => e.stopPropagation()} style={{ background:'#0B1024', borderRadius:'18px', width:'100%', maxWidth: evModal.view === 'film' ? '420px' : '540px', maxHeight:'84vh', overflowY:'auto', boxShadow:'0 24px 60px rgba(0,0,0,0.5)', border:'1px solid rgba(232,179,60,0.25)' }}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'1.1rem 1.3rem 0.9rem', borderBottom:'1px solid rgba(232,179,60,0.2)', position:'sticky', top:0, background:'#0B1024', zIndex:1 }}>
+                <div>
+                  <h3 style={{ fontSize:'1rem', fontWeight:700, color:'#F3EDE2', margin:0 }}>
+                    {evModal.view === 'film' ? 'Their film' : 'Their writing'}
+                  </h3>
+                  <p style={{ fontSize:'0.78rem', color:'rgba(243,237,226,0.55)', margin:'0.15rem 0 0' }}>{name}</p>
+                </div>
+                <button onClick={close} style={{ background:'rgba(255,255,255,0.07)', border:'none', color:'rgba(243,237,226,0.7)', width:'30px', height:'30px', borderRadius:'50%', cursor:'pointer', fontSize:'1rem', fontWeight:700 }}>×</button>
+              </div>
+
+              {evModal.view === 'film' ? (
+                <div style={{ padding:'1.1rem 1.3rem 1.4rem' }}>
+                  <video src={ev.filmURL} controls playsInline style={{ width:'100%', borderRadius:12, background:'#000', display:'block' }} />
+                  <a href={ev.filmURL} target="_blank" rel="noopener noreferrer"
+                    style={{ display:'inline-block', marginTop:'0.9rem', fontSize:'0.78rem', color:'#E8B33C', textDecoration:'none', borderBottom:'1px solid rgba(232,179,60,0.4)' }}>
+                    Open in a new tab ↗
+                  </a>
+                </div>
+              ) : (
+                <div style={{ padding:'1.1rem 1.3rem 1.4rem', display:'flex', flexDirection:'column', gap:'0.9rem' }}>
+                  {EVOLVE_STORY_ORDER.map(c => {
+                    const text = ev[c.id]?.reflection;
+                    if (!text) return null;
+                    const pledge = c.isPledge;
+                    return (
+                      <div key={c.id} style={{ background: pledge ? 'rgba(232,179,60,0.1)' : 'rgba(255,255,255,0.04)', border:`1px solid ${pledge ? 'rgba(232,179,60,0.45)' : 'rgba(255,255,255,0.1)'}`, borderRadius:12, padding:'0.85rem 1rem' }}>
+                        <div style={{ fontSize:'0.58rem', fontWeight:800, letterSpacing:'0.18em', textTransform:'uppercase', color: pledge ? '#E8B33C' : 'rgba(243,237,226,0.45)', marginBottom:'0.3rem' }}>
+                          Chapter {c.order} · {c.chapter}{pledge ? ' · Pledge' : ''}
+                        </div>
+                        <p style={{ margin:0, fontSize:'0.9rem', lineHeight:1.65, color:'#F3EDE2', whiteSpace:'pre-wrap' }}>{text}</p>
+                        {pledge && (
+                          <button onClick={() => openEvolvePledgeSheet(cls, [{ name, pledge: text }])}
+                            title="Opens this student's certificate — print it or save as PDF"
+                            style={{ marginTop:'0.7rem', display:'inline-flex', alignItems:'center', gap:'0.4rem', padding:'0.4rem 0.9rem', borderRadius:999, border:'1px solid rgba(232,179,60,0.5)', background:'rgba(232,179,60,0.14)', color:'#E8B33C', fontWeight:700, fontSize:'0.72rem', cursor:'pointer', fontFamily:'inherit' }}>
+                            🖨 Download this certificate
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {!EVOLVE_STORY_ORDER.some(c => ev[c.id]?.reflection) && (
+                    <p style={{ color:'rgba(243,237,226,0.5)', fontSize:'0.85rem', fontStyle:'italic', textAlign:'center', margin:'0.5rem 0' }}>
+                      This student has not written anything yet.
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
       {obsModal && (
         <div onClick={()=>{setObsModal(null);setExpandedBreakdown(null);}} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', zIndex:100, display:'flex', alignItems:'center', justifyContent:'center', padding:'1.5rem' }}>
           <div onClick={e=>e.stopPropagation()} style={{ background: obsModal.isZZ ? '#071E14' : 'white', borderRadius:'18px', width:'100%', maxWidth:'480px', maxHeight:'80vh', overflowY:'auto', boxShadow:'0 24px 60px rgba(0,0,0,0.25)' }}>

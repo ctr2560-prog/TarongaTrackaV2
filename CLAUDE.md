@@ -437,10 +437,14 @@ record → preview**.
   students to write about the same animal twice. A quiet "Skip the timer" exists because thirty
   students on a schedule cannot always stand still for five minutes.
 - **write** takes `chapter.minWords` (default `EVOLVE_MIN_WORDS`, 40).
-- A chapter with `pledgeLead` (koala) renders the writing step as a fixed opener — **"I will"**
-  — that the student completes, with a much lower word minimum, and the finished sentence is
-  shown back on the record screen to read into the lens. Watch it, write it, say it. The saved
-  value includes the lead, so downstream reads "I will ..." rather than a fragment.
+- **Every chapter opens its writing step with a short first-person `writeLead`** set in the
+  Taronga face — *I'm leaving · I will · I wish I'd known · I learned · I want* — which the
+  student completes. The saved value includes the lead, so downstream reads a whole sentence
+  rather than a fragment.
+- `isPledge` (koala only) additionally uses a much lower `minWords`, labels the button
+  "Make this my pledge", and shows the finished sentence back on the record screen to read
+  into the lens. Watch it, write it, say it. The other four film prompts ask a *different*
+  question than the writing did, so they deliberately do not recite the text back.
 
 Student data lives at `classes/{code}/students/{id}` under `evolve`:
 ```js
@@ -485,6 +489,29 @@ A student **cannot leave a chapter until its clip is fully in Storage** — the 
 "Waiting for your clip…" and is disabled until the upload reports `done`. Walking away mid-upload
 silently loses that chapter from the film. On failure they get "Try saving again", which re-uploads
 the blob held in memory (no re-filming); there is deliberately no skip.
+
+### Teacher view — deliberately just a table
+Evolve has no points, badges or scores, so `ClassDetailsScreen` hides the stat cards **and**
+Class Insights when `sessionType === 'evolve'` (`isEV`). What is left is one table: student,
+pledge, film, and the same Restore/Delete actions as every other mode. Do not add stat cards
+back — there is nothing numeric to report.
+
+- **Pledge → View** opens all five reflections with the pledge highlighted, not just the pledge.
+  Showing only the pledge would leave the other four pieces of writing unreachable.
+- **Film → Watch** plays the stitched film in a portrait player, with an open-in-new-tab link.
+
+### Pledge certificates (`src/utils/evolvePledgeSheet.js`)
+`openEvolvePledgeSheet(cls, pledges)` builds a self-contained HTML document, opens it in a new
+tab from a blob URL, and lets the teacher print it or save it as a PDF — the same pattern as
+`teacherInfoSheet.js`. **No PDF library.** One landscape A4 certificate per page, so a sheet can
+be handed to a student or pinned up; pass a single-item array to print just one (that is what
+the per-student button in the Pledge modal does).
+
+Printed on warm cream rather than Evolve's twilight palette on purpose: a dark page eats toner,
+school printers make a mess of it, and browsers strip backgrounds by default. The one dark
+element is the seal, because the Taronga logo is a white lockup that vanishes on cream.
+
+Students are attributed by their **animal alias** — Evolve stores no real names.
 
 ### Advice Wall (`evolveAdvice`) — data only, no UI yet
 The giraffe chapter's reflection is also written to `evolveAdvice` with
