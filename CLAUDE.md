@@ -10,7 +10,75 @@ There is also **ZooYard** — a self-attest, no-GPS "at school" program for clas
 
 There is also **Evolve** — a Stage 6 (Year 11/12) twilight excursion supporting the Life Ready course. Five animals are five chapters of one story about leaving school; students write a reflection and film a piece to camera at each, which stitch into a single short film they keep. Deliberately has no points, badges or marks. See the Evolve Deep Reference section below.
 
-Live URL: deployed to Firebase Hosting (project: `tarongatracka`), region: `australia-southeast1`.
+Live URLs: **tarongatracka.com.au** (GitHub Pages, auto-deploys from `main`) and
+**tarongatracka.web.app** (Firebase Hosting, manual deploy). Firebase project: `tarongatracka`,
+region: `australia-southeast1`. ⚠️ See **Build & Deploy** — these two drift apart.
+
+---
+
+## Where we left off (2026-08-17)
+
+### Deploy state
+- Everything is **pushed to `main`**, so **tarongatracka.com.au is current**.
+- **tarongatracka.web.app is behind** — last manual `firebase deploy --only hosting` was
+  2026-08-13. Run `npm run build && firebase deploy --only hosting` to resync. See Build & Deploy.
+- Firestore rules, Storage rules and Cloud Functions are all deployed and current.
+
+### Evolve — what is built
+Student flow is complete and verified end to end: opener → winding map → per chapter
+(insight → 60s watch → write → film) → upload gate → stitch → film → keepsake doc in
+`evolve_docs`. Teacher side has its own table plus landscape A4 pledge certificates.
+
+### Evolve — what is NOT built
+1. **Advice Wall.** The giraffe chapter already writes to `evolveAdvice` with
+   `status: 'pending'`, `cohortYear`, and no student name — but **nothing reads that collection**.
+   Needs: staff moderation UI, and a standalone wall. Cameron wants it as its own page, on the
+   teacher side and possibly Wildly's homepage. Because Wildly points at the same Firestore
+   project, one collection can serve both with no API between them. This is the agreed next piece.
+2. **Teacher/staff analytics for Evolve** beyond the class table — nothing in `AdminDashboardScreen`
+   knows about `sessionType: 'evolve'` yet (the Analytics tab's view filters and aggregations have
+   no Evolve branch).
+3. **Class export** of the writing, for a school's own reflection ceremony.
+4. **Souvenir URL route.** `evolve_docs/{classCode}_{studentId}` is written on submit but nothing
+   serves it — `DocumentaryViewer` only handles the `zzv_` prefix. This is the hook for Cameron's
+   long-term "alumni returns to the zoo years later" idea, so keep the doc being written.
+5. **Kangaroo GPS.** `latitude`/`longitude` are still `null` in `evolveAnimals.js`. It is now
+   **chapter one**, so it is the first thing students hit, and it currently unlocks with no
+   proximity check. Needs capturing on site at the Australian Walkabout. The photo exists.
+
+### Open decisions Cameron has parked
+- **Portrait vs landscape film.** Kept portrait: capture matches the film, students hold phones
+  vertically, and the film is a personal keepsake. If it ever needs projecting at a school
+  ceremony, the agreed option is a landscape output with the portrait clip centred and a blurred
+  copy filling the sides — a change in the stitcher only, nothing students do changes.
+- **"Skip the timer"** on the 60-second watch screen exists so thirty students on a schedule
+  aren't locked in place for five minutes. Deliberately quiet. Remove if it gets abused.
+- **Student attribution is by animal alias** (Quoll, Bilby). Evolve stores no real names, which is
+  why pledge certificates and the Advice Wall are alias/cohort-attributed.
+
+### Known live issues elsewhere
+- **ZooSnooz stitching has the rAF-only bug** (audio, no picture, if backgrounded mid-stitch).
+  Left unfixed deliberately to keep Evolve and ZooSnooz independent — but it is a real defect.
+- **`classes/{code}` and its `students` subcollection are `allow read, write: if true`** in
+  `firestore.rules` — unauthenticated write access to every student record in every class. This is
+  pre-existing and a bigger hole than the teacher-enumeration one that was closed on 2026-07-27.
+  Fixing it needs the Cloud Function pattern, since students have no Firebase Auth. Not started.
+
+### Test data sitting in Firebase (safe to delete)
+- Class **`EVOLVE`** — students `Bilby`, `Quoll`, with webcam test clips under `evolve/EVOLVE/`.
+- Class **`GAGA`** (`547DGJ`) — Cameron's own Evolve test class, stage 4.
+- Class **`K8AH7Z`** ("ZYT") — ZooYard test class; several students hold keyboard-mash responses,
+  which is why its writing scores read 1.0–1.5/5.
+- `zz-*.mjs` in the repo root are untracked throwaway Firestore/Storage inspection scripts.
+  They embed the public web API key, which is fine. Handy templates for reading live data.
+
+### Working practices that proved out
+- **Build-check per change** (`npm run build`), and compare the lint count against
+  `git stash` → lint → `git stash pop` rather than assuming a new error is yours — several files
+  carry pre-existing lint errors.
+- **Verify against live Firestore with a throwaway script** rather than trusting the UI, especially
+  for anything write-shaped.
+- **Never verify video in an automated browser session** — see Video & media pipeline §6.
 
 ---
 
@@ -213,6 +281,99 @@ Resend API key stored in Firebase Functions config/environment.
 
 ---
 
+## Video & media pipeline — READ THIS BEFORE TOUCHING ANY FILMING CODE
+
+Two modes record video and stitch it into a film: **ZooSnooz** (inline in `ZooSnoozScreen.jsx`)
+and **Evolve** (`src/utils/evolveFilm.js`). Evolve's is a **deliberate copy**, not a shared
+abstraction, so changing Evolve can never regress live ZooSnooz. **They do not inherit from each
+other — a fix in one needs applying to the other by hand.**
+
+Every rule below was learned by shipping something broken. None of it is stylistic.
+
+### 1. Capture must match the film's aspect ratio
+
+Evolve films are **720×1280 portrait**, so capture asks for portrait:
+
+```js
+video: { facingMode, width: { ideal: 1080 }, height: { ideal: 1920 }, aspectRatio: { ideal: 9/16 } }
+```
+
+It originally asked for `1280×720` **landscape**, and the stitcher then cropped the sides off to
+fit the portrait canvas — roughly half of every frame was thrown away, and students framed
+themselves in a shape that was not what ended up in the film.
+
+Constraints are `ideal`, never `exact`, so a desktop webcam that cannot do portrait still works.
+The preview box is `aspect-ratio: 9/16` with `object-fit: cover`, which crops **the same way the
+stitcher will** — so what a student frames is what lands in the film on any device.
+
+### 2. The draw loop must be rAF *with a timer watchdog*
+
+This one produced films with **perfect audio and no picture at all**, twice.
+
+- `requestAnimationFrame` **stops dead** when the tab is hidden or the screen sleeps. Title and
+  chapter cards survive that (they draw once *synchronously* and the canvas holds the image, and
+  `captureStream` keeps sampling it) but video needs continuous redraws, so the footage silently
+  vanishes while the audio — played from buffers decoded up front — carries on perfectly.
+- Replacing rAF with a bare `setInterval` fixes the freezing but **drifts and bunches up** when
+  the per-frame work overruns the interval, which reads as badly choppy footage.
+- The current loop therefore uses **rAF while visible, a timer while hidden**, plus a **watchdog**
+  that restarts the loop if no frame has been drawn for 400ms.
+
+A **Screen Wake Lock** is held for the whole stitch for the same reason. It is best-effort — not
+supported everywhere — so the watchdog still matters.
+
+⚠️ **ZooSnooz still has the original rAF-only loop.** It has the same latent bug: a student who
+backgrounds the app mid-stitch gets a documentary with sound and no picture. Not yet fixed, on
+purpose, to keep the two independent.
+
+### 3. Every path carries `pathLength="1"`… (Evolve map only, see the Evolve section)
+
+### 4. Other details that cost time
+
+- `mr.start(500)` then an **80ms settle** before the first frame, or the opening frames drop.
+- Each clip's guard timer is **re-armed to the real duration** once playback actually starts
+  (`isFinite(videoEl.duration)` — MediaRecorder webm often reports `Infinity` or `null`).
+- The `<video>` element is **released after every clip** (`removeAttribute('src'); load()`) or the
+  browser's decoder pool runs out partway through a five-clip stitch.
+- MIME candidates are tried in order; **Safari only has mp4/h264**.
+- Audio is decoded for *all* clips up front into `AudioBuffer`s and played via
+  `AudioBufferSourceNode`, kept alive by a looping silent buffer on the destination. This is why
+  audio survives when video fails — the two paths are completely independent.
+- Evolve's stitch canvas is **720×1280 portrait at 2.5 Mbps**. It was 1 Mbps (inherited from
+  ZooSnooz) which looked blocky for a keepsake.
+- A stitch takes **~45 seconds for five clips** on a desktop. Slower on a phone, and the screen
+  must stay awake.
+
+### 5. How to debug it
+
+`evolveFilm.js` logs a warning naming any chapter that **played but drew under ~5fps**:
+
+```
+[evolveFilm] "giraffe" drew only 4 frames in 3.0s (~1.3fps) - its footage will look frozen.
+```
+
+Before that existed, this class of failure was completely silent. If a student reports a film with
+sound but no picture, that warning is the first thing to look for.
+
+### 6. ⚠️ Automated browser testing cannot validate this
+
+**A CDP/automation-driven tab reports `document.visibilityState === "hidden"`.** That means:
+
+- CSS animation timelines are **paused** (`anim.currentTime` stays at 0)
+- `requestAnimationFrame` **does not fire**
+- Chrome actively suspends playback: *"video-only background media was paused to save power"*
+
+So an automated pass will manufacture exactly the frozen-footage bug it is trying to test, and a
+green automated result means nothing here. Frame counts observed in a hidden tab (79, 59, 4, 4, 3
+across five clips) are Chrome's background throttling ramping up, not a real defect.
+
+**Anything touching capture, playback or stitching must be verified by a human with the window in
+the foreground.** You can still prove *structure* from automation — element wiring, computed
+styles, `getAnimations()` state, and stepping an animation manually via `anim.currentTime = n`.
+Just never conclude the pipeline works from it.
+
+---
+
 ## ZooSnooz — Deep Reference
 
 ZooSnooz is the entire night-mode experience. It lives almost entirely in `src/screens/ZooSnoozScreen.jsx` (~2500 lines). Understanding this file is critical before touching it.
@@ -269,7 +430,7 @@ Upload progress shown as percentage. If no bytes after 30s, logs warning about S
 Triggered when student taps "Create Documentary" from the ZooSnooz collection screen. Runs client-side in the browser using Canvas + MediaRecorder.
 
 1. **Transition to stitch screen**: `zzScreen` set to `'stitch'`, `zzStitchPhase` set to `'stitching'`
-2. **Canvas setup**: offscreen `<canvas>` at 1280×720, draws frames at ~30fps via `requestAnimationFrame`
+2. **Canvas setup**: offscreen `<canvas>` at **720×1280 (portrait)** — this doc previously said 1280×720, which was wrong. Draws frames at ~30fps via `requestAnimationFrame` ⚠️ see the Video & media pipeline section: rAF-only means a backgrounded stitch produces audio with no picture. Still unfixed here on purpose.
 3. **Audio setup**: `AudioContext` + `createMediaStreamDestination` collects audio from all video clips
 4. **Intro card**: ~2s animated title card drawn to canvas ("ZooSnooz Night Documentary" + student name)
 5. **Per animal**: fetches the blob URL, plays it in a hidden `<video>` element, draws frames to canvas while the video plays; overlays animal name and counter
@@ -374,9 +535,20 @@ mandatory Life Ready course. It is a reflection on leaving school, not a quiz mo
 **It is deliberately unlike every other mode: no points, no badges, no marks, no leaderboard,
 no quizzes.** The writing is a memento the student keeps. Don't "improve" it by adding scoring.
 
+### How a class becomes Evolve
+`CreateClassScreen.jsx`: teacher picks location **"Taronga Sydney — Evolve (Stage 6)"**
+(`value="evolve-sydney"`) → `sessionType: 'evolve'`, `subject: 'life-ready'`, `stage: 6` forced.
+**Both the stage and subject pickers are hidden for Evolve** — it is Stage 6 by definition, and the
+stage dropdown only ever offered Stages 1–5, so an Evolve class could never have been given the
+right stage. Classes created before 2026-08-17 may carry the wrong stage (the `GAGA` test class is
+Stage 4). Nothing in Evolve reads stage — the chapters are not stage-differentiated — so it is
+cosmetic, but it shows wrong in staff analytics.
+
 ### The five chapters (`src/data/evolveAnimals.js`)
-Each animal is a chapter in one narrative — past → threshold → future → legacy → responsibility —
-and the metaphor is earned by the animal's real behaviour, not decoration:
+Each animal is a chapter in one narrative, and the metaphor is earned by the animal's real
+behaviour, not decoration. The arc is **directional, not chronological** — forward (what I am
+leaving), outward (what I owe), back down the path (advice to those still on it), home (who raised
+me), onward (where I go):
 
 | # | Animal | Chapter | Why |
 |---|---|---|---|
@@ -467,22 +639,26 @@ On submit a keepsake record is written to `evolve_docs/{classCode}_{studentId}` 
 URL and every reflection. Nothing reads it yet — that's the souvenir-link/export surface.
 
 ### `src/utils/evolveFilm.js` — the stitching pipeline
-A **deliberate copy** of the ZooSnooz pipeline, not a shared abstraction, so changing Evolve can
-never regress live ZooSnooz. **They do not inherit from each other — a fix here needs applying
-there separately.** Hard-won details, all of which cost real debugging time:
+See **Video & media pipeline** above — that section governs both ZooSnooz and Evolve and contains
+every rule worth knowing. In short: a deliberate copy of ZooSnooz's pipeline, portrait 720×1280 at
+2.5 Mbps, rAF-with-timer-watchdog draw loop, Screen Wake Lock held for the duration, and a
+low-framerate warning so silent picture loss can't happen unnoticed again.
 
-- **The draw loop must be rAF, with a timer watchdog.** rAF alone stops dead in a hidden tab or
-  when the screen sleeps, producing films with perfect audio and *no picture* — the cards survive
-  because they draw once synchronously and the canvas holds the image, but video needs continuous
-  redraws. A bare `setInterval` "fixes" that but drifts and bunches up, which looks choppy. The
-  current loop uses rAF when visible, a timer when hidden, plus a watchdog that restarts the loop
-  if no frame has been drawn in 400ms.
-- **A Screen Wake Lock is held for the whole stitch** for the same reason.
-- Any chapter drawing under ~5fps logs a warning naming the chapter — this used to fail silently.
-- `mr.start(500)` then an 80ms settle before the first frame, or the opening frames drop.
-- Each clip's guard timer is re-armed to the real duration once playback starts.
-- The `<video>` element is released after every clip (`removeAttribute('src'); load()`).
-- Canvas is **720×1280 portrait** at 2.5 Mbps.
+### Writing and filming steps
+- **Every chapter opens with a `writeLead`** in the Taronga face that the student completes —
+  *I'm leaving · I will · I wish I'd known · I learned · I want*. The lead is **saved with the
+  response**, so the film, exports and the Advice Wall read a whole sentence, not a fragment.
+  All five share one gold `.ev-write` panel that lights up when the response is valid.
+- **`reflectionPrompt` may be a string or an array.** As an array, the first item renders bold and
+  centred as the idea, and the rest as quieter paragraphs beneath. All five are arrays; they were
+  split only at existing sentence boundaries, which is why the counts vary (2 or 3 parts).
+- **`EVOLVE_MIN_WORDS` is 12**, down from 40 — these are reflections, not essays. The counter shows
+  `n / 12 words` while short and just `n words` once met, so a low floor doesn't read as the target
+  and invite everyone to stop at exactly twelve. `chapter.minWords` can override per chapter.
+- **The camera step leads with the personal ask, then `filmLink`** — "Then link it back to the lions
+  — no lion is raised by one animal." An earlier version put a scripted opening line *first*; it was
+  dropped because five students reciting the same sentence would be repetitive in a class screening.
+- **Filming is portrait** — see the Video & media pipeline section.
 
 ### Upload gating
 A student **cannot leave a chapter until its clip is fully in Storage** — the button reads
@@ -814,27 +990,46 @@ ZooSnooz badges: `/images/badge-{animalId}.png`
 
 ## Build & Deploy
 
+⚠️ **There are TWO live sites and they deploy by different mechanisms.** Getting this wrong has
+already caused a production bug that went unnoticed for two weeks.
+
+| Site | Host | Deploys when |
+|---|---|---|
+| **tarongatracka.com.au** | GitHub Pages | **automatically on every push to `main`** |
+| **tarongatracka.web.app** | Firebase Hosting | only when someone runs `firebase deploy --only hosting` |
+
+`.github/workflows/deploy.yml` builds and publishes to the `gh-pages` branch on every push to
+`main`; that branch carries a `CNAME` of `tarongatracka.com.au`. So **a push to main is a release**
+for the custom domain — same as Wildly.
+
+**The trap:** `.web.app` does not follow. The two drift apart, and code can be "pushed and live" on
+one domain while the other serves a build from weeks ago. That is exactly what happened with the
+staff portal Users tab — Firestore rules and the Cloud Function were deployed, the frontend fix was
+pushed to main (so `.com.au` had it), but `.web.app` was never redeployed and stayed broken.
+
+To tell which host a domain is actually on: `/__/firebase/init.js` returns **200 on Firebase
+Hosting** and **404 on GitHub Pages**.
+
 ```bash
-# Dev server
-npm run dev
+npm run dev                                    # dev server (usually :5173)
+npm run build                                  # production build into dist/
 
-# Production build
-npm run build
-
-# Deploy everything
-firebase deploy
-
-# Deploy only hosting (after build)
-npm run build && firebase deploy --only hosting
-
-# Deploy only functions
+npm run build && firebase deploy --only hosting # .web.app ONLY — .com.au updates itself from main
 firebase deploy --only functions
-
-# Deploy only Firestore rules
 firebase deploy --only firestore:rules
+firebase deploy --only storage                 # storage.rules — see the Storage rules section
+firebase deploy                                # everything
 ```
 
-The `dist/` folder is the hosting target. Always run `npm run build` before `firebase deploy --only hosting`.
+The `dist/` folder is the Firebase Hosting target. Always `npm run build` before
+`firebase deploy --only hosting`.
+
+**Verifying a deploy actually landed:** compare the asset hash in the served HTML against the local
+build — `curl -s https://<host>/ | grep -o '/assets/[^"]*\.js'` should match `ls dist/assets/*.js`.
+Grepping a 2.4MB bundle for a feature string only works from a file, not a shell variable.
+
+`.firebase/` is the deploy cache and is gitignored — it used to be tracked and dirtied the tree
+after every deploy.
 
 ---
 
