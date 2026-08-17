@@ -82,17 +82,18 @@ export default function CreateClassScreen() {
       const VENUES = { 'taronga-sydney':'Taronga Sydney', 'zoosnooz-sydney':'Taronga Sydney', 'evolve-sydney':'Taronga Sydney', 'dubbo':'Taronga Dubbo', 'school':'School' };
       const venue = VENUES[newLocation] || 'Taronga Zoo';
       const subject = isEvolve ? 'life-ready' : isZooYard ? 'science' : isZooSnooz ? null : newSubject;
+      const stage   = isEvolve ? 6 : newClassStage;
 
       await setDoc(doc(db, 'teachers', teacherEmail, 'classes', code), {
         classCode: code, className: newClassName.trim(), schoolName,
-        stage: newClassStage, accessCodeUsed: null,
+        stage, accessCodeUsed: null,
         venue, createdAt: serverTimestamp(), archived: false,
         sessionClosed: false, sessionDate, sessionType,
         location: newLocation, subject,
       });
       await setDoc(doc(db, 'classes', code), {
         classCode: code, className: newClassName.trim(), schoolName,
-        stage: newClassStage, teacherEmail, accessCodeUsed: null,
+        stage, teacherEmail, accessCodeUsed: null,
         venue, createdAt: serverTimestamp(), sessionClosed: false, sessionDate, sessionType,
         location: newLocation, subject,
       });
@@ -226,15 +227,21 @@ export default function CreateClassScreen() {
                 }
               </div>
 
-              <label style={{ display:'block', fontSize:'0.78rem', fontWeight:700, color:'var(--t-deep)', marginBottom:'0.3rem', textTransform:'uppercase', letterSpacing:'0.05em' }}>NSW Stage</label>
-              <select value={newClassStage} onChange={e => setNewClassStage(Number(e.target.value))} style={{ ...inputStyle, appearance:'auto', cursor:'pointer' }}
-                onFocus={e => e.target.style.borderColor='var(--t-mid)'} onBlur={e => e.target.style.borderColor='var(--t-stone)'}>
-                <option value={1}>Stage 1 (K–2)</option>
-                <option value={2}>Stage 2 (3–4)</option>
-                <option value={3}>Stage 3 (5–6)</option>
-                <option value={4}>Stage 4 (7–8)</option>
-                <option value={5}>Stage 5 (9–10)</option>
-              </select>
+              {/* Evolve is Stage 6 by definition, so it has no stage picker — and the list
+                  below only runs to Stage 5, so it could never have been set correctly. */}
+              {!isEvolve && (
+                <>
+                  <label style={{ display:'block', fontSize:'0.78rem', fontWeight:700, color:'var(--t-deep)', marginBottom:'0.3rem', textTransform:'uppercase', letterSpacing:'0.05em' }}>NSW Stage</label>
+                  <select value={newClassStage} onChange={e => setNewClassStage(Number(e.target.value))} style={{ ...inputStyle, appearance:'auto', cursor:'pointer' }}
+                    onFocus={e => e.target.style.borderColor='var(--t-mid)'} onBlur={e => e.target.style.borderColor='var(--t-stone)'}>
+                    <option value={1}>Stage 1 (K–2)</option>
+                    <option value={2}>Stage 2 (3–4)</option>
+                    <option value={3}>Stage 3 (5–6)</option>
+                    <option value={4}>Stage 4 (7–8)</option>
+                    <option value={5}>Stage 5 (9–10)</option>
+                  </select>
+                </>
+              )}
 
               <label style={{ display:'block', fontSize:'0.78rem', fontWeight:700, color:'var(--t-deep)', marginBottom:'0.3rem', textTransform:'uppercase', letterSpacing:'0.05em' }}>Class Name</label>
               <input type="text" value={newClassName} onChange={e => setNewClassName(e.target.value)} placeholder="e.g. 7A, Biology, Koala Crew"
