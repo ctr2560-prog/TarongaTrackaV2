@@ -16,22 +16,38 @@ region: `australia-southeast1`. ⚠️ See **Build & Deploy** — these two drif
 
 ---
 
-## Where we left off (2026-08-17)
+## Where we left off (2026-08-20)
 
 ### Deploy state
 - Everything is **pushed to `main`**, so **tarongatracka.com.au is current**.
 - **tarongatracka.web.app is behind** — last manual `firebase deploy --only hosting` was
-  2026-08-13. Run `npm run build && firebase deploy --only hosting` to resync. See Build & Deploy.
+  2026-08-13, so it is still serving the **broken stitcher**. Run
+  `npm run build && firebase deploy --only hosting` to resync. See Build & Deploy.
 - Firestore rules, Storage rules and Cloud Functions are all deployed and current.
+- **The Storage bucket's CORS policy is now set** and lives in `cors.json`. See the CORS rule in
+  Video & media pipeline. Reapply with:
+  `gcloud storage buckets update gs://tarongatracka.firebasestorage.app --cors-file=cors.json`
+  ⚠️ The `tarongatracka` project belongs to **thebiologybloke@gmail.com**, not ctr2560@gmail.com —
+  the latter cannot see the bucket at all and the command fails with a permissions error.
 
 ### Evolve — what is built
 Student flow is complete and verified end to end: opener → winding map → per chapter
 (insight → 60s watch → write → film) → upload gate → stitch → film → keepsake doc in
 `evolve_docs`. Teacher side has its own table plus landscape A4 pledge certificates.
 
+**Chapters are gated in order** (2026-08-20). A chapter needs the previous one completed *and*
+the student near the animal. Sequence is tested first, so a locked card reads
+"Finish Chapter Two first" rather than a distance to an animal they have no reason to walk to yet.
+Chapter one is exempt from the sequence half. `EvolveScreen.jsx`, in the `EVOLVE_STORY_ORDER` map.
+
 ### Evolve — what is NOT built
 1. **Advice Wall.** The giraffe chapter already writes to `evolveAdvice` with
    `status: 'pending'`, `cohortYear`, and no student name — but **nothing reads that collection**.
+   ⚠️ **The consent notice was removed from the giraffe write screen on 2026-08-20** at Cameron's
+   request. It was the only place a student was told their writing might be shown to others, so
+   the wall now takes writing from students who were never asked. Moderation still gates what
+   appears and it stays alias-attributed, but if consent is wanted back the cheap version is a
+   checkbox setting `consented: true` on the `evolveAdvice` doc so moderation can filter on it.
    Needs: staff moderation UI, and a standalone wall. Cameron wants it as its own page, on the
    teacher side and possibly Wildly's homepage. Because Wildly points at the same Firestore
    project, one collection can serve both with no API between them. This is the agreed next piece.
@@ -45,6 +61,8 @@ Student flow is complete and verified end to end: opener → winding map → per
 5. **Kangaroo GPS.** `latitude`/`longitude` are still `null` in `evolveAnimals.js`. It is now
    **chapter one**, so it is the first thing students hit, and it currently unlocks with no
    proximity check. Needs capturing on site at the Australian Walkabout. The photo exists.
+   ⚠️ This got worse when chapters became sequential — the one chapter with no GPS is now the
+   gate holding the entire walk open.
 
 ### Open decisions Cameron has parked
 - **Portrait vs landscape film.** Kept portrait: capture matches the film, students hold phones
@@ -326,9 +344,44 @@ supported everywhere — so the watchdog still matters.
 backgrounds the app mid-stitch gets a documentary with sound and no picture. Not yet fixed, on
 purpose, to keep the two independent.
 
-### 3. Every path carries `pathLength="1"`… (Evolve map only, see the Evolve section)
+### 3. Clips read back from Storage need CORS **and** `crossOrigin`
 
-### 4. Other details that cost time
+Learned 2026-08-20, and it cost an afternoon because it looks exactly like a stitcher bug.
+
+The bucket had **no CORS policy at all**. Uploading worked, so nothing looked wrong until a
+student resumed a session — in one sitting `clipURLs` holds local `blob:` object URLs, but on
+resume they are rehydrated as `https://firebasestorage.googleapis.com/…` download URLs
+(`EvolveScreen.jsx`, the resume effect vs. `onComplete` in `beginRecord`). That is when the two
+independent failures appear:
+
+- **Audio** — `fetch(clipURLs[c.id])` for the up-front `decodeAudioData` is blocked outright.
+- **Picture** — the `<video>` element loads fine without CORS, but `drawImage`ing it **taints the
+  canvas**, and `captureStream` then stops producing picture. **The `drawImage` is inside a
+  `try/catch`, so this fails completely silently.**
+
+The result is a film of chapter cards with nothing between them. It is not the rAF bug, and the
+low-fps warning misattributes it to a sleeping screen.
+
+Both halves are needed:
+
+1. `cors.json` in the repo root is the live policy. Apply with
+   `gcloud storage buckets update gs://tarongatracka.firebasestorage.app --cors-file=cors.json`
+   (project is owned by **thebiologybloke@gmail.com**). It lists `GET`/`HEAD` for localhost:5173,
+   localhost:4173 and the live domains, and exposes the range headers video seeking needs.
+   **A new origin — e.g. Wildly on its own domain — must be added here and the command re-run.**
+2. `videoEl.crossOrigin = 'anonymous'` **set before `src`**, in both `evolveFilm.js` and
+   `ZooSnoozScreen.jsx`. Order matters; after `src` it does nothing.
+
+⚠️ Setting `crossOrigin` **without** the bucket policy live is worse than the bug — clips then
+fail to load entirely. Deploy the CORS policy first.
+
+To check a URL directly:
+`curl -I -H "Origin: http://localhost:5173" "<clip url>" | grep -i access-control`
+No `access-control-allow-origin` in the response means the policy is not live.
+
+### 4. Every path carries `pathLength="1"`… (Evolve map only, see the Evolve section)
+
+### 5. Other details that cost time
 
 - `mr.start(500)` then an **80ms settle** before the first frame, or the opening frames drop.
 - Each clip's guard timer is **re-armed to the real duration** once playback actually starts
@@ -344,7 +397,7 @@ purpose, to keep the two independent.
 - A stitch takes **~45 seconds for five clips** on a desktop. Slower on a phone, and the screen
   must stay awake.
 
-### 5. How to debug it
+### 6. How to debug it
 
 `evolveFilm.js` logs a warning naming any chapter that **played but drew under ~5fps**:
 
@@ -355,7 +408,13 @@ purpose, to keep the two independent.
 Before that existed, this class of failure was completely silent. If a student reports a film with
 sound but no picture, that warning is the first thing to look for.
 
-### 6. ⚠️ Automated browser testing cannot validate this
+**But check the console for CORS errors first.** The warning blames a sleeping screen, which is
+only one cause — a blocked clip produces the same low frame count. `Access to fetch at
+'https://firebasestorage.googleapis.com/…' has been blocked by CORS policy` means it is section 3,
+not the draw loop. **No sound *and* no picture points at CORS; sound but no picture points at the
+draw loop.**
+
+### 7. ⚠️ Automated browser testing cannot validate this
 
 **A CDP/automation-driven tab reports `document.visibilityState === "hidden"`.** That means:
 
@@ -470,6 +529,12 @@ Triggered when student taps "Create Documentary" from the ZooSnooz collection sc
 
 **Correction (2026-08-12):** an earlier note here claimed the ZooYard `citizenScienceEvidence/` path "worked immediately in production with no manual Console rule change" and that the live rules were "broadly permissive". **That was never verified and is wrong.** A direct probe of every path found only `zoosnooz/` was writable; `citizenScienceEvidence/`, `zooyardHabitats/` and `evolve/` were all denied, and `citizenScienceSubmissions` had zero documents — so no student had ever completed the task to prove it. Never assume a new Storage path works; probe it.
 
+**Storage rules are only half of it (2026-08-20).** Rules govern *whether* a file can be read;
+**CORS governs whether the browser will hand the bytes to your JavaScript.** The `evolve/` path
+passed its rules probe and uploads worked, yet every clip was unreadable from every origin because
+the bucket had no CORS policy. Probe the read path from the app, not just the rule. See CORS in
+Video & media pipeline.
+
 ---
 
 ## ZooYard — Deep Reference
@@ -546,8 +611,8 @@ cosmetic, but it shows wrong in staff analytics.
 
 ### The five chapters (`src/data/evolveAnimals.js`)
 Each animal is a chapter in one narrative, and the metaphor is earned by the animal's real
-behaviour, not decoration. The arc is **directional, not chronological** — forward (what I am
-leaving), outward (what I owe), back down the path (advice to those still on it), home (who raised
+behaviour, not decoration. The arc is **directional, not chronological** — forward (what I carry
+with me), outward (what I owe), back down the path (advice to those still on it), home (who raised
 me), onward (where I go):
 
 | # | Animal | Chapter | Why |
@@ -555,8 +620,8 @@ me), onward (where I go):
 | 1 | Kangaroo | Forward only | Physically cannot hop backwards |
 | 2 | Koala | What I owe | Survival depends on human choices — **the pledge chapter** |
 | 3 | Giraffe | The long view | Other animals watch giraffes for early warning — **the Advice Wall chapter** |
-| 4 | Lion | Where I come from | Cubs are raised by the whole pride and learn by watching |
-| 5 | Tiger | The territory ahead | Leaves its mother at ~2 to claim its own ground |
+| 4 | Lion | Who I looked to | Cubs are raised by the whole pride and learn by watching |
+| 5 | Tiger | The territory ahead | Marks and re-walks its territory until the ground answers to it |
 
 The order follows the **walking route** through the zoo (~100m between each), not a timeline —
 a student cannot reorder a zoo. That makes the arc directional rather than chronological:
@@ -655,10 +720,15 @@ low-framerate warning so silent picture loss can't happen unnoticed again.
 - **`EVOLVE_MIN_WORDS` is 12**, down from 40 — these are reflections, not essays. The counter shows
   `n / 12 words` while short and just `n words` once met, so a low floor doesn't read as the target
   and invite everyone to stop at exactly twelve. `chapter.minWords` can override per chapter.
-- **The camera step leads with the personal ask, then `filmLink`** — "Then link it back to the lions
-  — no lion is raised by one animal." An earlier version put a scripted opening line *first*; it was
-  dropped because five students reciting the same sentence would be repetitive in a class screening.
+- **The camera step leads with the personal ask, then `filmLink`** — "Then link it back to the
+  lions: no lion is raised by one animal." An earlier version put a scripted opening line *first*;
+  it was dropped because five students reciting the same sentence would be repetitive in a class
+  screening.
 - **Filming is portrait** — see the Video & media pipeline section.
+- **The insight text is centred**, and **all student-facing Evolve copy avoids em dashes**
+  (2026-08-20, Cameron's house style). Colons, semicolons or full stops instead. This covers
+  `evolveAnimals.js`, `EvolveScreen.jsx`, the pledge sheet titles and the film's outro card in
+  `evolveFilm.js`. Code comments were left alone.
 
 ### Upload gating
 A student **cannot leave a chapter until its clip is fully in Storage** — the button reads
