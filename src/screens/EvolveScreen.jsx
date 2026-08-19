@@ -134,6 +134,72 @@ function Shell({ children, onHome, scroll = true }) {
         }
         .ev-skip:hover { color: rgba(243,237,226,0.7); }
 
+        /* ── Making your film ──
+           This screen is held for ~45s with nothing else to do, so it earns some care. The dial
+           is deliberately the SAME component as the 60-second watch screen, so the gesture that
+           meant "wait here, this is part of it" is already familiar by the time they reach it. */
+        .ev-make {
+          min-height: 100dvh; display: flex; flex-direction: column;
+          align-items: center; justify-content: center; text-align: center;
+          max-width: 440px; margin: 0 auto; padding: 2.5rem 1.25rem;
+        }
+        .ev-make-title { color: #F3EDE2; font-size: clamp(1.75rem, 7vw, 2.3rem); margin: 0 0 0.5rem; }
+        .ev-make-sub {
+          color: rgba(243,237,226,0.58); font-size: 0.92rem; line-height: 1.6;
+          margin: 0 0 2.2rem; text-wrap: pretty;
+        }
+        .ev-make .ev-dial { margin-bottom: 0.4rem; }
+        /* A slow breath behind the dial so a stalled percentage still feels alive. */
+        .ev-make-glow {
+          position: absolute; inset: -22%; border-radius: 50%; pointer-events: none;
+          background: radial-gradient(circle, rgba(232,179,60,0.20) 0%, rgba(232,179,60,0) 68%);
+          animation: evBreathe 3.4s ease-in-out infinite;
+        }
+        @keyframes evBreathe {
+          0%, 100% { opacity: 0.45; transform: scale(0.94); }
+          50%      { opacity: 1;    transform: scale(1.06); }
+        }
+        .ev-make-stage {
+          font-size: 0.6rem; font-weight: 800; letter-spacing: 0.22em; text-transform: uppercase;
+          color: rgba(232,179,60,0.8); margin: 0 0 1.9rem; min-height: 1em;
+        }
+
+        .ev-make-list { list-style: none; margin: 0; padding: 0; width: 100%; }
+        .ev-make-row {
+          display: flex; align-items: center; gap: 0.8rem; text-align: left;
+          padding: 0.5rem 0.8rem; border-radius: 10px;
+          transition: background 0.5s ease, opacity 0.5s ease;
+          opacity: 0.45;
+        }
+        .ev-make-tick {
+          flex: 0 0 19px; width: 19px; height: 19px; border-radius: 50%;
+          border: 1.5px solid rgba(243,237,226,0.25); color: transparent;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 0.6rem; font-weight: 800;
+          transition: border-color 0.4s, background 0.4s, color 0.4s;
+        }
+        .ev-make-name { font-size: 0.92rem; color: rgba(243,237,226,0.75); }
+        .ev-make-row.is-done { opacity: 1; }
+        .ev-make-row.is-done .ev-make-tick {
+          border-color: rgba(232,179,60,0.55); background: rgba(232,179,60,0.16); color: #E8B33C;
+        }
+        .ev-make-row.is-now { opacity: 1; background: rgba(232,179,60,0.09); }
+        .ev-make-row.is-now .ev-make-name { color: #F3EDE2; font-weight: 700; }
+        .ev-make-row.is-now .ev-make-tick {
+          border-color: #E8B33C; animation: evTickPulse 1.7s ease-in-out infinite;
+        }
+        @keyframes evTickPulse {
+          0%, 100% { box-shadow: 0 0 0 2px rgba(232,179,60,0.16); }
+          50%      { box-shadow: 0 0 0 8px rgba(232,179,60,0); }
+        }
+        .ev-make-foot {
+          margin: 2.1rem 0 0; font-size: 0.8rem; line-height: 1.6;
+          color: rgba(243,237,226,0.42); text-wrap: pretty;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .ev-make-glow, .ev-make-row.is-now .ev-make-tick { animation: none; }
+        }
+
         .ev-prompt { margin-bottom: 1.5rem; }
         .ev-prompt-lead {
           font-size: clamp(1.15rem, 4.2vw, 1.38rem); font-weight: 700; text-align: center;
@@ -362,6 +428,57 @@ function Shell({ children, onHome, scroll = true }) {
 // measuring, no fixed row heights. `non-scaling-stroke` keeps the line an even 2px while the
 // viewBox stretches vertically. Walked legs are solid gold; the way ahead is dashed, the way
 // a route is drawn on a paper map.
+// The ~45 seconds the film takes to stitch. Rather than a bare percentage, this names the chapter
+// currently being written into the film, so the wait reads as the story being assembled in front
+// of them. `stage` is buildEvolveFilm's chapter index: -1 titles, 0..n-1 a chapter, >= n the end.
+function BuildingFilm({ pct, stage, chapters }) {
+  const onTitles = stage < 0;
+  const onOutro = stage >= chapters.length;
+  const stageLabel = onTitles ? 'Opening titles'
+    : onOutro ? 'Finishing your film'
+    : `Chapter ${WORDS[stage] || stage + 1} of ${WORDS[chapters.length - 1]?.toLowerCase() || chapters.length}`;
+
+  return (
+    <div className="ev-make">
+      <div className="ev-eyebrow">Taronga Zoo Sydney · Twilight</div>
+      <h2 className="taronga-title ev-make-title">Making your film</h2>
+      <p className="ev-make-sub">
+        Your chapters are being written into one short film, in the order you walked them.
+      </p>
+
+      <div className="ev-dial">
+        <span className="ev-make-glow" aria-hidden="true" />
+        <svg viewBox="0 0 120 120" aria-hidden="true">
+          <circle cx="60" cy="60" r="54" className="ev-dial-track" />
+          <circle cx="60" cy="60" r="54" className="ev-dial-fill" pathLength="1"
+            style={{ strokeDashoffset: 1 - Math.min(Math.max(pct, 0), 100) / 100 }} />
+        </svg>
+        <div className="ev-dial-mid">
+          <span className="ev-dial-num">{pct}</span>
+          <span className="ev-dial-lbl">per cent</span>
+        </div>
+      </div>
+      <p className="ev-make-stage" role="status">{stageLabel}</p>
+
+      <ul className="ev-make-list">
+        {chapters.map((c, i) => {
+          const state = onOutro || i < stage ? 'is-done' : i === stage ? 'is-now' : '';
+          return (
+            <li key={c.id} className={`ev-make-row ${state}`}>
+              <span className="ev-make-tick" aria-hidden="true">✓</span>
+              <span className="ev-make-name">{c.chapter}</span>
+            </li>
+          );
+        })}
+      </ul>
+
+      <p className="ev-make-foot">
+        Keep this screen open and awake. It takes about a minute.
+      </p>
+    </div>
+  );
+}
+
 function Segment({ lit, side, first, last, draw, index = 0 }) {
   const bx = side === 'l' ? 16 : 84;
   const d = last
@@ -408,6 +525,9 @@ export default function EvolveScreen() {
 
   const [filmPhase, setFilmPhase] = useState('idle');      // idle | building | preview | submitting | sent
   const [filmPct, setFilmPct] = useState(0);
+  // Which chapter the stitcher is on: -1 title card, 0..n-1 a chapter, >= n the outro.
+  // buildEvolveFilm has always reported this as onProgress's second argument; nothing used it.
+  const [filmStage, setFilmStage] = useState(-1);
   const [filmURL, setFilmURL] = useState(null);
   const filmBlobRef = useRef(null);
 
@@ -418,6 +538,9 @@ export default function EvolveScreen() {
 
   const allDone = EVOLVE_CHAPTERS.every(c => done[c.id]);
   const filmedCount = EVOLVE_CHAPTERS.filter(c => clipURLs[c.id]).length;
+  // Must match buildEvolveFilm's own `clips` filter, in the same order, or the checklist on the
+  // stitch screen will point at the wrong chapter.
+  const filmChapters = EVOLVE_STORY_ORDER.filter(c => clipURLs[c.id]);
 
   // ── Resume (learned the hard way on ZooYard: never trust in-memory progress) ──
   useEffect(() => {
@@ -635,7 +758,7 @@ export default function EvolveScreen() {
 
   // ── Film ──
   const startFilm = useCallback(() => {
-    setFilmPhase('building'); setFilmPct(0); setFilmURL(null);
+    setFilmPhase('building'); setFilmPct(0); setFilmStage(-1); setFilmURL(null);
     setEvScreen('film');
   }, [setEvScreen]);
 
@@ -648,7 +771,7 @@ export default function EvolveScreen() {
         clipURLs,
         studentName,
         theme: T,
-        onProgress: pct => { if (!cancelled) setFilmPct(pct); },
+        onProgress: (pct, idx) => { if (!cancelled) { setFilmPct(pct); setFilmStage(idx); } },
         isCancelled: () => cancelled,
       });
       if (cancelled) return;
@@ -740,22 +863,18 @@ export default function EvolveScreen() {
 
   // ── Film screen ──
   if (evScreen === 'film') {
+    // The stitch screen centres itself in the viewport, so it sits outside the padded column
+    // the preview and sent states share.
+    if (filmPhase === 'building') {
+      return (
+        <Shell onHome={goHome}>
+          <BuildingFilm pct={filmPct} stage={filmStage} chapters={filmChapters} />
+        </Shell>
+      );
+    }
     return (
       <Shell onHome={goHome}>
         <div style={{ maxWidth:520, margin:'0 auto', padding:'3.5rem 1.25rem 3rem', textAlign:'center' }}>
-          {filmPhase === 'building' && (
-            <>
-              <h2 className="taronga-title" style={{ color:T.text, fontSize:'1.8rem', marginBottom:'0.5rem' }}>Making your film</h2>
-              <p style={{ color:T.textDim, fontSize:'0.9rem', lineHeight:1.6, marginBottom:'1.75rem' }}>
-                Stitching your chapters together in order. Keep this screen open.
-              </p>
-              <div style={{ height:8, background:'rgba(0,0,0,0.3)', borderRadius:4, overflow:'hidden', marginBottom:'0.6rem' }}>
-                <div style={{ height:'100%', width:`${filmPct}%`, background:T.accent, transition:'width 0.4s' }} />
-              </div>
-              <p style={{ color:T.accent, fontWeight:700 }}>{filmPct}%</p>
-            </>
-          )}
-
           {(filmPhase === 'preview' || filmPhase === 'submitting') && (
             <>
               <h2 className="taronga-title" style={{ color:T.text, fontSize:'1.8rem', marginBottom:'1rem' }}>Your film</h2>
