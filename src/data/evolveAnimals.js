@@ -9,7 +9,7 @@
 //
 // `order` follows the WALKING ROUTE through the zoo — kangaroo, koala, giraffe, lion, tiger,
 // roughly 100m between each — because a student cannot reorder a zoo. That makes the arc
-// DIRECTIONAL rather than chronological: forward (what I am leaving), outward (what I owe),
+// DIRECTIONAL rather than chronological: forward (what I carry with me), outward (what I owe),
 // back down the path (advice to those still on it), home (who raised me), onward (where I go).
 //
 // It also puts lion immediately before tiger, so the last two chapters run "no lion is raised
@@ -25,7 +25,7 @@ export const EVOLVE_CHAPTERS = [
   {
     id: 'lion',
     order: 4,
-    chapter: 'Where I come from',
+    chapter: 'Who I looked to',
     animalName: 'African Lion',
     scientificName: 'Panthera leo',
     image: '/images/lion.jpg',
@@ -40,15 +40,14 @@ export const EVOLVE_CHAPTERS = [
       'Watch the pride for a few minutes. Who is watching whom? Who is at the centre, and who is on the edge?',
     reflectionPrompt: [
       'School has been your pride.',
-      'Who taught you something you still carry — a teacher, a friend, a family member, someone who covered for you while you were learning?',
-      'Write about them, and about what they gave you.',
+      'Write about someone from school who shaped you: a teacher, a friend, a coach, someone who believed in you. Say what they did, and what it changed.',
     ],
     filmPrompt:
-      'Name one person from your schooling you want to thank, and say what they did.',
+      'Name one person from school who shaped you, and say what they did.',
     filmLink:
-      'Then link it back to the lions — no lion is raised by one animal.',
-    writeLead: 'I learned',
-    placeholder: 'from my Year 10 English teacher that…',
+      'Then link it back to the lions: no lion is raised by one animal.',
+    writeLead: 'I was shaped by',
+    placeholder: 'my Year 10 English teacher, who…',
   },
   {
     id: 'kangaroo',
@@ -64,22 +63,21 @@ export const EVOLVE_CHAPTERS = [
     mapPos: { x: 40.0, y: 55.0 },
     insight:
       'A kangaroo cannot hop backwards. Its tail and the shape of its legs make the movement physically ' +
-      'impossible. It is the reason usually given for putting one on the coat of arms — a country that ' +
-      'only moves forward.',
+      'impossible.',
     observePrompt:
       'Watch how they move. Notice that every correction, every change of direction, still happens going forward.',
     reflectionPrompt: [
-      'You are standing at the point where school stops.',
-      'Write honestly about where you are right now — what you are ready to leave behind, and what you are afraid of losing.',
+      'You are standing near the point where school stops.',
+      'Write about what you are taking with you: the people, the habits, the parts of you that school built.',
     ],
     filmPrompt:
-      'Finish this sentence — "The thing I am leaving behind is…"',
+      'Finish this sentence: "What I am taking with me is…"',
     // Said after the personal bit, so the spoken piece names the animal rather than relying on
     // the on-screen lower third alone.
     filmLink:
-      'Then link it back to the kangaroos — an animal built so that it can only ever go forward.',
-    writeLead: "I'm leaving",
-    placeholder: 'the people I see every day, the routine of…',
+      'Then link it back to the kangaroos: an animal built so that it can only ever go forward.',
+    writeLead: "I'm taking with me",
+    placeholder: 'the friends who…, the way I learned to…',
   },
   {
     id: 'tiger',
@@ -92,19 +90,20 @@ export const EVOLVE_CHAPTERS = [
     latitude: -33.8433, longitude: 151.2394, radius: 35,
     mapPos: { x: 91.3, y: 57.8 },
     insight:
-      'At around two years old a young tiger leaves its mother and walks out to find ground of its own. ' +
-      'It has never held territory before. It goes anyway.',
+      'A tiger is not given territory, it makes it. It walks the same lines over and over, marks the ' +
+      'edges, drags its claws down the same trees, until the place answers to it. Ground becomes yours ' +
+      'by being walked.',
     observePrompt:
-      'Watch how the tiger uses its space — the paths it repeats, the edges it checks. This is what holding ' +
-      'territory looks like.',
+      'Watch for the marking: a cheek rubbed along a post, claws down a trunk, the same corner checked ' +
+      'each time round. None of it is decoration.',
     reflectionPrompt: [
       'Next year is your territory and you have never held it before.',
-      'Write about what you want it to look like — not the job title, but the kind of life and the kind of person.',
+      'Write about what you want it to look like: not the job title, but the kind of life and the kind of person.',
     ],
     filmPrompt:
       'Say what you want to be true about your life in five years.',
     filmLink:
-      'Then link it back to the tiger — walking out at two to claim ground it has never held.',
+      'Then link it back to what you just watched: the same route walked again, the claw marks, the corner checked every time round. That is what claiming ground actually looks like.',
     writeLead: 'I want',
     placeholder: 'a life where…, work that…',
   },
@@ -120,18 +119,18 @@ export const EVOLVE_CHAPTERS = [
     mapPos: { x: 75.5, y: 63.4 },
     insight:
       'A giraffe sees danger long before anything else on the savannah does. Zebra, wildebeest and antelope ' +
-      'all watch the giraffes and move when they move. Height is not the point — being looked to is.',
+      'all watch the giraffes and move when they move. Height is not the point; being looked to is.',
     observePrompt:
       'Watch where the giraffes are looking. They are almost always watching something further away than you can see.',
     // This is the chapter that outlives the excursion: approved responses go to the Advice Wall.
     reflectionPrompt: [
       'You can see further down this road than a Year 7 can.',
-      'Write advice for a student just starting high school — something true, that you actually wish someone had told you.',
+      'Write advice for a student just starting high school: something true, that you actually wish someone had told you.',
     ],
     filmPrompt:
       'Give one piece of advice to a student starting Year 7.',
     filmLink:
-      'Then link it back to the giraffes — the ones everything else watches to see what is coming.',
+      'Then link it back to the giraffes: the ones everything else watches to see what is coming.',
     writeLead: "I wish I'd known",
     placeholder: 'that nobody is really watching, that…',
     isAdvice: true,
@@ -150,19 +149,19 @@ export const EVOLVE_CHAPTERS = [
       'Whether koalas are still here in fifty years is not up to koalas. It depends almost entirely on ' +
       'choices made by people who will be adults by then. That is you, from about next year.',
     observePrompt:
-      'Watch what this animal actually depends on — particular trees, particular leaves, particular country. ' +
+      'Watch what this animal actually depends on: particular trees, particular leaves, particular country. ' +
       'Almost none of it is up to the koala.',
     // Deliberately picks up the minute they just spent watching, then turns it on them.
     // An array renders as separate paragraphs, the first one large, bold and centred.
     reflectionPrompt: [
       'You just watched an animal whose survival is decided by people rather than by itself.',
       'Next year you become one of those people.',
-      'Finish the sentence with one thing you will actually do — small and real beats big and vague.',
+      'Finish the sentence with one thing you will actually do. Small and real beats big and vague.',
     ],
     filmPrompt:
       'Read your pledge out loud, starting with "I will…"',
     filmLink:
-      'Then link it back to the koalas — an animal whose future is decided by people, not by itself.',
+      'Then link it back to the koalas: an animal whose future is decided by people, not by itself.',
     placeholder: 'plant something, speak up when…, stop buying…',
     isPledge: true,
     writeLead: 'I will',

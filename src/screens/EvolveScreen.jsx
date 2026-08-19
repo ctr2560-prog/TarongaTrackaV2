@@ -15,7 +15,7 @@ const INTRO_KEY = 'evolveIntroSeen';
 // Shown once, before the first chapter. Stage 6 students should know what they have walked
 // into and why, without reading a briefing.
 const INTRO_STEPS = [
-  { n: '1', title: 'Walk',  body: 'Five animals, five chapters of one story. Each unlocks when you get there.' },
+  { n: '1', title: 'Walk',  body: 'Five animals, five chapters of one story. They open in order, as you reach each animal.' },
   { n: '2', title: 'Write', body: 'Watch for a minute, then write something honest. Nobody marks it.' },
   { n: '3', title: 'Film',  body: 'Say one line to camera. Thirty seconds, that is all.' },
 ];
@@ -93,7 +93,7 @@ function Shell({ children, onHome, scroll = true }) {
         .ev-hero img { width: 100%; height: 100%; object-fit: cover; display: block; }
         .ev-insight {
           font-size: clamp(1.15rem, 4.2vw, 1.42rem); line-height: 1.55; color: #F3EDE2;
-          margin: 0 0 2rem; text-wrap: pretty; letter-spacing: 0.005em;
+          margin: 0 0 2rem; text-wrap: pretty; letter-spacing: 0.005em; text-align: center;
         }
         .ev-insight-cta { width: 100%; text-align: center; margin-top: 0; }
 
@@ -712,7 +712,7 @@ export default function EvolveScreen() {
           <div className="ev-eyebrow">Taronga Zoo Sydney · Twilight</div>
           <h1 className="taronga-title ev-title">Evolve</h1>
           <p className="ev-intro-lede">
-            You are about to leave school. Tonight is a chance to put some of that down — where
+            You are about to leave school. Tonight is a chance to put some of that down: where
             you have come from, where you are going, and what you want to carry with you.
           </p>
 
@@ -729,7 +729,7 @@ export default function EvolveScreen() {
           </ol>
 
           <p className="ev-intro-foot">
-            Your five clips become one short film. No marks, no points — it is yours to keep.
+            Your five clips become one short film. No marks, no points. It is yours to keep.
           </p>
 
           <button className="ev-cta ev-intro-cta" onClick={dismissIntro}>Start the walk</button>
@@ -873,11 +873,6 @@ export default function EvolveScreen() {
                 ) : (
                   <p style={{ color:T.text, fontSize:'1rem', lineHeight:1.7, marginBottom:'1rem', fontWeight:600 }}>{chapter.reflectionPrompt}</p>
                 )}
-                {chapter.isAdvice && (
-                  <p style={{ color:T.accent, fontSize:'0.8rem', lineHeight:1.6, marginBottom:'0.9rem', background:T.accentSoft, border:`1px solid ${T.border}`, borderRadius:10, padding:'0.7rem 0.9rem' }}>
-                    If you're happy for it to be used, this one may be shown to younger students — as "Year 12", never with your name.
-                  </p>
-                )}
                 {/* Every chapter writes into the same panel, opening with its own short
                     first-person lead in the Taronga face that the student completes. */}
                 <div className={`ev-write${ready ? ' ev-write-on' : ''}`}>
@@ -924,7 +919,7 @@ export default function EvolveScreen() {
               </div>
               {camError && <p style={{ color:'#FCA5A5', fontSize:'0.85rem', marginBottom:'0.8rem' }}>{camError}</p>}
               <p style={{ color:T.textDim, fontSize:'0.78rem', lineHeight:1.5, marginBottom:'0.9rem' }}>
-                It's twilight — hold your torch up near your face so the camera can see you.
+                It's twilight, so hold your torch up near your face so the camera can see you.
               </p>
               <div style={{ display:'flex', gap:'0.6rem' }}>
                 {!recording ? (
@@ -1060,8 +1055,11 @@ export default function EvolveScreen() {
           {EVOLVE_STORY_ORDER.map((c, i) => {
             const complete = !!done[c.id];
             const near = c.latitude == null ? { nearby: true, distance: null } : checkAnimalProximity(c);
-            const locked = !complete && !near.nearby;
             const prevDone = i === 0 || !!done[EVOLVE_STORY_ORDER[i - 1].id];
+            // The story only reads in order, so a chapter needs the one before it finished as
+            // well as the student standing at the animal. Sequence is checked first because
+            // "walk to the lion" is useless advice to someone who hasn't done the koala yet.
+            const locked = !complete && (!prevDone || !near.nearby);
             const state = complete ? 'done' : locked ? 'locked' : 'open';
             return (
               <li key={c.id} className={`ev-stop ev-${state}`} style={{ animationDelay: `${0.06 * i}s` }}>
@@ -1076,6 +1074,7 @@ export default function EvolveScreen() {
                     <span className="taronga-title ev-name">{c.chapter}</span>
                     <span className="ev-meta">
                       {complete ? 'Written and filmed'
+                        : !prevDone ? `Finish Chapter ${WORDS[i - 1]} first`
                         : locked ? `Walk to the ${c.animalName.toLowerCase()}${near.distance != null ? ` · ${near.distance} m away` : ''}`
                         : c.animalName}
                     </span>

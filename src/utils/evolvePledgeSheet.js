@@ -60,7 +60,7 @@ export function openEvolvePledgeSheet(cls = {}, pledges = []) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${single ? 'Evolve Pledge — ' + esc(pledges[0].name) : 'Evolve Pledges — ' + (klass || school)}</title>
+<title>${single ? 'Evolve Pledge: ' + esc(pledges[0].name) : 'Evolve Pledges: ' + (klass || school)}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
 <style>
