@@ -816,6 +816,10 @@ export default function ZooSnoozScreen() {
 
           await new Promise(resolve => {
             const videoEl = document.createElement('video');
+            // crossOrigin MUST be set before src. Without it, drawing a remote clip into the
+            // canvas taints it and captureStream stops producing picture — the documentary comes
+            // out as cards only. Requires the CORS policy in cors.json to be live on the bucket.
+            videoEl.crossOrigin = 'anonymous';
             videoEl.src = videoSrc; videoEl.playsInline = true; videoEl.muted = true; videoEl.preload = 'auto';
             let rafId = null, abSrc = null, lastFrameTime = 0, started = false, done = false;
             let guard = setTimeout(finish, 20000);

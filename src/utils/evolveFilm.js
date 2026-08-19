@@ -270,6 +270,10 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
 
     await new Promise(resolve => {
       const videoEl = document.createElement('video');
+      // crossOrigin MUST be set before src. Without it, drawing a remote clip into the canvas
+      // taints it and captureStream stops producing picture — the film comes out as cards only.
+      // Requires the CORS policy in cors.json to be live on the bucket; see Build & Deploy.
+      videoEl.crossOrigin = 'anonymous';
       videoEl.src = src; videoEl.playsInline = true; videoEl.muted = true; videoEl.preload = 'auto';
       let rafId = null, nextId = null, watchdog = null, abSrc = null, started = false, done = false;
       let drawn = 0, startedAt = 0, lastDrawAt = 0;
@@ -401,7 +405,7 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
       drawLogoCircle(W / 2, outroLogoY, 240);
       ctx.textAlign = 'center';
       ctx.fillStyle = 'rgba(246,232,210,0.75)'; ctx.font = '400 32px "DM Sans", sans-serif';
-      ctx.fillText('Wherever you go next —', W / 2, outroLogoY + 180);
+      ctx.fillText('Wherever you go next,', W / 2, outroLogoY + 180);
       ctx.fillStyle = '#F6E8D2'; ctx.font = 'bold 60px "Taronga Headline", sans-serif';
       ctx.fillText('go forward.', W / 2, outroLogoY + 250);
       ctx.save(); ctx.strokeStyle = 'rgba(232,179,60,0.3)'; ctx.lineWidth = 2;
