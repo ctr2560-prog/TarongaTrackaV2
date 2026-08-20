@@ -8,6 +8,7 @@ import { ref as storageRef, getDownloadURL } from 'firebase/storage';
 import { useApp } from '../context/AppContext';
 import { ZOOSNOOZ_ANIMALS } from '../data/zoosnoozAnimals';
 import { ZOOYARD_ANIMALS } from '../data/zooyardAnimals';
+import { EVOLVE_STORY_ORDER } from '../data/evolveAnimals';
 import { SUBJ_META, STAGES, prePostDocId, IMAGE_LIBRARY } from '../data/subjectMeta';
 import { getCurrentQuestionTexts } from '../utils/helpers';
 import DeviceBookingCalendar, { DEVICE_CAPACITY } from '../components/DeviceBookingCalendar';
@@ -1506,6 +1507,294 @@ function ZooSnoozAdminTab({ classes }) {
   );
 }
 
+// ─── Tab: Evolve ──────────────────────────────────────────────────────────────
+// Deliberately mirrors ZooSnoozAdminTab rather than sharing with it: the two modes store their
+// clips under different shapes (`zoosnooz[animalId]` vs `evolve[chapterId]`) and Evolve has no
+// badges or NFC tags. Same reasoning as the two stitchers — a shared abstraction here would let
+// an Evolve change break the live ZooSnooz tab.
+const EV_GOLD = '#B07D17';   // darkened from the app's #E8B33C, which is illegible on white
+
+function EvolveAdminTab({ classes }) {
+  const [docs,       setDocs]       = useState([]);
+  const [loading,    setLoading]    = useState(true);
+  const [expandedId, setExpandedId] = useState(null);
+  const [urlCache,   setUrlCache]   = useState({});   // docId → { filmUrl, clipUrls }
+  const [busy,       setBusy]       = useState({});   // docId → bool
+  const [copied,     setCopied]     = useState(null);
+  const [saving,     setSaving]     = useState(null);
+
+  const fmtDate = (ts) => {
+    if (!ts) return '';
+    const d = ts instanceof Date ? ts : (ts.toDate?.() || new Date(ts));
+    return d.toLocaleDateString('en-AU', { day:'numeric', month:'short', year:'numeric' }) + ', ' +
+      d.toLocaleTimeString('en-AU', { hour:'2-digit', minute:'2-digit', hour12:true }).toLowerCase();
+  };
+
+  const loadList = async (includeAll = false) => {
+    setLoading(true);
+    const rows = [];
+    try {
+      const targets = includeAll ? classes : classes.filter(c => c.sessionType === 'evolve');
+      for (const cls of targets) {
+        const snap = await getDocs(collection(db, 'classes', cls.classCode, 'students'));
+        snap.docs.forEach(d => {
+          const sd = d.data();
+          const ev = sd.evolve;
+          if (!ev) return;
+
+          const clips = [];
+          let latestTs = null;
+          EVOLVE_STORY_ORDER.forEach(c => {
+            const e = ev[c.id];
+            if (!e?.completed) return;
+            const ts = e.timestamp?.toDate?.() || (e.timestamp ? new Date(e.timestamp) : null);
+            clips.push({ chapterId: c.id, chapter: c.chapter, animalName: c.animalName, clipURL: e.clipURL || null });
+            if (ts && (!latestTs || ts > latestTs)) latestTs = ts;
+          });
+
+          const filmURL = ev.filmURL || null;
+          if (!filmURL && !clips.length) return;
+
+          const completedAt = ev.completedAt?.toDate?.() || null;
+          rows.push({
+            docId: `${cls.classCode}_${d.id}`,
+            studentDocId: d.id,
+            // Evolve stores no real names — students are animal aliases, which is what the
+            // pledge certificates and the Advice Wall are attributed to as well.
+            name: sd.name || d.id,
+            classCode: cls.classCode,
+            clips,
+            filmURL,
+            complete: !!ev.sessionCompleted,
+            latestTs: completedAt || latestTs,
+          });
+        });
+      }
+      rows.sort((a, b) => (b.latestTs || 0) - (a.latestTs || 0));
+      setDocs(rows);
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
+  };
+
+  useEffect(() => { loadList(); }, [classes]);
+
+  // Firestore holds the download URL for anything already submitted. Storage is only probed as a
+  // fallback, for a student who filmed and stitched but never hit "Keep this film".
+  const ensureUrls = async (entry) => {
+    if (urlCache[entry.docId]) return urlCache[entry.docId];
+    setBusy(prev => ({ ...prev, [entry.docId]: true }));
+    const base = `evolve/${entry.classCode}/${entry.studentDocId}`;
+    let filmUrl = entry.filmURL || null;
+    if (!filmUrl) {
+      // Chrome records webm, Safari/iOS mp4.
+      try { filmUrl = await getDownloadURL(storageRef(storage, `${base}/film.webm`)); } catch { /* try mp4 */ }
+      if (!filmUrl) { try { filmUrl = await getDownloadURL(storageRef(storage, `${base}/film.mp4`)); } catch { /* none */ } }
+    }
+    const clipUrls = {};
+    await Promise.all(entry.clips.map(async clip => {
+      if (clip.clipURL) { clipUrls[clip.chapterId] = clip.clipURL; return; }
+      try { clipUrls[clip.chapterId] = await getDownloadURL(storageRef(storage, `${base}/${clip.chapterId}.webm`)); } catch { /* try mp4 */ }
+      if (!clipUrls[clip.chapterId]) {
+        try { clipUrls[clip.chapterId] = await getDownloadURL(storageRef(storage, `${base}/${clip.chapterId}.mp4`)); } catch { /* none */ }
+      }
+    }));
+    const result = { filmUrl, clipUrls };
+    setUrlCache(prev => ({ ...prev, [entry.docId]: result }));
+    setBusy(prev => ({ ...prev, [entry.docId]: false }));
+    return result;
+  };
+
+  const handleWatch = async (entry) => {
+    const { filmUrl } = await ensureUrls(entry);
+    if (filmUrl) window.open(filmUrl, '_blank', 'noopener');
+    else window.alert('No film file in Storage for this student yet.');
+  };
+
+  const handleCopy = async (entry) => {
+    const { filmUrl } = await ensureUrls(entry);
+    if (!filmUrl) { window.alert('No film file in Storage for this student yet.'); return; }
+    copyText(filmUrl, entry.docId);
+  };
+
+  const copyText = (url, key) => {
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(key);
+      setTimeout(() => setCopied(null), 2000);
+    }).catch(() => window.prompt('Copy this URL:', url));
+  };
+
+  // A plain <a download> is ignored cross-origin — the browser navigates to the file instead of
+  // saving it. Fetching to a blob forces a real download, and works because the bucket now has a
+  // CORS policy (see cors.json). Falls back to opening the file if the fetch is blocked.
+  const download = async (url, filename, key) => {
+    if (!url) return;
+    setSaving(key);
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      const obj = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = obj; a.download = filename;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(obj), 10000);
+    } catch (e) {
+      console.warn('[evolve] download failed, opening instead:', e);
+      window.open(url, '_blank', 'noopener');
+    } finally { setSaving(null); }
+  };
+
+  const safeName = (s) => String(s).replace(/[^\w-]+/g, '-').replace(/^-|-$/g, '');
+  const fileFor = (url, entry, suffix) => {
+    const ext = /\.mp4/i.test(url || '') ? 'mp4' : 'webm';
+    return `evolve-${safeName(entry.classCode)}-${safeName(entry.name)}${suffix}.${ext}`;
+  };
+
+  const handleExpand = (entry) => {
+    const next = expandedId === entry.docId ? null : entry.docId;
+    setExpandedId(next);
+    if (next) ensureUrls(entry);
+  };
+
+  const btn = { padding:'0.38rem 0.75rem', borderRadius:'var(--t-r-pill)', border:'1px solid var(--t-stone)', background:'white', fontSize:'0.75rem', fontWeight:600, cursor:'pointer', color:'var(--t-deep)', whiteSpace:'nowrap' };
+
+  return (
+    <div>
+      <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:'1.25rem', gap:'1rem', flexWrap:'wrap' }}>
+        <div>
+          <h2 style={{ fontSize:'1.3rem', fontWeight:800, color:'var(--t-deep)', margin:'0 0 0.2rem' }}>✦ Evolve Films</h2>
+          <p style={{ fontSize:'0.82rem', color:'var(--t-slate)', margin:0 }}>
+            Watch, download or copy a link to any student&apos;s film. Students are listed by their animal alias — Evolve stores no real names.
+          </p>
+        </div>
+        <div style={{ display:'flex', gap:'0.45rem' }}>
+          <button onClick={() => loadList(false)} style={btn}>↻ Refresh</button>
+          <button onClick={() => loadList(true)}  style={{ ...btn, color:'var(--t-slate)' }}>⟳ Scan all classes</button>
+        </div>
+      </div>
+
+      {loading && (
+        <div style={{ textAlign:'center', padding:'3rem', color:'var(--t-slate)', fontSize:'0.85rem' }}>
+          <div style={{ width:28, height:28, border:'3px solid var(--t-stone)', borderTop:`3px solid ${EV_GOLD}`, borderRadius:'50%', animation:'spin 0.8s linear infinite', margin:'0 auto 0.75rem' }} />
+          Loading films…
+        </div>
+      )}
+
+      {!loading && docs.length === 0 && (
+        <div style={{ textAlign:'center', padding:'3rem', color:'var(--t-ash)' }}>
+          <div style={{ fontSize:'2.5rem', marginBottom:'0.75rem' }}>✦</div>
+          <p style={{ margin:0, fontSize:'0.9rem' }}>No Evolve films yet.</p>
+          <p style={{ margin:'0.4rem 0 0', fontSize:'0.78rem', color:'var(--t-slate)' }}>Try &quot;Scan all classes&quot; to look beyond classes marked as Evolve.</p>
+        </div>
+      )}
+
+      {!loading && docs.length > 0 && (
+        <div style={{ display:'flex', flexDirection:'column', gap:'0.6rem' }}>
+          {docs.map(entry => {
+            const cached = urlCache[entry.docId];
+            const isBusy = busy[entry.docId];
+            return (
+              <div key={entry.docId} style={{ background:'white', border:'1px solid var(--t-stone)', borderRadius:'var(--t-r-md)', padding:'1rem 1.25rem', boxShadow:'var(--t-shadow-sm)' }}>
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'0.75rem', flexWrap:'wrap' }}>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:'0.45rem', marginBottom:'0.3rem', flexWrap:'wrap' }}>
+                      <span style={{ fontWeight:700, color:'#4B3F8C', fontSize:'0.95rem' }}>{entry.name}</span>
+                      <span style={{ background:'#F0FFF4', border:'1px solid #BBF7D0', color:'#166534', fontSize:'0.67rem', fontWeight:700, padding:'0.12rem 0.5rem', borderRadius:999 }}>{entry.classCode}</span>
+                      {entry.complete
+                        ? <span style={{ background:'#FEF6E0', border:`1px solid ${EV_GOLD}44`, color:EV_GOLD, fontSize:'0.67rem', fontWeight:700, padding:'0.12rem 0.5rem', borderRadius:999 }}>✦ Film kept</span>
+                        : <span style={{ background:'#F9FAFB', border:'1px solid #E5E7EB', color:'#6B7280', fontSize:'0.67rem', fontWeight:600, padding:'0.12rem 0.5rem', borderRadius:999 }}>In progress</span>}
+                    </div>
+                    <div style={{ fontSize:'0.74rem', color:'var(--t-slate)' }}>
+                      {entry.latestTs ? fmtDate(entry.latestTs) + ' · ' : ''}
+                      {entry.clips.length}/{EVOLVE_STORY_ORDER.length} chapters
+                    </div>
+                  </div>
+                  <div style={{ display:'flex', gap:'0.4rem', flexShrink:0, flexWrap:'wrap' }}>
+                    <button onClick={() => handleExpand(entry)} style={btn}>
+                      ▶ Chapters ({entry.clips.length})
+                    </button>
+                    <button onClick={() => handleWatch(entry)} disabled={isBusy}
+                      style={{ ...btn, cursor: isBusy ? 'not-allowed' : 'pointer', opacity: isBusy ? 0.6 : 1 }}>
+                      {isBusy ? '…' : 'Watch'}
+                    </button>
+                    <button onClick={async () => { const { filmUrl } = await ensureUrls(entry); filmUrl ? download(filmUrl, fileFor(filmUrl, entry, '-film'), entry.docId) : window.alert('No film file in Storage for this student yet.'); }}
+                      disabled={isBusy || saving === entry.docId}
+                      style={{ ...btn, cursor: (isBusy || saving === entry.docId) ? 'not-allowed' : 'pointer', opacity: (isBusy || saving === entry.docId) ? 0.6 : 1 }}>
+                      {saving === entry.docId ? 'Saving…' : '↓ Download'}
+                    </button>
+                    <button onClick={() => handleCopy(entry)} disabled={isBusy}
+                      style={{ padding:'0.38rem 0.85rem', borderRadius:'var(--t-r-pill)', border:'none', background: copied === entry.docId ? '#22C55E' : EV_GOLD, color:'white', fontSize:'0.75rem', fontWeight:700, cursor: isBusy ? 'not-allowed' : 'pointer', whiteSpace:'nowrap', transition:'background 0.2s', opacity: isBusy ? 0.6 : 1 }}>
+                      {isBusy ? '…' : copied === entry.docId ? '✓ Copied!' : 'Copy URL'}
+                    </button>
+                  </div>
+                </div>
+
+                {expandedId === entry.docId && (
+                  <div style={{ marginTop:'0.85rem', paddingTop:'0.85rem', borderTop:'1px solid var(--t-stone)', display:'flex', flexDirection:'column', gap:'0.45rem' }}>
+                    {isBusy && <div style={{ fontSize:'0.78rem', color:'var(--t-slate)' }}>Loading Storage URLs…</div>}
+
+                    {/* The stitched film */}
+                    <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', background:'rgba(176,125,23,0.08)', border:'1px solid rgba(176,125,23,0.22)', borderRadius:'var(--t-r-sm)', padding:'0.55rem 0.85rem' }}>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontWeight:700, fontSize:'0.8rem', color:EV_GOLD, marginBottom:'0.12rem' }}>✦ The film (all five chapters)</div>
+                        <div style={{ fontFamily:'monospace', fontSize:'0.68rem', color:'var(--t-slate)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                          {cached?.filmUrl || (isBusy ? '…' : 'No file in Storage yet')}
+                        </div>
+                      </div>
+                      {cached?.filmUrl && (
+                        <>
+                          <button onClick={() => download(cached.filmUrl, fileFor(cached.filmUrl, entry, '-film'), `${entry.docId}_film_dl`)}
+                            style={{ ...btn, flexShrink:0, padding:'0.3rem 0.7rem', fontSize:'0.7rem' }}>
+                            {saving === `${entry.docId}_film_dl` ? '…' : '↓'}
+                          </button>
+                          <button onClick={() => copyText(cached.filmUrl, `${entry.docId}_film`)}
+                            style={{ flexShrink:0, padding:'0.3rem 0.7rem', borderRadius:'var(--t-r-pill)', border:'none', background: copied === `${entry.docId}_film` ? '#22C55E' : EV_GOLD, color:'white', fontSize:'0.7rem', fontWeight:700, cursor:'pointer' }}>
+                            {copied === `${entry.docId}_film` ? '✓' : 'Copy'}
+                          </button>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Per-chapter clips, in story order */}
+                    {entry.clips.map(clip => {
+                      const key = `${entry.docId}_${clip.chapterId}`;
+                      const url = cached?.clipUrls?.[clip.chapterId];
+                      return (
+                        <div key={clip.chapterId} style={{ display:'flex', alignItems:'center', gap:'0.75rem', background:'var(--t-chalk)', borderRadius:'var(--t-r-sm)', padding:'0.55rem 0.85rem' }}>
+                          <div style={{ flex:1, minWidth:0 }}>
+                            <div style={{ fontWeight:600, fontSize:'0.8rem', color:'var(--t-deep)', marginBottom:'0.12rem' }}>
+                              {clip.chapter} <span style={{ fontWeight:400, color:'var(--t-slate)' }}>· {clip.animalName}</span>
+                            </div>
+                            <div style={{ fontFamily:'monospace', fontSize:'0.68rem', color:'var(--t-slate)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                              {url || (isBusy ? '…' : 'No clip in Storage yet')}
+                            </div>
+                          </div>
+                          {url && (
+                            <>
+                              <button onClick={() => download(url, fileFor(url, entry, `-${clip.chapterId}`), `${key}_dl`)}
+                                style={{ ...btn, flexShrink:0, padding:'0.3rem 0.7rem', fontSize:'0.7rem' }}>
+                                {saving === `${key}_dl` ? '…' : '↓'}
+                              </button>
+                              <button onClick={() => copyText(url, key)}
+                                style={{ flexShrink:0, padding:'0.3rem 0.7rem', borderRadius:'var(--t-r-pill)', border:'none', background: copied === key ? '#22C55E' : EV_GOLD, color:'white', fontSize:'0.7rem', fontWeight:700, cursor:'pointer' }}>
+                                {copied === key ? '✓' : 'Copy'}
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Tab: ZooYard ─────────────────────────────────────────────────────────────
 function ZooYardAdminTab({ classes }) {
   const zyClasses = classes.filter(c => c.sessionType === 'zooyard');
@@ -2747,8 +3036,8 @@ export default function AdminDashboardScreen() {
     finally { setCreatingNight(false); }
   };
 
-  const tabs = ['overview', 'analytics', 'zoosnooz', 'zooyard', 'review', 'prePost', 'challenges', 'bookings', 'users', 'controlRoom'];
-  const tabLabels = { overview:'Overview', analytics:'Analytics', zoosnooz:'🌙 ZooSnooz', zooyard:'🌳 ZooYard', review:'Review', prePost:'Pre/Post Lessons', challenges:'Challenges', bookings:'Bookings', users:'Users', controlRoom:'🔒 Control Room' };
+  const tabs = ['overview', 'analytics', 'zoosnooz', 'evolve', 'zooyard', 'review', 'prePost', 'challenges', 'bookings', 'users', 'controlRoom'];
+  const tabLabels = { overview:'Overview', analytics:'Analytics', zoosnooz:'🌙 ZooSnooz', evolve:'✦ Evolve', zooyard:'🌳 ZooYard', review:'Review', prePost:'Pre/Post Lessons', challenges:'Challenges', bookings:'Bookings', users:'Users', controlRoom:'🔒 Control Room' };
 
   return (
     <div style={{ position:'fixed', inset:0, background:'var(--t-canvas)', display:'flex', flexDirection:'column' }}>
@@ -2805,6 +3094,7 @@ export default function AdminDashboardScreen() {
           {tab === 'overview'    && <OverviewTab classes={classes} loading={loading} onClassClick={code=>{setSelectedAdminClass(code);setCurrentScreen('adminClassView');}} />}
           {tab === 'analytics'   && <AnalyticsTab classes={classes} />}
           {tab === 'zoosnooz'    && <ZooSnoozAdminTab classes={classes} />}
+          {tab === 'evolve'      && <EvolveAdminTab classes={classes} />}
           {tab === 'zooyard'     && <ZooYardAdminTab classes={classes} />}
           {tab === 'review'      && <ReviewTab classes={classes} />}
           {tab === 'prePost'     && <PrePostLinksTab />}
