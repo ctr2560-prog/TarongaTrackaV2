@@ -824,14 +824,38 @@ so dismissing the souvenir hands the URL back to the normal sync.
 **Any future work touching that effect must preserve this.** Test by opening a souvenir link and
 **reloading the page**, not just by looking at it.
 
-### Writing tags from the app — considered, not built
+### Writing tags from the app — parked until devices are on hand (2026-08-20)
 
-Web NFC (`NDEFReader.write()`) could write a tag straight from the staff portal. **Chrome on
-Android only** — iOS has no Web NFC and Apple restricts tag writing to native apps via Core NFC,
-which is why NFC Tools exists as an app. So it depends entirely on the device fleet, and DoE
-devices should be tested rather than assumed (they already block geolocation, which is why ZooYard
-exists). Feature-detect and keep Copy as the fallback. Now a much smaller job, since the link is
-short and stable. `makeReadOnly()` could lock a tag permanently — would need a confirm.
+Today the workflow is: copy the souvenir link from the staff portal, paste into **NFC Tools**,
+write the tag. Web NFC (`NDEFReader.write()`) could remove that middle step and write the tag
+straight from the portal. **Parked, not rejected** — Cameron wants to test on the real devices
+first. Now a small job, because the link is already short and stable.
+
+**The devices will be Oppo phones**, i.e. Android, so this is possible in principle. iOS is a hard
+no and always will be: Safari has no Web NFC, and Apple restricts tag writing to native apps via
+Core NFC, which is why NFC Tools exists as an app at all.
+
+Three things must be true, only one of which is genuinely unknown:
+
+1. **The phone has NFC hardware.** The real unknown. Many budget Oppo **A-series** models omit NFC
+   entirely; **Reno** and **Find** series generally have it, and it can vary by region for the same
+   model number. **If those phones already write tags with NFC Tools, this is settled** — the
+   hardware is there.
+2. **Staff use Chrome.** Web NFC is Chrome-for-Android only. Oppo's built-in browser is
+   Chromium-based but does not reliably ship the API; Firefox for Android does not support it.
+3. **Android 8+.** Any Oppo in service passes this.
+
+Do not assume a school-managed device will allow it — DoE devices already block geolocation, which
+is the entire reason ZooYard exists.
+
+**Start here when the devices arrive:** add a feature-detect line to the Evolve tab
+(`'NDEFReader' in window`) reading "Tap-to-write available on this device" or "Not available — use
+Copy link and NFC Tools". Opening the portal on one Oppo then answers the question in seconds, and
+it is worth keeping permanently so staff are not hunting for a button that cannot appear on their
+device.
+
+Then: feature-detected write button, Copy link staying as the fallback. `makeReadOnly()` can lock a
+tag so a student cannot overwrite their own — permanent, so it would need a confirm.
 
 ### Advice Wall (`evolveAdvice`) — data only, no UI yet
 The giraffe chapter's reflection is also written to `evolveAdvice` with
