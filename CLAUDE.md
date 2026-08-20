@@ -35,6 +35,11 @@ Student flow is complete and verified end to end: opener → winding map → per
 (insight → 60s watch → write → film) → upload gate → stitch → film → keepsake doc in
 `evolve_docs`. Teacher side has its own table plus landscape A4 pledge certificates.
 
+**Staff portal has two Evolve tabs** (2026-08-20): **✦ Evolve** (per student: watch, download and
+copy the film, plus every chapter clip, plus the souvenir link) and **🖨 Pledges** (per class:
+read the koala pledges, print all certificates or just one). Both are deliberate copies of
+`ZooSnoozAdminTab`'s shape rather than shared components — see the comment on `EvolveAdminTab`.
+
 **Chapters are gated in order** (2026-08-20). A chapter needs the previous one completed *and*
 the student near the animal. Sequence is tested first, so a locked card reads
 "Finish Chapter Two first" rather than a distance to an animal they have no reason to walk to yet.
@@ -55,9 +60,8 @@ Chapter one is exempt from the sequence half. `EvolveScreen.jsx`, in the `EVOLVE
    knows about `sessionType: 'evolve'` yet (the Analytics tab's view filters and aggregations have
    no Evolve branch).
 3. **Class export** of the writing, for a school's own reflection ceremony.
-4. **Souvenir URL route.** `evolve_docs/{classCode}_{studentId}` is written on submit but nothing
-   serves it — `DocumentaryViewer` only handles the `zzv_` prefix. This is the hook for Cameron's
-   long-term "alumni returns to the zoo years later" idea, so keep the doc being written.
+4. ~~**Souvenir URL route.**~~ **BUILT 2026-08-20** — see "Souvenir route" in the Evolve deep
+   reference. `?doc=ev_{classCode}_{studentId}_{token}` resolves through `evolve_docs`.
 5. **Kangaroo GPS.** `latitude`/`longitude` are still `null` in `evolveAnimals.js`. It is now
    **chapter one**, so it is the first thing students hit, and it currently unlocks with no
    proximity check. Needs capturing on site at the Australian Walkabout. The photo exists.
@@ -508,6 +512,11 @@ Triggered when student taps "Create Documentary" from the ZooSnooz collection sc
 - That URL is caught by the SPA rewrite → `DocumentaryViewer.jsx` reads the `docViewCode` from AppContext, parses the `zzv_` prefix, fetches the student's Firestore doc, and renders a souvenir card (animal photo, observation, badge, scores, conservation fact)
 - `docViewCode` is set in AppContext and triggers `DocumentaryViewer` to render in place of the normal screen
 
+⚠️ **ZooSnooz tags hold a raw Storage URL, which Evolve deliberately moved away from** — see
+"Souvenir route" in the Evolve reference for why (tag capacity, and the tag dying if the file is
+ever re-uploaded). ZooSnooz has not been migrated. If its tags are ever rewritten, use the same
+token-and-lookup approach.
+
 ### Firebase Storage rules
 
 **`storage.rules` now exists in the repo** (added 2026-08-12) and is wired into `firebase.json` under the `"storage"` key. Deploy with `firebase deploy --only storage`.
@@ -746,6 +755,15 @@ back — there is nothing numeric to report.
   Showing only the pledge would leave the other four pieces of writing unreachable.
 - **Film → Watch** plays the stitched film in a portrait player, with an open-in-new-tab link.
 
+### The stitch screen (`BuildingFilm` in `EvolveScreen.jsx`)
+The film takes ~45s to build. The screen is centred in the viewport and reuses the **same dial as
+the 60-second watch screen** — by then a student has watched that circle fill five times and it
+already means "wait here, this is part of it". `buildEvolveFilm` has always passed a chapter index
+as `onProgress`'s second argument; it now lights the five chapter titles one at a time from it.
+`filmChapters` must match the stitcher's internal `clips` filter or the checklist names the wrong
+chapter. The glow breathes because the percentage sits still for seconds at a time while a clip
+plays through in real time, and a frozen number reads as a crashed app.
+
 ### Pledge certificates (`src/utils/evolvePledgeSheet.js`)
 `openEvolvePledgeSheet(cls, pledges)` builds a self-contained HTML document, opens it in a new
 tab from a blob URL, and lets the teacher print it or save it as a PDF — the same pattern as
@@ -758,6 +776,62 @@ school printers make a mess of it, and browsers strip backgrounds by default. Th
 element is the seal, because the Taronga logo is a white lockup that vanishes on cream.
 
 Students are attributed by their **animal alias** — Evolve stores no real names.
+
+### Souvenir route — the NFC link (built 2026-08-20)
+
+`?doc=ev_{classCode}_{studentId}_{token}` → `DocumentaryViewer.jsx`, which reads
+`evolve_docs/{classCode}_{studentId}` and renders the student's film plus all five reflections in
+Evolve's twilight palette. About **58 characters**.
+
+**Why not just put the Storage URL on the tag** (the way ZooSnooz tags do):
+
+1. A Firebase download URL is **~200 characters and does not fit an NTAG213** (144 bytes), the
+   cheap sticker most people buy. NTAG215/216 fit. This alone may explain past failed writes.
+2. It is **frozen to one file and one access token**. Re-stitch the film, move it, or revoke the
+   token and every tag already handed out is dead. The souvenir link resolves through Firestore,
+   so the tag survives the file underneath changing.
+3. It drops the visitor into a raw video file rather than a page Taronga controls.
+
+**The token is what makes shortening safe.** Without it the URL is trivially guessable — six
+character class codes and aliases from a short list — so anyone holding one tag could walk a whole
+cohort's films and reflections. 8 base36 chars (~41 bits) from `crypto.getRandomValues`, generated
+in `EvolveScreen.jsx`'s `submitFilm`. **Re-submitting reuses the existing token** so tags already
+written stay valid, and the viewer **refuses a doc with no token at all**.
+
+`parseDocCode` takes the class code from the **left** and the token from the **right**, because
+`safeStudentId` only strips `\ / # . $ [ ]` — it leaves underscores and spaces, so a "Sugar_Glider"
+alias would break a naive `split('_')`.
+
+`SOUVENIR_HOST` in `EvolveAdminTab` is **hard-coded to `https://tarongatracka.com.au`**, not
+`window.location.origin`. Staff browsing the portal from localhost would otherwise copy a localhost
+link onto a physical tag handed to a student — unfixable afterwards. If the domain ever moves, that
+line moves with it, and tags already written keep pointing at the old address regardless.
+
+Existing docs were backfilled by `zz-evolve-tokens.mjs` (untracked, repo root). It skips docs that
+already have a token, so it is safe to re-run and never invalidates a written tag.
+
+### ⚠️ The URL sync will strip `?doc=` if you let it
+
+`AppContext.jsx`'s screen-sync effect writes `screenToPath(currentScreen)` — a **bare path with no
+query string**. Without a guard it rewrites `/?doc=ev_…` to `/map` on first render. **The page still
+renders**, because `docViewCode` is already in memory, so this looks completely fine and is not: a
+reload, bookmark, back button or shared link then lands on "Code not found".
+
+For an NFC tag that is the entire point lost — a student taps it, and taps it again a year later.
+The effect now returns early while `docViewCode` is set, with `docViewCode` in its dependency array
+so dismissing the souvenir hands the URL back to the normal sync.
+
+**Any future work touching that effect must preserve this.** Test by opening a souvenir link and
+**reloading the page**, not just by looking at it.
+
+### Writing tags from the app — considered, not built
+
+Web NFC (`NDEFReader.write()`) could write a tag straight from the staff portal. **Chrome on
+Android only** — iOS has no Web NFC and Apple restricts tag writing to native apps via Core NFC,
+which is why NFC Tools exists as an app. So it depends entirely on the device fleet, and DoE
+devices should be tested rather than assumed (they already block geolocation, which is why ZooYard
+exists). Feature-detect and keep Copy as the fallback. Now a much smaller job, since the link is
+short and stable. `makeReadOnly()` could lock a tag permanently — would need a confirm.
 
 ### Advice Wall (`evolveAdvice`) — data only, no UI yet
 The giraffe chapter's reflection is also written to `evolveAdvice` with
@@ -1097,6 +1171,33 @@ The `dist/` folder is the Firebase Hosting target. Always `npm run build` before
 **Verifying a deploy actually landed:** compare the asset hash in the served HTML against the local
 build — `curl -s https://<host>/ | grep -o '/assets/[^"]*\.js'` should match `ls dist/assets/*.js`.
 Grepping a 2.4MB bundle for a feature string only works from a file, not a shell variable.
+
+### ⚠️ Testing straight after a push tests the OLD build (2026-08-20)
+
+GitHub Pages serves `index.html` with **`cache-control: max-age=600`**, and that header cannot be
+changed on Pages. For **ten minutes** after a push, a browser that has visited the site keeps
+loading the previous app from disk — the deploy is live, `curl` proves the new hash is being
+served, and the browser still runs the old bundle. This burned most of an hour: a fix was pushed,
+verified as deployed, and still appeared broken.
+
+Symptoms of stale HTML rather than a real bug:
+
+- The behaviour matches the *previous* version exactly, not a random failure
+- `curl -s https://tarongatracka.com.au/ | grep -oE 'index-[A-Za-z0-9_-]+\.js'` **matches** your
+  local `dist/assets/`, yet the page misbehaves
+- The page's own scripts disagree with the server. Check in the console:
+  `[...document.querySelectorAll('script[src]')].map(s => s.src)`
+
+Fixes: **Cmd+Shift+R**, or wait ten minutes, or append a throwaway query (`&cb=123`) to force a
+fresh fetch. Incognito is **not** a reliable reset — an already-open incognito window keeps its own
+cache; every incognito window must be closed first.
+
+**This never affects students.** A student tapping an NFC tag or opening the app for the first time
+has nothing cached. It only affects whoever is reloading the site repeatedly after deploys.
+
+The site sits behind **Cloudflare**, which *can* override the Pages header — a Cache Rule on `/`
+setting Browser TTL to 1 minute would shrink the window. Not done; dashboard change, not code.
+The hashed `assets/*.js` files are safe to cache forever, since their names change every build.
 
 `.firebase/` is the deploy cache and is gitignored — it used to be tracked and dirtied the tree
 after every deploy.
