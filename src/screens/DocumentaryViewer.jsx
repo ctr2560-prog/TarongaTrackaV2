@@ -5,9 +5,11 @@ import { db } from '../firebase';
 import { ZOOSNOOZ_ANIMALS } from '../data/zoosnoozAnimals';
 import { animals as DAY_ANIMALS } from '../data/animals';
 import { normaliseCode, safeStudentId } from '../utils/helpers';
+import { EVOLVE_STORY_ORDER, EVOLVE_CHAPTER_WORDS as WORDS, EVOLVE_THEME as EV } from '../data/evolveAnimals';
 
 // doc param formats:
 //   zzv_{animalId}_{classCode}_{studentId} - personal ZooSnooz souvenir
+//   ev_{classCode}_{studentId}_{token}     - personal Evolve film souvenir
 //   {animalId} - generic animal info card
 
 function parseDocCode(code) {
@@ -17,6 +19,18 @@ function parseDocCode(code) {
     if (parts.length >= 3) {
       const [animalId, classCode, ...nameParts] = parts;
       return { type: 'zoosnooz', animalId, classCode, studentId: nameParts.join('_') };
+    }
+  }
+  if (code.startsWith('ev_')) {
+    // Aliases can contain underscores (safeStudentId only strips \ / # . $ [ ]), so the class
+    // code is taken from the left, the token from the right, and everything between is the
+    // student id. Splitting naively would break on a name like "Sugar_Glider".
+    const parts = code.slice(3).split('_');
+    if (parts.length >= 3) {
+      const classCode = parts[0];
+      const token = parts[parts.length - 1];
+      const studentId = parts.slice(1, -1).join('_');
+      return { type: 'evolve', classCode, studentId, token };
     }
   }
   const allAnimals = [...ZOOSNOOZ_ANIMALS, ...DAY_ANIMALS];
@@ -37,9 +51,34 @@ export default function DocumentaryViewer() {
   const { docViewCode, setDocViewCode } = useApp();
   const parsed = parseDocCode(docViewCode);
 
-  const [loading,     setLoading]     = useState(parsed.type === 'zoosnooz');
+  const [loading,     setLoading]     = useState(parsed.type === 'zoosnooz' || parsed.type === 'evolve');
   const [zzData,      setZzData]      = useState(null);
   const [fetchError,  setFetchError]  = useState(false);
+  const [evData,      setEvData]      = useState(null);
+
+  // Evolve souvenir: the keepsake doc written on submit holds everything this page needs, so
+  // the film survives being re-stitched or re-uploaded — the tag points here, not at Storage.
+  useEffect(() => {
+    if (parsed.type !== 'evolve') return;
+    (async () => {
+      try {
+        const code = normaliseCode(parsed.classCode);
+        const snap = await getDoc(doc(db, 'evolve_docs', `${code}_${parsed.studentId}`));
+        // The token is what stops the URL being guessable — class codes are six characters and
+        // aliases come from a short list, so without it anyone could walk a whole cohort.
+        if (snap.exists() && snap.data().souvenirToken && snap.data().souvenirToken === parsed.token) {
+          setEvData(snap.data());
+        } else {
+          setFetchError(true);
+        }
+      } catch (e) {
+        console.warn('DocViewer evolve fetch:', e);
+        setFetchError(true);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [parsed.type, parsed.classCode, parsed.studentId, parsed.token]);
 
   // Resolve animal object
   const allAnimals = [...ZOOSNOOZ_ANIMALS, ...DAY_ANIMALS];
@@ -78,8 +117,81 @@ export default function DocumentaryViewer() {
     );
   }
 
+  // ── Evolve souvenir ───────────────────────────────────────────────────────
+  // Its own full-screen render rather than a branch inside the ZooSnooz card: the two share no
+  // fields, and Evolve has no badges, points or conservation status to show.
+  if (parsed.type === 'evolve' && evData) {
+    const year = evData.cohortYear || '';
+    const reflections = evData.reflections || {};
+    const written = EVOLVE_STORY_ORDER.filter(c => reflections[c.id]?.reflection);
+    return (
+      <div style={{ position:'fixed', inset:0, background:EV.bgGradient, overflowY:'auto', fontFamily:'var(--t-font)' }}>
+        <div style={{ position:'fixed', left:0, right:0, bottom:0, height:'55vh', pointerEvents:'none',
+          background:'radial-gradient(135% 78% at 50% 100%, rgba(255,183,77,0.34) 0%, rgba(216,110,64,0.16) 34%, transparent 74%)' }} />
+        <div style={{ position:'relative', zIndex:1, maxWidth:560, margin:'0 auto', padding:'3rem 1.15rem 4rem' }}>
+
+          <div style={{ textAlign:'center', marginBottom:'1.9rem' }}>
+            <div style={{ fontSize:'0.58rem', fontWeight:800, letterSpacing:'0.26em', textTransform:'uppercase', color:'rgba(232,179,60,0.75)', marginBottom:'0.9rem' }}>
+              Taronga Zoo Sydney · Evolve{year ? ` · ${year}` : ''}
+            </div>
+            <h1 className="taronga-title" style={{ color:EV.text, fontSize:'clamp(2.2rem,8vw,3rem)', margin:'0 0 0.4rem', letterSpacing:'0.04em' }}>
+              {evData.studentName || parsed.studentId}
+            </h1>
+            <p style={{ color:'rgba(243,237,226,0.6)', fontSize:'0.95rem', margin:0, fontStyle:'italic' }}>
+              Five chapters. One story. Yours.
+            </p>
+          </div>
+
+          {evData.filmURL ? (
+            <video src={evData.filmURL} controls playsInline
+              style={{ width:'100%', borderRadius:16, background:'#000', marginBottom:'1.1rem', boxShadow:'0 18px 50px rgba(0,0,0,0.45)' }} />
+          ) : (
+            <p style={{ color:EV.textDim, textAlign:'center', marginBottom:'1.1rem' }}>
+              This film is no longer available.
+            </p>
+          )}
+
+          {evData.filmURL && (
+            <a href={evData.filmURL} download target="_blank" rel="noopener noreferrer"
+              style={{ display:'block', textAlign:'center', color:'rgba(232,179,60,0.8)', fontSize:'0.78rem', textDecoration:'none', borderBottom:'1px solid rgba(232,179,60,0.3)', width:'fit-content', margin:'0 auto 2.4rem', paddingBottom:1 }}>
+              Save a copy
+            </a>
+          )}
+
+          {written.length > 0 && (
+            <>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'0.7rem', marginBottom:'1.4rem' }}>
+                <span style={{ flex:'0 0 44px', height:1, background:'rgba(232,179,60,0.35)' }} />
+                <span style={{ fontSize:'0.62rem', fontWeight:700, letterSpacing:'0.2em', textTransform:'uppercase', color:'rgba(243,237,226,0.5)' }}>What you wrote</span>
+                <span style={{ flex:'0 0 44px', height:1, background:'rgba(232,179,60,0.35)' }} />
+              </div>
+              <div style={{ display:'flex', flexDirection:'column', gap:'0.85rem' }}>
+                {written.map((c, i) => (
+                  <div key={c.id} style={{ background:EV.panel, border:`1px solid ${EV.border}`, borderRadius:14, padding:'1rem 1.15rem' }}>
+                    <div style={{ fontSize:'0.58rem', fontWeight:800, letterSpacing:'0.2em', textTransform:'uppercase', color:'rgba(232,179,60,0.8)', marginBottom:'0.35rem' }}>
+                      Chapter {WORDS[i] || i + 1} · {c.animalName}
+                    </div>
+                    <div className="taronga-title" style={{ color:EV.text, fontSize:'1.05rem', marginBottom:'0.5rem' }}>{c.chapter}</div>
+                    <p style={{ color:'rgba(243,237,226,0.82)', fontSize:'0.92rem', lineHeight:1.65, margin:0, textWrap:'pretty' }}>
+                      {reflections[c.id].reflection}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          <p style={{ color:'rgba(243,237,226,0.38)', fontSize:'0.78rem', lineHeight:1.6, textAlign:'center', margin:'2.6rem 0 0' }}>
+            Wherever you go next, go forward.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // ── Unknown / error ───────────────────────────────────────────────────────
-  if (parsed.type === 'unknown' || (parsed.type === 'zoosnooz' && fetchError && !animal)) {
+  if (parsed.type === 'unknown' || (parsed.type === 'evolve' && fetchError) ||
+      (parsed.type === 'zoosnooz' && fetchError && !animal)) {
     return (
       <div style={{ position:'fixed', inset:0, background:'#0B0F14', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'1rem', padding:'2rem' }}>
         <div style={{ fontSize:'3rem' }}>🔍</div>

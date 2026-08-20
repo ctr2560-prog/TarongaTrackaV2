@@ -8,7 +8,8 @@ import { ref as storageRef, getDownloadURL } from 'firebase/storage';
 import { useApp } from '../context/AppContext';
 import { ZOOSNOOZ_ANIMALS } from '../data/zoosnoozAnimals';
 import { ZOOYARD_ANIMALS } from '../data/zooyardAnimals';
-import { EVOLVE_STORY_ORDER } from '../data/evolveAnimals';
+import { EVOLVE_CHAPTERS, EVOLVE_STORY_ORDER } from '../data/evolveAnimals';
+import { openEvolvePledgeSheet } from '../utils/evolvePledgeSheet';
 import { SUBJ_META, STAGES, prePostDocId, IMAGE_LIBRARY } from '../data/subjectMeta';
 import { getCurrentQuestionTexts } from '../utils/helpers';
 import DeviceBookingCalendar, { DEVICE_CAPACITY } from '../components/DeviceBookingCalendar';
@@ -1533,6 +1534,7 @@ function EvolveAdminTab({ classes }) {
   const loadList = async (includeAll = false) => {
     setLoading(true);
     const rows = [];
+    const tokenWanted = [];
     try {
       const targets = includeAll ? classes : classes.filter(c => c.sessionType === 'evolve');
       for (const cls of targets) {
@@ -1554,6 +1556,7 @@ function EvolveAdminTab({ classes }) {
 
           const filmURL = ev.filmURL || null;
           if (!filmURL && !clips.length) return;
+          tokenWanted.push(`${cls.classCode}_${d.id}`);
 
           const completedAt = ev.completedAt?.toDate?.() || null;
           rows.push({
@@ -1570,6 +1573,16 @@ function EvolveAdminTab({ classes }) {
           });
         });
       }
+      // Souvenir tokens live on the keepsake doc, not the student doc, so they are read in one
+      // pass afterwards rather than inside the per-student loop.
+      await Promise.all(tokenWanted.map(async id => {
+        try {
+          const snap = await getDoc(doc(db, 'evolve_docs', id));
+          const tok = snap.exists() ? snap.data().souvenirToken : null;
+          const row = rows.find(r => r.docId === id);
+          if (row && tok) row.souvenirToken = tok;
+        } catch { /* no keepsake doc — student never tapped "Keep this film" */ }
+      }));
       rows.sort((a, b) => (b.latestTs || 0) - (a.latestTs || 0));
       setDocs(rows);
     } catch (e) { console.error(e); }
@@ -1610,10 +1623,13 @@ function EvolveAdminTab({ classes }) {
     else window.alert('No film file in Storage for this student yet.');
   };
 
-  const handleCopy = async (entry) => {
-    const { filmUrl } = await ensureUrls(entry);
-    if (!filmUrl) { window.alert('No film file in Storage for this student yet.'); return; }
-    copyText(filmUrl, entry.docId);
+  // The row's primary copy is the SOUVENIR link, not the raw film URL — that is the one that
+  // goes on a tag, and the one that keeps working if the film is ever re-stitched. The raw film
+  // URL is still copyable from the expander below.
+  const handleCopySouvenir = (entry) => {
+    const link = souvenirLink(entry);
+    if (!link) { window.alert('No souvenir link yet — this student never tapped "Keep this film", so no keepsake record exists.'); return; }
+    copyText(link, entry.docId);
   };
 
   const copyText = (url, key) => {
@@ -1655,6 +1671,19 @@ function EvolveAdminTab({ classes }) {
     setExpandedId(next);
     if (next) ensureUrls(entry);
   };
+
+  // The link that goes on an NFC tag. Short enough for an NTAG213, and it resolves through the
+  // keepsake doc, so it keeps working if the film is ever re-stitched or re-uploaded — unlike a
+  // raw Storage URL, which is frozen to one file and one token.
+  //
+  // The host is HARD-CODED rather than taken from window.location.origin. Staff browsing the
+  // portal from localhost would otherwise copy a localhost link onto a physical tag, and a tag
+  // is handed to a student — there is no fixing it afterwards. If the site ever moves, this line
+  // moves with it.
+  const SOUVENIR_HOST = 'https://tarongatracka.com.au';
+  const souvenirLink = (entry) => entry.souvenirToken
+    ? `${SOUVENIR_HOST}/?doc=ev_${entry.classCode}_${entry.studentDocId}_${entry.souvenirToken}`
+    : null;
 
   const btn = { padding:'0.38rem 0.75rem', borderRadius:'var(--t-r-pill)', border:'1px solid var(--t-stone)', background:'white', fontSize:'0.75rem', fontWeight:600, cursor:'pointer', color:'var(--t-deep)', whiteSpace:'nowrap' };
 
@@ -1722,9 +1751,10 @@ function EvolveAdminTab({ classes }) {
                       style={{ ...btn, cursor: (isBusy || saving === entry.docId) ? 'not-allowed' : 'pointer', opacity: (isBusy || saving === entry.docId) ? 0.6 : 1 }}>
                       {saving === entry.docId ? 'Saving…' : '↓ Download'}
                     </button>
-                    <button onClick={() => handleCopy(entry)} disabled={isBusy}
-                      style={{ padding:'0.38rem 0.85rem', borderRadius:'var(--t-r-pill)', border:'none', background: copied === entry.docId ? '#22C55E' : EV_GOLD, color:'white', fontSize:'0.75rem', fontWeight:700, cursor: isBusy ? 'not-allowed' : 'pointer', whiteSpace:'nowrap', transition:'background 0.2s', opacity: isBusy ? 0.6 : 1 }}>
-                      {isBusy ? '…' : copied === entry.docId ? '✓ Copied!' : 'Copy URL'}
+                    <button onClick={() => handleCopySouvenir(entry)}
+                      title="The short link for an NFC tag — resolves through the keepsake record, so it survives the film being re-uploaded"
+                      style={{ padding:'0.38rem 0.85rem', borderRadius:'var(--t-r-pill)', border:'none', background: copied === entry.docId ? '#22C55E' : EV_GOLD, color:'white', fontSize:'0.75rem', fontWeight:700, cursor:'pointer', whiteSpace:'nowrap', transition:'background 0.2s' }}>
+                      {copied === entry.docId ? '✓ Copied!' : '🔗 Copy souvenir link'}
                     </button>
                   </div>
                 </div>
@@ -1732,6 +1762,30 @@ function EvolveAdminTab({ classes }) {
                 {expandedId === entry.docId && (
                   <div style={{ marginTop:'0.85rem', paddingTop:'0.85rem', borderTop:'1px solid var(--t-stone)', display:'flex', flexDirection:'column', gap:'0.45rem' }}>
                     {isBusy && <div style={{ fontSize:'0.78rem', color:'var(--t-slate)' }}>Loading Storage URLs…</div>}
+
+                    {/* Souvenir link — the one to put on a tag */}
+                    {(() => {
+                      const link = souvenirLink(entry);
+                      return (
+                        <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', background:'rgba(75,63,140,0.07)', border:'1px solid rgba(75,63,140,0.22)', borderRadius:'var(--t-r-sm)', padding:'0.55rem 0.85rem' }}>
+                          <div style={{ flex:1, minWidth:0 }}>
+                            <div style={{ fontWeight:700, fontSize:'0.8rem', color:'#4B3F8C', marginBottom:'0.12rem' }}>🔗 Souvenir link (for the NFC tag)</div>
+                            <div style={{ fontFamily:'monospace', fontSize:'0.68rem', color:'var(--t-slate)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                              {link || 'No keepsake doc — this student never tapped "Keep this film"'}
+                            </div>
+                          </div>
+                          {link && (
+                            <>
+                              <button onClick={() => window.open(link, '_blank', 'noopener')} style={{ ...btn, flexShrink:0, padding:'0.3rem 0.7rem', fontSize:'0.7rem' }}>Open</button>
+                              <button onClick={() => copyText(link, `${entry.docId}_souv`)}
+                                style={{ flexShrink:0, padding:'0.3rem 0.7rem', borderRadius:'var(--t-r-pill)', border:'none', background: copied === `${entry.docId}_souv` ? '#22C55E' : '#4B3F8C', color:'white', fontSize:'0.7rem', fontWeight:700, cursor:'pointer' }}>
+                                {copied === `${entry.docId}_souv` ? '✓' : 'Copy'}
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      );
+                    })()}
 
                     {/* The stitched film */}
                     <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', background:'rgba(176,125,23,0.08)', border:'1px solid rgba(176,125,23,0.22)', borderRadius:'var(--t-r-sm)', padding:'0.55rem 0.85rem' }}>
@@ -1789,6 +1843,165 @@ function EvolveAdminTab({ classes }) {
               </div>
             );
           })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Tab: Pledges ─────────────────────────────────────────────────────────────
+// The koala chapter's writing is the pledge. `openEvolvePledgeSheet` builds a self-contained
+// HTML document and opens it in a new tab to print or save as PDF — the same util the teacher
+// portal uses, so a certificate printed from here is identical to one printed by the school.
+// It takes a single-item array happily, which is what the per-student print button passes.
+const EVOLVE_PLEDGE_ID = (EVOLVE_CHAPTERS.find(c => c.isPledge) || {}).id;
+
+function EvolvePledgesTab({ classes }) {
+  const [rows,     setRows]     = useState([]);   // one per class, with its pledges
+  const [loading,  setLoading]  = useState(true);
+  const [openCode, setOpenCode] = useState(null);
+  const [search,   setSearch]   = useState('');
+
+  const load = async (includeAll = false) => {
+    setLoading(true);
+    const out = [];
+    try {
+      const targets = includeAll ? classes : classes.filter(c => c.sessionType === 'evolve');
+      for (const cls of targets) {
+        const snap = await getDocs(collection(db, 'classes', cls.classCode, 'students'));
+        const pledges = [];
+        snap.docs.forEach(d => {
+          const sd = d.data();
+          const text = (sd.evolve || {})[EVOLVE_PLEDGE_ID]?.reflection;
+          if (!text) return;
+          // Attributed by animal alias, like the certificates themselves — Evolve keeps no
+          // real names.
+          pledges.push({ name: sd.name || d.id, pledge: text });
+        });
+        if (!pledges.length) continue;
+        pledges.sort((a, b) => a.name.localeCompare(b.name));
+        out.push({
+          classCode: cls.classCode,
+          className: cls.className || '',
+          schoolName: cls.schoolName || '',
+          studentCount: snap.size,
+          pledges,
+        });
+      }
+      out.sort((a, b) => b.pledges.length - a.pledges.length);
+      setRows(out);
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
+  };
+
+  useEffect(() => { load(); }, [classes]);
+
+  const q = search.trim().toLowerCase();
+  const shown = !q ? rows : rows
+    .map(r => ({ ...r, pledges: r.pledges.filter(p =>
+      p.name.toLowerCase().includes(q) || p.pledge.toLowerCase().includes(q)) }))
+    .filter(r => r.pledges.length ||
+      r.classCode.toLowerCase().includes(q) ||
+      r.className.toLowerCase().includes(q) ||
+      r.schoolName.toLowerCase().includes(q));
+
+  const totalPledges = rows.reduce((n, r) => n + r.pledges.length, 0);
+  const btn = { padding:'0.38rem 0.85rem', borderRadius:'var(--t-r-pill)', border:'1px solid var(--t-stone)', background:'white', fontSize:'0.76rem', fontWeight:600, cursor:'pointer', color:'var(--t-deep)', whiteSpace:'nowrap' };
+  const printBtn = { ...btn, border:'none', background:'linear-gradient(135deg,#C97B33,#8A4F1E)', color:'white', fontWeight:700 };
+
+  return (
+    <div>
+      <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:'1rem', gap:'1rem', flexWrap:'wrap' }}>
+        <div>
+          <h2 style={{ fontSize:'1.3rem', fontWeight:800, color:'var(--t-deep)', margin:'0 0 0.2rem' }}>🖨 Pledge Certificates</h2>
+          <p style={{ fontSize:'0.82rem', color:'var(--t-slate)', margin:0 }}>
+            The koala chapter&apos;s writing, one landscape A4 certificate per student. Opens in a new tab to print or save as PDF.
+          </p>
+        </div>
+        <div style={{ display:'flex', gap:'0.45rem' }}>
+          <button onClick={() => load(false)} style={btn}>↻ Refresh</button>
+          <button onClick={() => load(true)}  style={{ ...btn, color:'var(--t-slate)' }}>⟳ Scan all classes</button>
+        </div>
+      </div>
+
+      {!loading && rows.length > 0 && (
+        <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', marginBottom:'1rem', flexWrap:'wrap' }}>
+          <input value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Search a pledge, alias, class or school…"
+            style={{ flex:1, minWidth:220, padding:'0.5rem 0.85rem', borderRadius:'var(--t-r-pill)', border:'1px solid var(--t-stone)', fontSize:'0.82rem', fontFamily:'inherit', color:'var(--t-deep)' }} />
+          <span style={{ fontSize:'0.76rem', color:'var(--t-slate)' }}>
+            {totalPledges} pledge{totalPledges === 1 ? '' : 's'} across {rows.length} class{rows.length === 1 ? '' : 'es'}
+          </span>
+        </div>
+      )}
+
+      {loading && (
+        <div style={{ textAlign:'center', padding:'3rem', color:'var(--t-slate)', fontSize:'0.85rem' }}>
+          <div style={{ width:28, height:28, border:'3px solid var(--t-stone)', borderTop:'3px solid #C97B33', borderRadius:'50%', animation:'spin 0.8s linear infinite', margin:'0 auto 0.75rem' }} />
+          Loading pledges…
+        </div>
+      )}
+
+      {!loading && rows.length === 0 && (
+        <div style={{ textAlign:'center', padding:'3rem', color:'var(--t-ash)' }}>
+          <div style={{ fontSize:'2.5rem', marginBottom:'0.75rem' }}>🖨</div>
+          <p style={{ margin:0, fontSize:'0.9rem' }}>No pledges written yet.</p>
+          <p style={{ margin:'0.4rem 0 0', fontSize:'0.78rem', color:'var(--t-slate)' }}>Try &quot;Scan all classes&quot; to look beyond classes marked as Evolve.</p>
+        </div>
+      )}
+
+      {!loading && shown.length > 0 && (
+        <div style={{ display:'flex', flexDirection:'column', gap:'0.6rem' }}>
+          {shown.map(r => (
+            <div key={r.classCode} style={{ background:'white', border:'1px solid var(--t-stone)', borderRadius:'var(--t-r-md)', padding:'1rem 1.25rem', boxShadow:'var(--t-shadow-sm)' }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'0.75rem', flexWrap:'wrap' }}>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:'0.45rem', marginBottom:'0.3rem', flexWrap:'wrap' }}>
+                    <span style={{ fontWeight:700, color:'var(--t-deep)', fontSize:'0.95rem' }}>{r.className || r.classCode}</span>
+                    <span style={{ background:'#F0FFF4', border:'1px solid #BBF7D0', color:'#166534', fontSize:'0.67rem', fontWeight:700, padding:'0.12rem 0.5rem', borderRadius:999 }}>{r.classCode}</span>
+                  </div>
+                  <div style={{ fontSize:'0.74rem', color:'var(--t-slate)' }}>
+                    {r.schoolName ? r.schoolName + ' · ' : ''}
+                    {r.pledges.length} of {r.studentCount} student{r.studentCount === 1 ? '' : 's'} have pledged
+                  </div>
+                </div>
+                <div style={{ display:'flex', gap:'0.4rem', flexShrink:0, flexWrap:'wrap' }}>
+                  <button onClick={() => setOpenCode(openCode === r.classCode ? null : r.classCode)} style={btn}>
+                    {openCode === r.classCode ? '▾ Hide' : `▶ Read (${r.pledges.length})`}
+                  </button>
+                  <button onClick={() => openEvolvePledgeSheet(r, r.pledges)} style={printBtn}
+                    title="One landscape certificate per student — print or save as PDF">
+                    🖨 Print all ({r.pledges.length})
+                  </button>
+                </div>
+              </div>
+
+              {openCode === r.classCode && (
+                <div style={{ marginTop:'0.85rem', paddingTop:'0.85rem', borderTop:'1px solid var(--t-stone)', display:'flex', flexDirection:'column', gap:'0.45rem' }}>
+                  {r.pledges.map(p => (
+                    <div key={p.name} style={{ display:'flex', alignItems:'flex-start', gap:'0.85rem', background:'var(--t-chalk)', borderRadius:'var(--t-r-sm)', padding:'0.65rem 0.9rem' }}>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontWeight:700, fontSize:'0.8rem', color:'#4B3F8C', marginBottom:'0.2rem' }}>{p.name}</div>
+                        {/* The lead is stored on the reflection already, so this reads as the
+                            student wrote it: "I will …" */}
+                        <div style={{ fontSize:'0.82rem', color:'var(--t-deep)', lineHeight:1.55 }}>{p.pledge}</div>
+                      </div>
+                      <button onClick={() => openEvolvePledgeSheet(r, [p])} style={{ ...printBtn, flexShrink:0, padding:'0.3rem 0.7rem', fontSize:'0.7rem' }}
+                        title="Print just this certificate">
+                        🖨
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!loading && rows.length > 0 && shown.length === 0 && (
+        <div style={{ textAlign:'center', padding:'2.5rem', color:'var(--t-ash)', fontSize:'0.85rem' }}>
+          Nothing matches “{search}”.
         </div>
       )}
     </div>
@@ -3036,8 +3249,8 @@ export default function AdminDashboardScreen() {
     finally { setCreatingNight(false); }
   };
 
-  const tabs = ['overview', 'analytics', 'zoosnooz', 'evolve', 'zooyard', 'review', 'prePost', 'challenges', 'bookings', 'users', 'controlRoom'];
-  const tabLabels = { overview:'Overview', analytics:'Analytics', zoosnooz:'🌙 ZooSnooz', evolve:'✦ Evolve', zooyard:'🌳 ZooYard', review:'Review', prePost:'Pre/Post Lessons', challenges:'Challenges', bookings:'Bookings', users:'Users', controlRoom:'🔒 Control Room' };
+  const tabs = ['overview', 'analytics', 'zoosnooz', 'evolve', 'pledges', 'zooyard', 'review', 'prePost', 'challenges', 'bookings', 'users', 'controlRoom'];
+  const tabLabels = { overview:'Overview', analytics:'Analytics', zoosnooz:'🌙 ZooSnooz', evolve:'✦ Evolve', pledges:'🖨 Pledges', zooyard:'🌳 ZooYard', review:'Review', prePost:'Pre/Post Lessons', challenges:'Challenges', bookings:'Bookings', users:'Users', controlRoom:'🔒 Control Room' };
 
   return (
     <div style={{ position:'fixed', inset:0, background:'var(--t-canvas)', display:'flex', flexDirection:'column' }}>
@@ -3095,6 +3308,7 @@ export default function AdminDashboardScreen() {
           {tab === 'analytics'   && <AnalyticsTab classes={classes} />}
           {tab === 'zoosnooz'    && <ZooSnoozAdminTab classes={classes} />}
           {tab === 'evolve'      && <EvolveAdminTab classes={classes} />}
+          {tab === 'pledges'     && <EvolvePledgesTab classes={classes} />}
           {tab === 'zooyard'     && <ZooYardAdminTab classes={classes} />}
           {tab === 'review'      && <ReviewTab classes={classes} />}
           {tab === 'prePost'     && <PrePostLinksTab />}

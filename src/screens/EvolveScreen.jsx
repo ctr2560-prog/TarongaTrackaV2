@@ -21,6 +21,14 @@ const INTRO_STEPS = [
 ];
 const wordCount = t => (t.trim().match(/\b[\w']+\b/g) || []).length;
 
+// 8 lowercase base36 characters (~41 bits). Enough that a souvenir URL cannot be guessed, short
+// enough that the whole link still fits an NTAG213 tag with room to spare.
+function makeSouvenirToken() {
+  const a = new Uint8Array(6);
+  (window.crypto || window.msCrypto).getRandomValues(a);
+  return Array.from(a).map(n => n.toString(36).padStart(2, '0')).join('').slice(0, 8);
+}
+
 function Shell({ children, onHome, scroll = true }) {
   return (
     <div style={{ position:'fixed', inset:0, background:T.bgGradient, overflowY: scroll ? 'auto' : 'hidden', fontFamily:'var(--t-font)' }}>
@@ -797,10 +805,18 @@ export default function EvolveScreen() {
       }
       const reflections = {};
       EVOLVE_CHAPTERS.forEach(c => { if (done[c.id]) reflections[c.id] = done[c.id]; });
-      await setDoc(doc(db, 'evolve_docs', `${code}_${sid}`), {
+      // Souvenir token. The keepsake URL (?doc=ev_{code}_{sid}_{token}) is what goes on an NFC
+      // tag: short enough for an NTAG213, and it resolves through this doc, so the tag keeps
+      // working if the film is ever re-stitched or re-uploaded. Without the token the URL would
+      // be trivially guessable — six-character class codes and aliases from a short list.
+      // Re-submitting keeps the existing token so tags already written stay valid.
+      const docRef = doc(db, 'evolve_docs', `${code}_${sid}`);
+      const existing = await getDoc(docRef).catch(() => null);
+      const souvenirToken = existing?.data()?.souvenirToken || makeSouvenirToken();
+      await setDoc(docRef, {
         classCode: code, studentId: sid, studentName,
         cohortYear: new Date().getFullYear(),
-        filmURL: url, reflections, completedAt: serverTimestamp(),
+        filmURL: url, reflections, completedAt: serverTimestamp(), souvenirToken,
       }, { merge: true });
       await updateDoc(doc(db, 'classes', code, 'students', sid), {
         'evolve.filmURL': url, 'evolve.sessionCompleted': true, 'evolve.completedAt': serverTimestamp(),
