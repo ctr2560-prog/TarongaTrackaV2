@@ -48,10 +48,22 @@ export function AppProvider({ children }) {
     return DEEP_LINK_SCREENS.has(fromUrl) ? fromUrl : 'home';
   });
 
+  // ── Documentary viewer (NFC) ──────────────────────────────────────────────
+  // Declared above the URL sync below, which has to know about it.
+  const [docViewCode, setDocViewCode] = useState(() => {
+    try { return new URLSearchParams(window.location.search).get('doc') || null; }
+    catch(e) { return null; }
+  });
+
   // Keep the browser URL and history in sync with the current screen, so the
   // back/forward buttons navigate between screens instead of leaving the site.
   const prevScreenRef = useRef(null);
   useEffect(() => {
+    // A souvenir link owns the URL for as long as it is being viewed. screenToPath produces a
+    // bare path with no query string, so syncing here would strip ?doc= on first render — the
+    // page would still show (the code is in memory) but a reload, bookmark or share would land
+    // on "Code not found". For an NFC tag handed to a student, that is the whole point lost.
+    if (docViewCode) return;
     const path = screenToPath(currentScreen);
     // Replace (don't push) on first mount and when leaving auto-advancing screens
     const replace = prevScreenRef.current === null || TRANSIENT_SCREENS.has(prevScreenRef.current);
@@ -61,7 +73,9 @@ export function AppProvider({ children }) {
       window.history.replaceState({ screen: currentScreen }, '', path);
     }
     prevScreenRef.current = currentScreen;
-  }, [currentScreen]);
+    // docViewCode is a dependency so that dismissing the souvenir ("Back to App") hands the URL
+    // back to the normal screen sync instead of leaving ?doc= in the address bar.
+  }, [currentScreen, docViewCode]);
 
   useEffect(() => {
     const onPop = (e) => {
@@ -125,12 +139,6 @@ export function AppProvider({ children }) {
       setCurrentScreen('home');
     });
   };
-
-  // ── Documentary viewer (NFC) ──────────────────────────────────────────────
-  const [docViewCode, setDocViewCode] = useState(() => {
-    try { return new URLSearchParams(window.location.search).get('doc') || null; }
-    catch(e) { return null; }
-  });
 
   return (
     <AppContext.Provider value={{
