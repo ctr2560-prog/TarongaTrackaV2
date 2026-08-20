@@ -9,7 +9,7 @@ import { useApp } from '../context/AppContext';
 import { ZOOSNOOZ_ANIMALS } from '../data/zoosnoozAnimals';
 import { ZOOYARD_ANIMALS } from '../data/zooyardAnimals';
 import { EVOLVE_CHAPTERS, EVOLVE_STORY_ORDER } from '../data/evolveAnimals';
-import { openEvolvePledgeSheet } from '../utils/evolvePledgeSheet';
+import { openEvolveCertificates } from '../utils/evolveCertificates';
 import { SUBJ_META, STAGES, prePostDocId, IMAGE_LIBRARY } from '../data/subjectMeta';
 import { getCurrentQuestionTexts } from '../utils/helpers';
 import DeviceBookingCalendar, { DEVICE_CAPACITY } from '../components/DeviceBookingCalendar';
@@ -1849,11 +1849,15 @@ function EvolveAdminTab({ classes }) {
   );
 }
 
-// ─── Tab: Pledges ─────────────────────────────────────────────────────────────
-// The koala chapter's writing is the pledge. `openEvolvePledgeSheet` builds a self-contained
-// HTML document and opens it in a new tab to print or save as PDF — the same util the teacher
-// portal uses, so a certificate printed from here is identical to one printed by the school.
-// It takes a single-item array happily, which is what the per-student print button passes.
+// ─── Tab: Certificates ────────────────────────────────────────────────────────
+// `openEvolveCertificates` builds a self-contained HTML document and opens it in a new tab to
+// print or save as PDF — the same util the teacher portal uses, so a certificate printed from
+// here is identical to one printed by the school. It takes a single-item array happily, which is
+// what the per-student print button passes.
+//
+// A certificate carries all five statements, each under its own sentence starter. The koala
+// pledge is still what this tab SHOWS at a glance, because "I will…" is the quotable one for a
+// newsletter or a ceremony — but printing gives the student everything they wrote.
 const EVOLVE_PLEDGE_ID = (EVOLVE_CHAPTERS.find(c => c.isPledge) || {}).id;
 
 function EvolvePledgesTab({ classes }) {
@@ -1872,11 +1876,13 @@ function EvolvePledgesTab({ classes }) {
         const pledges = [];
         snap.docs.forEach(d => {
           const sd = d.data();
-          const text = (sd.evolve || {})[EVOLVE_PLEDGE_ID]?.reflection;
-          if (!text) return;
+          const ev = sd.evolve || {};
+          const reflections = {};
+          EVOLVE_STORY_ORDER.forEach(c => { if (ev[c.id]?.reflection) reflections[c.id] = ev[c.id].reflection; });
+          if (!Object.keys(reflections).length) return;
           // Attributed by animal alias, like the certificates themselves — Evolve keeps no
           // real names.
-          pledges.push({ name: sd.name || d.id, pledge: text });
+          pledges.push({ name: sd.name || d.id, reflections, pledge: reflections[EVOLVE_PLEDGE_ID] || '' });
         });
         if (!pledges.length) continue;
         pledges.sort((a, b) => a.name.localeCompare(b.name));
@@ -1899,7 +1905,8 @@ function EvolvePledgesTab({ classes }) {
   const q = search.trim().toLowerCase();
   const shown = !q ? rows : rows
     .map(r => ({ ...r, pledges: r.pledges.filter(p =>
-      p.name.toLowerCase().includes(q) || p.pledge.toLowerCase().includes(q)) }))
+      p.name.toLowerCase().includes(q) ||
+      Object.values(p.reflections).some(t => t.toLowerCase().includes(q))) }))
     .filter(r => r.pledges.length ||
       r.classCode.toLowerCase().includes(q) ||
       r.className.toLowerCase().includes(q) ||
@@ -1969,8 +1976,8 @@ function EvolvePledgesTab({ classes }) {
                   <button onClick={() => setOpenCode(openCode === r.classCode ? null : r.classCode)} style={btn}>
                     {openCode === r.classCode ? '▾ Hide' : `▶ Read (${r.pledges.length})`}
                   </button>
-                  <button onClick={() => openEvolvePledgeSheet(r, r.pledges)} style={printBtn}
-                    title="One landscape certificate per student — print or save as PDF">
+                  <button onClick={() => openEvolveCertificates(r, r.pledges)} style={printBtn}
+                    title="One landscape certificate per student, carrying all five chapters — print or save as PDF">
                     🖨 Print all ({r.pledges.length})
                   </button>
                 </div>
@@ -1984,10 +1991,12 @@ function EvolvePledgesTab({ classes }) {
                         <div style={{ fontWeight:700, fontSize:'0.8rem', color:'#4B3F8C', marginBottom:'0.2rem' }}>{p.name}</div>
                         {/* The lead is stored on the reflection already, so this reads as the
                             student wrote it: "I will …" */}
-                        <div style={{ fontSize:'0.82rem', color:'var(--t-deep)', lineHeight:1.55 }}>{p.pledge}</div>
+                        <div style={{ fontSize:'0.82rem', color:'var(--t-deep)', lineHeight:1.55 }}>
+                          {p.pledge || <span style={{ color:'var(--t-ash)', fontStyle:'italic' }}>No pledge written — other chapters will still print.</span>}
+                        </div>
                       </div>
-                      <button onClick={() => openEvolvePledgeSheet(r, [p])} style={{ ...printBtn, flexShrink:0, padding:'0.3rem 0.7rem', fontSize:'0.7rem' }}
-                        title="Print just this certificate">
+                      <button onClick={() => openEvolveCertificates(r, [p])} style={{ ...printBtn, flexShrink:0, padding:'0.3rem 0.7rem', fontSize:'0.7rem' }}
+                        title="Print just this certificate — all five chapters">
                         🖨
                       </button>
                     </div>

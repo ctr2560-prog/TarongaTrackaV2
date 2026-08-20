@@ -10,7 +10,7 @@ import { useApp } from '../context/AppContext';
 import { ZOOSNOOZ_ANIMALS } from '../data/zoosnoozAnimals';
 import { ZOOYARD_ANIMALS } from '../data/zooyardAnimals';
 import { EVOLVE_CHAPTERS, EVOLVE_STORY_ORDER } from '../data/evolveAnimals';
-import { openEvolvePledgeSheet } from '../utils/evolvePledgeSheet';
+import { openEvolveCertificates } from '../utils/evolveCertificates';
 
 // The chapter whose writing is the pledge — surfaced as its own column for teachers.
 const EVOLVE_PLEDGE_ID = (EVOLVE_CHAPTERS.find(c => c.isPledge) || {}).id;
@@ -1112,21 +1112,28 @@ export default function ClassDetailsScreen() {
                   Evolve has no points, badges or scores, so there is nothing to chart.
                   What a teacher needs is the writing and the films, so that is all this is. */}
               {isEV && (() => {
+                // Certificates carry all five statements, so a student qualifies on ANY writing
+                // rather than on the koala pledge alone.
                 const pledged = students
-                  .map(s => ({ name: s.name || s.id, pledge: (s.evolve || {})[EVOLVE_PLEDGE_ID]?.reflection }))
-                  .filter(p => p.pledge);
+                  .map(s => {
+                    const ev = s.evolve || {};
+                    const reflections = {};
+                    EVOLVE_CHAPTERS.forEach(c => { if (ev[c.id]?.reflection) reflections[c.id] = ev[c.id].reflection; });
+                    return { name: s.name || s.id, reflections, count: Object.keys(reflections).length };
+                  })
+                  .filter(p => p.count);
                 return (
                   <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'1rem', flexWrap:'wrap', marginBottom:'0.9rem' }}>
                     <p style={{ margin:0, fontSize:'0.82rem', color:'var(--t-slate)' }}>
-                      {pledged.length} of {students.length} student{students.length === 1 ? '' : 's'} have made a pledge.
+                      {pledged.length} of {students.length} student{students.length === 1 ? '' : 's'} have written something.
                     </p>
-                    <button onClick={() => openEvolvePledgeSheet(cls, pledged)} disabled={pledged.length === 0}
-                      title={pledged.length ? 'One landscape certificate per student — print or save as PDF' : 'No pledges written yet'}
+                    <button onClick={() => openEvolveCertificates(cls, pledged)} disabled={pledged.length === 0}
+                      title={pledged.length ? 'One landscape certificate per student, carrying all five chapters — print or save as PDF' : 'Nothing written yet'}
                       style={{ display:'inline-flex', alignItems:'center', gap:'0.45rem', padding:'0.5rem 1rem', borderRadius:'var(--t-r-pill)', border:'none',
                         background: pledged.length ? 'linear-gradient(135deg,#C97B33,#8A4F1E)' : 'var(--t-stone)',
                         color: pledged.length ? 'white' : 'var(--t-ash)', fontWeight:700, fontSize:'0.78rem',
                         cursor: pledged.length ? 'pointer' : 'not-allowed', textTransform:'uppercase', letterSpacing:'0.06em' }}>
-                      🖨 Pledge certificates
+                      🖨 Certificates
                     </button>
                   </div>
                 );
@@ -1770,16 +1777,22 @@ export default function ClassDetailsScreen() {
                           Chapter {c.order} · {c.chapter}{pledge ? ' · Pledge' : ''}
                         </div>
                         <p style={{ margin:0, fontSize:'0.9rem', lineHeight:1.65, color:'#F3EDE2', whiteSpace:'pre-wrap' }}>{text}</p>
-                        {pledge && (
-                          <button onClick={() => openEvolvePledgeSheet(cls, [{ name, pledge: text }])}
-                            title="Opens this student's certificate — print it or save as PDF"
-                            style={{ marginTop:'0.7rem', display:'inline-flex', alignItems:'center', gap:'0.4rem', padding:'0.4rem 0.9rem', borderRadius:999, border:'1px solid rgba(232,179,60,0.5)', background:'rgba(232,179,60,0.14)', color:'#E8B33C', fontWeight:700, fontSize:'0.72rem', cursor:'pointer', fontFamily:'inherit' }}>
-                            🖨 Download this certificate
-                          </button>
-                        )}
                       </div>
                     );
                   })}
+                  {/* One button for the whole student: the certificate carries every chapter, so
+                      it no longer belongs under the pledge alone. */}
+                  {EVOLVE_STORY_ORDER.some(c => ev[c.id]?.reflection) && (() => {
+                    const reflections = {};
+                    EVOLVE_STORY_ORDER.forEach(c => { if (ev[c.id]?.reflection) reflections[c.id] = ev[c.id].reflection; });
+                    return (
+                      <button onClick={() => openEvolveCertificates(cls, [{ name, reflections }])}
+                        title="Opens this student's certificate, carrying every chapter they wrote — print it or save as PDF"
+                        style={{ marginTop:'0.2rem', display:'inline-flex', alignItems:'center', gap:'0.4rem', padding:'0.5rem 1rem', borderRadius:999, border:'1px solid rgba(232,179,60,0.5)', background:'rgba(232,179,60,0.14)', color:'#E8B33C', fontWeight:700, fontSize:'0.75rem', cursor:'pointer', fontFamily:'inherit', alignSelf:'flex-start' }}>
+                        🖨 Download this certificate
+                      </button>
+                    );
+                  })()}
                   {!EVOLVE_STORY_ORDER.some(c => ev[c.id]?.reflection) && (
                     <p style={{ color:'rgba(243,237,226,0.5)', fontSize:'0.85rem', fontStyle:'italic', textAlign:'center', margin:'0.5rem 0' }}>
                       This student has not written anything yet.
