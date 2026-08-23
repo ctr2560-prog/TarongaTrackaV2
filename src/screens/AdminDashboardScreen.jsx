@@ -1508,14 +1508,14 @@ function ZooSnoozAdminTab({ classes }) {
   );
 }
 
-// ─── Tab: Evolve ──────────────────────────────────────────────────────────────
+// ─── Tab: Evolve → Films ──────────────────────────────────────────────────────
 // Deliberately mirrors ZooSnoozAdminTab rather than sharing with it: the two modes store their
 // clips under different shapes (`zoosnooz[animalId]` vs `evolve[chapterId]`) and Evolve has no
 // badges or NFC tags. Same reasoning as the two stitchers — a shared abstraction here would let
 // an Evolve change break the live ZooSnooz tab.
 const EV_GOLD = '#B07D17';   // darkened from the app's #E8B33C, which is illegible on white
 
-function EvolveAdminTab({ classes }) {
+function EvolveFilmsTab({ classes }) {
   const [docs,       setDocs]       = useState([]);
   const [loading,    setLoading]    = useState(true);
   const [expandedId, setExpandedId] = useState(null);
@@ -1849,7 +1849,77 @@ function EvolveAdminTab({ classes }) {
   );
 }
 
-// ─── Tab: Certificates ────────────────────────────────────────────────────────
+// ─── Sub-tab control ──────────────────────────────────────────────────────────
+// A segmented pill, deliberately different from the underlined top-level tab bar so the two
+// levels never read as the same control. Used by every grouping wrapper below.
+function SubTabs({ items, value, onChange }) {
+  return (
+    <div style={{ display:'inline-flex', gap:'0.25rem', padding:'0.25rem', marginBottom:'1.25rem',
+      background:'var(--t-chalk)', border:'1px solid var(--t-stone)', borderRadius:'var(--t-r-pill)' }}>
+      {items.map(([val, label]) => (
+        <button key={val} onClick={() => onChange(val)}
+          style={{ padding:'0.42rem 1rem', borderRadius:'var(--t-r-pill)', border:'none', cursor:'pointer',
+            background: value === val ? 'white' : 'transparent',
+            color: value === val ? 'var(--t-deep)' : 'var(--t-slate)',
+            fontWeight: value === val ? 700 : 500, fontSize:'0.8rem', fontFamily:'inherit',
+            boxShadow: value === val ? 'var(--t-shadow-sm)' : 'none', transition:'background 0.15s, color 0.15s' }}>
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ─── Tab: Evolve (wrapper) ────────────────────────────────────────────────────
+// Films and Pledges are two views of one programme, so they sit together. The Advice Wall joins
+// them here when it is built.
+function EvolveTab({ classes }) {
+  const [sub, setSub] = useState('films');
+  return (
+    <div>
+      <SubTabs value={sub} onChange={setSub} items={[['films', '🎬 Films'], ['pledges', '🖨 Pledges']]} />
+      {sub === 'films'   && <EvolveFilmsTab classes={classes} />}
+      {sub === 'pledges' && <EvolvePledgesTab classes={classes} />}
+    </div>
+  );
+}
+
+// ─── Tab: Programmes (wrapper) ────────────────────────────────────────────────
+// ZooSnooz, Evolve and ZooYard are the same job three times over: per-programme student output.
+// Nobody needs two of them at once, so they were three top-level tabs competing for the same
+// attention. Pure grouping — each view is untouched.
+function ProgrammesTab({ classes }) {
+  const [sub, setSub] = useState('zoosnooz');
+  return (
+    <div>
+      <SubTabs value={sub} onChange={setSub}
+        items={[['zoosnooz', '🌙 ZooSnooz'], ['evolve', '✦ Evolve'], ['zooyard', '🌳 ZooYard']]} />
+      {sub === 'zoosnooz' && <ZooSnoozAdminTab classes={classes} />}
+      {sub === 'evolve'   && <EvolveTab classes={classes} />}
+      {sub === 'zooyard'  && <ZooYardAdminTab classes={classes} />}
+    </div>
+  );
+}
+
+// ─── Tab: Manage (wrapper) ────────────────────────────────────────────────────
+// Set-up screens rather than student work: lesson links, challenges, device bookings and teacher
+// accounts. All configure-occasionally, so they were four top-level tabs sitting at the same
+// level as the daily ones. Pure grouping — each view is untouched.
+function ManageTab({ classes }) {
+  const [sub, setSub] = useState('prePost');
+  return (
+    <div>
+      <SubTabs value={sub} onChange={setSub}
+        items={[['prePost', 'Pre/Post Lessons'], ['challenges', 'Challenges'], ['bookings', 'Bookings'], ['users', 'Users']]} />
+      {sub === 'prePost'    && <PrePostLinksTab />}
+      {sub === 'challenges' && <ChallengesTab />}
+      {sub === 'bookings'   && <BookingsTab />}
+      {sub === 'users'      && <UsersTab classes={classes} />}
+    </div>
+  );
+}
+
+// ─── Tab: Evolve → Pledges ────────────────────────────────────────────────────
 // `openEvolveCertificates` builds a self-contained HTML document and opens it in a new tab to
 // print or save as PDF — the same util the teacher portal uses, so a certificate printed from
 // here is identical to one printed by the school. It takes a single-item array happily, which is
@@ -3258,8 +3328,8 @@ export default function AdminDashboardScreen() {
     finally { setCreatingNight(false); }
   };
 
-  const tabs = ['overview', 'analytics', 'zoosnooz', 'evolve', 'pledges', 'zooyard', 'review', 'prePost', 'challenges', 'bookings', 'users', 'controlRoom'];
-  const tabLabels = { overview:'Overview', analytics:'Analytics', zoosnooz:'🌙 ZooSnooz', evolve:'✦ Evolve', pledges:'🖨 Pledges', zooyard:'🌳 ZooYard', review:'Review', prePost:'Pre/Post Lessons', challenges:'Challenges', bookings:'Bookings', users:'Users', controlRoom:'🔒 Control Room' };
+  const tabs = ['overview', 'analytics', 'programmes', 'review', 'manage', 'controlRoom'];
+  const tabLabels = { overview:'Overview', analytics:'Analytics', programmes:'Programmes', review:'Review', manage:'Manage', controlRoom:'🔒 Control Room' };
 
   return (
     <div style={{ position:'fixed', inset:0, background:'var(--t-canvas)', display:'flex', flexDirection:'column' }}>
@@ -3315,15 +3385,9 @@ export default function AdminDashboardScreen() {
         <div style={{ maxWidth:'960px', margin:'0 auto' }}>
           {tab === 'overview'    && <OverviewTab classes={classes} loading={loading} onClassClick={code=>{setSelectedAdminClass(code);setCurrentScreen('adminClassView');}} />}
           {tab === 'analytics'   && <AnalyticsTab classes={classes} />}
-          {tab === 'zoosnooz'    && <ZooSnoozAdminTab classes={classes} />}
-          {tab === 'evolve'      && <EvolveAdminTab classes={classes} />}
-          {tab === 'pledges'     && <EvolvePledgesTab classes={classes} />}
-          {tab === 'zooyard'     && <ZooYardAdminTab classes={classes} />}
+          {tab === 'programmes'  && <ProgrammesTab classes={classes} />}
           {tab === 'review'      && <ReviewTab classes={classes} />}
-          {tab === 'prePost'     && <PrePostLinksTab />}
-          {tab === 'challenges'  && <ChallengesTab />}
-          {tab === 'bookings'    && <BookingsTab />}
-          {tab === 'users'       && <UsersTab classes={classes} />}
+          {tab === 'manage'      && <ManageTab classes={classes} />}
           {tab === 'controlRoom' && <ControlRoomTab adminAccessCode={adminAccessCode} />}
         </div>
       </div>
