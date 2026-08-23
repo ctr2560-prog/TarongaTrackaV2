@@ -267,12 +267,6 @@ function Shell({ children, onHome, scroll = true }) {
           color: rgba(243,237,226,0.45); margin: 0.55rem 0 1.4rem; transition: color 0.3s;
         }
         .ev-count-on { color: #E8B33C; }
-        .ev-write-recall {
-          margin: 0 0 1rem; padding: 0.9rem 1.1rem; border-left: 3px solid #E8B33C;
-          background: rgba(232,179,60,0.07); border-radius: 0 10px 10px 0;
-          font-size: clamp(1rem, 3.6vw, 1.15rem); line-height: 1.5; color: #F3EDE2;
-        }
-        .ev-write-recall .taronga-title { color: #E8B33C; font-size: 1.15em; }
 
         .ev-gps {
           display: flex; align-items: center; gap: 0.6rem; width: 100%; text-align: left;
@@ -1143,12 +1137,6 @@ export default function EvolveScreen() {
                 <p className="ev-say-ask">{chapter.filmPrompt}</p>
                 <p className="ev-say-link">{chapter.filmLink}</p>
               </div>
-              {chapter.isPledge && reflectText.trim() && (
-                /* Their own words, on screen, to read straight into the lens. */
-                <blockquote className="ev-write-recall">
-                  <span className="taronga-title">{chapter.writeLead}</span> {reflectText.trim()}
-                </blockquote>
-              )}
               <div className="ev-cam">
                 <video ref={videoRef} playsInline muted autoPlay style={{ transform: frontCam ? 'scaleX(-1)' : 'none' }} />
                 {recording && (
