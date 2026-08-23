@@ -10,7 +10,7 @@ import { useApp } from '../context/AppContext';
 import { ZOOSNOOZ_ANIMALS } from '../data/zoosnoozAnimals';
 import { ZOOYARD_ANIMALS } from '../data/zooyardAnimals';
 import { EVOLVE_CHAPTERS, EVOLVE_STORY_ORDER } from '../data/evolveAnimals';
-import { openEvolveCertificates } from '../utils/evolveCertificates';
+import { openEvolveCertificates, openEvolveAdviceSheet } from '../utils/evolveCertificates';
 
 // The chapter whose writing is the pledge — surfaced as its own column for teachers.
 const EVOLVE_PLEDGE_ID = (EVOLVE_CHAPTERS.find(c => c.isPledge) || {}).id;
@@ -1122,19 +1122,36 @@ export default function ClassDetailsScreen() {
                     return { name: s.name || s.id, reflections, count: Object.keys(reflections).length };
                   })
                   .filter(p => p.count);
+                // The giraffe chapter is written FOR a Year 7, so it prints as its own set of
+                // cards a school can put up where they will actually be read.
+                const adviceId = (EVOLVE_CHAPTERS.find(c => c.isAdvice) || {}).id;
+                const advice = students
+                  .map(s => ({ name: s.name || s.id, advice: (s.evolve || {})[adviceId]?.reflection }))
+                  .filter(a => a.advice);
+                const cohort = new Date().getFullYear();
                 return (
                   <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'1rem', flexWrap:'wrap', marginBottom:'0.9rem' }}>
                     <p style={{ margin:0, fontSize:'0.82rem', color:'var(--t-slate)' }}>
                       {pledged.length} of {students.length} student{students.length === 1 ? '' : 's'} have written something.
                     </p>
-                    <button onClick={() => openEvolveCertificates(cls, pledged)} disabled={pledged.length === 0}
-                      title={pledged.length ? 'One landscape certificate per student, carrying all five chapters — print or save as PDF' : 'Nothing written yet'}
-                      style={{ display:'inline-flex', alignItems:'center', gap:'0.45rem', padding:'0.5rem 1rem', borderRadius:'var(--t-r-pill)', border:'none',
-                        background: pledged.length ? 'linear-gradient(135deg,#C97B33,#8A4F1E)' : 'var(--t-stone)',
-                        color: pledged.length ? 'white' : 'var(--t-ash)', fontWeight:700, fontSize:'0.78rem',
-                        cursor: pledged.length ? 'pointer' : 'not-allowed', textTransform:'uppercase', letterSpacing:'0.06em' }}>
-                      🖨 Certificates
-                    </button>
+                    <div style={{ display:'flex', gap:'0.5rem', flexWrap:'wrap' }}>
+                      <button onClick={() => openEvolveCertificates(cls, pledged)} disabled={pledged.length === 0}
+                        title={pledged.length ? 'One landscape certificate per student, carrying all five chapters — print or save as PDF' : 'Nothing written yet'}
+                        style={{ display:'inline-flex', alignItems:'center', gap:'0.45rem', padding:'0.5rem 1rem', borderRadius:'var(--t-r-pill)', border:'none',
+                          background: pledged.length ? 'linear-gradient(135deg,#C97B33,#8A4F1E)' : 'var(--t-stone)',
+                          color: pledged.length ? 'white' : 'var(--t-ash)', fontWeight:700, fontSize:'0.78rem',
+                          cursor: pledged.length ? 'pointer' : 'not-allowed', textTransform:'uppercase', letterSpacing:'0.06em' }}>
+                        🖨 Certificates
+                      </button>
+                      <button onClick={() => openEvolveAdviceSheet(cls, advice, cohort)} disabled={advice.length === 0}
+                        title={advice.length ? 'One card per student — print or save as PDF, and put them where a Year 7 will read them' : 'No advice written yet'}
+                        style={{ display:'inline-flex', alignItems:'center', gap:'0.45rem', padding:'0.5rem 1rem', borderRadius:'var(--t-r-pill)', border:'none',
+                          background: advice.length ? 'linear-gradient(135deg,#C97B33,#8A4F1E)' : 'var(--t-stone)',
+                          color: advice.length ? 'white' : 'var(--t-ash)', fontWeight:700, fontSize:'0.78rem',
+                          cursor: advice.length ? 'pointer' : 'not-allowed', textTransform:'uppercase', letterSpacing:'0.06em' }}>
+                        🖨 Advice from the Class of {cohort}
+                      </button>
+                    </div>
                   </div>
                 );
               })()}

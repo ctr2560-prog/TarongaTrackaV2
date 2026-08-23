@@ -86,12 +86,75 @@ export function openEvolveCertificates(cls = {}, students = []) {
          <div class="when">Certificates appear here once students write their chapters at the zoo.</div>
        </div></section>`;
 
-  const html = `<!DOCTYPE html>
+  return openSheet({
+    origin,
+    title: single ? 'Evolve Certificate: ' + students[0].name : 'Evolve Certificates: ' + (cls.className || cls.schoolName || 'Taronga Tracka'),
+    note: `${students.length} certificate${students.length === 1 ? '' : 's'} \u00b7 one per page. Choose \u201cSave as PDF\u201d as the destination to download.`,
+    pages: certs,
+  });
+}
+
+/**
+ * The giraffe chapter's writing, printed for the students it was actually addressed to.
+ *
+ * The prompt asks a Year 12 to write "advice for a student just starting high school" — so if
+ * nothing is ever done with it, the chapter asks them to write to somebody who does not exist.
+ * This is the cheap, honest way to keep that promise: a teacher prints the sheets and the school
+ * puts them up where Year 7s will read them.
+ *
+ * @param {object}   cls      class doc ({ className, schoolName })
+ * @param {object[]} entries  [{ name, advice }] — one A4 landscape card each
+ * @param {number}   [cohort] year to attribute, defaults to now
+ */
+export function openEvolveAdviceSheet(cls = {}, entries = [], cohort) {
+  const origin = window.location.origin;
+  const year   = cohort || new Date().getFullYear();
+  const school = esc(cls.schoolName || 'Taronga Tracka');
+  const klass  = esc(cls.className || '');
+  const lead   = (EVOLVE_STORY_ORDER.find(c => c.isAdvice) || {}).writeLead || '';
+
+  const cards = entries.length
+    ? entries.map(e => {
+        const body = stripLead(e.advice, lead);
+        return `
+      <section class="cert">
+        <div class="frame"></div>
+        <div class="inner">
+          <div class="seal"><img src="${origin}/images/logo.png" alt=""></div>
+          <div class="eyebrow">Taronga Zoo Sydney &middot; Evolve</div>
+          <h1>Advice from the Class of ${year}</h1>
+          <div class="rule"><span></span>&#10022;<span></span></div>
+
+          <p class="advice"><span class="advice-lead">${esc(lead)}</span> ${esc(body)}</p>
+
+          <div class="sign">
+            <div class="who">${esc(e.name)}</div>
+            <div class="where">${klass ? klass + ' &middot; ' : ''}${school}</div>
+            <div class="when">Written at Taronga Zoo Sydney &middot; For someone just starting</div>
+          </div>
+        </div>
+      </section>`;
+      }).join('')
+    : `<section class="cert"><div class="frame"></div><div class="inner">
+         <h1>No advice yet</h1>
+         <div class="when">It appears here once students write the giraffe chapter at the zoo.</div>
+       </div></section>`;
+
+  return openSheet({
+    origin,
+    title: `Advice from the Class of ${year}` + (klass ? ': ' + cls.className : ''),
+    note: `${entries.length} card${entries.length === 1 ? '' : 's'} \u00b7 one per page. Choose \u201cSave as PDF\u201d as the destination to download.`,
+    pages: cards,
+  });
+}
+
+function renderSheet({ origin, title, note, pages }) {
+  return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${single ? 'Evolve Certificate: ' + esc(students[0].name) : 'Evolve Certificates: ' + (klass || school)}</title>
+<title>${esc(title)}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
 <style>
@@ -171,6 +234,17 @@ h1{
   font-size:12.5pt; letter-spacing:.02em;
 }
 
+/* Advice cards hold ONE piece of writing, so it can be set large — this is meant to be read
+   from a corridor wall, not held in the hand like the five-chapter certificate. */
+.advice{
+  font-size:19pt; line-height:1.45; color:${INK}; font-weight:300;
+  max-width:215mm; margin:0 auto; text-wrap:pretty;
+}
+.advice-lead{
+  font-family:'TarongaHeadline',Georgia,serif; color:${GOLD};
+  font-size:20pt; letter-spacing:.02em;
+}
+
 .sign{ margin-top:8mm; }
 .who{
   font-family:'TarongaHeadline',Georgia,serif; font-size:19pt; line-height:1;
@@ -206,14 +280,14 @@ h1{
 </head>
 <body>
 <div class="toolbar">
-  <span>${students.length} certificate${students.length === 1 ? '' : 's'} &middot; one per page. Choose “Save as PDF” as the destination to download.</span>
+  <span>${esc(note)}</span>
   <span class="actions">
     <button class="btn-back" onclick="goBack()">← Back to class details</button>
     <button class="btn-print" onclick="window.print()">Print / Save as PDF</button>
   </span>
 </div>
 
-<div class="screen-pad">${certs}</div>
+<div class="screen-pad">${pages}</div>
 
 <script>
   // Opened with window.open, so closing returns the teacher to the class details tab
@@ -230,9 +304,14 @@ h1{
 </body>
 </html>`;
 
-  const blob = new Blob([html], { type: 'text/html' });
+}
+
+// Build the document, hand it to a new tab as a blob, and let the browser print or save it.
+function openSheet(spec) {
+  const blob = new Blob([renderSheet(spec)], { type: 'text/html' });
   const url  = URL.createObjectURL(blob);
   const win  = window.open(url, '_blank');
   if (win) setTimeout(() => URL.revokeObjectURL(url), 60000);
   return !!win;
 }
+
