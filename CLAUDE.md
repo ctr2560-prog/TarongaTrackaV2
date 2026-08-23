@@ -35,10 +35,11 @@ Student flow is complete and verified end to end: opener → winding map → per
 (insight → 60s watch → write → film) → upload gate → stitch → film → keepsake doc in
 `evolve_docs`. Teacher side has its own table plus landscape A4 pledge certificates.
 
-**Staff portal has two Evolve tabs** (2026-08-20): **✦ Evolve** (per student: watch, download and
-copy the film, plus every chapter clip, plus the souvenir link) and **🖨 Pledges** (per class:
-read the koala pledges, print all certificates or just one). Both are deliberate copies of
-`ZooSnoozAdminTab`'s shape rather than shared components — see the comment on `EvolveAdminTab`.
+**Staff portal Evolve views** (2026-08-23) live at **Programmes → ✦ Evolve**, with two sub-tabs:
+**🎬 Films** (per student: watch, download and copy the film, plus every chapter clip, plus the
+souvenir link) and **🖨 Pledges** (per class: read the koala pledges, print certificates for a
+whole class or one student). Both are deliberate copies of `ZooSnoozAdminTab`'s shape rather than
+shared components — see the comment on `EvolveFilmsTab`.
 
 **Chapters are gated in order** (2026-08-20). A chapter needs the previous one completed *and*
 the student near the animal. Sequence is tested first, so a locked card reads
@@ -180,6 +181,35 @@ There is **no React Router**. Navigation is a `currentScreen` string in `AppCont
 - All routes rewrite to `index.html` (Firebase Hosting SPA config).
 
 **Screen name → component** mapping lives in `src/screens/index.jsx`.
+
+### Staff portal tab structure (`AdminDashboardScreen.jsx`, restructured 2026-08-23)
+
+| Tab | Contains |
+|---|---|
+| **Overview** | `OverviewTab` — all classes, filtered |
+| **Analytics** | `AnalyticsTab` |
+| **Programmes** | `🌙 ZooSnooz` · `✦ Evolve` · `🌳 ZooYard` |
+| **Review** | `ReviewTab` — flagged observations, feedback |
+| **Manage** | `Pre/Post Lessons` · `Challenges` · `Bookings` · `Users` |
+| **🔒 Control Room** | `ControlRoomTab` — password-gated |
+
+`✦ Evolve` nests one level further into `🎬 Films` / `🖨 Pledges`, the only place that nests
+twice. If that ever feels buried, flatten it by promoting both to sit alongside ZooSnooz and
+ZooYard.
+
+It was **eleven** top-level tabs, scrolling sideways on a laptop, with configure-once screens at
+the same level as daily ones. `ProgrammesTab` and `ManageTab` are **thin wrappers only** — they
+hold a sub-tab value and render the existing components with the same props. No view's internals
+changed, and the individual tab components are still the place to work.
+
+**Left top-level on purpose:** Overview is the landing page; Analytics is a different job from
+browsing classes; **Review is time-sensitive — burying flagged content is how it stops getting
+checked**; Control Room is password-gated and dangerous, so being separate and slightly awkward is
+a feature. Think hard before demoting any of those.
+
+`SubTabs` is the shared segmented pill. It is deliberately **unlike** the underlined top-level bar
+so the two levels never read as the same control. The Advice Wall belongs under `✦ Evolve` when
+it is built, not as a new top-level tab.
 
 ---
 
@@ -593,7 +623,7 @@ zooyard: {
 }
 ```
 Rules: `allow read, write, delete: if true` — same open pattern as `challengeSubmissions` (staff portal is code-based, no Firebase Auth). Moderation split by UI, not database rules (matches the app's existing trust model):
-- **Staff** (`ZooYardAdminTab` in `AdminDashboardScreen.jsx`, tab `'zooyard'`) can approve or deny any submission. Approving awards **+30 pts to the school leaderboard** (`schools/{schoolId}.totalPoints`), same pattern as `challengeSubmissions` approval — not a retroactive rewrite of the student's own record.
+- **Staff** (`ZooYardAdminTab` in `AdminDashboardScreen.jsx`, now **Programmes → 🌳 ZooYard**) can approve or deny any submission. Approving awards **+30 pts to the school leaderboard** (`schools/{schoolId}.totalPoints`), same pattern as `challengeSubmissions` approval — not a retroactive rewrite of the student's own record.
 - **Teachers** (new section in `ClassDetailsScreen.jsx`, gated on `isZY = cls.sessionType === 'zooyard'`) can view their own class's submissions (query scoped to `classCode`) and **deny or delete** — no approve button rendered. This is a genuinely new capability; `challengeSubmissions` has no teacher-moderation precedent to compare against.
 
 ### Class details / GPS panel
@@ -764,12 +794,34 @@ as `onProgress`'s second argument; it now lights the five chapter titles one at 
 chapter. The glow breathes because the percentage sits still for seconds at a time while a clip
 plays through in real time, and a frozen number reads as a crashed app.
 
-### Pledge certificates (`src/utils/evolvePledgeSheet.js`)
-`openEvolvePledgeSheet(cls, pledges)` builds a self-contained HTML document, opens it in a new
+### Certificates (`src/utils/evolveCertificates.js`)
+`openEvolveCertificates(cls, students)` builds a self-contained HTML document, opens it in a new
 tab from a blob URL, and lets the teacher print it or save it as a PDF — the same pattern as
 `teacherInfoSheet.js`. **No PDF library.** One landscape A4 certificate per page, so a sheet can
 be handed to a student or pinned up; pass a single-item array to print just one (that is what
-the per-student button in the Pledge modal does).
+the per-student buttons do).
+
+`students` is `[{ name, reflections }]`, where `reflections` is `{ [chapterId]: 'full text
+including its lead' }`.
+
+**It carries all five chapters, each under its own sentence starter** (rewritten 2026-08-23). It
+used to print only the koala pledge, so every certificate read "I will" and threw away four fifths
+of what the student wrote. The starters differ per animal — "I'm taking with me", "I will", "I wish
+I'd known", "I was shaped by", "I want" — and the certificate shows all of them in walking order.
+
+⚠️ **A stored reflection already carries its lead.** `EvolveScreen` saves `${writeLead} ${body}`,
+and the certificate prints the lead itself in gold — so printing the reflection raw said it twice
+("I will / I will plant something…"). That shipped in every certificate ever printed before
+2026-08-23. `stripLead` removes it, falls back to the original if stripping would leave nothing,
+and is `\b`-anchored so "I willow trees matter" is not mangled. **Anything else that renders a
+reflection next to its lead needs the same treatment.**
+
+Two columns, because a single column across 262mm gives unreadable line lengths. The lead runs
+**inline** with the writing so it reads as the student wrote it, not as a label above a quote.
+Checked against deliberately long reflections: five chapters plus the signature block fit one
+landscape A4 with room to spare.
+
+Renamed from `evolvePledgeSheet.js` / `openEvolvePledgeSheet` when it stopped being pledge-only.
 
 Printed on warm cream rather than Evolve's twilight palette on purpose: a dark page eats toner,
 school printers make a mess of it, and browsers strip backgrounds by default. The one dark
@@ -802,7 +854,7 @@ written stay valid, and the viewer **refuses a doc with no token at all**.
 `safeStudentId` only strips `\ / # . $ [ ]` — it leaves underscores and spaces, so a "Sugar_Glider"
 alias would break a naive `split('_')`.
 
-`SOUVENIR_HOST` in `EvolveAdminTab` is **hard-coded to `https://tarongatracka.com.au`**, not
+`SOUVENIR_HOST` in `EvolveFilmsTab` is **hard-coded to `https://tarongatracka.com.au`**, not
 `window.location.origin`. Staff browsing the portal from localhost would otherwise copy a localhost
 link onto a physical tag handed to a student — unfixable afterwards. If the domain ever moves, that
 line moves with it, and tags already written keep pointing at the old address regardless.
@@ -891,7 +943,7 @@ Each task in `POST_TASKS` carries:
 The old 32 in-app slide decks (`src/data/slideDecks.js` + `SlidePlayer.jsx`) were **removed entirely**. Cameron builds the actual lesson content himself in Canva; the app now just stores and surfaces Canva share links.
 
 - **Firestore collection**: `prePostLinks/{subject}_{stage}_{timing}` (e.g. `science_4_pre`) — fields: `subject`, `stage`, `timing` (`'pre'|'post'`), `title`, `description`, `canvaUrl`, `updatedAt`. Rules are open read/write (`firestore.rules`) since the staff portal is code-based with no Firebase Auth, same pattern as other staff-managed collections.
-- **Admin side**: `PrePostLinksTab` in `AdminDashboardScreen.jsx` (tab id `prePost`, label "Pre/Post Lessons"). One row per NSW stage (2–5) × subject tab, each row has Pre-Visit / Post-Visit mini-forms (title, description, Canva URL, Save). Saving with a blank URL deletes the Firestore doc — that's the mechanism that hides a subject/stage from teachers.
+- **Admin side**: `PrePostLinksTab` in `AdminDashboardScreen.jsx` (now **Manage → Pre/Post Lessons**). One row per NSW stage (2–5) × subject tab, each row has Pre-Visit / Post-Visit mini-forms (title, description, Canva URL, Save). Saving with a blank URL deletes the Firestore doc — that's the mechanism that hides a subject/stage from teachers.
 - **Teacher side**: `ResourceHubScreen.jsx` fetches `prePostLinks` on mount and only renders cards for docs that have a non-empty `canvaUrl` — teachers never see a subject/stage until Cameron has saved a link for it. Filter pills (When/KLA/Stage) are derived from whatever lessons actually exist, not a fixed list.
 - **Presenting**: clicking a card opens `CanvaEmbedPlayer` (bottom of `ResourceHubScreen.jsx`), a full-screen overlay with an `<iframe>`. `toCanvaEmbedUrl()` in `src/data/subjectMeta.js` appends `?embed` (or `&embed`) to the saved Canva share link if not already present — Canva's iframe embed requires that param. There's also an "Open in Canva ↗" link in the overlay header as a fallback.
 - **Shared metadata**: `src/data/subjectMeta.js` holds `SUBJ_META` (subject colors/labels), `STAGES`, `prePostDocId()`, `toCanvaEmbedUrl()`, and `IMAGE_LIBRARY` (curated list of existing `public/images/*` photos, grouped by category) — imported by both the admin tab and the Resource Hub so subject styling stays consistent.
@@ -968,7 +1020,7 @@ ZooSnooz internal screens (`zzScreen` values): `map` → `animal` (phases: insig
 | `accessibility` | `AccessibilityScreen.jsx` | 6-need accessibility guide, pre-visit checklist, PDF downloads |
 | `conservationGallery` | `ConservationGalleryScreen.jsx` | Polaroid masonry wall of approved submissions |
 | `adminLogin` | `AdminLoginScreen.jsx` | Staff access code entry |
-| `adminDashboard` | `AdminDashboardScreen.jsx` | Staff portal: Overview, Analytics, ZooSnooz, ZooYard, Review, Pre/Post Lessons, Challenges, Bookings, Users, Control Room tabs |
+| `adminDashboard` | `AdminDashboardScreen.jsx` | Staff portal — six tabs, see Staff portal tab structure |
 | `adminClassView` | `AdminClassViewScreen.jsx` | Staff view of a specific class's detail |
 | `publicEntry` | `PublicEntryScreen.jsx` | Public mode entry — alias only, no class code; sets `appMode='public'` |
 | `publicAnimal` | `PublicAnimalScreen.jsx` | Public animal info card |
