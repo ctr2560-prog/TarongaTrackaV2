@@ -10,6 +10,7 @@ import { ZOOSNOOZ_ANIMALS } from '../data/zoosnoozAnimals';
 import { ZOOYARD_ANIMALS } from '../data/zooyardAnimals';
 import { EVOLVE_CHAPTERS, EVOLVE_STORY_ORDER } from '../data/evolveAnimals';
 import { openEvolveCertificates } from '../utils/evolveCertificates';
+import { evolveSouvenirLink } from '../utils/evolveSouvenir';
 import { SUBJ_META, STAGES, prePostDocId, IMAGE_LIBRARY } from '../data/subjectMeta';
 import { getCurrentQuestionTexts } from '../utils/helpers';
 import DeviceBookingCalendar, { DEVICE_CAPACITY } from '../components/DeviceBookingCalendar';
@@ -1672,18 +1673,9 @@ function EvolveFilmsTab({ classes }) {
     if (next) ensureUrls(entry);
   };
 
-  // The link that goes on an NFC tag. Short enough for an NTAG213, and it resolves through the
-  // keepsake doc, so it keeps working if the film is ever re-stitched or re-uploaded — unlike a
-  // raw Storage URL, which is frozen to one file and one token.
-  //
-  // The host is HARD-CODED rather than taken from window.location.origin. Staff browsing the
-  // portal from localhost would otherwise copy a localhost link onto a physical tag, and a tag
-  // is handed to a student — there is no fixing it afterwards. If the site ever moves, this line
-  // moves with it.
-  const SOUVENIR_HOST = 'https://tarongatracka.com.au';
-  const souvenirLink = (entry) => entry.souvenirToken
-    ? `${SOUVENIR_HOST}/?doc=ev_${entry.classCode}_${entry.studentDocId}_${entry.souvenirToken}`
-    : null;
+  // Shared with the student app so a tag written on either side carries the identical URL —
+  // see utils/evolveSouvenir.js for why the host is hard-coded.
+  const souvenirLink = (entry) => evolveSouvenirLink(entry.classCode, entry.studentDocId, entry.souvenirToken);
 
   const btn = { padding:'0.38rem 0.75rem', borderRadius:'var(--t-r-pill)', border:'1px solid var(--t-stone)', background:'white', fontSize:'0.75rem', fontWeight:600, cursor:'pointer', color:'var(--t-deep)', whiteSpace:'nowrap' };
 

@@ -7,6 +7,7 @@ import { doc, getDoc, updateDoc, setDoc, addDoc, collection, serverTimestamp } f
 import { ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
 import { normaliseCode, safeStudentId } from '../utils/helpers';
+import { evolveSouvenirLink, canWriteNfcTag, writeNfcTag } from '../utils/evolveSouvenir';
 
 const CLIP_SECONDS = 30;
 const WATCH_SECONDS = 60;
@@ -436,6 +437,100 @@ function Shell({ children, onHome, scroll = true }) {
 // measuring, no fixed row heights. `non-scaling-stroke` keeps the line an even 2px while the
 // viewBox stretches vertically. Walked legs are solid gold; the way ahead is dashed, the way
 // a route is drawn on a paper map.
+// The tag step, shown once the film is kept. Web NFC is Chrome-for-Android only, so this is
+// written fallback-first: the "ask a staff member" panel is not an error state, it is the normal
+// path on an iPhone and on any Android browser that is not Chrome. Nothing here is required —
+// the film is already saved either way, and a tag is a nice-to-have on top.
+function TagWriter({ link }) {
+  const [phase, setPhase] = useState('idle');   // idle | waiting | done | error | noHardware
+  const [error, setError] = useState('');
+  const abortRef = useRef(null);
+
+  // The tag write is abandoned if the student leaves, so a forgotten scan cannot sit open.
+  useEffect(() => () => abortRef.current?.abort(), []);
+
+  // ⚠️ Chrome for Android exposes NDEFReader based on BROWSER support, not on whether the phone
+  // has an NFC aerial. A budget handset without the hardware passes this check and only fails at
+  // write time, so `noHardware` below is the second half of the same test — and it must not
+  // offer "try again", which cannot work.
+  const supported = canWriteNfcTag() && phase !== 'noHardware';
+
+  async function start() {
+    setPhase('waiting'); setError('');
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
+    // write() waits forever for a tag. Ninety seconds is long enough to find the sticker and
+    // work out where the aerial is, short enough that a student is not stuck staring at it.
+    const timer = setTimeout(() => ctrl.abort(), 90000);
+    const res = await writeNfcTag(link, ctrl.signal);
+    clearTimeout(timer);
+    if (res.ok) { setPhase('done'); return; }
+    if (res.reason === 'cancelled') { setPhase('idle'); return; }
+    // No aerial in this handset — stop offering a button that can never work and fall through
+    // to the staff panel for good.
+    if (res.reason === 'unsupported') { setPhase('noHardware'); return; }
+    setError(res.message); setPhase('error');
+  }
+
+  const box = {
+    border: `1px solid ${T.border}`, background: T.panel, borderRadius: 14,
+    padding: '1.05rem 1.15rem', marginBottom: '1.1rem', textAlign: 'center',
+  };
+  const title = { fontSize: '0.62rem', fontWeight: 800, letterSpacing: '0.2em', textTransform: 'uppercase', color: T.accent, marginBottom: '0.5rem' };
+  const note  = { color: T.textDim, fontSize: '0.84rem', lineHeight: 1.6, margin: 0 };
+
+  // No Web NFC: an iPhone, or Android on the wrong browser. Say what happens next, plainly.
+  if (!supported) {
+    return (
+      <div style={box}>
+        <div style={title}>Your Tracka tag</div>
+        <p style={note}>
+          This phone can&apos;t write tags. Ask a staff member and they&apos;ll put your film onto one for you.
+        </p>
+      </div>
+    );
+  }
+
+  if (phase === 'done') {
+    return (
+      <div style={{ ...box, borderColor: 'rgba(232,179,60,0.6)' }}>
+        <div style={{ fontSize: '1.6rem', marginBottom: '0.35rem' }}>✦</div>
+        <div style={title}>On your tag</div>
+        <p style={note}>Tap your tag with a phone any time to watch your film again. Keep it somewhere you&apos;ll find it.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div style={box}>
+      <div style={title}>Your Tracka tag</div>
+      {phase === 'waiting' ? (
+        <>
+          <p style={{ ...note, marginBottom: '0.8rem' }}>
+            Hold your tag flat against the back of your phone, near the top, and keep it still.
+          </p>
+          <button onClick={() => abortRef.current?.abort()}
+            style={{ background: 'none', border: 'none', color: T.textDim, fontSize: '0.78rem', cursor: 'pointer', fontFamily: 'inherit', borderBottom: `1px solid ${T.border}`, paddingBottom: 1 }}>
+            Cancel
+          </button>
+        </>
+      ) : (
+        <>
+          <p style={{ ...note, marginBottom: '0.85rem' }}>
+            {phase === 'error'
+              ? `${error} You can try again, or ask a staff member to do it for you.`
+              : 'Put your film onto a tag you can keep, and tap it with a phone whenever you want to watch it.'}
+          </p>
+          <button onClick={start}
+            style={{ width: '100%', padding: '0.85rem', borderRadius: 999, border: 'none', background: T.accent, color: '#241503', fontWeight: 800, fontSize: '0.88rem', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            {phase === 'error' ? 'Try again' : 'Transfer film to my tag'}
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
 // The ~45 seconds the film takes to stitch. Rather than a bare percentage, this names the chapter
 // currently being written into the film, so the wait reads as the story being assembled in front
 // of them. `stage` is buildEvolveFilm's chapter index: -1 titles, 0..n-1 a chapter, >= n the end.
@@ -533,6 +628,10 @@ export default function EvolveScreen() {
 
   const [filmPhase, setFilmPhase] = useState('idle');      // idle | building | preview | submitting | sent
   const [filmPct, setFilmPct] = useState(0);
+  // The souvenir token, so the student can write their own NFC tag after keeping the film.
+  // Mirrored onto the student doc at submit purely so it survives a refresh — evolve_docs is the
+  // source of truth, but a student has no reason to be reading that collection.
+  const [souvenirToken, setSouvenirToken] = useState(null);
   // Which chapter the stitcher is on: -1 title card, 0..n-1 a chapter, >= n the outro.
   // buildEvolveFilm has always reported this as onProgress's second argument; nothing used it.
   const [filmStage, setFilmStage] = useState(-1);
@@ -549,6 +648,8 @@ export default function EvolveScreen() {
   // Must match buildEvolveFilm's own `clips` filter, in the same order, or the checklist on the
   // stitch screen will point at the wrong chapter.
   const filmChapters = EVOLVE_STORY_ORDER.filter(c => clipURLs[c.id]);
+  // Built from the shared helper so a tag written here is identical to one written by staff.
+  const souvenirLink = evolveSouvenirLink(normaliseCode(classCode || ''), safeStudentId(studentName || ''), souvenirToken);
 
   // ── Resume (learned the hard way on ZooYard: never trust in-memory progress) ──
   useEffect(() => {
@@ -575,6 +676,7 @@ export default function EvolveScreen() {
         setDone(d); setClipURLs(urls);
         if (!Object.keys(d).length && !localStorage.getItem(INTRO_KEY)) setShowIntro(true);
         if (ev.filmURL) { setFilmURL(ev.filmURL); setFilmPhase('sent'); }
+        if (ev.souvenirToken) setSouvenirToken(ev.souvenirToken);
       } catch (e) { console.warn('Evolve resume failed:', e); }
       finally { if (!cancelled) setHydrating(false); }
     })();
@@ -820,7 +922,9 @@ export default function EvolveScreen() {
       }, { merge: true });
       await updateDoc(doc(db, 'classes', code, 'students', sid), {
         'evolve.filmURL': url, 'evolve.sessionCompleted': true, 'evolve.completedAt': serverTimestamp(),
+        'evolve.souvenirToken': souvenirToken,
       });
+      setSouvenirToken(souvenirToken);
       setFilmURL(url || filmURL);
       setFilmPhase('sent');
     } catch (e) {
@@ -919,6 +1023,7 @@ export default function EvolveScreen() {
                 Your film and everything you wrote have been saved. Your teacher can give you the link to keep.
               </p>
               {filmURL && <video src={filmURL} controls playsInline style={{ width:'100%', borderRadius:14, marginBottom:'1.25rem', background:'#000' }} />}
+              {souvenirLink && <TagWriter link={souvenirLink} />}
               <button onClick={goHome}
                 style={{ width:'100%', padding:'0.9rem', borderRadius:999, border:`1px solid ${T.border}`, background:'rgba(0,0,0,0.25)', color:T.text, fontWeight:700, cursor:'pointer' }}>
                 Finish
