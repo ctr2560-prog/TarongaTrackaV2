@@ -397,11 +397,11 @@ export const PDHPE_ANIMALS = {
   dingo: {
     observationPrompt: 'Watch the dingo move. In the wild it hunts for every meal, running kilometres each day. It has to physically work for its food and then use that food to fuel the next hunt. Think about how what you eat affects how you move and perform.',
     writingPromptByStage: {
-      1: 'The dingo runs to hunt its food every day. Just like the dingo, your body needs food to move and play. Write one food that gives you energy and how your body feels when you have not eaten enough.',
-      2: 'The dingo must eat well to have the energy to hunt. Just like the dingo, what you eat affects how you perform. Write two foods that give you good energy for being active and why.',
-      3: 'The dingo hunts for kilometres each day and needs food to fuel that. Just like the dingo, what you eat affects how your body performs. Write about a food choice that would fuel a student for sport and explain why.',
-      4: 'The dingo works hard for every meal and uses that food to fuel the next hunt. Just like the dingo, what you eat affects how you perform. Write about what a student should eat to fuel physical activity and why food choices matter.',
-      5: 'The dingo runs for kilometres to hunt, relying entirely on what it has eaten to fuel its effort. Just like the dingo, nutrition directly affects human physical performance. Write about how food choices before and after activity affect performance and recovery.',
+      1: 'The dingo runs to hunt. What food gives you energy to run and play?',
+      2: 'The dingo eats to fuel the hunt. What two foods give you energy to be active?',
+      3: 'The dingo eats to fuel its hunt. What should you eat to fuel sport, and why?',
+      4: 'The dingo fuels its next hunt with what it eats. What should you eat to fuel activity, and why?',
+      5: 'Like the dingo between hunts, how does what you eat before and after activity affect performance and recovery?',
     },
     expectedAnswers: {
       1: [],
