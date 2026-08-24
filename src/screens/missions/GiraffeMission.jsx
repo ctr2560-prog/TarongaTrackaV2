@@ -19,22 +19,34 @@ const GIRAFFE_MCQ = {
 };
 
 const GIRAFFE_PDHPE_MCQ = {
+  // Every stage asks the same thing — how far the heart pumps blood from chest to head — with
+  // one realistic answer and three that are out by a factor of ten or more. The point is "which
+  // of these is even possible for an animal?", not a calculation. The answer moves position each
+  // stage; the old set had four plausible distances with the answer at index 2 every time.
   stageQ: {
-    1: 'How far does a giraffe\'s heart pump blood up to its head?',
-    2: 'About how far does a giraffe\'s heart need to pump blood to reach its brain?',
-    3: 'A giraffe has a very long neck. How far must its heart pump blood to reach its brain?',
-    4: 'How far must a giraffe\'s heart pump blood against gravity to maintain blood flow to its brain?',
-    5: 'What is the approximate vertical distance a giraffe\'s heart must overcome to maintain cerebral perfusion?',
+    1: 'How far does a giraffe\'s heart pump blood to reach its head?',
+    2: 'About how far does a giraffe\'s heart pump blood to reach its head?',
+    3: 'About how far must a giraffe\'s heart pump blood from its chest up to its head?',
+    4: 'About how far must a giraffe\'s heart pump blood from its chest to its head?',
+    5: 'About how far must a giraffe\'s heart pump blood from the chest to the head?',
   },
   stageOptions: {
-    1: ['0.3 m', '1 m', '3.7 m', '10 m'],
-    2: ['0.5 m', '2 m', '3.7 m', '8 m'],
-    3: ['1 m', '2.5 m', '3.7 m', '6 m'],
-    4: ['1.8 m', '2.5 m', '3.7 m', '5.2 m'],
-    5: ['2.5 m', '3.1 m', '3.7 m', '4.5 m'],
+    1: ['2 cm', '2 m', '20 m', '200 m'],
+    2: ['5 cm', '50 m', '2 m', '500 m'],
+    3: ['2 m', '20 cm', '30 m', '300 m'],
+    4: ['15 m', '150 m', '1.5 cm', '2 m'],
+    5: ['20 cm', '2 m', '22 m', '220 m'],
   },
-  correct: 2,
-  fact: 'A giraffe\'s heart pumps blood approximately 3.7 metres up to its brain - requiring blood pressure twice as high as a human\'s. This is why giraffes have the highest blood pressure of any land animal!',
+  stageCorrect: { 1: 1, 2: 2, 3: 0, 4: 3, 5: 1 },
+  stageFacts: {
+    1: 'About 2 m. That is a long way to push blood uphill, which is why a giraffe needs such a powerful heart.',
+    2: 'About 2 m, roughly the height of a doorway. Your own heart only pushes blood about 30 cm up to your brain.',
+    3: 'About 2 m. Pushing blood that high needs about twice the blood pressure a human has.',
+    4: 'About 2 m, around seven times further than a human heart pumps upward. That is why giraffes have the highest blood pressure of any land animal.',
+    5: 'About 2 m. Blood must be pushed that far against gravity, which is why a giraffe\'s heart weighs about 11 kg and its blood pressure is roughly double ours.',
+  },
+  correct: 1,
+  fact: 'A giraffe\'s heart pushes blood about 2 m up from the chest to the head, which takes roughly twice the blood pressure of a human.',
 };
 
 export default function GiraffeMission() {
@@ -59,10 +71,12 @@ export default function GiraffeMission() {
   const englishMcq = isEnglish ? getStageQuestions(currentAnimal, classStage, 'english')[0] : null;
 
   const mcq = classSubject === 'pdhpe' ? GIRAFFE_PDHPE_MCQ : GIRAFFE_MCQ;
-  const correctAnswerIndex = isEnglish ? (englishMcq?.correct ?? 1) : mcq.correct;
+  // stageCorrect lets the answer sit in a different position each stage; falls back to the
+  // single `correct` for GIRAFFE_MCQ, which has no per-stage variants.
+  const correctAnswerIndex = isEnglish ? (englishMcq?.correct ?? 1) : (mcq.stageCorrect?.[classStage] ?? mcq.correct);
   const question = isEnglish ? (englishMcq?.q || '') : (mcq.stageQ[classStage] || mcq.stageQ[4]);
   const options  = isEnglish ? (englishMcq?.options || []) : (mcq.stageOptions ? (mcq.stageOptions[classStage] || mcq.stageOptions[4]) : mcq.options);
-  const fact     = isEnglish ? (englishMcq?.fact || '') : mcq.fact;
+  const fact     = isEnglish ? (englishMcq?.fact || '') : (mcq.stageFacts?.[classStage] || mcq.fact);
 
   const startCamera = async () => {
     if (!videoRef.current) return;

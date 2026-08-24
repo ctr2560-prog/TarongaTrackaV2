@@ -903,7 +903,27 @@ function buildPdhpeObservationScore(text, animalId, classStage) {
     'cardiovascular', 'aerobic', 'anaerobic', 'endurance', 'strength', 'flexibility', 'energy',
     'atp', 'oxygen', 'blood', 'lungs', 'sprint', 'recovery', 'bone', 'skeletal',
     'fibre', 'fiber', 'twitch', 'vo2', 'cardio', 'body', 'movement'];
-  const physHits = physVocab.filter(w => lower.includes(w)).length;
+  // ── Lion only ──────────────────────────────────────────────────────────────
+  // The lion's prompts were rewritten (2026-08-24) from energy systems to muscular power, so
+  // students now answer with legs, running, jumping and strength. The vocabulary list carried
+  // 'cardiovascular', 'anaerobic' and 'vo2' but none of those everyday words, so a correct
+  // answer like "I use my legs when I run fast" scored 1/5 while saying nothing wrong.
+  // Scoped to the lion deliberately — marking on the other animals reads well as it is.
+  const isLion = animalId === 'lion';
+  // Same problem on the buffalo: its questions are about sweating, drinking and staying cool,
+  // and none of 'water', 'sweat', 'drink', 'hot' or 'thirsty' appear in the lists above. A
+  // correct answer scored close to nothing. Scoped so the other animals are untouched.
+  const isBuffalo = animalId === 'asian-water-buffalo';
+  const buffaloVocab = ['water', 'drink', 'drank', 'sweat', 'sweaty', 'hot', 'heat', 'cool',
+    'cold', 'thirsty', 'thirst', 'temperature', 'overheat', 'dehydrated', 'dehydration',
+    'hydrate', 'hydrated', 'mud', 'shade', 'wet', 'dry', 'evaporate', 'skin', 'tired'];
+  const buffaloHits = isBuffalo ? buffaloVocab.filter(w => lower.includes(w)).length : 0;
+  const lionVocab = ['run', 'ran', 'jump', 'walk', 'swim', 'climb', 'kick', 'throw', 'lift',
+    'push', 'pull', 'leg', 'arm', 'strong', 'fast', 'quick', 'speed', 'power', 'fit', 'sport',
+    'play', 'train', 'stretch', 'tired', 'pounce', 'sprint'];
+  const lionHits = isLion ? lionVocab.filter(w => lower.includes(w)).length : 0;
+
+  const physHits = physVocab.filter(w => lower.includes(w)).length + lionHits + buffaloHits;
 
   // Mental health / wellbeing vocabulary
   const wellVocab = ['wellbeing', 'well-being', 'mental health', 'stress', 'cortisol', 'oxytocin', 'hormone',
@@ -942,6 +962,16 @@ function buildPdhpeObservationScore(text, animalId, classStage) {
   if (wc >= 8 && (lifestyleHits >= 2 || (lifestyleHits >= 1 && hasPersonal))) comparison = Math.max(comparison, 3);
   if (totalVocabHits >= 2 && (hasExplanation || hasPersonal))    comparison = Math.max(comparison, 4);
   if (totalVocabHits >= 4 && hasExplanation && multiSentence)    comparison = 5;
+  // Lion only: its prompts ask a single question, so a good answer is one short sentence and
+  // could never reach the four-hit, multi-sentence bar the other animals' prompts invite.
+  if (isLion && totalVocabHits >= 1 && (hasExplanation || hasPersonal)) comparison = Math.max(comparison, 4);
+  if (isLion && totalVocabHits >= 2)                                    comparison = 5;
+  // Buffalo: a smaller nudge than the lion. The 4 band is unchanged; only the top band relaxes,
+  // from "4 hits AND an explanation AND two sentences" to three hits with either.
+  // The 3 band only counts LIFESTYLE words, and the buffalo's topic words are physical ones, so
+  // "I drink water when I get hot" was stuck at 2 despite being right.
+  if (isBuffalo && wc >= 5 && (lifestyleHits >= 1 || physHits >= 1)) comparison = Math.max(comparison, 3);
+  if (isBuffalo && totalVocabHits >= 3 && (hasExplanation || multiSentence)) comparison = 5;
 
   // Understanding (detail slot) - did they show any health understanding?
   let understanding = 1;
@@ -949,6 +979,12 @@ function buildPdhpeObservationScore(text, animalId, classStage) {
   if (lifestyleHits >= 1 || physHits >= 1 || wellHits >= 1)      understanding = Math.max(understanding, 3);
   if (totalVocabHits >= 2 && hasExplanation)                      understanding = Math.max(understanding, 4);
   if (totalVocabHits >= 4 && hasExplanation && multiSentence)     understanding = 5;
+  if (isLion && totalVocabHits >= 1 && (hasExplanation || hasPersonal || multiSentence))
+                                                                  understanding = Math.max(understanding, 4);
+  if (isLion && totalVocabHits >= 3)                              understanding = 5;
+  if (isBuffalo && totalVocabHits >= 2 && (hasExplanation || multiSentence))
+                                                                  understanding = Math.max(understanding, 4);
+  if (isBuffalo && totalVocabHits >= 3 && hasExplanation)         understanding = 5;
 
   // Communication (writing slot) - based on spelling, grammar, capitals and sentence structure only
   let comms = 1;
