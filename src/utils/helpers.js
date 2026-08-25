@@ -137,6 +137,22 @@ export function calculateAnimalPoints(badge) {
   return observationPoints + quizPoints;
 }
 
+// One quiz percentage per STUDENT, from their own answers — never an average of per-question
+// success rates, which over-weights questions only a few students reached.
+// Returns null if the student answered nothing, so they are left out rather than counted as 0.
+export function studentQuizPercent(studentDoc) {
+  const results = (studentDoc?.badges || []).flatMap(b =>
+    (b.quizResults || []).filter(qr => !qr.missionType || qr.missionType === 'knowledge'));
+  if (!results.length) return null;
+  return Math.round(results.filter(qr => qr.correctOnFirstAttempt === true).length / results.length * 100);
+}
+
+// Mean of those percentages, ignoring students who have not answered anything.
+export function averageQuizPercent(studentDocs = []) {
+  const pcts = studentDocs.map(studentQuizPercent).filter(p => p !== null);
+  return pcts.length ? Math.round(pcts.reduce((a, b) => a + b, 0) / pcts.length) : null;
+}
+
 export function getCurrentQuestionTexts(animalId, subject) {
   const texts = new Set();
   const addFromQuestions = (questions) => {

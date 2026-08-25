@@ -12,7 +12,7 @@ import { EVOLVE_CHAPTERS, EVOLVE_STORY_ORDER } from '../data/evolveAnimals';
 import { openEvolveCertificates } from '../utils/evolveCertificates';
 import { evolveSouvenirLink } from '../utils/evolveSouvenir';
 import { SUBJ_META, STAGES, prePostDocId, IMAGE_LIBRARY } from '../data/subjectMeta';
-import { getCurrentQuestionTexts } from '../utils/helpers';
+import { getCurrentQuestionTexts, studentQuizPercent } from '../utils/helpers';
 import DeviceBookingCalendar, { DEVICE_CAPACITY } from '../components/DeviceBookingCalendar';
 
 function generateCode() {
@@ -238,7 +238,7 @@ function AnalyticsTab({ classes }) {
     const schools = {};
     viewClasses.forEach(cls => {
       const s = cls.schoolName || 'Unknown';
-      if (!schools[s]) schools[s] = { name: s, classes: 0, students: 0, qMap: {}, obsSum: 0, obsCount: 0 };
+      if (!schools[s]) schools[s] = { name: s, classes: 0, students: 0, quizPcts: [], obsSum: 0, obsCount: 0 };
       schools[s].classes++;
       schools[s].students += cls.studentCount;
     });
@@ -251,25 +251,24 @@ function AnalyticsTab({ classes }) {
         if (st.zzBadges?.length) st.zzBadges.forEach(b => addObs(b.observationScore));
         else if (st.zoosnooz) ZOOSNOOZ_ANIMALS.forEach(a => addObs(st.zoosnooz[a.id]?.observationScore));
       } else {
+        // One percentage per STUDENT, not per question. See the note on kpi.avgQuiz.
+        const results = [];
         (st.badges || []).forEach(b => {
           addObs(b.observationScore);
-          const aid = b.animalId || 'unknown';
           (b.quizResults || [])
             .filter(qr => !qr.missionType || qr.missionType === 'knowledge')
-            .forEach((qr, qi) => {
-              const key = `${aid}||${qi}`;
-              if (!schools[s].qMap[key]) schools[s].qMap[key] = { correct: 0, total: 0 };
-              schools[s].qMap[key].total++;
-              if (qr.correctOnFirstAttempt === true) schools[s].qMap[key].correct++;
-            });
+            .forEach(qr => results.push(qr));
         });
+        if (results.length) {
+          schools[s].quizPcts.push(results.filter(qr => qr.correctOnFirstAttempt === true).length / results.length * 100);
+        }
       }
     });
     return Object.values(schools).map(s => {
-      const rates = Object.values(s.qMap).filter(q => q.total > 0);
+      const p = s.quizPcts;
       return {
         ...s,
-        quizAvg: rates.length > 0 ? Math.round(rates.reduce((sum, q) => sum + (q.correct / q.total * 100), 0) / rates.length) : null,
+        quizAvg: p.length > 0 ? Math.round(p.reduce((x, y) => x + y, 0) / p.length) : null,
         obsAvg:  s.obsCount  > 0 ? Math.round(s.obsSum / s.obsCount) : null,
       };
     }).sort((a, b) => (b.quizAvg ?? -1) - (a.quizAvg ?? -1));
@@ -2224,36 +2223,31 @@ function OverviewTab({ classes, loading, onClassClick }) {
     if (!classes.length) return;
     let cancelled = false;
     (async () => {
-      const qMap = {};
+      // One percentage per STUDENT, then averaged. See the note on kpi.avgQuiz.
+      //
+      // This also drops the getCurrentQuestionTexts filter, which silently excluded any answer
+      // whose question text no longer matched the data file. Rewording a question therefore
+      // erased its history from this number — and for giraffe and tiger, whose questions live in
+      // their mission files rather than the data files, the answers may never have counted at
+      // all. A student's score is what it was on the day; editing a question later does not
+      // change what they scored.
+      const quizPcts = [];
       for (const cls of classes) {
         try {
           const snap = await getDocs(collection(db, 'classes', cls.classCode, 'students'));
           snap.docs.forEach(d => {
-            const subject = cls.subject || '';
-            (d.data().badges || []).forEach(b => {
-              const aid = b.animalId || 'unknown';
-              (b.quizResults || [])
-                .filter(qr => !qr.missionType || qr.missionType === 'knowledge')
-                .forEach((qr) => {
-                  const qtext = qr.question || '';
-                  const key = `${subject}||${aid}||${qtext}`;
-                  if (!qMap[key]) qMap[key] = { correct: 0, total: 0, subject, aid, qtext };
-                  qMap[key].total++;
-                  if (qr.correctOnFirstAttempt === true) qMap[key].correct++;
-                });
-            });
+            const results = (d.data().badges || []).flatMap(b =>
+              (b.quizResults || []).filter(qr => !qr.missionType || qr.missionType === 'knowledge'));
+            if (results.length) {
+              quizPcts.push(results.filter(qr => qr.correctOnFirstAttempt === true).length / results.length * 100);
+            }
           });
-        } catch {}
+        } catch { /* class unreadable, skip */ }
       }
       if (cancelled) return;
-      const currentCache = {};
-      const rates = Object.values(qMap).filter(q => {
-        if (q.total === 0) return false;
-        const cacheKey = `${q.aid}||${q.subject}`;
-        if (!currentCache[cacheKey]) currentCache[cacheKey] = getCurrentQuestionTexts(q.aid, q.subject);
-        return currentCache[cacheKey].has(q.qtext);
-      });
-      setAvgQuizBadges(rates.length > 0 ? Math.round(rates.reduce((s, q) => s + (q.correct / q.total * 100), 0) / rates.length) : null);
+      setAvgQuizBadges(quizPcts.length > 0
+        ? Math.round(quizPcts.reduce((x, y) => x + y, 0) / quizPcts.length)
+        : null);
     })();
     return () => { cancelled = true; };
   }, [classes]);
@@ -3227,22 +3221,26 @@ export default function AdminDashboardScreen() {
               // `completed` flag or `badges` array, so it needs its own branch here.
               const zyDone = ZOOYARD_ANIMALS.filter(a => sd.zooyard?.[a.id]?.completed);
               const isComplete = sd.completed === true || sd.zzSessionComplete === true || sd.zooyard?.sessionCompleted === true;
-              if (isComplete) {
-                completedCount++;
-                let qPct = null;
-                if (sd.zoosnooz && typeof sd.zoosnooz === 'object') {
-                  const attempted = ZOOSNOOZ_ANIMALS.filter(a => sd.zoosnooz[a.id]?.quizCorrect !== undefined);
-                  if (attempted.length > 0) {
-                    const correct = attempted.filter(a => sd.zoosnooz[a.id].quizCorrect === true).length;
-                    qPct = Math.round((correct / attempted.length) * 100);
-                  }
+              if (isComplete) completedCount++;
+              // Outside the isComplete gate on purpose: a student who has answered questions but
+              // not yet submitted still has a real score, and the teacher portal counts them.
+              // Gating on completion also meant the number jumped around mid-excursion.
+              let qPct = null;
+              if (sd.zoosnooz && typeof sd.zoosnooz === 'object') {
+                const attempted = ZOOSNOOZ_ANIMALS.filter(a => sd.zoosnooz[a.id]?.quizCorrect !== undefined);
+                if (attempted.length > 0) {
+                  const correct = attempted.filter(a => sd.zoosnooz[a.id].quizCorrect === true).length;
+                  qPct = Math.round((correct / attempted.length) * 100);
                 }
-                if (qPct === null && zyDone.length > 0) {
-                  qPct = Math.round((zyDone.filter(a => sd.zooyard[a.id].quizCorrect === true).length / zyDone.length) * 100);
-                }
-                if (qPct === null) qPct = sd.quizPercent ?? sd.quizPercentage ?? null;
-                if (qPct !== null) { quizSum += qPct; quizCount++; }
               }
+              if (qPct === null && zyDone.length > 0) {
+                qPct = Math.round((zyDone.filter(a => sd.zooyard[a.id].quizCorrect === true).length / zyDone.length) * 100);
+              }
+              // From the student's own answers rather than the stored quizPercent field, which is
+              // only written at submit — so a student who answered but never submitted was missing
+              // entirely. That is why 8STEAM read 67% here and 70% on the teacher side.
+              if (qPct === null) qPct = studentQuizPercent(sd) ?? sd.quizPercent ?? sd.quizPercentage ?? null;
+              if (qPct !== null) { quizSum += qPct; quizCount++; }
               totalBadges += (sd.badges?.length || 0) + zyDone.length;
             });
             return {

@@ -2,7 +2,7 @@ import { useState, useEffect, Fragment } from 'react';
 import { collection, doc, getDoc, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useApp } from '../context/AppContext';
-import { calculateAnimalPoints } from '../utils/helpers';
+import { calculateAnimalPoints, averageQuizPercent } from '../utils/helpers';
 
 function Badge({ label, color = 'var(--t-mid)' }) {
   return (
@@ -80,7 +80,10 @@ export default function AdminClassViewScreen() {
   const avgPoints      = students.length ? Math.round(students.reduce((s,st)=>s+(st.totalPoints||0),0)/students.length) : 0;
   const totalBadges    = students.reduce((s,st)=>s+(st.badges?.length||0),0);
   const completedStuds = students.filter(s => s.completed);
-  const avgQuiz        = completedStuds.length ? Math.round(completedStuds.reduce((s,st)=>s+(st.quizPercentage||0),0)/completedStuds.length) : 0;
+  // Was `(st.quizPercentage||0)` over completed students, so anyone without a stored score
+  // counted as a zero and dragged the average down. Now one percentage per student who
+  // actually answered, computed the same way everywhere else in the app.
+  const avgQuiz        = averageQuizPercent(students) ?? 0;
   const allObs         = students.flatMap(s => (s.badges||[]).filter(b=>b.observationScore));
   const avgB           = allObs.length ? (allObs.reduce((s,b)=>s+(b.observationScore.behaviour||0),0)/allObs.length).toFixed(1) : ' - ';
   const avgD           = allObs.length ? (allObs.reduce((s,b)=>s+(b.observationScore.detail||0),0)/allObs.length).toFixed(1) : ' - ';

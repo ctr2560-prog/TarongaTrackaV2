@@ -5,7 +5,7 @@ import {
 } from 'firebase/firestore';
 import { db, storage } from '../firebase';
 import { ref as storageRef, getDownloadURL } from 'firebase/storage';
-import { normaliseCode, safeStudentId } from '../utils/helpers';
+import { normaliseCode, safeStudentId, averageQuizPercent } from '../utils/helpers';
 import { useApp } from '../context/AppContext';
 import { ZOOSNOOZ_ANIMALS } from '../data/zoosnoozAnimals';
 import { ZOOYARD_ANIMALS } from '../data/zooyardAnimals';
@@ -371,10 +371,11 @@ export default function ClassDetailsScreen() {
     try {
       const snap = await getDocs(collection(db, 'classes', selectedClass, 'students'));
       const batch = writeBatch(db);
-      let studentCount=0, quizSum=0, behaviourSum=0, detailSum=0, literacySum=0, badgeCount=0;
+      let studentCount=0, behaviourSum=0, detailSum=0, literacySum=0, badgeCount=0;
+      const quizDocs = [];
       snap.forEach(d => {
         const data = d.data(); studentCount++;
-        if (typeof data.quizPercentage === 'number') quizSum += data.quizPercentage;
+        quizDocs.push(data);
         (data.badges||[]).forEach(b => {
           const obs = b.observationScore;
           if (obs && typeof obs === 'object') {
@@ -385,7 +386,10 @@ export default function ClassDetailsScreen() {
           badgeCount++;
         });
       });
-      const quizAverage      = studentCount > 0 ? Math.round(quizSum/studentCount)     : 0;
+      // Was quizSum/studentCount, which divided by EVERY student including those who never
+      // answered — so a class with stragglers recorded a permanently deflated average in its
+      // closing snapshot. Now the same per-student figure the live cards show.
+      const quizAverage      = averageQuizPercent(quizDocs) ?? 0;
       const behaviourAverage = badgeCount   > 0 ? Math.round(behaviourSum/badgeCount)  : 0;
       const detailAverage    = badgeCount   > 0 ? Math.round(detailSum/badgeCount)     : 0;
       const literacyAverage  = badgeCount   > 0 ? Math.round(literacySum/badgeCount)   : 0;
