@@ -99,44 +99,43 @@ function AnalyticsTab({ classes }) {
     const completed = viewClasses.reduce((s, c) => s + c.completedCount, 0);
     const badges    = viewClasses.reduce((s, c) => s + (c.totalBadges || 0), 0);
     const zzCount   = viewClasses.filter(c => c.sessionType === 'zoosnooz').length;
-    const qMap = {};
-    const currentTextsCache = {};
+    // Average of each STUDENT's score, matching the teacher portal's "Avg Quiz %" card.
+    //
+    // This used to average per-QUESTION success rates, and that runs high because a question one
+    // student answered counts as much as one eight students answered. Filtered to PDHPE it read
+    // 86% while the students themselves averaged 74%: seven of fourteen question slots sat at
+    // 100%, and several of those were a single test student who got everything right.
+    //
+    // The per-question view is still the right tool for finding a bad question — it is what
+    // shows giraffe at 38% — and it lives in the question breakdown, not in a headline KPI
+    // sitting beside Students, Completed and Badges.
+    const quizPcts = [];
     viewStudents.forEach(st => {
-      const subject = st._subject || '';
-      (st.badges || []).forEach(b => {
-        const aid = b.animalId || 'unknown';
-        (b.quizResults || [])
-          .filter(qr => !qr.missionType || qr.missionType === 'knowledge')
-          .forEach((qr) => {
-            const qtext = qr.question || '';
-            const key = `${subject}||${aid}||${qtext}`;
-            if (!qMap[key]) qMap[key] = { correct: 0, total: 0, subject, aid, qtext };
-            qMap[key].total++;
-            if (qr.correctOnFirstAttempt === true) qMap[key].correct++;
-          });
-      });
+      // ZooSnooz and ZooYard store one quizCorrect boolean per animal rather than a
+      // quizResults array, so each needs its own branch.
+      if (st._sessionType === 'zoosnooz' && st.zoosnooz) {
+        const attempted = ZOOSNOOZ_ANIMALS.filter(a => st.zoosnooz[a.id]?.quizCorrect !== undefined);
+        if (attempted.length) {
+          quizPcts.push(attempted.filter(a => st.zoosnooz[a.id].quizCorrect === true).length / attempted.length * 100);
+        }
+        return;
+      }
+      if (st.zooyard) {
+        const attempted = ZOOYARD_ANIMALS.filter(a => st.zooyard[a.id]?.completed);
+        if (attempted.length) {
+          quizPcts.push(attempted.filter(a => st.zooyard[a.id].quizCorrect === true).length / attempted.length * 100);
+        }
+        return;
+      }
+      const results = (st.badges || []).flatMap(b =>
+        (b.quizResults || []).filter(qr => !qr.missionType || qr.missionType === 'knowledge'));
+      if (results.length) {
+        quizPcts.push(results.filter(qr => qr.correctOnFirstAttempt === true).length / results.length * 100);
+      }
     });
-    const qRates = Object.values(qMap).filter(q => {
-      if (q.total === 0) return false;
-      const cacheKey = `${q.aid}||${q.subject}`;
-      if (!currentTextsCache[cacheKey]) currentTextsCache[cacheKey] = getCurrentQuestionTexts(q.aid, q.subject);
-      return currentTextsCache[cacheKey].has(q.qtext);
-    });
-    // ZooYard has one MCQ per habitat stored as a `quizCorrect` boolean rather than a
-    // quizResults array, so it can't go through qMap. One rate per habitat keeps the
-    // weighting comparable to the per-question rates above.
-    const zyRates = ZOOYARD_ANIMALS.map(a => {
-      let correct = 0, totalQ = 0;
-      viewStudents.forEach(st => {
-        const d = st.zooyard?.[a.id];
-        if (!d?.completed) return;
-        totalQ++;
-        if (d.quizCorrect === true) correct++;
-      });
-      return { correct, total: totalQ };
-    }).filter(q => q.total > 0);
-    const allRates = [...qRates, ...zyRates];
-    const avgQuiz = allRates.length > 0 ? Math.round(allRates.reduce((s, q) => s + (q.correct / q.total * 100), 0) / allRates.length) : null;
+    const avgQuiz = quizPcts.length > 0
+      ? Math.round(quizPcts.reduce((x, y) => x + y, 0) / quizPcts.length)
+      : null;
     return { total, students, completed, badges, avgQuiz, zzCount };
   }, [viewClasses, viewStudents]);
 
