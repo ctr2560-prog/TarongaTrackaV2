@@ -471,6 +471,8 @@ const PDHPE_OBS_CONFIG = {
     heading: 'Chimp Lifestyle vs. Yours',
     chips: [{ label:'Physical Activity', color:'#059669' },{ label:'Sleep', color:'#7C3AED' },{ label:'Social Time', color:'#0284C7' },{ label:'Time Outdoors', color:'#D97706' }],
     hintsByStage: {
+      1: ['Look at your graph and find the tallest bar', 'That is what the chimps did most', 'Say one thing they do that you do too'],
+      2: ['Compare your graph to your own day', 'Name one thing that is the same and one that is different', 'Chimps move, rest, eat and spend time together, just like you'],
       3: ['Describe one similarity between chimp habits and healthy human habits', 'Describe one difference you noticed in the comparison chart', 'Suggest one chimp habit you could adopt to improve your own health'],
       4: ['For two lifestyle habits from the chart, explain how each addresses a determinant of health', 'Evaluate whether your own habits support or undermine each determinant', 'Use PDHPE terminology (e.g. determinants of health, health behaviours)'],
       5: ['Apply the biopsychosocial model to two chimp lifestyle behaviours', 'Explain how each addresses a determinant of health', 'Propose one evidence-based lifestyle change for adolescents based on what chimp habits suggest'],
@@ -481,6 +483,8 @@ const PDHPE_OBS_CONFIG = {
     heading: 'Nutrition and Healthy Eating',
     chips: [{ label:'Food variety', color:'#059669' },{ label:'Nutrients', color:'#D97706' },{ label:'Food groups', color:'#0284C7' },{ label:'Healthy diet', color:'#7C3AED' }],
     hintsByStage: {
+      1: ['Look at what the gorilla is eating', 'Leaves, fruit and bamboo are all plants', 'Name one healthy food that you eat'],
+      2: ['Gorillas eat lots of different plants, not just one', 'Name two healthy foods you eat', 'Say what each one does for your body, e.g. gives you energy'],
       3: ['Name two types of food the gorilla eats', 'Name two food groups and what they do for the body', 'Explain why eating a variety of foods matters for health'],
       4: ['Name two food groups and describe the key nutrients each provides', 'Explain the role those nutrients play in keeping the body healthy', 'Use the gorilla\'s diet as an example in your answer'],
       5: ['Name specific nutrients (fibre, vitamins, minerals, plant protein) and explain their physiological roles', 'Evaluate how the gorilla\'s diet compares to adolescent dietary guidelines', 'Discuss at least two health outcomes supported by the gorilla\'s diet'],
@@ -539,7 +543,7 @@ const PDHPE_OBS_CONFIG = {
     heading: 'Food as Fuel',
     chips: [{ label:'Energy', color:'#DC2626' },{ label:'Food choices', color:'#059669' },{ label:'Performance', color:'#0284C7' },{ label:'Dingo', color:'#7C3AED' }],
     hintsByStage: {
-      1: ['What does the dingo need food for?', 'Name one food that gives you energy', 'How does your body feel when you have not eaten enough?'],
+      1: ['The dingo runs a long way to hunt, so it needs energy', 'Name one food that gives you energy', 'Think about what you eat before you run or play'],
       2: ['Just like the dingo, your body needs fuel to move', 'Name two foods that give good energy for sport or play', 'Explain why you chose those foods'],
       3: ['Think about what the dingo eats to survive its long hunts', 'What food would fuel a student for a sport session?', 'Explain why that food is a good choice'],
       4: ['Connect the dingo\'s need for food to human performance', 'What should a student eat before physical activity and why?', 'Why do food choices matter for how your body performs?'],

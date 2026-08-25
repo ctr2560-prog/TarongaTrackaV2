@@ -329,8 +329,8 @@ export const PDHPE_ANIMALS = {
         },
         stageCorrect: { 1: 1, 2: 2, 3: 1, 4: 1, 5: 1 },
         stageFacts: {
-          1: 'Fast-twitch (Type II) muscles in the legs fire rapidly for explosive movements like jumping, sprinting, and pouncing.',
-          2: 'Sprinting uses fast-twitch Type II fibres for explosive, high-force contractions over a short duration.',
+          1: 'The big muscles in your legs. They are what push you off the ground when you jump.',
+          2: 'Sprinting. Short, fast bursts use different muscle fibres from long, steady activity.',
           3: 'Type I slow-twitch fibres are fatigue-resistant and oxygen-efficient, ideal for sustained aerobic activities like distance running.',
           4: 'Type II fast-twitch fibres contract 3–5× faster than Type I but fatigue quickly because they rely on anaerobic ATP-PC and glycolytic pathways rather than aerobic metabolism.',
           5: 'Chronic cortisol elevation inhibits muscle protein synthesis (reducing muscle mass), suppresses immune function, disrupts slow-wave sleep (reducing growth hormone), and causes psychological stress, all contributing to stereotypic pacing and poorer overall welfare.',

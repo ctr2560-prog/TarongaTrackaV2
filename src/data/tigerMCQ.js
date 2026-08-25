@@ -19,15 +19,26 @@ export const TIGER_PDHPE_MCQ = {
     4: 'As you measure the tiger, look closely at its hindquarters and back legs. Which major muscle groups generate the power for its sprint and pounce?',
     5: 'Measure the tiger and observe how its whole body is involved in hunting. Which combination of muscle groups enables the tiger to accelerate, leap and bring down prey?',
   },
+  // The correct answer used to sit at index 0 in every stage, which a class works out quickly.
   stageOptions: {
-    1: ['In its back legs and shoulders', 'In its tail', 'In its ears', 'In its stomach'],
-    2: ['Pull on bones to create movement', 'Pump blood around the body', 'Break down food during digestion', 'Control breathing automatically'],
-    3: ['Hindquarters and shoulder muscles', 'Facial and neck muscles', 'Abdominal and chest muscles', 'Forearm and paw muscles'],
+    1: ['In its tail', 'In its back legs and shoulders', 'In its ears', 'In its stomach'],
+    2: ['Pump blood around the body', 'Break down food during digestion', 'Pull on bones to create movement', 'Control breathing automatically'],
+    3: ['Facial and neck muscles', 'Abdominal and chest muscles', 'Forearm and paw muscles', 'Hindquarters and shoulder muscles'],
     4: ['Gluteals and hamstrings', 'Biceps and triceps', 'Deltoids and trapezius', 'Abdominals and hip flexors'],
-    5: ['Gluteals, hamstrings, quadriceps and shoulder muscles', 'Biceps, triceps and deltoids', 'Abdominals and chest muscles only', 'Hip flexors and calf muscles only'],
+    5: ['Biceps, triceps and deltoids', 'Gluteals, hamstrings, quadriceps and shoulder muscles', 'Abdominals and chest muscles only', 'Hip flexors and calf muscles only'],
   },
-  correct: 0,
-  fact: 'A tiger\'s power comes from its gluteals, hamstrings, quadriceps and powerful shoulder muscles working together - driving the explosive acceleration, leaping and grappling needed to bring down prey.',
+  stageCorrect: { 1: 1, 2: 2, 3: 3, 4: 0, 5: 1 },
+  // There was one explanation for all five stages, and it named gluteals, hamstrings and
+  // quadriceps — read by six-year-olds. The anatomy now arrives at the stage that teaches it.
+  stageFacts: {
+    1: 'Its back legs and shoulders. Those big muscles are what let a tiger push off the ground and pounce.',
+    2: 'Muscles pull on bones to make the body move. That is how you walk, run and jump.',
+    3: 'The hindquarters and shoulders. A tiger drives off its back legs, then uses its shoulders to grab and hold on.',
+    4: 'The gluteals and hamstrings, the big muscles at the back of the hips and thighs, generate most of the power for a sprint or a pounce.',
+    5: 'Gluteals, hamstrings, quadriceps and shoulders work together — the legs drive the acceleration and the leap, the shoulders bring the prey down.',
+  },
+  correct: 1,
+  fact: 'A tiger\'s power comes from the big muscles in its back legs and shoulders, which drive the acceleration, the leap and the grapple needed to bring down prey.',
 };
 
 export const TIGER_ENGLISH_MCQ = {
