@@ -285,23 +285,25 @@ export default function ClassDetailsScreen() {
   const totalBadges    = students.reduce((s,st)=>s+(st.badges?.length||0),0);
   const completedCount = students.filter(s=>s.completed).length;
   const completedStuds = students.filter(s=>s.completed);
+  // The mean of each STUDENT's score, which is what the card sits next to (Students, Avg Points,
+  // Badges, Completed) and what a teacher reads it as.
+  //
+  // It used to average per-QUESTION success rates instead, and that runs high: a question two
+  // students answered counted as much as one seven students answered, so the barely-attempted
+  // easy ones pulled it up. On 8STEAM it read 79% while the students themselves averaged 70%.
+  // The per-question view is still worth having — it is what shows giraffe sitting at 29% — and
+  // it lives in the Quiz Distribution panel below, where it is labelled as such.
+  //
+  // Counts every student who answered anything, not just those marked complete, so the number
+  // does not jump around while a class is still working.
   const avgQuizPct     = (() => {
-    const qMap = {};
-    students.forEach(s => {
-      (s.badges||[]).forEach(b => {
-        const aid = b.animalId || 'unknown';
-        (b.quizResults||[])
-          .filter(qr => !qr.missionType || qr.missionType === 'knowledge')
-          .forEach((qr, qi) => {
-            const key = `${aid}||${qi}`;
-            if (!qMap[key]) qMap[key] = { correct: 0, total: 0 };
-            qMap[key].total++;
-            if (qr.correctOnFirstAttempt === true) qMap[key].correct++;
-          });
-      });
-    });
-    const rates = Object.values(qMap).filter(q => q.total > 0);
-    return rates.length > 0 ? Math.round(rates.reduce((s, q) => s + (q.correct / q.total * 100), 0) / rates.length) : 0;
+    const pcts = students.map(s => {
+      const results = (s.badges || []).flatMap(b =>
+        (b.quizResults || []).filter(qr => !qr.missionType || qr.missionType === 'knowledge'));
+      if (!results.length) return null;
+      return results.filter(qr => qr.correctOnFirstAttempt === true).length / results.length * 100;
+    }).filter(p => p !== null);
+    return pcts.length > 0 ? Math.round(pcts.reduce((a, b) => a + b, 0) / pcts.length) : 0;
   })();
 
   // ── CSV Export ──────────────────────────────────────────────────────────────
