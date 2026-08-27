@@ -7,7 +7,22 @@ import { doc, getDoc, setDoc, updateDoc, addDoc, collection, serverTimestamp, in
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
 import { normaliseCode, safeStudentId, getMinWords, getStageScaffoldTip } from '../utils/helpers';
+import PhotoCapture from '../components/PhotoCapture';
 import { buildObservationScore, isLowQualityResponse } from '../utils/scoring';
+
+// PhotoCapture hands back a canvas Blob, which has no `.name` — only a File from the fallback
+// picker does. Derive the extension from the MIME type instead, or every upload throws.
+function photoExt(fileOrBlob) {
+  const type = fileOrBlob?.type || '';
+  if (type.includes('png'))  return 'png';
+  if (type.includes('webp')) return 'webp';
+  if (type.includes('heic')) return 'heic';
+  if (fileOrBlob?.name) {
+    const fromName = fileOrBlob.name.split('.').pop()?.toLowerCase();
+    if (fromName && fromName.length <= 5) return fromName;
+  }
+  return 'jpg';
+}
 
 function HomeButton({ dark, onHome }) {
   return (
@@ -67,7 +82,6 @@ export default function ZooYardScreen() {
 
   const [hydrating, setHydrating] = useState(true);
   const [habitatPhotos, setHabitatPhotos] = useState({});  // { [animalId]: downloadURL }
-  const [attestFile, setAttestFile] = useState(null);
   const [attestPreview, setAttestPreview] = useState(null);
   const [attestUploading, setAttestUploading] = useState(false);
   const [attestError, setAttestError] = useState('');
@@ -121,7 +135,7 @@ export default function ZooYardScreen() {
     setMcqAnswer(null); setMcqCorrect(null); setMcqRevealed(false);
     setObsText(''); setObsError('');
     setHintsOpen(false);
-    setAttestFile(null); setAttestPreview(null); setAttestError('');
+    setAttestPreview(null); setAttestError('');
   }
 
   function backToHabitats() {
@@ -195,45 +209,52 @@ export default function ZooYardScreen() {
     }
   }
 
-  function onAttestFileChange(e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setAttestFile(file);
-    setAttestPreview(URL.createObjectURL(file));
+  // Upload the moment the photo is taken, rather than waiting for "Yes, I'm ready". The student
+  // watches it save and only then gets the button, so nobody discovers a failed upload at the
+  // point they thought they were moving on.
+  async function onAttestPhoto(blob, dataUrl) {
+    setAttestPreview(dataUrl);
     setAttestError('');
-  }
-
-  // The photo is encouraged but never blocking - a denied camera permission or a school
-  // device without a camera must not be able to stall a student mid-lesson.
-  async function continueFromAttest() {
-    if (attestUploading) return;
-    if (!attestFile) { setZyPhase('video'); return; }
     setAttestUploading(true);
-    setAttestError('');
     try {
       const code = normaliseCode(classCode);
       const sid  = safeStudentId(studentName);
-      const ext  = (attestFile.name.split('.').pop() || 'jpg').toLowerCase();
+      const ext  = photoExt(blob);
       const path = `zooyardHabitats/${code}/${sid}-${zyAnimal.id}-${Date.now()}.${ext}`;
-      const snap = await uploadBytes(storageRef(storage, path), attestFile);
+      const snap = await uploadBytes(storageRef(storage, path), blob, { contentType: blob.type || 'image/jpeg' });
       const url  = await getDownloadURL(snap.ref);
       setHabitatPhotos(prev => ({ ...prev, [zyAnimal.id]: url }));
-      setZyPhase('video');
     } catch (err) {
       console.warn('ZooYard habitat photo upload failed:', err);
-      setAttestError('Could not save that photo. Tap "Yes, I\'m ready" again to continue without it.');
-      setAttestFile(null);
+      setAttestError('That photo did not save. Check your connection and take it again.');
       setAttestPreview(null);
     } finally {
       setAttestUploading(false);
     }
   }
 
-  function onCsFileChange(e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setCsFile(file);
-    setCsPreview(URL.createObjectURL(file));
+  function retakeAttestPhoto() {
+    setAttestPreview(null);
+    setAttestError('');
+    setHabitatPhotos(prev => {
+      const next = { ...prev };
+      delete next[zyAnimal.id];
+      return next;
+    });
+  }
+
+  // The photo is now required: it is the only evidence a student went anywhere, since ZooYard
+  // runs without any GPS check. The upload already happened in onAttestPhoto, so this just moves
+  // on. PhotoCapture falls back to a file picker when the camera is unavailable, so a locked-down
+  // device still has a route through.
+  function continueFromAttest() {
+    if (attestUploading || !habitatPhotos[zyAnimal.id]) return;
+    setZyPhase('video');
+  }
+
+  function onCsPhoto(blob, dataUrl) {
+    setCsFile(blob);
+    setCsPreview(dataUrl);
     setCsError('');
   }
 
@@ -250,9 +271,9 @@ export default function ZooYardScreen() {
       const teacherEmail = classData.teacherEmail || '';
       const schoolName   = classData.schoolName || '';
 
-      const ext  = (csFile.name.split('.').pop() || 'jpg').toLowerCase();
+      const ext  = photoExt(csFile);
       const path = `citizenScienceEvidence/${code}/${sid}-${Date.now()}.${ext}`;
-      const snap = await uploadBytes(storageRef(storage, path), csFile);
+      const snap = await uploadBytes(storageRef(storage, path), csFile, { contentType: csFile.type || 'image/jpeg' });
       const photoUrl = await getDownloadURL(snap.ref);
 
       await addDoc(collection(db, 'citizenScienceSubmissions'), {
@@ -338,14 +359,16 @@ export default function ZooYardScreen() {
           <div style={{ background:'white', borderRadius:16, padding:'1.5rem', boxShadow:'0 4px 20px rgba(7,30,20,0.08)' }}>
             <label style={{ display:'block', fontWeight:700, color:'#0A2F1F', marginBottom:'0.6rem' }}>Photo evidence</label>
             {csPreview ? (
-              <img src={csPreview} alt="" style={{ width:'100%', maxHeight:280, objectFit:'cover', borderRadius:12, marginBottom:'0.8rem' }} />
+              <>
+                <img src={csPreview} alt="" style={{ width:'100%', maxHeight:280, objectFit:'cover', borderRadius:12, marginBottom:'0.4rem' }} />
+                <button onClick={() => { setCsFile(null); setCsPreview(''); }} disabled={csUploading}
+                  style={{ background:'none', border:'none', color:'#6B6B62', fontSize:'0.78rem', cursor:'pointer', marginBottom:'1rem', fontFamily:'inherit', textDecoration:'underline' }}>
+                  Retake photo
+                </button>
+              </>
             ) : (
-              <div style={{ border:'2px dashed #D8D4C8', borderRadius:12, padding:'2rem 1rem', textAlign:'center', color:'#A8B4AC', marginBottom:'0.8rem' }}>
-                No photo selected yet
-              </div>
+              <PhotoCapture onCapture={onCsPhoto} accentColor="#2E7D55" label="Take a photo of what you built" />
             )}
-            <input type="file" accept="image/*" capture="environment" onChange={onCsFileChange}
-              style={{ width:'100%', marginBottom:'1rem', fontSize:'0.85rem' }} />
 
             <label style={{ display:'block', fontWeight:700, color:'#0A2F1F', marginBottom:'0.4rem' }}>Tell us about it (optional)</label>
             <textarea value={csNote} onChange={e => setCsNote(e.target.value)} rows={3}
@@ -367,6 +390,8 @@ export default function ZooYardScreen() {
   // ── Per-animal phases ────────────────────────────────────────────────────
   if (zyAnimal && zyPhase === 'attest') {
     const attestTheme = ZOOYARD_HABITAT_THEME[zyAnimal.habitatArea] || ZOOYARD_HABITAT_THEME.bushland;
+    // The upload finished and we have a URL back — not merely that a photo was taken.
+    const photoSaved = !!habitatPhotos[zyAnimal.id] && !attestUploading;
     return (
       <div style={{ position:'fixed', inset:0, background:attestTheme.bgGradient, display:'flex', alignItems:'center', justifyContent:'center', padding:'1.5rem', overflow:'hidden' }}>
         <HomeButton dark onHome={backToHabitats} />
@@ -385,28 +410,42 @@ export default function ZooYardScreen() {
 
           {/* Photo turns the self-attest tick-box into evidence the teacher can mark the
               written response against - the prompts ask students to describe this spot. */}
-          <label style={{ display:'block', cursor: attestUploading ? 'default' : 'pointer', marginBottom:'0.85rem' }}>
-            {attestPreview ? (
-              <img src={attestPreview} alt="" style={{ width:'100%', maxHeight:170, objectFit:'cover', borderRadius:12, display:'block' }} />
-            ) : (
-              <div style={{ border:`2px dashed ${zyAnimal.habitatColor}66`, background:'#FAFAF8', borderRadius:12, padding:'1.1rem 1rem', textAlign:'center' }}>
-                <div style={{ fontSize:'1.6rem', lineHeight:1, marginBottom:'0.35rem' }}>📷</div>
-                <div style={{ fontSize:'0.86rem', fontWeight:700, color:'#0A2F1F' }}>Take a photo of your spot</div>
-                <div style={{ fontSize:'0.74rem', color:'#6B6B62', marginTop:'0.15rem' }}>You will write about it in a moment</div>
+          {attestPreview ? (
+            <div style={{ marginBottom:'0.85rem' }}>
+              <div style={{ position:'relative' }}>
+                <img src={attestPreview} alt="" style={{ width:'100%', maxHeight:170, objectFit:'cover', borderRadius:12, display:'block' }} />
+                {attestUploading && (
+                  <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.45)', borderRadius:12, display:'flex', alignItems:'center', justifyContent:'center', color:'white', fontSize:'0.85rem', fontWeight:700 }}>
+                    Saving photo…
+                  </div>
+                )}
               </div>
-            )}
-            <input type="file" accept="image/*" capture="environment" disabled={attestUploading}
-              onChange={onAttestFileChange} style={{ display:'none' }} />
-          </label>
-          {attestPreview && (
-            <p style={{ fontSize:'0.74rem', color:'#6B6B62', margin:'-0.5rem 0 0.85rem' }}>Tap the photo to retake it.</p>
+              {photoSaved && (
+                <div style={{ fontSize:'0.78rem', fontWeight:700, color:'#166534', marginTop:'0.4rem' }}>✓ Photo saved</div>
+              )}
+              <button onClick={retakeAttestPhoto} disabled={attestUploading}
+                style={{ background:'none', border:'none', color:'#6B6B62', fontSize:'0.78rem', cursor: attestUploading ? 'default' : 'pointer', marginTop:'0.3rem', fontFamily:'inherit', textDecoration:'underline' }}>
+                Retake photo
+              </button>
+            </div>
+          ) : (
+            <PhotoCapture onCapture={onAttestPhoto} accentColor={zyAnimal.habitatColor}
+              label="Take a photo of your spot" hint="You will write about it in a moment" />
           )}
           {attestError && <p style={{ color:'#DC2626', fontSize:'0.8rem', margin:'0 0 0.7rem' }}>{attestError}</p>}
 
-          <button onClick={continueFromAttest} disabled={attestUploading}
-            style={{ width:'100%', padding:'0.85rem', borderRadius:999, border:'none', background: attestUploading ? '#CCC' : zyAnimal.habitatColor, color:'white', fontSize:'0.95rem', fontWeight:800, cursor: attestUploading ? 'not-allowed' : 'pointer', marginBottom:'0.6rem', textTransform:'uppercase', letterSpacing:'0.05em' }}>
-            {attestUploading ? 'Saving photo…' : "Yes, I'm ready"}
-          </button>
+          {/* Only appears once the photo is safely uploaded — the student sees the tick, then
+              the button. Before that, a line saying what is still needed. */}
+          {photoSaved ? (
+            <button onClick={continueFromAttest}
+              style={{ width:'100%', padding:'0.85rem', borderRadius:999, border:'none', background: zyAnimal.habitatColor, color:'white', fontSize:'0.95rem', fontWeight:800, cursor:'pointer', marginBottom:'0.6rem', textTransform:'uppercase', letterSpacing:'0.05em' }}>
+              Yes, I&apos;m ready
+            </button>
+          ) : (
+            <p style={{ fontSize:'0.8rem', color:'#6B6B62', margin:'0 0 0.8rem', lineHeight:1.5 }}>
+              {attestUploading ? 'Saving your photo…' : 'Take a photo of your spot to continue.'}
+            </p>
+          )}
           <button onClick={backToHabitats} disabled={attestUploading} style={{ background:'none', border:'none', color:'#6B6B62', fontSize:'0.85rem', cursor: attestUploading ? 'not-allowed' : 'pointer' }}>
             ← Not yet, go back
           </button>

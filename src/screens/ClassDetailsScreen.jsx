@@ -1225,6 +1225,65 @@ export default function ClassDetailsScreen() {
               )}
 
               {/* ── ZooYard Habitat Hero submissions ── */}
+              {/* ── Where students went ──────────────────────────────────────────
+                  ZooYard has no GPS check by design (DoE devices block geolocation), so the
+                  self-attest photo is the ONLY evidence a student actually went outside. It was
+                  already visible per student, one click deep in the observations modal — useless
+                  for scanning a class of thirty. This is the same photos laid out as a grid so a
+                  teacher can verify the whole class at a glance, and spot the four identical
+                  shots taken from one desk. */}
+              {isZY && students.length > 0 && (() => {
+                const shots = [];
+                students.forEach(s => ZOOYARD_ANIMALS.forEach(a => {
+                  const url = s.zooyard?.[a.id]?.habitatPhotoUrl;
+                  if (url) shots.push({ key: `${s.id}-${a.id}`, url, name: s.name || s.id, habitat: a.habitatLabel });
+                }));
+                const withPhoto = new Set(shots.map(x => x.name)).size;
+                const started = students.filter(s => ZOOYARD_ANIMALS.some(a => s.zooyard?.[a.id]?.completed));
+                const missing = started.filter(s => !ZOOYARD_ANIMALS.some(a => s.zooyard?.[a.id]?.habitatPhotoUrl));
+                return (
+                  <div style={{ background:'var(--t-chalk)', borderRadius:'var(--t-r-md)', padding:'1.15rem', marginBottom:'1.75rem', border:'1px solid var(--t-stone)' }}>
+                    <div style={{ display:'flex', alignItems:'baseline', justifyContent:'space-between', gap:'1rem', flexWrap:'wrap', marginBottom:'0.9rem' }}>
+                      <h3 style={{ fontSize:'0.9rem', fontWeight:700, color:'var(--t-deep)', margin:0 }}>📍 Where students went</h3>
+                      <span style={{ fontSize:'0.74rem', color:'var(--t-slate)' }}>
+                        {shots.length} photo{shots.length === 1 ? '' : 's'} from {withPhoto} student{withPhoto === 1 ? '' : 's'}
+                      </span>
+                    </div>
+                    {shots.length === 0 ? (
+                      <p style={{ fontSize:'0.82rem', color:'var(--t-ash)', fontStyle:'italic', margin:0 }}>
+                        No spot photos yet. They appear here as students start each habitat.
+                      </p>
+                    ) : (
+                      <>
+                        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(116px, 1fr))', gap:'0.6rem' }}>
+                          {shots.map(shot => (
+                            <a key={shot.key} href={shot.url} target="_blank" rel="noopener noreferrer"
+                               title={`${shot.name} — ${shot.habitat}`}
+                               style={{ display:'block', textDecoration:'none', background:'white', border:'1px solid var(--t-mist)', borderRadius:'var(--t-r-sm)', overflow:'hidden' }}>
+                              <img src={shot.url} alt={`${shot.name}, ${shot.habitat}`}
+                                   style={{ width:'100%', aspectRatio:'1 / 1', objectFit:'cover', display:'block' }} />
+                              <div style={{ padding:'0.35rem 0.5rem' }}>
+                                <div style={{ fontSize:'0.72rem', fontWeight:700, color:'var(--t-deep)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{shot.name}</div>
+                                <div style={{ fontSize:'0.63rem', color:'var(--t-slate)' }}>{shot.habitat}</div>
+                              </div>
+                            </a>
+                          ))}
+                        </div>
+                        {missing.length > 0 && (
+                          // The photo is deliberately never blocking — a denied camera or a
+                          // locked-down device must not stall a student — so a teacher needs
+                          // telling who got through without one rather than assuming everyone did.
+                          <p style={{ fontSize:'0.75rem', color:'var(--t-slate)', margin:'0.8rem 0 0', lineHeight:1.5 }}>
+                            No photo from {missing.map(s => s.name || s.id).join(', ')} — the photo is optional, so a
+                            student can finish without one.
+                          </p>
+                        )}
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
+
               {isZY && (
                 <div style={{ background:'var(--t-chalk)', borderRadius:'var(--t-r-md)', padding:'1.15rem', marginBottom:'1.75rem', border:'1px solid var(--t-stone)' }}>
                   <h3 style={{ fontSize:'0.9rem', fontWeight:700, color:'var(--t-deep)', margin:'0 0 0.9rem' }}>🌱 Habitat Hero Submissions</h3>
