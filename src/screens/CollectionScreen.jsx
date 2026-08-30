@@ -1,13 +1,16 @@
 import { useApp } from '../context/AppContext';
+import ClassLadder from '../components/ClassLadder';
 import { useStudent } from '../context/StudentContext';
 import { calculateAnimalPoints } from '../utils/helpers';
 
 export default function CollectionScreen() {
-  const { setCurrentScreen, classSubject } = useApp();
+  // studentName and classCode live on AppContext, not StudentContext — StudentContext consumes
+  // them but does not re-expose them, so destructuring them from useStudent silently yields
+  // undefined and the ladder never renders.
+  const { setCurrentScreen, classSubject, studentName, classCode } = useApp();
   const {
     animalsToRender, foundAnimals, badges, totalPoints,
     activityCompleted, isSubmittingActivity, completeActivity,
-    studentName, classCode,
   } = useStudent();
 
   return (
@@ -57,6 +60,12 @@ export default function CollectionScreen() {
             </div>
           );
         })}
+      </div>
+
+      {/* Asked for by a student: where do I sit against the rest of the class?
+          Sits above the totals strip, so the ladder reads as part of the same summary. */}
+      <div style={{ maxWidth:'760px', margin:'0 auto 1rem', padding:'0 1rem' }}>
+        <ClassLadder classCode={classCode} studentName={studentName} myPoints={totalPoints} />
       </div>
 
       <div className="collection-totals-strip">
