@@ -95,7 +95,13 @@ export function calculateBehaviourScore(text) {
     'groom','scratch','interact','survive','adapt',
   ];
   const matches = behaviourRoots.filter(root => lower.includes(root));
+  // One clear behaviour word used to score the same as none at all — both 2 — so a student who
+  // actually described a behaviour was marked as if they had not. "The gorillas are sitting
+  // together and are quiet" scored 2/5 with the rationale "does not clearly relate to the
+  // question", which was simply wrong. One behaviour word is now a 3; everything above is
+  // unchanged, and zero behaviour words still scores 2.
   if (matches.length === 0) return 2;
+  if (matches.length === 1) return 3;
   return Math.min(matches.length + 1, 5);
 }
 
@@ -156,16 +162,22 @@ export function stage1WritingScore(text) {
   return 3;
 }
 
+// Eased slightly 2026-08-30. Behaviour was hard-capped at 4, so a Stage 3 student could not
+// reach 5 however good the answer — while Stage 4 could, on exactly the same words. Full marks
+// now need three detail hits AND an explanation, so 4 stays the normal score for a solid answer
+// and 5 is reachable for a genuinely strong one. Nothing below 4 moved, so a thin or off-task
+// response scores exactly as before. Detail is deliberately left capped at 4: raising it too
+// made Stage 3 score higher than Stage 4 on identical text.
 export function stage3Score(hits, hasExplanation) {
   let b;
   if (hits === 0 && !hasExplanation) b = 2;
   else if (hits === 0 && hasExplanation) b = 3;
   else if (hits >= 1 && !hasExplanation) b = 3;
+  else if (hits >= 3 && hasExplanation) b = 5;
   else b = Math.min(hits + 2, 4);
   let d;
   if (hits === 0 && !hasExplanation) d = 2;
   else if (hits === 0 && hasExplanation) d = 3;
-  else if (hits >= 1 && !hasExplanation) d = 3;
   else if (hits >= 1 && hasExplanation) d = 4;
   else d = 3;
   return { b, d };
@@ -343,8 +355,13 @@ export function scoreObservation(text, animalId, classStage) {
       detailBonus = stage1DetailScore(text, s1words);
       literacyBonus = stage1WritingScore(text);
     } else if (stage === 3) {
+      // Math.max, matching what stage 4 does below. Stage 3 used to OVERWRITE behaviourBonus,
+      // throwing away the topic-vocabulary score computed just above — so "Lions are important
+      // for the ecosystem and provide important control of animals" scored 2, despite using two
+      // conservation words, because none of the narrower detailWords appeared. Stage 4 kept that
+      // signal; stage 3 discarded it. Applied to all nine stage-3 branches.
       const s3 = stage3Score(detailHits, hasExplanation);
-      behaviourBonus = s3.b; detailBonus = s3.d;
+      behaviourBonus = Math.max(behaviourBonus || 0, s3.b); detailBonus = s3.d;
     } else if (stage === 5) {
       const s5 = stage5Score(text, conservationWords, detailWords, hasExplanation);
       behaviourBonus = s5.b; detailBonus = s5.d; literacyBonus = s5.w;
@@ -367,7 +384,7 @@ export function scoreObservation(text, animalId, classStage) {
       literacyBonus = stage1WritingScore(text);
     } else if (stage === 3) {
       const s3 = stage3Score(detailHits, hasExplanation);
-      behaviourBonus = s3.b; detailBonus = s3.d;
+      behaviourBonus = Math.max(behaviourBonus || 0, s3.b); detailBonus = s3.d;
     } else if (stage === 5) {
       const s5 = stage5Score(text, behaviourWords, detailWords, hasExplanation);
       behaviourBonus = s5.b; detailBonus = s5.d; literacyBonus = s5.w;
@@ -418,7 +435,7 @@ export function scoreObservation(text, animalId, classStage) {
       literacyBonus  = stage1WritingScore(text);
     } else if (stage === 3) {
       const s3 = stage3Score(camouflageHits, hasExp);
-      behaviourBonus = s3.b; detailBonus = s3.d;
+      behaviourBonus = Math.max(behaviourBonus || 0, s3.b); detailBonus = s3.d;
       literacyBonus  = calculateWritingScore(text, stage);
     } else if (stage === 5) {
       const s5 = stage5Score(text, camouflageWords, detailWords, hasExp);
@@ -444,7 +461,7 @@ export function scoreObservation(text, animalId, classStage) {
       literacyBonus = stage1WritingScore(text);
     } else if (stage === 3) {
       const s3 = stage3Score(detailHits, hasExplanation);
-      behaviourBonus = s3.b; detailBonus = s3.d;
+      behaviourBonus = Math.max(behaviourBonus || 0, s3.b); detailBonus = s3.d;
     } else if (stage === 5) {
       const s5 = stage5Score(text, behaviourWords, detailWords, hasExplanation);
       behaviourBonus = s5.b; detailBonus = s5.d; literacyBonus = s5.w;
@@ -468,7 +485,7 @@ export function scoreObservation(text, animalId, classStage) {
       literacyBonus = stage1WritingScore(text);
     } else if (stage === 3) {
       const s3 = stage3Score(detailHits, hasExplanation);
-      behaviourBonus = s3.b; detailBonus = s3.d;
+      behaviourBonus = Math.max(behaviourBonus || 0, s3.b); detailBonus = s3.d;
     } else if (stage === 5) {
       const s5 = stage5Score(text, behaviourWords, detailWords, hasExplanation);
       behaviourBonus = s5.b; detailBonus = s5.d; literacyBonus = s5.w;
@@ -492,7 +509,7 @@ export function scoreObservation(text, animalId, classStage) {
       literacyBonus = stage1WritingScore(text);
     } else if (stage === 3) {
       const s3 = stage3Score(detailHits, hasExplanation);
-      behaviourBonus = s3.b; detailBonus = s3.d;
+      behaviourBonus = Math.max(behaviourBonus || 0, s3.b); detailBonus = s3.d;
     } else if (stage === 5) {
       const s5 = stage5Score(text, behaviourWords, detailWords, hasExplanation);
       behaviourBonus = s5.b; detailBonus = s5.d; literacyBonus = s5.w;
@@ -516,7 +533,7 @@ export function scoreObservation(text, animalId, classStage) {
       literacyBonus = stage1WritingScore(text);
     } else if (stage === 3) {
       const s3 = stage3Score(detailHits, hasExplanation);
-      behaviourBonus = s3.b; detailBonus = s3.d;
+      behaviourBonus = Math.max(behaviourBonus || 0, s3.b); detailBonus = s3.d;
     } else if (stage === 5) {
       const s5 = stage5Score(text, behaviourWords, detailWords, hasExplanation);
       behaviourBonus = s5.b; detailBonus = s5.d; literacyBonus = s5.w;
@@ -540,7 +557,7 @@ export function scoreObservation(text, animalId, classStage) {
       literacyBonus = stage1WritingScore(text);
     } else if (stage === 3) {
       const s3 = stage3Score(detailHits, hasExplanation);
-      behaviourBonus = s3.b; detailBonus = s3.d;
+      behaviourBonus = Math.max(behaviourBonus || 0, s3.b); detailBonus = s3.d;
     } else if (stage === 5) {
       const s5 = stage5Score(text, behaviourWords, detailWords, hasExplanation);
       behaviourBonus = s5.b; detailBonus = s5.d; literacyBonus = s5.w;
@@ -564,7 +581,7 @@ export function scoreObservation(text, animalId, classStage) {
       literacyBonus = stage1WritingScore(text);
     } else if (stage === 3) {
       const s3 = stage3Score(detailHits, hasExplanation);
-      behaviourBonus = s3.b; detailBonus = s3.d;
+      behaviourBonus = Math.max(behaviourBonus || 0, s3.b); detailBonus = s3.d;
     } else if (stage === 5) {
       const s5 = stage5Score(text, behaviourWords, detailWords, hasExplanation);
       behaviourBonus = s5.b; detailBonus = s5.d; literacyBonus = s5.w;
