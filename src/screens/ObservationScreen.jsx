@@ -1145,6 +1145,11 @@ export default function ObservationScreen() {
               ? 'Stop. Look closely. The zoo is full of hidden maths.'
               : isEnglish
               ? 'Stop. Look at the tiger through your journalist\'s eye. What do you see that carries the weight of what is being lost?'
+              : classStage <= 3
+              // Stage 3 and below are asked "what did you hear or smell around the habitat?", so
+              // the countdown primes the senses rather than the science vocabulary. Stage 4-5
+              // keep the adaptations framing, which is what their prompt asks for.
+              ? 'Stop. Stand still and use your senses. What can you SEE, HEAR and SMELL around the tiger?'
               : 'Stop. Look closely at the tiger. What behaviours, features and adaptations can you observe?'}
           </p>
           <h3 style={{ fontSize:'5rem', fontWeight:800, marginBottom:'1.5rem', fontVariantNumeric:'tabular-nums', color: tigerTimerSeconds <= 10 ? '#FFEB3B' : 'white' }}>
@@ -1156,7 +1161,11 @@ export default function ObservationScreen() {
                 Start Observing
               </button>
             : <p style={{ fontSize:'0.9rem', opacity:0.85, fontWeight:600 }}>
-                {isPdhpe ? 'Observe now… what can sport learn from this animal?' : isMaths ? 'Observe now… find the hidden maths.' : isEnglish ? 'Look closely… what details will you put in your writing?' : 'Observe now… look for adaptations and behaviours.'}
+                {isPdhpe ? 'Observe now… what can sport learn from this animal?'
+                  : isMaths ? 'Observe now… find the hidden maths.'
+                  : isEnglish ? 'Look closely… what details will you put in your writing?'
+                  : classStage <= 3 ? 'Look, listen and sniff… what can you notice?'
+                  : 'Observe now… look for adaptations and behaviours.'}
               </p>
           }
         </div>
