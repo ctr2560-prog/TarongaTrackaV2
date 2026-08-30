@@ -99,20 +99,30 @@ export default function ChimpMission() {
                 <h2 style={{ fontSize:'1.15rem', fontWeight:700, color:'white', margin:0, lineHeight:1.2 }}>Chimpanzee Behaviour Graph</h2>
               </div>
             </div>
-            {classStage <= 2 ? (
-              <div style={{ display:'flex', flexDirection:'column', gap:'0.3rem' }}>
-                {[['1','Watch the chimpanzees 🔍'],['2','Adjust the sliders to match what you see 📊'],[isEnglish ? '3' : '3', isEnglish ? 'Pick the lowest behaviour - that\'s your story conflict ✅' : 'Pick which behaviour is most common ✅']].map(([n,s]) => (
-                  <div key={n} style={{ display:'flex', gap:'0.5rem', alignItems:'flex-start' }}>
-                    <span style={{ background:'rgba(100,220,140,0.25)', color:'rgba(100,220,140,0.9)', borderRadius:'50%', width:'18px', height:'18px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'0.7rem', fontWeight:800, flexShrink:0 }}>{n}</span>
-                    <span style={{ fontSize:'0.82rem', color:'rgba(255,255,255,0.75)', lineHeight:1.4 }}>{s}</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p style={{ fontSize:'0.82rem', color:'rgba(255,255,255,0.65)', margin:0, lineHeight:1.55 }}>
+            {/* Every stage gets the same explicit numbered steps, set large. Stages 3-5 used to
+                get a paragraph about "ethogram data" that explained the science but never said
+                what to DO. The step about totalling 100 is spelled out here rather than left to
+                the red/green box further down the page, which a student only meets after getting
+                it wrong. Seniors keep the ethogram framing, but underneath the steps rather than
+                instead of them. */}
+            <div style={{ display:'flex', flexDirection:'column', gap:'0.7rem', marginTop:'0.3rem' }}>
+              {[
+                ['1', 'Watch the chimpanzees for a minute.'],
+                ['2', 'Move the three sliders to show what they were doing.'],
+                ['3', 'Make the three numbers add up to 100.'],
+                ['4', isEnglish ? 'Then pick the behaviour they did LEAST.' : 'Then pick the behaviour they did MOST.'],
+              ].map(([n, step]) => (
+                <div key={n} style={{ display:'flex', gap:'0.7rem', alignItems:'center' }}>
+                  <span style={{ background:'rgba(100,220,140,0.25)', color:'rgba(100,220,140,0.95)', borderRadius:'50%', width:'28px', height:'28px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'0.95rem', fontWeight:800, flexShrink:0 }}>{n}</span>
+                  <span style={{ fontSize:'1.02rem', color:'white', lineHeight:1.35, fontWeight:600 }}>{step}</span>
+                </div>
+              ))}
+            </div>
+            {classStage >= 4 && (
+              <p style={{ fontSize:'0.82rem', color:'rgba(255,255,255,0.6)', margin:'0.9rem 0 0', lineHeight:1.55, borderTop:'1px solid rgba(255,255,255,0.12)', paddingTop:'0.8rem' }}>
                 {isEnglish
-                  ? <>Observe the chimps and build a graph. The behaviour they do <strong style={{ color:'rgba(255,255,255,0.9)' }}>least</strong> becomes the conflict in your chimpanzee story - the problem that drives the narrative.</>
-                  : <>Scientists collect <strong style={{ color:'rgba(255,255,255,0.9)' }}>ethogram data</strong> to understand how animals spend their time. Observe the chimps and build a graph that reflects their behaviour.</>
+                  ? <>The behaviour they do <strong style={{ color:'rgba(255,255,255,0.85)' }}>least</strong> becomes the conflict in your story - the problem that drives the narrative.</>
+                  : <>This is how scientists collect <strong style={{ color:'rgba(255,255,255,0.85)' }}>ethogram data</strong> to understand how an animal spends its time.</>
                 }
               </p>
             )}
