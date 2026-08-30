@@ -411,7 +411,15 @@ export function scoreObservation(text, animalId, classStage) {
       const s5 = stage5Score(text, observationWords, conceptWords, hasExp);
       behaviourBonus = s5.b; detailBonus = s5.d; literacyBonus = s5.w;
     } else {
-      detailBonus = stage === 3 ? Math.min(elements + 1, 4) : Math.min(elements + 2, 5);
+      const elementScore = stage === 3 ? Math.min(elements + 1, 4) : Math.min(elements + 2, 5);
+      detailBonus = elementScore;
+      // Behaviour was left on the generic verb-counter, which ignores this branch's own
+      // vocabulary — so "The gorillas sat together as a family group. Staying together helps
+      // them protect the young ones." scored 2, because "sat", "together" and "protect" are not
+      // generic behaviour verbs even though 'together', 'group' and 'protect' are right here in
+      // observationWords and conceptWords. Take the better of the two, as every stage-4 branch
+      // already does.
+      behaviourBonus = Math.max(behaviourBonus || 0, elementScore);
     }
   } else if (animalId === 'dingo') {
     // Dingo question is about camouflage - colour, texture, blending, environment

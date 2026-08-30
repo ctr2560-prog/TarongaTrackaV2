@@ -7,7 +7,7 @@ export const animals =
           writingPromptByStage: {
             1: 'What did you see?',
             2: 'What were the chimpanzees doing and were they together or alone?',
-            3: 'Describe what you saw the chimpanzees doing and how they were interacting.',
+            3: 'What were the chimpanzees doing together, and how does living in a group help them survive?',
             4: 'Describe the group dynamics you can observe in the chimpanzees.',
             5: 'Explain how social behaviour helps chimpanzees survive and what you observed that supports this.',
           },
@@ -34,7 +34,7 @@ export const animals =
           writingPromptByStage: {
             1: 'What did you see?',
             2: 'What were the gorillas doing and what did they look like?',
-            3: 'Describe what you saw the gorillas doing and how they moved.',
+            3: 'What did the gorillas do as a group, and how does staying together help them?',
             4: 'How are the gorillas similar to humans, including yourself?',
             5: 'Explain how gorilla behaviour shows signs of intelligence or social structure and what you observed to support this.',
           },
@@ -75,7 +75,7 @@ export const animals =
           writingPromptByStage: {
             1: 'What did you see?',
             2: 'What was the lion doing and what did it look like?',
-            3: 'Why is it important to conserve lion populations?',
+            3: 'Lions are predators. Explain why protecting them matters for the other animals sharing their habitat.',
             4: 'Why is it important to conserve lion populations?',
             5: 'Why is it important to conserve lion populations?',
           },
@@ -123,7 +123,7 @@ export const animals =
           writingPromptByStage: {
             1: 'What did you see?',
             2: 'What did you see and what was it doing?',
-            3: 'Describe the giraffe and where it was.',
+            3: 'How does the giraffe\'s long neck help it reach food that other animals cannot?',
             4: 'Describe your observation and explain how the giraffe\'s height helps it.',
             5: 'Explain why the giraffe is tall and how this helps it survive.',
           },
@@ -137,7 +137,7 @@ export const animals =
           writingPromptByStage: {
             1: 'What did you see?',
             2: 'What did the koala look like and what was it doing?',
-            3: 'Describe where the koala was and what you could observe about it.',
+            3: 'How do the koala\'s claws and grip help it stay safe up in the tree?',
             4: 'Watch the koala carefully. What does it look like? What is it doing?',
             5: 'Explain what the koala is doing and why this helps it survive.',
           },
@@ -243,7 +243,7 @@ export const animals =
           writingPromptByStage: {
             1: 'What did you see?',
             2: 'What did the ground feel like and what did you notice around you?',
-            3: 'Describe what you felt and noticed in this environment.',
+            3: 'This lawn is a habitat too. Explain what lives here and what it gets from this space.',
             4: 'Describe your experience walking on the grass and explain how this environment is different to a built environment like the city.',
             5: 'Explain what you experienced and why the environment felt that way.',
           },
@@ -305,7 +305,7 @@ export const animals =
           writingPromptByStage: {
             1: 'What did you see?',
             2: 'What did the dingo look like and what was it doing?',
-            3: 'Describe the dingo\'s appearance and the environment around it.',
+            3: 'How does the colour of the dingo\'s fur help it hide in this environment?',
             4: 'Explain how the dingo\'s appearance helps it survive in its environment.',
             5: 'Explain what you noticed about the dingo and how it helps it survive.',
           },
@@ -337,7 +337,7 @@ export const animals =
           writingPromptByStage: {
             1: 'What did you see?',
             2: 'What were the lemurs doing and where were they?',
-            3: 'Describe what the lemurs were doing and which part of their enclosure they used.',
+            3: 'Which part of the space did the lemurs use most, and why do you think they chose it?',
             4: 'Describe how the lemurs use different parts of their enclosure.',
             5: 'Explain where the lemurs are and why they use that space.',
           },
@@ -371,7 +371,7 @@ export const animals =
           writingPromptByStage: {
             1: 'What did you see?',
             2: 'What was the sea lion doing and where was it?',
-            3: 'Describe what you could see the sea lion doing in the water or on land.',
+            3: 'What did the sea lion do in the water, and how could rubbish in the ocean make that harder?',
             4: 'Explain how humans can impact sea lions and their environment.',
             5: 'Explain how humans impact sea lions and why this matters.',
           },
@@ -413,7 +413,7 @@ export const animals =
           writingPromptByStage: {
             1: 'What did you see?',
             2: 'What could you hear and how did it make you feel?',
-            3: 'Describe what you heard and whether the sounds were from nature or humans.',
+            3: 'What could you hear, and what do those sounds tell you about what lives here?',
             4: 'Describe what you could hear and explain how it made you feel.',
             5: 'Explain what you heard and how it reflects the environment.',
           },
@@ -459,7 +459,7 @@ export const animals =
           writingPromptByStage: {
             1: 'What did you see?',
             2: 'What animals were near the buffalo and what were they doing?',
-            3: 'Describe the buffalo and any other animals nearby, and what they were doing.',
+            3: 'What other animals were near the buffalo, and how do they help each other?',
             4: 'Describe a relationship you can observe between the buffalo (or rhino) and another animal, and explain how it may help them.',
             5: 'Explain how the buffalo\'s features or relationships help it survive.',
           },
