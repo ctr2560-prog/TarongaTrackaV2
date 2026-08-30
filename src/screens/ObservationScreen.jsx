@@ -44,8 +44,10 @@ const OBS_CONFIG = {
   },
   'asian-water-buffalo': {
     heading: 'Helpful Relationships',
-    chips: [{ label:'Nearby animals', color:'#059669' },{ label:'Interactions', color:'#0284C7' },{ label:'Positioning', color:'#2E7D55' },{ label:'Mutualism', color:'#DC2626' }],
-    bullets: ['Other animals nearby (e.g. birds, other species)','How those animals interact with the buffalo','Where they are positioned relative to each other','Why this relationship may benefit one or both animals'],
+    // "Mutualism" was the odd one out — a technical term next to three plain-English chips, and
+    // not a word the writing prompt ever uses. "Helping each other" says the same thing.
+    chips: [{ label:'Nearby animals', color:'#059669' },{ label:'Interactions', color:'#0284C7' },{ label:'Positioning', color:'#2E7D55' },{ label:'Helping each other', color:'#DC2626' }],
+    bullets: ['Other animals nearby (e.g. birds, other species)','How those animals interact with the buffalo','Where they are positioned relative to each other','How the buffalo and the other animal might help each other'],
   },
   'blue-mountains-bushwalk': {
     heading: 'Listen to the Environment',
@@ -1069,6 +1071,11 @@ export default function ObservationScreen() {
               ? 'Maths is not just numbers on a page. Mathematicians use observation, estimation and measurement to understand real places.'
               : isEnglish
               ? 'Walk to a tree near the Concert Lawn. Stand beside it. Look up at its branches and down at its roots.'
+              : classStage <= 3
+              // Stage 3 and below get a single instruction. The full version is two sentences of
+              // framing before it says what to do, and the six bullets below are more than a
+              // student can hold while walking around for a minute.
+              ? 'Stand on the grass. This is a habitat too — find out what lives here.'
               : 'The Concert Lawn is a natural habitat within the zoo. Stand on the grass and observe what makes this environment different from the animal enclosures.'}
           </p>
           <div style={{ background:'rgba(255,255,255,0.12)', borderRadius:'14px', padding:'1rem 1.4rem', maxWidth:'480px', marginBottom:'1.5rem', textAlign:'left' }}>
@@ -1108,6 +1115,10 @@ export default function ObservationScreen() {
                   'how the texture compares to concrete or hard surfaces',
                   'how temperature, distance and area could be measured',
                   'how this environment changes the way you move',
+                ] : classStage <= 3 ? [
+                  'how the grass feels under your feet',
+                  'sounds and smells around you',
+                  'any insects, birds or plants you can see',
                 ] : [
                   'the texture and temperature of the grass underfoot',
                   'sounds, smells and living things around you',

@@ -405,21 +405,34 @@ export default function BuffaloMission() {
             <div style={{ width:'48px', height:'2px', background:'rgba(100,220,140,0.55)', borderRadius:'1px', margin:'0.65rem auto 1.4rem' }} />
             <div style={{ width:'100%', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.11)', borderRadius:'14px', padding:'1.1rem 1.2rem', marginBottom:'0.85rem' }}>
               <p style={{ fontSize:'0.65rem', fontWeight:800, color:'rgba(100,220,140,0.85)', textTransform:'uppercase', letterSpacing:'0.12em', margin:'0 0 0.55rem' }}>About the Species</p>
-              <p style={{ fontSize:'0.9rem', color:'rgba(255,255,255,0.88)', lineHeight:1.65, margin:0 }}>
-                Asian Water Buffalo thrive in <strong style={{ color:'white' }}>wetlands and muddy riverbeds</strong> - their wide hooves act like natural snowshoes, spreading their weight so they don't sink. On <strong style={{ color:'#F4A460' }}>hard, dry ground</strong> those same hooves become a liability, making river habitat essential to their survival.
-              </p>
+              {/* Stage 3 and below get the hoof fact in two short sentences. The full version
+                  runs to 45 words in one block and buries the point — that the wide hooves are
+                  the whole reason this animal needs the river — behind "liability" and
+                  "essential to their survival". */}
+              {classStage <= 3 ? (
+                <p style={{ fontSize:'1rem', color:'white', lineHeight:1.6, margin:0 }}>
+                  Water buffalo have <strong style={{ color:'#7DDCA0' }}>wide hooves</strong> that spread their weight, like snowshoes, so they don&apos;t sink in mud.
+                  <br /><br />
+                  That is why they need <strong style={{ color:'#7DDCA0' }}>rivers and wetlands</strong> — on hard dry ground those big hooves get in the way.
+                </p>
+              ) : (
+                <p style={{ fontSize:'0.9rem', color:'rgba(255,255,255,0.88)', lineHeight:1.65, margin:0 }}>
+                  Asian Water Buffalo thrive in <strong style={{ color:'white' }}>wetlands and muddy riverbeds</strong> - their wide hooves act like natural snowshoes, spreading their weight so they don&apos;t sink. On <strong style={{ color:'#F4A460' }}>hard, dry ground</strong> those same hooves become a liability, making river habitat essential to their survival.
+                </p>
+              )}
             </div>
             <div style={{ width:'100%', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.11)', borderRadius:'14px', padding:'1.1rem 1.2rem', marginBottom:'1.1rem' }}>
               <p style={{ fontSize:'0.65rem', fontWeight:800, color:'rgba(100,220,140,0.85)', textTransform:'uppercase', letterSpacing:'0.12em', margin:'0 0 0.7rem' }}>How to Play</p>
               <div style={{ display:'flex', flexDirection:'column', gap:'0.6rem' }}>
-                {[
-                  ['Tap the screen', 'to float the buffalo upward through the river.'],
-                  ['Avoid the earth banks', ' - touching them ends your run.'],
-                  ['Pass as many gaps as you can', ' - then answer the quiz question!'],
-                ].map(([bold, rest], i) => (
+                {(classStage <= 3
+                  ? [['Tap', 'to float up.'], ['Miss the banks', '— hitting one ends your run.'], ['Get through the gaps', '— then answer the question.']]
+                  : [['Tap the screen', 'to float the buffalo upward through the river.'],
+                     ['Avoid the earth banks', ' - touching them ends your run.'],
+                     ['Pass as many gaps as you can', ' - then answer the quiz question!']]
+                ).map(([bold, rest], i) => (
                   <div key={i} style={{ display:'flex', alignItems:'flex-start', gap:'0.6rem' }}>
-                    <div style={{ flexShrink:0, width:'5px', height:'5px', borderRadius:'50%', background:'rgba(100,220,140,0.7)', marginTop:'0.42rem' }} />
-                    <p style={{ fontSize:'0.88rem', color:'rgba(255,255,255,0.82)', lineHeight:1.5, margin:0 }}><strong style={{ color:'white' }}>{bold}</strong> {rest}</p>
+                    <div style={{ flexShrink:0, width:'5px', height:'5px', borderRadius:'50%', background:'rgba(100,220,140,0.7)', marginTop: classStage <= 3 ? '0.5rem' : '0.42rem' }} />
+                    <p style={{ fontSize: classStage <= 3 ? '1rem' : '0.88rem', color: classStage <= 3 ? 'rgba(255,255,255,0.92)' : 'rgba(255,255,255,0.82)', lineHeight:1.5, margin:0 }}><strong style={{ color:'white' }}>{bold}</strong> {rest}</p>
                   </div>
                 ))}
               </div>

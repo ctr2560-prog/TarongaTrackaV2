@@ -322,16 +322,33 @@ export default function SeaLionMission() {
           <div style={{ width:'48px', height:'2px', background:'rgba(100,180,220,0.55)', margin:'0.5rem auto 1.4rem' }} />
           <div style={{ width:'100%', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.11)', borderRadius:'14px', padding:'1.1rem 1.2rem', marginBottom:'0.85rem' }}>
             <p style={{ fontSize:'0.65rem', fontWeight:800, color:'rgba(100,180,220,0.85)', textTransform:'uppercase', letterSpacing:'0.12em', margin:'0 0 0.55rem' }}>Sea Lion Facts</p>
-            <p style={{ fontSize:'0.9rem', color:'rgba(255,255,255,0.88)', lineHeight:1.65, margin:0 }}>
-              Sea lions need <strong style={{ color:'white' }}>deep pools, enrichment &amp; shade</strong> to thrive. Sustainability features like <strong style={{ color:'#67D8F7' }}>solar panels</strong> and <strong style={{ color:'#67D8F7' }}>water filters</strong> keep their habitat healthy for the long term.
-            </p>
+            {/* Stage 3 and below get the same two ideas without the abstract nouns — "enrichment",
+                "sustainability features" and "for the long term" are all doing work a Year 5 has
+                no reason to decode before a building game. */}
+            {classStage <= 3 ? (
+              <p style={{ fontSize:'1rem', color:'white', lineHeight:1.6, margin:0 }}>
+                Sea lions need <strong style={{ color:'#67D8F7' }}>deep water, shade and things to play with</strong>.
+                <br /><br />
+                <strong style={{ color:'#67D8F7' }}>Solar panels</strong> and <strong style={{ color:'#67D8F7' }}>water filters</strong> keep their home clean and healthy.
+              </p>
+            ) : (
+              <p style={{ fontSize:'0.9rem', color:'rgba(255,255,255,0.88)', lineHeight:1.65, margin:0 }}>
+                Sea lions need <strong style={{ color:'white' }}>deep pools, enrichment &amp; shade</strong> to thrive. Sustainability features like <strong style={{ color:'#67D8F7' }}>solar panels</strong> and <strong style={{ color:'#67D8F7' }}>water filters</strong> keep their habitat healthy for the long term.
+              </p>
+            )}
           </div>
           <div style={{ width:'100%', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.11)', borderRadius:'14px', padding:'1.1rem 1.2rem', marginBottom:'1.1rem' }}>
             <p style={{ fontSize:'0.65rem', fontWeight:800, color:'rgba(100,180,220,0.85)', textTransform:'uppercase', letterSpacing:'0.12em', margin:'0 0 0.55rem' }}>How to Play</p>
-            {[['🌊','Choose features from the tray at the bottom'],['💛','Stay within your $320 budget'],['♻️','Balance environment, wellbeing & sustainability'],['↔️','Drag placed items to reposition them'],['↻','Tap an item then rotate it 90° as needed'],['✓','Hit Finish Building when your sanctuary is ready']].map(([em,txt]) => (
-              <div key={em} style={{ display:'flex', alignItems:'flex-start', gap:'0.55rem', marginBottom:'0.38rem' }}>
-                <span style={{ fontSize:'1rem', lineHeight:1.3, flexShrink:0 }}>{em}</span>
-                <span style={{ fontSize:'0.85rem', color:'rgba(255,255,255,0.8)', lineHeight:1.45 }}>{txt}</span>
+            {(classStage <= 3
+              // Six steps is more than anyone reads before a game. Drag-to-move and tap-to-rotate
+              // are discoverable once building starts, so they come out; what cannot be guessed
+              // is the budget and the three things being scored.
+              ? [['🌊','Drag features from the tray into your sanctuary.'],['💛','Do not spend more than $320.'],['♻️','Try to keep all three scores high.'],['✓','Tap Finish Building when you are done.']]
+              : [['🌊','Choose features from the tray at the bottom'],['💛','Stay within your $320 budget'],['♻️','Balance environment, wellbeing & sustainability'],['↔️','Drag placed items to reposition them'],['↻','Tap an item then rotate it 90° as needed'],['✓','Hit Finish Building when your sanctuary is ready']]
+            ).map(([em,txt]) => (
+              <div key={em} style={{ display:'flex', alignItems:'flex-start', gap: classStage <= 3 ? '0.7rem' : '0.55rem', marginBottom: classStage <= 3 ? '0.6rem' : '0.38rem' }}>
+                <span style={{ fontSize: classStage <= 3 ? '1.2rem' : '1rem', lineHeight:1.3, flexShrink:0 }}>{em}</span>
+                <span style={{ fontSize: classStage <= 3 ? '1rem' : '0.85rem', color: classStage <= 3 ? 'rgba(255,255,255,0.92)' : 'rgba(255,255,255,0.8)', lineHeight:1.45 }}>{txt}</span>
               </div>
             ))}
           </div>
