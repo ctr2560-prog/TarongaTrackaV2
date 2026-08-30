@@ -20,7 +20,8 @@ const OBS_CONFIG = {
   'lion': {
     heading: 'Conservation Reflection',
     chips: [{ label:'Ecosystem', color:'#059669' },{ label:'Food chain', color:'#0284C7' },{ label:'Biodiversity', color:'#2E7D55' },{ label:'Threats', color:'#DC2626' }],
-    bullets: [],
+    // Was an empty array, so the lion was the one animal that offered no support at all.
+    bullets: ['What a predator does in a food chain','What might happen to prey numbers without lions','Threats lions face from humans','Why keeping the balance matters for the whole habitat'],
   },
   'giraffe': {
     heading: 'Giraffe Adaptations',
@@ -68,6 +69,28 @@ const OBS_CONFIG = {
     heading: 'Silent Forest',
     chips: [{ label:'Sounds', color:'#059669' },{ label:'Smells', color:'#0284C7' },{ label:'Habitat', color:'#2E7D55' },{ label:'Senses', color:'#DC2626' }],
     bullets: ['Sounds you can hear (water, animals, people)','Smells in the environment (fresh, earthy, strong)','What you can see around the habitat','How the environment supports the tiger'],
+  },
+};
+
+// Stage 3 asks a different question from stages 4-5 for these three, so the chips and bullets
+// have to follow it. Concert Lawn is the clearest case: stage 3 now asks what LIVES on the lawn,
+// while stages 4-5 still ask how walking on it FELT — the same bubbles cannot serve both.
+// Anything not listed here uses OBS_CONFIG unchanged, because its stage 3 prompt still matches.
+const OBS_CONFIG_S3 = {
+  'concert-lawn': {
+    heading: 'A Habitat Underfoot',
+    chips: [{ label:'Living things', color:'#059669' },{ label:'Plants', color:'#2E7D55' },{ label:'Shelter', color:'#0284C7' },{ label:'Food', color:'#D97706' }],
+    bullets: ['Any insects, birds or other animals you can see','The plants and grass growing here','What those living things get from this space (food, water, shelter)','Why a grassy space is useful to them'],
+  },
+  'gorilla': {
+    heading: 'Gorillas as a Group',
+    chips: [{ label:'Group', color:'#059669' },{ label:'Together', color:'#0284C7' },{ label:'Protecting young', color:'#2E7D55' },{ label:'Bonds', color:'#DC2626' }],
+    bullets: ['What the gorillas were doing as a group','Who stayed close to whom','How staying together keeps them safe','How the adults look after the young'],
+  },
+  'blue-mountains-bushwalk': {
+    heading: 'Listen to the Environment',
+    chips: [{ label:'Sounds', color:'#059669' },{ label:'Animals', color:'#0284C7' },{ label:'Plants', color:'#2E7D55' },{ label:'Habitat', color:'#D97706' }],
+    bullets: ['Specific sounds you could hear (birds, wind, water, leaves)','What animal might be making each sound','What those sounds tell you about what lives here','What the habitat provides for them'],
   },
 };
 
@@ -858,7 +881,7 @@ export default function ObservationScreen() {
   const cfg    = isMaths   ? (MATHS_OBS_CONFIG[animalId]   || OBS_CONFIG[animalId])
                : isPdhpe   ? (PDHPE_OBS_CONFIG[animalId]   || OBS_CONFIG[animalId])
                : isEnglish ? (ENGLISH_OBS_CONFIG[animalId] || OBS_CONFIG[animalId])
-               : OBS_CONFIG[animalId];
+               : ((classStage === 3 && OBS_CONFIG_S3[animalId]) || OBS_CONFIG[animalId]);
   const prompt = isMaths   ? (mathsData?.prompt   || '')
                : isPdhpe   ? (pdhpeData?.prompt   || '')
                : isEnglish ? (englishData?.prompt || '')
