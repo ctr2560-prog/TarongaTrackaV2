@@ -12,25 +12,73 @@ import { normaliseCode } from '../utils/helpers';
 // Students are animal aliases (Wombat, Quokka), never real names, so nobody is publicly ranked
 // by name. The student's own row is always rendered, even when they are well down the list, so
 // the panel never becomes a wall of other people's scores with no place for them in it.
+// Cached so the ladder still shows something at the zoo, where the network is unreliable.
+// Firestore persistence is NOT enabled app-wide (see firebase.js), so the SDK has no offline
+// store of its own — without this the panel is simply blank whenever there is no signal.
+const cacheKey = (code) => `tarongaLadder_${code}`;
+
+const readCache = (code) => {
+  try {
+    const raw = localStorage.getItem(cacheKey(code));
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+};
+
+const ago = (ts) => {
+  const mins = Math.round((Date.now() - ts) / 60000);
+  if (mins < 1)  return 'just now';
+  if (mins < 60) return `${mins} min ago`;
+  const hrs = Math.round(mins / 60);
+  return hrs === 1 ? 'an hour ago' : `${hrs} hours ago`;
+};
+
 export default function ClassLadder({ classCode, studentName, myPoints }) {
-  const [rows, setRows] = useState(null);   // null = still loading
+  // Seeded from cache in the initialiser rather than in the effect, so the last known ladder is
+  // on screen from the very first render — and so we are not setting state during an effect.
+  const initial = classCode ? readCache(normaliseCode(classCode)) : null;
+  const [rows, setRows]   = useState(initial?.rows?.length ? initial.rows : null);
+  const [stale, setStale] = useState(initial?.rows?.length ? initial.at : null);
+  const [offline, setOffline] = useState(false);
 
   useEffect(() => {
     if (!classCode) return;
     const code = normaliseCode(classCode);
+
+    // ⚠️ When Firestore is offline with nothing cached, onSnapshot neither fires nor errors —
+    // it queues and retries in silence. Without this timer the panel would sit invisible with
+    // no explanation, which is exactly what happened at the zoo.
+    const timer = setTimeout(() => setOffline(true), 6000);
+
     const unsub = onSnapshot(
       collection(db, 'classes', code, 'students'),
       snap => {
+        clearTimeout(timer);
+        setOffline(false);
         const list = snap.docs
           .map(d => ({ id: d.id, name: d.data().name || d.id, points: d.data().totalPoints || 0 }))
           .filter(r => r.points > 0)
           .sort((a, b) => b.points - a.points);
         setRows(list);
+        setStale(null);
+        try { localStorage.setItem(cacheKey(code), JSON.stringify({ at: Date.now(), rows: list })); } catch { /* quota */ }
       },
-      () => setRows([]),   // offline or blocked: hide rather than error
+      () => { clearTimeout(timer); setOffline(true); },
     );
-    return () => unsub();
+    return () => { clearTimeout(timer); unsub(); };
   }, [classCode]);
+
+  // Nothing live and nothing cached: say so rather than render an empty gap. A student who
+  // taps through to this screen deserves to know the ladder exists and needs signal.
+  if ((!rows || rows.length < 2) && offline) {
+    return (
+      <div style={{ background:'white', borderRadius:'var(--t-r-md)', padding:'0.7rem 0.9rem', marginBottom:'0.75rem', border:'1px solid var(--t-mist)', textAlign:'center' }}>
+        <div style={{ fontSize:'0.6rem', fontWeight:800, color:'var(--t-slate)', textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:'0.2rem' }}>Class ladder</div>
+        <div style={{ fontSize:'0.8rem', color:'var(--t-slate)', lineHeight:1.45 }}>
+          📶 Needs internet. Your points are still being saved — the ladder will appear when you are back online.
+        </div>
+      </div>
+    );
+  }
 
   if (!rows || rows.length < 2) return null;   // pointless with nobody to compare against
 
@@ -70,11 +118,13 @@ export default function ClassLadder({ classCode, studentName, myPoints }) {
     <div style={{ background:'white', borderRadius:'var(--t-r-md)', padding:'0.7rem 0.6rem', marginBottom:'0.75rem', border:'1px solid var(--t-mist)' }}>
       <div style={{ display:'flex', alignItems:'baseline', justifyContent:'space-between', padding:'0 0.4rem', marginBottom:'0.35rem' }}>
         <span style={{ fontSize:'0.6rem', fontWeight:800, color:'var(--t-slate)', textTransform:'uppercase', letterSpacing:'0.1em' }}>Class ladder</span>
-        {myRank && (
-          <span style={{ fontSize:'0.7rem', fontWeight:700, color:'var(--t-mid)' }}>
-            You are {myRank}{['st','nd','rd'][((myRank + 90) % 100 - 10) % 10 - 1] || 'th'} of {merged.length}
-          </span>
-        )}
+        <span style={{ fontSize:'0.7rem', fontWeight:700, color: stale ? 'var(--t-ash)' : 'var(--t-mid)' }}>
+          {stale
+            ? `Last updated ${ago(stale)}`
+            : myRank
+              ? `You are ${myRank}${['st','nd','rd'][((myRank + 90) % 100 - 10) % 10 - 1] || 'th'} of ${merged.length}`
+              : ''}
+        </span>
       </div>
       {top.map((r, i) => row(r, i, r.name === studentName))}
       {showMeSeparately && (
