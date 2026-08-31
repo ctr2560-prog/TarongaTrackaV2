@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { openHighlightsPackage } from '../utils/highlightsPackage';
 import {
   collection, doc, getDoc, getDocs, onSnapshot,
   writeBatch, setDoc, updateDoc, deleteDoc, query, where, serverTimestamp,
@@ -606,6 +607,12 @@ export default function ClassDetailsScreen() {
 
           <p className="lms-nav-group-label" style={{ marginTop:'1rem' }}>Actions</p>
           <nav className="lms-nav">
+            {/* Above Export CSV: the same data, formatted to read rather than to import. */}
+            <button className="lms-nav-item" onClick={() => openHighlightsPackage(cls, students)} disabled={loading || students.length === 0}
+              style={{ opacity: (loading || students.length === 0) ? 0.5 : 1 }}
+              title="A printable report of every student's scores, written responses and conservation statements">
+              <span className="lms-nav-icon">&#128196;</span> Highlights Package
+            </button>
             <button className="lms-nav-item" onClick={downloadCSV} disabled={loading} style={{ opacity: loading ? 0.5 : 1 }}><span className="lms-nav-icon">&#8615;</span> Export CSV</button>
             {!loading && (
               alreadySubmitted
