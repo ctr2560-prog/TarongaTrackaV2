@@ -24,6 +24,19 @@ const DEEP_LINK_SCREENS = new Set([
   'publicEntry', 'publicLeaderboard',
 ]);
 
+// Screens that cannot load cold because they need something held in memory — classDetails
+// needs selectedClass, adminClassView needs selectedAdminClass. On a reload they fall back to
+// the nearest screen that CAN load, rather than dumping the user on home.
+//
+// This matters because GitHub Pages has no SPA routing: every reload of /classDetails is a
+// fresh document load. dist/404.html (a copy of index.html, made by the postbuild step) is what
+// stops that being GitHub's "File not found" page.
+const DEEP_LINK_FALLBACKS = {
+  classDetails:   'teacherDashboard',
+  adminClassView: 'adminDashboard',
+  adminDashboard: 'adminLogin',
+};
+
 // Auto-advancing screens: navigating away replaces their history entry so the
 // back button never lands on them (they would immediately bounce forward again).
 const TRANSIENT_SCREENS = new Set(['studentLoading']);
@@ -45,7 +58,10 @@ export function AppProvider({ children }) {
   const [currentScreen, setCurrentScreen] = useState(() => {
     if (_hasSavedSession) return _savedSession === 'zoosnooz' ? 'zoosnooz' : 'map';
     const fromUrl = pathToScreen(window.location.pathname);
-    return DEEP_LINK_SCREENS.has(fromUrl) ? fromUrl : 'home';
+    if (DEEP_LINK_SCREENS.has(fromUrl)) return fromUrl;
+    // A teacher reloading /classDetails lands on their dashboard and picks the class again,
+    // rather than being sent all the way back to the public home screen.
+    return DEEP_LINK_FALLBACKS[fromUrl] || 'home';
   });
 
   // ── Documentary viewer (NFC) ──────────────────────────────────────────────
