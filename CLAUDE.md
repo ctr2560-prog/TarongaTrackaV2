@@ -16,7 +16,18 @@ region: `australia-southeast1`. ⚠️ See **Build & Deploy** — these two drif
 
 ---
 
-## Where we left off (2026-08-20)
+## Where we left off (2026-08-31)
+
+### Recently shipped (2026-08-25 → 08-31)
+- **ZooYard photos use a real camera** (`components/PhotoCapture.jsx`) and the self-attest photo
+  is now **required** before continuing. Teachers see them all in a **📍 Where students went**
+  grid on class details. See the ZooYard reference.
+- **PDHPE and Stage 3 Science content passes** — prompts, MCQs, instructions and four scoring
+  fairness fixes. See "Content rewrites" below and the Scoring System section.
+- **Class ladder** on the badge collection screen (`components/ClassLadder.jsx`).
+- **Highlights Package** — printable class report, `utils/highlightsPackage.js`.
+- **GitHub Pages 404 fix** — reloading any sub-path used to show GitHub's error page.
+  See Build & Deploy.
 
 ### Deploy state
 - Everything is **pushed to `main`**, so **tarongatracka.com.au is current**.
@@ -612,6 +623,34 @@ zooyard: {
 
 **This exact bug was confirmed in production for ZooSnooz too (2026-07-23) and fixed.** `ZooSnoozScreen.jsx`'s two per-animal writes (`zoosnooz.{animalId}` badge data, and the later `zoosnooz.{animalId}.videoURL`/`videoCompleted` upload-completion write) used the same flawed `setDoc(...,{merge:true})` pattern — verified against real student documents showing literal top-level fields like `"zoosnooz.tiger"` instead of a nested map. Both call sites were switched to `updateDoc()`, live-tested end-to-end (joined the real "6t" class, completed Sun Bear, confirmed the resulting doc has a genuine nested `zoosnooz: { 'sun-bear': {...} }` map, confirmed `ZooSnoozAdminTab`'s clips list picks it up via the "primary" path). Existing pre-fix student documents keep their old flat dotted fields (harmless, untouched) — the admin analytics already had fallbacks reading `zzBadges`/`quizPercentage`/`zzTotalPoints` (written correctly and independently by `zzFinalSubmit` from in-memory state) for exactly this reason, so nothing was ever visibly broken; this fix just makes the "primary" per-animal path real again instead of always silently failing over.
 
+### Photos — camera, required, and where teachers see them (2026-08-27)
+
+Both ZooYard photo steps use **`components/PhotoCapture.jsx`**, a live `getUserMedia` camera with
+preview, flip and capture — the same as every other student photo step in the app.
+
+They previously used `<input type="file" capture="environment">`. **`capture` is only a hint**:
+desktop ignores it entirely and mobile browsers honour it inconsistently, so students were being
+dropped into their photo library. PhotoCapture falls back to a file picker if the camera cannot
+start, which matters more here than anywhere — ZooYard exists *because* DoE devices behave
+differently.
+
+⚠️ **A canvas photo is a `Blob` and has no `.name`.** Both uploads derived the file extension from
+`file.name`, so the camera change made every upload throw a TypeError into its catch block and
+show "Could not save that photo". `photoExt()` now derives it from the MIME type. Probed while
+diagnosing: `zooyardHabitats/`, `citizenScienceEvidence/` and `evolve/` are all writable and a
+POST upload from localhost returns 200 — neither Storage rules nor CORS were involved.
+
+**The self-attest photo is now REQUIRED**, reversing the earlier note that it was optional. It
+uploads the moment it is taken ("Saving photo…" overlay), shows "✓ Photo saved", and only then
+does "Yes, I'm ready" appear. A failed upload sends them back to the camera. Deliberate, at
+Cameron's request — the file-picker fallback and upload retry soften it, but a student with
+neither can no longer finish a habitat.
+
+**Teacher side:** a **📍 Where students went** grid on class details shows every spot photo in the
+class with student and habitat, click to enlarge. ZooYard runs with no GPS check, so these photos
+are the only evidence anyone went outside — and the panel names students who finished without one
+rather than letting a teacher assume.
+
 ### Citizen science moderation (`citizenScienceSubmissions` collection)
 ```js
 {
@@ -1001,7 +1040,7 @@ ZooSnooz internal screens (`zzScreen` values): `map` → `animal` (phases: insig
 | `animal` | `AnimalScreen.jsx` | Dispatches to per-animal mission JSX or default quiz flow |
 | `observation` | `ObservationScreen.jsx` | Free-text observation with stage scaffold, chips, bullets, min-word check |
 | `badge` | `BadgeScreen.jsx` | Badge earned screen; shows obs score bars per subject domain |
-| `collection` | `CollectionScreen.jsx` | All found animals + badges + total points; triggers `completeActivity` |
+| `collection` | `CollectionScreen.jsx` | All found animals + badges + total points + live class ladder; triggers `completeActivity` |
 | `submissionComplete` | `SubmissionCompleteScreen.jsx` | Confetti screen; shows `StudentFeedbackModal` after 600ms |
 | `zoosnooz` | `ZooSnoozScreen.jsx` | Entire ZooSnooz night experience (~2500 lines) |
 | `zooyard` | `ZooYardScreen.jsx` | Entire ZooYard self-attest school experience — see ZooYard Deep Reference |
@@ -1031,6 +1070,11 @@ ZooSnooz internal screens (`zzScreen` values): `map` → `animal` (phases: insig
 ---
 
 ## All Components Reference
+
+**Added 2026-08-27/31:** `PhotoCapture.jsx` (live camera with file-picker fallback — see ZooYard),
+`ClassLadder.jsx` (live class ladder on the badge collection screen: top three plus the student's
+own row, animal aliases only, localStorage-cached so it survives no reception).
+
 
 | Component | File | Purpose |
 |---|---|---|
@@ -1137,6 +1181,41 @@ Exposed via `useStudent()`:
 - Mode is persisted in `localStorage` key `tarongaAppMode`.
 - `PublicEntryScreen` sets `appMode='public'` on entry; home screen resets it on return.
 
+## Content rewrites — PDHPE and Stage 3 Science (2026-08-24 → 08-30)
+
+Both subjects were measurably heavier than maths and english at every stage. Two patterns worth
+knowing before editing content:
+
+**Three missions hard-code their own MCQ and ignore the data file.** `GiraffeMission.jsx`,
+`TigerMission.jsx` (via `data/tigerMCQ.js`) and `BushwalkMission.jsx` hold their PDHPE questions
+inline. **Editing `animalsPdhpe.js` for those three does nothing** — it took a while to notice.
+Where both copies exist they are now kept in step so they cannot contradict.
+
+**The correct answer was at the same index in every stage** on giraffe, buffalo and tiger — a
+class cracks that by the second animal. All now scattered. Check this when adding questions.
+
+**PDHPE:** stems and prompts cut roughly in half; every stage-1 explanation with senior
+terminology rewritten (`Fast-twitch (Type II) muscles…` was being read by six-year-olds); lion
+moved off energy systems onto muscular power to match its own MCQ; giraffe's MCQ is now one
+question — how far the heart pumps blood chest to head — with one realistic answer against three
+out by a factor of ten; missing stage 1–2 hints added for chimpanzee, gorilla and lion, which had
+been falling back to the stage 3 hints.
+
+**Stage 3 Science:** eleven writing prompts moved from *describe* to *explain* to meet ST3-4LW-S,
+each keeping the observable half then asking why it matters for survival. `OBS_CONFIG_S3` in
+`ObservationScreen.jsx` holds stage 3 chip/bullet overrides for concert-lawn, gorilla and bushwalk
+— **the bubbles are shared across stages 3–5, and only stage 3 was rewritten**, so those three
+would otherwise contradict the question. Everything else falls through to the shared config.
+
+Instruction screens (chimpanzee graph, River Run, Sea Lion Sanctuary, Concert Lawn countdown) were
+cut down and set larger for stage 3 and below, with stages 4–5 keeping the fuller wording.
+
+**Still open:** the lion's Stage 3 Science MCQ is a maths question about millimetres, and
+`animals.js` chimpanzee still carries `options: ['A','B','C','D']` (harmless — the mission builds
+its own — but it will mislead the next editor).
+
+---
+
 ## Class Subjects
 
 `classSubject` determines which animal data, scoring rubric, and observation prompts are used:
@@ -1166,6 +1245,47 @@ Returns: `{ behaviour, detail, writing, rationale, overallFeedback, improvementT
 
 `calculateWritingScore(text, stage)` — standalone writing scorer used in several places.
 
+### ⚠️ How this scorer actually goes wrong (2026-08-30)
+
+Four faults were found in one session, **all by scoring real student answers rather than reading
+the code**. Every one of them made a correct answer score badly while producing no error. If
+marking "feels harsh", score the actual text before touching thresholds.
+
+**1. The vocabulary lists are the usual culprit, not the thresholds.** Each animal branch scores
+against its own word list. If the prompt asks about something the list does not contain, a
+perfect answer scores near zero:
+
+- PDHPE lion asked about muscular power; the list had `cardiovascular`, `anaerobic` and `vo2`
+  but not `run`, `legs`, `strong` or `fast`. *"I use my legs when I run fast"* → **1/5**.
+- PDHPE buffalo asked about staying cool; the list had no `water`, `sweat`, `drink` or `hot`.
+- Science gorilla ignored its OWN `observationWords`/`conceptWords` (which contain `together`,
+  `group`, `family`, `protect`) and scored behaviour with the generic verb counter instead.
+  *"The gorillas sat together as a family group"* matched nothing → **2/5**.
+
+**Rewriting a prompt means re-checking that animal's word list.** Write a plausible answer to the
+new prompt and score it before shipping.
+
+**2. `calculateBehaviourScore` treated one behaviour word the same as none** — both returned 2,
+so a student who described a real behaviour was marked as if they had not. One word is now 3.
+
+**3. Stage 3 was structurally harsher than Stage 4 on identical text**, which was never intended:
+- `stage3Score` hard-capped behaviour at 4, so Stage 3 could not reach 5 at all. Now reachable
+  with three detail hits AND an explanation. Detail stays capped at 4 deliberately — lifting it
+  made Stage 3 outscore Stage 4.
+- All nine Stage 3 branches did `behaviourBonus = s3.b`, **overwriting** the topic-vocabulary
+  score computed just above, while all nine Stage 4 branches did `Math.max(...)` and kept it.
+  Now all use `Math.max`. The `|| 0` guard covers the dingo branch, the one place
+  `behaviourBonus` is not pre-computed.
+
+**4. Scoped fixes over global ones.** Lion and buffalo have their own PDHPE word lists layered on
+top rather than widening the shared lists. Three animals needing this is a signal the base lists
+were written for senior secondary — if a fourth comes up, give PDHPE one shared everyday-language
+list instead of a fourth patch.
+
+**How to verify a scoring change:** diff old vs new across 5 stages × 4 subjects × 12 animals with
+a handful of real answers plus junk. Nothing should ever score *lower*, and junk (`dddd dddd`,
+`asdf`, `good`, `I saw it`) must not move.
+
 ---
 
 ## Data Utilities (`src/utils/teacherInfoSheet.js`)
@@ -1178,6 +1298,23 @@ All curriculum data lives here and is imported by multiple screens:
 - `NSW_OUTCOMES` — `{ Science: { 2: [...], 3: [...], ... }, English: { ... } }` — NSW curriculum codes
 
 **Important:** Always `.slice(0, 3)` when rendering outcomes — only show max 3 per subject/stage.
+
+### Printable sheets — the house pattern
+
+`teacherInfoSheet.js`, `zoosnoozInfoSheet.js`, `evolveCertificates.js` and
+**`highlightsPackage.js`** all work the same way: build one self-contained HTML document, open it
+in a new tab from a blob URL, let the browser print it or save it as a PDF. **No PDF library, no
+server round trip.** Copy this pattern for any new printable.
+
+- **`highlightsPackage.js`** — `openHighlightsPackage(cls, students)`, the class report behind the
+  **Highlights Package** button above Export CSV. Cover, stat tiles, class averages, a summary
+  table, then one block per student with every observation, its per-domain marks, the quiz result
+  and their conservation statement. It renames the three score domains **by subject** to match the
+  Analytics tab (Behaviour/Detail/Writing, Method/Accuracy/Communication,
+  Comparison/Understanding/Communication, Vocabulary/Understanding/Expression) so the PDF reads as
+  the screen the teacher just left. Uses the `students` array already in memory — no extra reads.
+- Print rules that matter: `break-inside: avoid` on student blocks so responses do not split
+  across pages, and `print-color-adjust: exact` because browsers strip backgrounds by default.
 
 ---
 
@@ -1248,6 +1385,25 @@ The `dist/` folder is the Firebase Hosting target. Always `npm run build` before
 build — `curl -s https://<host>/ | grep -o '/assets/[^"]*\.js'` should match `ls dist/assets/*.js`.
 Grepping a 2.4MB bundle for a feature string only works from a file, not a shell variable.
 
+### ⚠️ GitHub Pages has no SPA routing — `dist/404.html` is what fixes it (2026-08-31)
+
+The app uses real URLs via `pushState` (`/map`, `/collection`, `/classDetails`). GitHub Pages
+serves static files, so **any fresh document load of one asks GitHub for a file by that name** and
+gets "File not found". Cameron hit this on `/classDetails` and noted it happening "more and more,
+rather than just reloading" — mobile browsers discard and reload backgrounded tabs on their own,
+so it is not only deliberate reloads.
+
+Fix: a **`postbuild`** script copies `dist/index.html` to `dist/404.html`. Pages serves 404.html
+for unknown paths, so the app boots and routes client-side. It runs after the asset hashes exist,
+and the workflow already calls `npm run build`, so no workflow change was needed.
+
+- **The response is still HTTP 404** — that is inherent to this workaround. Invisible to users,
+  visible in analytics.
+- **Never replace this with a static `public/404.html`** — it would reference stale asset hashes.
+- `DEEP_LINK_FALLBACKS` in `AppContext.jsx` handles screens that cannot load cold: `classDetails`
+  needs `selectedClass` in memory, so it lands on `teacherDashboard` rather than the public home
+  screen. Students were already fine — a saved session sends them to the map.
+
 ### ⚠️ Testing straight after a push tests the OLD build (2026-08-20)
 
 GitHub Pages serves `index.html` with **`cache-control: max-age=600`**, and that header cannot be
@@ -1280,7 +1436,47 @@ after every deploy.
 
 ---
 
+## ⚠️ Offline behaviour — the zoo has no reception (2026-08-31)
+
+**Firestore persistence is NOT enabled.** `firebase.js` calls plain `getFirestore(app)`, so the app
+has no offline store. This has a consequence that costs hours if you do not know it:
+
+> **When Firestore is offline with nothing cached, `onSnapshot` neither fires nor errors.** It
+> queues and retries in silence.
+
+So a component that renders only after its first snapshot shows **nothing, with a clean console,
+no error and no warning**. That is exactly how the class ladder failed at the zoo while working
+perfectly on wifi — and why every check came back green: the code was live, the data was fine,
+the query worked from a desk.
+
+**If a feature "just doesn't show" on site but works at home, suspect this first.**
+
+Any component reading Firestore for display should:
+1. Seed from a `localStorage` cache in the state initialiser, so something renders immediately.
+2. Set a timeout (~6s) and say so, rather than sitting invisible. `ClassLadder.jsx` is the worked
+   example.
+
+**What already survives offline:** student progress is written to `localStorage` after every
+action, so nobody loses work. Uploads catch up because each badge write sends the *complete*
+badges array, so the next successful write carries everything earlier with it.
+
+**The one real gap:** a student who finishes offline, taps Complete Activity, and closes the tab
+before regaining signal. Firestore holds that write in memory only, and uploads fire only on badge
+earned or activity completed — both already done. Their work is safe on the phone; it just never
+reaches the teacher. Enabling persistence would fix this, and would help everything else on site,
+but it changes every read and write in the app — do it as its own piece of work with a full
+offline walkthrough, not as a quick toggle.
+
+---
+
 ## Conventions & Gotchas
+
+**`studentName` and `classCode` live on `AppContext`, not `StudentContext`.** StudentContext
+consumes them but does not re-expose them, so destructuring them from `useStudent()` yields
+`undefined` **silently** — no error, no warning. That is what made the class ladder render nothing
+on first attempt: the value was undefined, the component's own `if (!classCode) return` swallowed
+it, and there was nothing to see. Check which context a value actually comes from.
+
 
 1. **Inline styles over CSS files** — almost all component styling is inline `style={{}}` objects. The exception is the LMS layout classes and design tokens in `global.css`. Don't add new `.css` files; keep styling co-located.
 
