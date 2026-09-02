@@ -30,7 +30,7 @@ const LOCATION_LABELS = { 'taronga-sydney':'Taronga Sydney', 'zoosnooz-sydney':'
 const SUBJECT_LABELS  = { science:'Science', maths:'Mathematics', english:'English', geography:'Geography', pdhpe:'PDHPE' };
 
 function AnalyticsTab({ classes }) {
-  const [view,           setView]           = useState('total');   // total | daily | zoosnooz | dubbo | school
+  const [view,           setView]           = useState('total');   // total | daily | zoosnooz | evolve | dubbo | school
   const [timeFilter,     setTimeFilter]     = useState('all');     // all | today | week | month
   const [subjectFilter,  setSubjectFilter]  = useState('all');     // all | science | maths | english | geography
   const [students,       setStudents]       = useState(null);
@@ -64,8 +64,12 @@ function AnalyticsTab({ classes }) {
 
   const viewClasses = useMemo(() => {
     let c = classes;
-    if (view === 'daily')    c = c.filter(x => x.sessionType !== 'zoosnooz' && x.sessionType !== 'zooyard' && x.location !== 'dubbo' && x.location !== 'school');
+    // Evolve is excluded from Daily and gets its own view: it is a different programme with no
+    // points or marks, and its subject ('life-ready') is not in the subject dropdown, so before
+    // this it was invisible to every filter yet still counted in Total.
+    if (view === 'daily')    c = c.filter(x => x.sessionType !== 'zoosnooz' && x.sessionType !== 'zooyard' && x.sessionType !== 'evolve' && x.location !== 'dubbo' && x.location !== 'school');
     else if (view === 'zoosnooz') c = c.filter(x => x.sessionType === 'zoosnooz' || x.location === 'zoosnooz-sydney');
+    else if (view === 'evolve')  c = c.filter(x => x.sessionType === 'evolve');
     else if (view === 'dubbo')   c = c.filter(x => x.location === 'dubbo');
     else if (view === 'school')  c = c.filter(x => x.sessionType === 'zooyard' || x.location === 'school');
     if (subjectFilter !== 'all') c = c.filter(x => x.subject === subjectFilter);
@@ -75,8 +79,9 @@ function AnalyticsTab({ classes }) {
   const viewStudents = useMemo(() => {
     if (!students) return [];
     let s = students;
-    if (view === 'daily')    s = s.filter(st => st._sessionType !== 'zoosnooz' && st._sessionType !== 'zooyard' && st._location !== 'dubbo' && st._location !== 'school');
+    if (view === 'daily')    s = s.filter(st => st._sessionType !== 'zoosnooz' && st._sessionType !== 'zooyard' && st._sessionType !== 'evolve' && st._location !== 'dubbo' && st._location !== 'school');
     else if (view === 'zoosnooz') s = s.filter(st => st._sessionType === 'zoosnooz' || st._location === 'zoosnooz-sydney');
+    else if (view === 'evolve')  s = s.filter(st => st._sessionType === 'evolve');
     else if (view === 'dubbo')   s = s.filter(st => st._location === 'dubbo');
     else if (view === 'school')  s = s.filter(st => st._sessionType === 'zooyard' || st._location === 'school');
     if (subjectFilter !== 'all') s = s.filter(st => st._subject === subjectFilter);
@@ -98,7 +103,6 @@ function AnalyticsTab({ classes }) {
     const students  = viewClasses.reduce((s, c) => s + c.studentCount, 0);
     const completed = viewClasses.reduce((s, c) => s + c.completedCount, 0);
     const badges    = viewClasses.reduce((s, c) => s + (c.totalBadges || 0), 0);
-    const zzCount   = viewClasses.filter(c => c.sessionType === 'zoosnooz').length;
     // Average of each STUDENT's score, matching the teacher portal's "Avg Quiz %" card.
     //
     // This used to average per-QUESTION success rates, and that runs high because a question one
@@ -136,7 +140,7 @@ function AnalyticsTab({ classes }) {
     const avgQuiz = quizPcts.length > 0
       ? Math.round(quizPcts.reduce((x, y) => x + y, 0) / quizPcts.length)
       : null;
-    return { total, students, completed, badges, avgQuiz, zzCount };
+    return { total, students, completed, badges, avgQuiz };
   }, [viewClasses, viewStudents]);
 
   const animalVisits = useMemo(() => {
@@ -376,7 +380,7 @@ function AnalyticsTab({ classes }) {
   const totalStudentsAll = viewClasses.reduce((s, c) => s + c.studentCount, 0);
   const maxVisit  = animalVisits[0]?.[1] || 1;
   const maxBucket = Math.max(...quizBuckets, 1);
-  const viewLabel = { total:'Total', daily:'Daily', zoosnooz:'ZooSnooz', dubbo:'Taronga Dubbo', school:'ZooYard' }[view] || 'Total';
+  const viewLabel = { total:'Total', daily:'Daily', zoosnooz:'ZooSnooz', evolve:'Evolve', dubbo:'Taronga Dubbo', school:'ZooYard' }[view] || 'Total';
 
   return (
     <div style={{ display:'flex', gap:'1.5rem', alignItems:'flex-start' }}>
@@ -384,7 +388,7 @@ function AnalyticsTab({ classes }) {
       {/* VIEW sidebar */}
       <div style={{ width:155, flexShrink:0, background:'var(--t-chalk)', borderRadius:'var(--t-r-md)', padding:'1rem', border:'1px solid var(--t-stone)' }}>
         <div style={{ fontSize:'0.62rem', fontWeight:700, color:'var(--t-ash)', textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:'0.6rem' }}>VIEW</div>
-        {[['total','Total'],['daily','Daily'],['zoosnooz','🌙 ZooSnooz'],['dubbo','Taronga Dubbo'],['school','🌱 ZooYard']].map(([val,label]) => (
+        {[['total','Total'],['daily','Daily'],['zoosnooz','🌙 ZooSnooz'],['evolve','✦ Evolve'],['dubbo','Taronga Dubbo'],['school','🌱 ZooYard']].map(([val,label]) => (
           <button key={val} onClick={() => setView(val)}
             style={{ display:'block', width:'100%', textAlign:'left', padding:'0.5rem 0.75rem', marginBottom:'0.2rem', borderRadius:'var(--t-r-sm)', border:'none', background: view===val ? GREEN : 'transparent', color: view===val ? 'white' : 'var(--t-slate)', fontWeight: view===val ? 700 : 500, cursor:'pointer', fontSize:'0.82rem', fontFamily:'inherit' }}>
             {label}
@@ -400,7 +404,7 @@ function AnalyticsTab({ classes }) {
           <h2 style={{ fontSize:'1.15rem', fontWeight:700, margin:0, color:'var(--t-deep)' }}>
             {viewLabel} Analytics
             <span style={{ background:'var(--t-foam)', border:'1px solid var(--t-mist)', borderRadius:999, fontSize:'0.65rem', fontWeight:600, padding:'0.15rem 0.6rem', marginLeft:'0.6rem', color:'var(--t-slate)', verticalAlign:'middle' }}>
-              {{ total:'All Sessions', daily:'Standard Sessions', zoosnooz:'Night Sessions', dubbo:'Dubbo (Coming Soon)', school:'School (Coming Soon)' }[view] || 'All Sessions'}
+              {{ total:'All Sessions', daily:'Standard Sessions', zoosnooz:'Night Sessions', evolve:'Stage 6 Twilight', dubbo:'Dubbo (Coming Soon)', school:'School (Coming Soon)' }[view] || 'All Sessions'}
             </span>
           </h2>
           <div style={{ flex:1 }} />
@@ -428,18 +432,20 @@ function AnalyticsTab({ classes }) {
         </div>
 
         {/* KPI cards */}
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(115px,1fr))', gap:'0.65rem' }}>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(150px,1fr))', gap:'0.65rem' }}>
           {[
             ['Classes',    kpi.total,     null],
-            ['Students',   kpi.students,  null],
+            ['Groups/Students', kpi.students, null],
             ['Submitted',  kpi.completed, `${kpi.students?Math.round(kpi.completed/kpi.students*100):0}% completion`],
             ['Badges',     kpi.badges,    null],
             ['Avg Quiz',   kpi.avgQuiz!=null?`${kpi.avgQuiz}%`:' - ', null],
-            ['ZooSnooz',   kpi.zzCount,   `${viewClasses.length?Math.round(kpi.zzCount/viewClasses.length*100):0}% of classes`],
           ].map(([label, value, sub]) => (
             <div key={label} style={{ background:'var(--t-chalk)', borderRadius:'var(--t-r-md)', padding:'1rem', border:'1px solid var(--t-stone)', textAlign:'center' }}>
               <div style={{ fontSize:'1.8rem', fontWeight:800, color:'var(--t-deep)', lineHeight:1 }}>{value}</div>
-              <div style={{ fontSize:'0.62rem', fontWeight:700, color:'var(--t-ash)', textTransform:'uppercase', letterSpacing:'0.07em', marginTop:'0.2rem' }}>{label}</div>
+              {/* 150px min keeps "GROUPS/STUDENTS" on one line at 0.62rem — spacing the slash
+                  made it wrap to a dangling "GROUPS /". lineHeight/balance are there for any
+                  future label that does wrap. */}
+              <div style={{ fontSize:'0.62rem', fontWeight:700, color:'var(--t-ash)', textTransform:'uppercase', letterSpacing:'0.06em', marginTop:'0.25rem', lineHeight:1.3, textWrap:'balance' }}>{label}</div>
               {sub && <div style={{ fontSize:'0.65rem', color:'var(--t-slate)', marginTop:'0.1rem' }}>{sub}</div>}
             </div>
           ))}
@@ -587,7 +593,7 @@ function AnalyticsTab({ classes }) {
                 <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'0.83rem' }}>
                   <thead>
                     <tr style={{ borderBottom:'2px solid var(--t-mist)' }}>
-                      {['SCHOOL NAME','CLASSES','STUDENTS','QUIZ %','OBSERVATION %'].map(h => (
+                      {['SCHOOL NAME','CLASSES','GROUPS / STUDENTS','QUIZ %','OBSERVATION %'].map(h => (
                         <th key={h} style={{ textAlign:h==='SCHOOL NAME'?'left':'center', padding:'0.4rem 0.6rem', fontSize:'0.62rem', fontWeight:700, color:'var(--t-ash)', textTransform:'uppercase', letterSpacing:'0.07em' }}>{h}</th>
                       ))}
                     </tr>
@@ -777,7 +783,7 @@ function AnalyticsTab({ classes }) {
                 <div key={stage} style={{ marginBottom:'0.65rem' }}>
                   <div style={{ display:'flex', justifyContent:'space-between', fontSize:'0.78rem', marginBottom:'0.2rem' }}>
                     <span style={{ fontWeight:600, color:'var(--t-deep)' }}>Stage {stage}</span>
-                    <span style={{ color:'var(--t-slate)' }}>{d.students} students · {quizAvg!=null?`${quizAvg}% quiz`:' - '}</span>
+                    <span style={{ color:'var(--t-slate)' }}>{d.students} groups/students · {quizAvg!=null?`${quizAvg}% quiz`:' - '}</span>
                   </div>
                   <div style={{ height:6, background:'var(--t-foam)', borderRadius:3, overflow:'hidden' }}>
                     <div style={{ height:'100%', width:`${barW}%`, background:'var(--t-mid)', borderRadius:3 }} />
@@ -3220,7 +3226,11 @@ export default function AdminDashboardScreen() {
               // ZooYard tracks completion/badges/quiz under `zooyard`, with no top-level
               // `completed` flag or `badges` array, so it needs its own branch here.
               const zyDone = ZOOYARD_ANIMALS.filter(a => sd.zooyard?.[a.id]?.completed);
-              const isComplete = sd.completed === true || sd.zzSessionComplete === true || sd.zooyard?.sessionCompleted === true;
+              // Each programme stores completion under its own key. Evolve was missing, so an
+              // Evolve student who finished still counted as incomplete — which is why the GAGA
+              // class read 0% and dragged "All Subjects" completion down to 78%.
+              const isComplete = sd.completed === true || sd.zzSessionComplete === true
+                || sd.zooyard?.sessionCompleted === true || sd.evolve?.sessionCompleted === true;
               if (isComplete) completedCount++;
               // Outside the isComplete gate on purpose: a student who has answered questions but
               // not yet submitted still has a real score, and the teacher portal counts them.
