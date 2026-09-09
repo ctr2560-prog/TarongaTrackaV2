@@ -34,6 +34,11 @@ service firebase.storage {
       allow read, write: if true;
     }
 
+    // Wildest Dreams: per-animal student clips and the final stitched film.
+    match /wildestDreams/{allPaths=**} {
+      allow read, write: if true;
+    }
+
     // ZooYard: self-attest habitat photos (the student's tree / shady spot / open space).
     match /zooyardHabitats/{allPaths=**} {
       allow read, write: if true;

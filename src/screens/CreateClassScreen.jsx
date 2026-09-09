@@ -3,6 +3,8 @@ import { doc, getDoc, serverTimestamp, setDoc, increment, arrayUnion } from 'fir
 import { db } from '../firebase';
 import { useApp } from '../context/AppContext';
 import { openTeacherInfoSheet } from '../utils/teacherInfoSheet';
+import { WD_OUTCOMES, WD_OUTCOMES_NOTE } from '../modes/wildest-dreams/content';
+import { openWildestDreamsInfoSheet } from '../modes/wildest-dreams/infoSheet';
 
 function generateClassCode() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -69,6 +71,7 @@ export default function CreateClassScreen() {
   const isZooSnooz = newLocation === 'zoosnooz-sydney';
   const isZooYard  = newLocation === 'school';
   const isEvolve   = newLocation === 'evolve-sydney';
+  const isWildest  = newLocation === 'wildest-dreams-sydney';
 
   const createClass = async () => {
     if (!newClassName.trim() || !schoolName) return;
@@ -78,10 +81,10 @@ export default function CreateClassScreen() {
     try {
       const code        = generateClassCode();
       const sessionDate = new Date().toISOString().split('T')[0];
-      const sessionType = isEvolve ? 'evolve' : isZooYard ? 'zooyard' : isZooSnooz ? 'zoosnooz' : 'standard';
-      const VENUES = { 'taronga-sydney':'Taronga Sydney', 'zoosnooz-sydney':'Taronga Sydney', 'evolve-sydney':'Taronga Sydney', 'dubbo':'Taronga Dubbo', 'school':'School' };
+      const sessionType = isWildest ? 'wildest-dreams' : isEvolve ? 'evolve' : isZooYard ? 'zooyard' : isZooSnooz ? 'zoosnooz' : 'standard';
+      const VENUES = { 'taronga-sydney':'Taronga Sydney', 'zoosnooz-sydney':'Taronga Sydney', 'evolve-sydney':'Taronga Sydney', 'wildest-dreams-sydney':'Taronga Sydney', 'dubbo':'Taronga Dubbo', 'school':'School' };
       const venue = VENUES[newLocation] || 'Taronga Zoo';
-      const subject = isEvolve ? 'life-ready' : isZooYard ? 'science' : isZooSnooz ? null : newSubject;
+      const subject = isWildest ? null : isEvolve ? 'life-ready' : isZooYard ? 'science' : isZooSnooz ? null : newSubject;
       const stage   = isEvolve ? 6 : newClassStage;
 
       await setDoc(doc(db, 'teachers', teacherEmail, 'classes', code), {
@@ -133,7 +136,10 @@ export default function CreateClassScreen() {
     }
   };
 
-  const displaySubject = isEvolve ? 'life-ready' : (isZooSnooz || isZooYard) ? 'science' : newSubject;
+  // 'wildest-dreams' is not one of the four subjects, so it falls out of the NSW_OUTCOMES lookup
+  // below and out of the subject panel's condition. It gets its own panel instead.
+  const displaySubject = isWildest ? 'wildest-dreams' : isEvolve ? 'life-ready' : (isZooSnooz || isZooYard) ? 'science' : newSubject;
+  const wdOutcomes = isWildest ? (WD_OUTCOMES[newClassStage] || WD_OUTCOMES[4]) : null;
   const subjectData  = NSW_OUTCOMES[displaySubject];
   const outcomes     = subjectData?.[newClassStage] || [];
   const syllabusName = subjectData?.syllabus?.[newClassStage] || '';
@@ -183,6 +189,7 @@ export default function CreateClassScreen() {
                 <option value="dubbo" disabled>Taronga Dubbo (Coming Soon)</option>
                 <option value="school">Your School — ZooYard</option>
                 <option value="evolve-sydney">Taronga Sydney — Evolve (Stage 6)</option>
+                <option value="wildest-dreams-sydney">Taronga Sydney — Wildest Dreams</option>
               </select>
 
               {isZooYard && (
@@ -202,7 +209,7 @@ export default function CreateClassScreen() {
               )}
 
               {/* Subject */}
-              {newLocation !== 'zoosnooz-sydney' && !isZooYard && !isEvolve && (
+              {newLocation !== 'zoosnooz-sydney' && !isZooYard && !isEvolve && !isWildest && (
                 <>
                   <label style={{ display:'block', fontSize:'0.78rem', fontWeight:700, color:'var(--t-deep)', marginBottom:'0.3rem', textTransform:'uppercase', letterSpacing:'0.05em' }}>Subject</label>
                   <select value={newSubject} onChange={e => setNewSubject(e.target.value)} style={{ ...inputStyle, appearance:'auto', cursor:'pointer' }}
@@ -287,6 +294,36 @@ export default function CreateClassScreen() {
                     style={{ marginTop:'0.75rem', display:'flex', alignItems:'center', gap:'0.5rem', background:'none', border:`1px solid ${sc.accent}`, color:sc.accent, fontSize:'0.75rem', fontWeight:700, padding:'0.4rem 0.85rem', borderRadius:'40px', cursor:'pointer', letterSpacing:'0.04em', width:'100%', justifyContent:'center' }}
                     onMouseEnter={e => { e.currentTarget.style.background=sc.accent; e.currentTarget.style.color='white'; }}
                     onMouseLeave={e => { e.currentTarget.style.background='none'; e.currentTarget.style.color=sc.accent; }}>
+                    ↓ Teacher Information Sheet
+                  </button>
+                </div>
+              )}
+
+              {/* Wildest Dreams — its own panel, because the outcomes differ by pathway and the
+                  mode has no scoring, so there is no Teacher Information Sheet to offer. */}
+              {isWildest && wdOutcomes && (
+                <div style={{ marginTop:'1.25rem', background:'#F0F7F0', border:'1px solid #C6E2C6', borderRadius:'var(--t-r-sm)', padding:'0.9rem 1rem' }}>
+                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'0.5rem', marginBottom:'0.6rem', flexWrap:'wrap' }}>
+                    <p style={{ fontSize:'0.72rem', fontWeight:800, color:'#1A5238', textTransform:'uppercase', letterSpacing:'0.07em', margin:0 }}>
+                      {wdOutcomes.lifeSkills ? 'Life Skills' : 'NSW Curriculum'} — Stage {newClassStage}
+                    </p>
+                    <span style={{ fontSize:'0.65rem', color:'#888', fontStyle:'italic' }}>{wdOutcomes.syllabus}</span>
+                  </div>
+                  <div style={{ display:'flex', flexDirection:'column', gap:'0.4rem' }}>
+                    {wdOutcomes.outcomes.map(({ code, desc }) => (
+                      <div key={code} style={{ display:'flex', gap:'0.6rem', alignItems:'flex-start' }}>
+                        <span style={{ flexShrink:0, background:'#1A5238', color:'white', fontSize:'0.63rem', fontWeight:800, padding:'0.15rem 0.45rem', borderRadius:'4px', letterSpacing:'0.03em', marginTop:'0.1rem', fontFamily:'monospace' }}>{code}</span>
+                        <span style={{ fontSize:'0.78rem', color:'#444', lineHeight:1.45 }}>{desc}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <p style={{ fontSize:'0.7rem', color:'#5A6B5A', lineHeight:1.5, margin:'0.75rem 0 0', paddingTop:'0.65rem', borderTop:'1px solid #C6E2C6' }}>
+                    {wdOutcomes.lifeSkills ? WD_OUTCOMES_NOTE.secondary : WD_OUTCOMES_NOTE.primary}
+                  </p>
+                  <button onClick={() => openWildestDreamsInfoSheet(newClassStage)}
+                    style={{ marginTop:'0.75rem', display:'flex', alignItems:'center', gap:'0.5rem', background:'none', border:'1px solid #1A5238', color:'#1A5238', fontSize:'0.75rem', fontWeight:700, padding:'0.4rem 0.85rem', borderRadius:'40px', cursor:'pointer', letterSpacing:'0.04em', width:'100%', justifyContent:'center' }}
+                    onMouseEnter={e => { e.currentTarget.style.background='#1A5238'; e.currentTarget.style.color='white'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background='none'; e.currentTarget.style.color='#1A5238'; }}>
                     ↓ Teacher Information Sheet
                   </button>
                 </div>

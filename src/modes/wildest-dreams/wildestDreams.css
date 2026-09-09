@@ -1,0 +1,235 @@
+/* wildestDreams.css — scoped entirely under .wd-root.
+   Every selector is prefixed so this file cannot affect any other Tracka mode, even though it
+   is imported into the same bundle. Nothing here is global. */
+
+.wd-root {
+  --wd-canvas:   #FFFDF8;
+  --wd-card:     #FFFFFF;
+  --wd-ink:      #141712;
+  --wd-ink-soft: #4A4F45;
+  --wd-line:     #D9D5C9;
+  --wd-accent:   #1A5238;
+  --wd-focus:    #0B57D0;
+
+  position: fixed;
+  inset: 0;
+  overflow-y: auto;
+  background: var(--wd-canvas);
+  color: var(--wd-ink);
+  font-family: 'DM Sans', system-ui, sans-serif;
+  -webkit-text-size-adjust: 100%;
+}
+
+.wd-page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 1.25rem 1rem 2.5rem;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+/* One idea per screen, so the heading can be large without crowding anything. */
+.wd-h1 {
+  font-family: 'Taronga Headline', Georgia, serif;
+  font-size: clamp(2rem, 8vw, 2.9rem);
+  line-height: 1.05;
+  letter-spacing: 0.02em;
+  margin: 0 0 0.4rem;
+  text-wrap: balance;
+}
+.wd-lead {
+  font-size: clamp(1.05rem, 4.2vw, 1.3rem);
+  line-height: 1.5;
+  color: var(--wd-ink-soft);
+  margin: 0 0 1.5rem;
+  text-wrap: pretty;
+}
+
+/* ── Buttons ────────────────────────────────────────────────────────────────
+   56px is the WCAG "enhanced" target size; these are well past it. Support-unit
+   students may be using a stylus, a switch, or someone else's hand on theirs. */
+.wd-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  width: 100%;
+  min-height: 72px;
+  padding: 1rem 1.25rem;
+  border: none;
+  border-radius: 18px;
+  background: var(--wd-accent);
+  color: #fff;
+  font-family: inherit;
+  font-size: clamp(1.1rem, 4.5vw, 1.35rem);
+  font-weight: 800;
+  cursor: pointer;
+  text-align: center;
+  line-height: 1.2;
+}
+.wd-btn:active { transform: scale(0.985); }
+
+.wd-btn-quiet {
+  background: var(--wd-card);
+  color: var(--wd-ink);
+  border: 2px solid var(--wd-line);
+}
+
+/* A skip that is always available and never shouty — no student should be stuck. */
+.wd-skip {
+  background: none;
+  border: none;
+  color: var(--wd-ink-soft);
+  font-family: inherit;
+  font-size: 1rem;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0.9rem;
+  min-height: 48px;
+}
+
+/* Visible focus for switch and keyboard users. Deliberately not green, so it reads as a
+   system affordance rather than part of the artwork.
+   :focus-visible, not :focus — the heading takes focus programmatically on every screen change,
+   and a ring appearing on a heading nobody clicked reads as a glitch. */
+.wd-root :focus-visible {
+  outline: 4px solid var(--wd-focus);
+  outline-offset: 3px;
+}
+
+/* ── Top line: back control and the read-aloud toggle ─────────────────────── */
+.wd-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+.wd-aloud {
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 2px solid var(--wd-line);
+  background: var(--wd-card);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.wd-aloud[aria-pressed='true'] {
+  border-color: var(--wd-accent);
+  background: #EAF3EE;
+}
+
+/* ── Choice grid ──────────────────────────────────────────────────────────── */
+.wd-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.85rem;
+}
+.wd-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 128px;
+  padding: 1rem 0.75rem;
+  background: var(--wd-card);
+  border: 3px solid var(--wd-line);
+  border-radius: 20px;
+  font-family: inherit;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--wd-ink);
+  cursor: pointer;
+  line-height: 1.25;
+  text-align: center;
+}
+.wd-choice .wd-ico { font-size: 2.4rem; line-height: 1; }
+/* Selected state must NOT be colour-only (WCAG 1.4.1) — a colour-blind student would see two
+   identical buttons. The tick is the real signal; the tint just reinforces it. */
+.wd-choice { position: relative; }
+.wd-choice[aria-pressed='true'] {
+  border-color: var(--wd-accent);
+  background: #EAF3EE;
+}
+.wd-choice[aria-pressed='true']::after {
+  content: '✓';
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--wd-accent);
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 800;
+  line-height: 30px;
+  text-align: center;
+}
+
+/* ── Stop cards ───────────────────────────────────────────────────────────── */
+.wd-stop {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  padding: 0.75rem;
+  background: var(--wd-card);
+  border: 3px solid var(--wd-line);
+  border-radius: 20px;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  margin-bottom: 0.85rem;
+  min-height: 96px;
+}
+.wd-stop img {
+  width: 84px; height: 84px;
+  object-fit: cover;
+  border-radius: 14px;
+  flex-shrink: 0;
+}
+.wd-stop-name {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--wd-ink);
+}
+.wd-stop-sub { font-size: 0.95rem; color: var(--wd-ink-soft); }
+.wd-stop-done { border-color: var(--wd-accent); background: #EAF3EE; }
+.wd-tick { margin-left: auto; font-size: 1.6rem; flex-shrink: 0; }
+
+/* ── Camera ───────────────────────────────────────────────────────────────── */
+.wd-cam {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  max-height: 58vh;
+  background: #000;
+  border-radius: 20px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+.wd-cam video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.wd-rec-dot {
+  position: absolute; top: 12px; left: 12px;
+  display: flex; align-items: center; gap: 0.4rem;
+  background: rgba(200,30,30,0.92); color: #fff;
+  padding: 0.35rem 0.8rem; border-radius: 999px;
+  font-size: 1rem; font-weight: 800;
+}
+
+/* ── Progress ─────────────────────────────────────────────────────────────── */
+.wd-dots { display: flex; gap: 0.4rem; justify-content: center; margin-bottom: 1.25rem; }
+.wd-dot { width: 14px; height: 14px; border-radius: 50%; background: var(--wd-line); }
+.wd-dot-on { background: var(--wd-accent); }
+
+@media (prefers-reduced-motion: reduce) {
+  .wd-root *, .wd-root *::before, .wd-root *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

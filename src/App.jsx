@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { StudentProvider } from './context/StudentContext';
+import WildestDreamsScreen from './modes/wildest-dreams';
 import {
   HomeScreen, MapScreen, AnimalScreen, ObservationScreen,
   BadgeScreen, CollectionScreen, SchoolEntryScreen, StudentJoinScreen, StudentLoadingScreen,
@@ -71,6 +72,8 @@ function Router() {
   // ZooYard (self-attest, no-GPS school program) has its own sub-router
   if (sessionType === 'zooyard') return <ZooYardScreen />;
   if (sessionType === 'evolve')  return <EvolveScreen />;
+  // Wildest Dreams — video-first mode, isolated under src/modes/wildest-dreams/
+  if (sessionType === 'wildest-dreams') return <WildestDreamsScreen />;
 
   switch (currentScreen) {
     case 'home':                 return <HomeScreen />;

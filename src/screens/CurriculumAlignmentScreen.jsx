@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { openTeacherInfoSheet, EXHIBITS, SCORING, STAGE_EXPECTATIONS, NSW_OUTCOMES } from '../utils/teacherInfoSheet';
+import WildestDreamsOutcomes from '../modes/wildest-dreams/components/OutcomesPanel';
+import { openWildestDreamsInfoSheet } from '../modes/wildest-dreams/infoSheet';
 
 const SUBJECTS = [
   { id:'science', label:'Science',     accent:'#1A5238', light:'#E8F2EC', border:'#A8C4B2', syllabus:'Science 7-10 (2023) / Science & Technology K-6 (2017)' },
@@ -74,6 +76,10 @@ export default function CurriculumAlignmentScreen() {
   const { setCurrentScreen } = useApp();
   const [subjectId, setSubjectId] = useState('science');
   const [stage, setStage]         = useState(3);
+  // Programs sit alongside the four subjects but are NOT one of them. Kept in its own state so
+  // `subjectId` always stays a real subject and every lookup below keeps working untouched.
+  const [programId, setProgramId] = useState(null);
+  const isWD = programId === 'wildest-dreams';
 
   const subject   = SUBJECTS.find(s => s.id === subjectId);
   const accent    = subject.accent;
@@ -97,8 +103,10 @@ export default function CurriculumAlignmentScreen() {
             <p style={{ fontSize:'0.7rem', color:'var(--t-slate)', fontWeight:500, marginTop:'0.1rem' }}>Teacher Portal · NSW syllabus outcome mapping</p>
           </div>
         </div>
-        <button onClick={() => openTeacherInfoSheet(subjectId, String(stage))}
-          style={{ display:'flex', alignItems:'center', gap:'0.5rem', background:accent, color:'white', border:'none', padding:'0.5rem 1.1rem', borderRadius:'var(--t-r-sm)', cursor:'pointer', fontSize:'0.8rem', fontWeight:700, fontFamily:'inherit', transition:'opacity 0.15s' }}
+        {/* Wildest Dreams gets its own sheet. The subject one is built around a mark scheme, and
+            this mode has none. */}
+        <button onClick={() => isWD ? openWildestDreamsInfoSheet(stage) : openTeacherInfoSheet(subjectId, String(stage))}
+          style={{ display:'flex', alignItems:'center', gap:'0.5rem', background: isWD ? '#1A5238' : accent, color:'white', border:'none', padding:'0.5rem 1.1rem', borderRadius:'var(--t-r-sm)', cursor:'pointer', fontSize:'0.8rem', fontWeight:700, fontFamily:'inherit', transition:'opacity 0.15s' }}
           onMouseEnter={e => e.currentTarget.style.opacity = '0.88'}
           onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
           <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 1v9m0 0L5 7m3 3 3-3M2 12v1a1 1 0 001 1h10a1 1 0 001-1v-1" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -120,11 +128,19 @@ export default function CurriculumAlignmentScreen() {
           <p className="lms-nav-group-label">Subject</p>
           <nav className="lms-nav">
             {SUBJECTS.map(s => (
-              <button key={s.id} className={`lms-nav-item ${s.id === subjectId ? 'lms-nav-active' : ''}`} onClick={() => setSubjectId(s.id)}>
-                <span className="lms-nav-icon"><span style={{ width:8, height:8, borderRadius:'50%', background: s.id === subjectId ? 'white' : s.accent, display:'block', opacity: s.id === subjectId ? 1 : 0.8 }} /></span>
+              <button key={s.id} className={`lms-nav-item ${s.id === subjectId && !isWD ? 'lms-nav-active' : ''}`} onClick={() => { setSubjectId(s.id); setProgramId(null); }}>
+                <span className="lms-nav-icon"><span style={{ width:8, height:8, borderRadius:'50%', background: s.id === subjectId && !isWD ? 'white' : s.accent, display:'block', opacity: s.id === subjectId && !isWD ? 1 : 0.8 }} /></span>
                 {s.label}
               </button>
             ))}
+          </nav>
+
+          <p className="lms-nav-group-label">Programs</p>
+          <nav className="lms-nav">
+            <button className={`lms-nav-item ${isWD ? 'lms-nav-active' : ''}`} onClick={() => setProgramId('wildest-dreams')}>
+              <span className="lms-nav-icon"><span style={{ width:8, height:8, borderRadius:'50%', background: isWD ? 'white' : '#1A5238', display:'block', opacity: isWD ? 1 : 0.8 }} /></span>
+              Wildest Dreams
+            </button>
           </nav>
 
           <p className="lms-nav-group-label">Stage</p>
@@ -140,7 +156,9 @@ export default function CurriculumAlignmentScreen() {
 
         {/* Main */}
         <div className="lms-main">
-          <div className="lms-main-inner" key={`${subjectId}-${stage}`} style={{ maxWidth:'980px', margin:'0 auto' }}>
+          <div className="lms-main-inner" key={`${programId || subjectId}-${stage}`} style={{ maxWidth:'980px', margin:'0 auto' }}>
+
+            {isWD ? <WildestDreamsOutcomes stage={stage} /> : <>
 
             {/* Page title */}
             <div style={{ display:'flex', alignItems:'flex-end', justifyContent:'space-between', gap:'1rem', flexWrap:'wrap', marginBottom:'1.25rem' }}>
@@ -216,6 +234,8 @@ export default function CurriculumAlignmentScreen() {
                 ))}
               </div>
             </div>
+
+            </>}
 
           </div>
         </div>
