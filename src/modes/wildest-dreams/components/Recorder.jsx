@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { startChapterRecording } from '../../../utils/evolveFilm';
+import { speak } from '../speech';
 
 // Recorder — camera, record, then Watch / Keep / Record again.
 //
@@ -13,7 +14,7 @@ import { startChapterRecording } from '../../../utils/evolveFilm';
 //   • Recording is a single large button, not a press-and-hold — holding is hard with a stylus,
 //     a tremor, or someone else's hand.
 //   • Nothing is discarded automatically. "Record again" replaces only when they choose it.
-export default function Recorder({ onKeep, onSkip, skipLabel }) {
+export default function Recorder({ onKeep, onSkip, skipLabel, extraAction = null }) {
   const [phase, setPhase]   = useState('ready');   // ready | recording | review
   const [clip,  setClip]    = useState(null);      // { blob, url, fileExt, contentType }
   const [error, setError]   = useState('');
@@ -63,6 +64,11 @@ export default function Recorder({ onKeep, onSkip, skipLabel }) {
 
   // Release the camera on unmount, or the light stays on after the student leaves.
   useEffect(() => () => { stopCamera(); recRef.current?.stop?.(); }, [stopCamera]);
+
+  // ⚠️ Errors were the ONE thing read-aloud never covered — the exact moment a student who
+  // cannot read most needs telling what happened. Respects the read-aloud toggle like every
+  // other spoken line, so an adult who turned it off is not overridden.
+  useEffect(() => { if (error) speak(error); }, [error]);
 
   const begin = () => {
     // A stream whose tracks have ended records nothing and fails silently at the far end, so
@@ -143,6 +149,9 @@ export default function Recorder({ onKeep, onSkip, skipLabel }) {
           <button className="wd-btn" onClick={begin} style={{ marginBottom:'0.75rem' }}>
             ● Start recording
           </button>
+          {/* Immediately after Record and at the same weight — this is where the soundboard
+              goes, because for a student who does not speak it is the equivalent action. */}
+          {extraAction}
           <button className="wd-btn wd-btn-quiet" onClick={() => setFront(f => !f)}>
             ⟲ {front ? 'Film the animal' : 'Film me'}
           </button>

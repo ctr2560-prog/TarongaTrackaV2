@@ -7,7 +7,7 @@ import { normaliseCode, safeStudentId } from '../../utils/helpers';
 import { pickMimeType } from '../../utils/evolveFilm';
 import { buildWildestDreamsFilm } from './film';
 import { WD_STOPS, WD_FOCUS, WD_COPY, WD_FILM_TITLE } from './content';
-import { speak } from './speech';
+import { speak, armSpeech, playAnimalSound, stopAnimalSound } from './speech';
 import Shell from './components/Shell';
 import BigChoice from './components/BigChoice';
 import Soundboard from './components/Soundboard';
@@ -30,7 +30,7 @@ export default function WildestDreamsScreen() {
   const [phase, setPhase]       = useState('welcome');   // welcome | stops | watch | choose | film | building | done | leaving
   const [stop, setStop]         = useState(null);        // the stop being worked on
   const [focus, setFocus]       = useState(null);        // chosen focus prompt
-  const [sound, setSound]       = useState(null);        // optional soundboard pick
+  const [sounds, setSounds]     = useState([]);          // optional soundboard picks (0..WD_MAX_SOUNDS)
   const [showBoard, setBoard]   = useState(false);
   const [clips, setClips]       = useState({});          // { [stopId]: objectURL }
   const [captions, setCaptions] = useState({});          // { [stopId]: caption text }
@@ -41,6 +41,11 @@ export default function WildestDreamsScreen() {
 
   const code = normaliseCode(classCode || '');
   const sid  = safeStudentId(studentName || '');
+
+  // Unlocks speech synthesis on the student's first tap. Without it the engine refuses the very
+  // first utterance (a screen narrating itself on mount, before any gesture) and then stays
+  // refusing — see the long note in speech.js.
+  useEffect(armSpeech, []);
 
   // Resume: a support unit may close the app between animals, and losing a morning's filming
   // would be unrecoverable. Clips live in Storage, so only the URLs need restoring.
@@ -71,13 +76,16 @@ export default function WildestDreamsScreen() {
 
   // ── Saving a clip ────────────────────────────────────────────────────────
   const keepClip = useCallback(async (clip) => {
-    const caption = sound?.caption || focus?.caption || '';
+    // The focus and the soundboard words are different things a student said, so the film
+    // carries both. It used to be one OR the other, which silently discarded whichever the
+    // student picked first.
+    const caption = [focus?.caption, ...sounds.map(s => s.caption)].filter(Boolean).join(' · ');
     // Show it immediately from the local object URL. The upload can take a while on zoo wifi,
     // and a student should never wait on a spinner to move to the next animal.
     setClips(prev => ({ ...prev, [stop.id]: clip.url }));
     setCaptions(prev => ({ ...prev, [stop.id]: caption }));
     setPhase('stops');
-    setFocus(null); setSound(null); setBoard(false);
+    setFocus(null); setSounds([]); setBoard(false);
 
     if (!code || !sid) return;
     try {
@@ -102,7 +110,7 @@ export default function WildestDreamsScreen() {
       console.warn('[wildestDreams] clip upload failed:', e);
       // Kept locally regardless — the student still sees it and it still reaches their film.
     }
-  }, [stop, focus, sound, code, sid, studentName]);
+  }, [stop, focus, sounds, code, sid, studentName]);
 
   // ── Building the film ────────────────────────────────────────────────────
   useEffect(() => {
@@ -188,7 +196,7 @@ export default function WildestDreamsScreen() {
           const done = !!clips[s.id];
           return (
             <button key={s.id} className={`wd-stop ${done ? 'wd-stop-done' : ''}`}
-              onClick={() => { speak(s.name); setStop(s); setPhase('watch'); }}>
+              onClick={() => { speak(s.name, { clip: s.voice }); setStop(s); setPhase('watch'); }}>
               <img src={s.image} alt="" />
               <span>
                 <span className="wd-stop-name" style={{ display:'block' }}>{s.name}</span>
@@ -209,8 +217,14 @@ export default function WildestDreamsScreen() {
     );
   }
 
-  const stopIndex = WD_STOPS.findIndex(s => s.id === stop?.id);
-  const progress  = { current: stopIndex + 1, total: WD_STOPS.length };
+  // Counts what has been FILMED. The current animal is a ring, not a filled dot, so "doing" is
+  // never read as "done" — see the note in Shell.
+  const progress = {
+    done:   filmedCount,
+    total:  WD_STOPS.length,
+    active: true,
+    label:  `You have filmed ${filmedCount} of ${WD_STOPS.length} animals`,
+  };
 
   // ── Watch ────────────────────────────────────────────────────────────────
   if (phase === 'watch' && stop) {
@@ -218,9 +232,21 @@ export default function WildestDreamsScreen() {
       <Shell title={`${WD_COPY.watchTitle} ${stop.name}`} lead={WD_COPY.watchLead}
              onBack={() => setPhase('stops')} backLabel="Animals" progress={progress}>
         <img src={stop.image} alt={stop.name}
-             style={{ width:'100%', borderRadius:20, marginBottom:'1.25rem', display:'block' }} />
+             style={{ width:'100%', borderRadius:20, marginBottom:'1rem', display:'block' }} />
+
+        {/* Real recorded audio, and only shown where a file actually exists. A button that plays
+            nothing teaches a student the button is broken. */}
+        {stop.sound && (
+          <button className="wd-btn wd-btn-quiet" style={{ marginBottom:'0.75rem' }}
+            onClick={() => playAnimalSound(stop.sound)}>
+            🔊 Hear the {stop.name}
+          </button>
+        )}
+
         {/* No timer. A student decides when they have watched enough. */}
-        <button className="wd-btn" onClick={() => setPhase('choose')}>{WD_COPY.watchDone}</button>
+        <button className="wd-btn" onClick={() => { stopAnimalSound(); setPhase('choose'); }}>
+          {WD_COPY.watchDone}
+        </button>
       </Shell>
     );
   }
@@ -234,7 +260,7 @@ export default function WildestDreamsScreen() {
           {WD_FOCUS.map(f => (
             // No `selected`: tapping navigates straight to filming, so a selected state would
             // never be seen. See the note in BigChoice.
-            <BigChoice key={f.id} icon={f.icon} label={f.label}
+            <BigChoice key={f.id} icon={f.icon} label={f.label} voice={f.voice}
               onClick={() => { setFocus(f); setPhase('film'); }} />
           ))}
         </div>
@@ -254,21 +280,24 @@ export default function WildestDreamsScreen() {
              onBack={() => setPhase('choose')} backLabel="Back" progress={progress}>
         <Recorder
           onKeep={keepClip}
-          onSkip={() => { setFocus(null); setSound(null); setBoard(false); setPhase('stops'); }}
+          onSkip={() => { setFocus(null); setSounds([]); setBoard(false); setPhase('stops'); }}
           skipLabel={WD_COPY.skip}
+          // Sits directly beneath Start recording, at full strength. For a student who does not
+          // speak this is the equivalent of the record button, not an extra.
+          extraAction={
+            <button className="wd-btn" style={{ marginBottom:'0.75rem', background:'#0B57D0' }}
+              aria-expanded={showBoard} onClick={() => setBoard(b => !b)}>
+              🔊 {WD_COPY.soundboard}
+            </button>
+          }
         />
 
-        {/* Optional, and clearly secondary to the camera. */}
-        <button className="wd-btn wd-btn-quiet" style={{ marginTop:'0.75rem' }}
-          aria-expanded={showBoard} onClick={() => setBoard(b => !b)}>
-          🔊 {WD_COPY.soundboard}
-        </button>
         {showBoard && (
-          <Soundboard selected={sound?.id} onToggle={setSound} onClose={() => setBoard(false)} />
+          <Soundboard selected={sounds} onToggle={setSounds} onClose={() => setBoard(false)} />
         )}
-        {sound && (
-          <p className="wd-lead" style={{ marginTop:'0.75rem' }}>
-            On your film: <strong>{sound.caption}</strong>
+        {sounds.length > 0 && (
+          <p className="wd-lead" style={{ marginTop:'0.75rem' }} role="status">
+            On your film: <strong>{sounds.map(s => s.caption).join(' · ')}</strong>
           </p>
         )}
       </Shell>
@@ -292,7 +321,11 @@ export default function WildestDreamsScreen() {
 
   // ── Done ─────────────────────────────────────────────────────────────────
   return (
-    <Shell title={WD_FILM_TITLE} lead={saveNote || 'Here is your film.'}>
+    // The lead is what gets read aloud, so it must not say "Here is your film" when the stitch
+    // failed and there is no film on screen.
+    <Shell title={WD_FILM_TITLE}
+           lead={filmURL ? (saveNote || 'Here is your film.')
+                         : 'Your film could not be made on this device. Every clip is saved.'}>
       {filmURL
         ? <video src={filmURL} controls playsInline
                  style={{ width:'100%', borderRadius:20, background:'#000', marginBottom:'1rem' }} />

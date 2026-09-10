@@ -26,31 +26,34 @@ export const WD_THEME = {
 };
 
 // ── The stops ──────────────────────────────────────────────────────────────────
-// PLACEHOLDER ROUTE. These reuse existing daytime animal photos so the flow can be tested
-// before the real Wildest Dreams route is locked in. Swap `stops` for the agreed animals and
-// nothing else in the mode needs to change.
-//
 // No GPS and no proximity check: a support unit moves as a group, at its own pace, and a
-// student should never be blocked from filming because a signal put them 30 m away.
+// student should never be blocked from filming because a signal put them 30 m away. Animals can
+// be filmed in any order and any of them skipped.
+//
+// `sound` is a real recording of the animal, played from the Watch screen. It is `null` where no
+// file exists yet — the button is then hidden rather than shown doing nothing. Dropping
+// `public/images/sound-{id}.mp3` in and setting the path here is all that is needed to enable it.
 export const WD_STOPS = [
-  { id: 'koala',      name: 'Koala',      image: '/images/koala.jpg',      colour: '#7A8B6F' },
-  { id: 'giraffe',    name: 'Giraffe',    image: '/images/giraffe.jpg',    colour: '#D97706' },
-  { id: 'tiger',      name: 'Tiger',      image: '/images/tiger.jpg',      colour: '#E86A33' },
-  { id: 'lion',       name: 'Lion',       image: '/images/lion.jpg',       colour: '#B8862B' },
-  { id: 'chimpanzee', name: 'Chimpanzee', image: '/images/chimpanzee.jpg', colour: '#8B5A3C' },
-  { id: 'sea-lion',   name: 'Sea Lion',   image: '/images/sea-lion.jpg',   colour: '#0284C7' },
+  { id: 'koala',      name: 'Koala',      image: '/images/koala.jpg',      colour: '#7A8B6F', sound: '/images/sound-koala.mp3' , voice: 'animal-koala'},
+  { id: 'kangaroo',   name: 'Kangaroo',   image: '/images/kangaroo.jpg',   colour: '#A9713B', sound: null , voice: 'animal-kangaroo'},
+  { id: 'giraffe',    name: 'Giraffe',    image: '/images/giraffe.jpg',    colour: '#D97706', sound: '/images/sound-giraffe.mp3' , voice: 'animal-giraffe'},
+  { id: 'chimpanzee', name: 'Chimpanzee', image: '/images/chimpanzee.jpg', colour: '#8B5A3C', sound: '/images/sound-chimpanzee.mp3' , voice: 'animal-chimpanzee'},
+  { id: 'lion',       name: 'Lion',       image: '/images/lion.jpg',       colour: '#B8862B', sound: '/images/sound-lion.mp3' , voice: 'animal-lion'},
+  { id: 'gorilla',    name: 'Gorilla',    image: '/images/gorilla.jpg',    colour: '#5C5750', sound: '/images/sound-gorilla.mp3' , voice: 'animal-gorilla'},
+  { id: 'rhino',      name: 'Rhino',      image: '/images/rhino.jpg',      colour: '#6B7280', sound: null , voice: 'animal-rhino'},
+  { id: 'tiger',      name: 'Tiger',      image: '/images/tiger.jpg',      colour: '#E86A33', sound: '/images/sound-tiger.mp3' , voice: 'animal-tiger'},
 ];
 
 // ── What the student chooses to talk about ─────────────────────────────────────
 // `caption` is what appears on the finished film. It is written in the student's voice, first
 // person, because the film is theirs — not a label describing what they did.
 export const WD_FOCUS = [
-  { id: 'like',   icon: '💚', label: 'What I like',    caption: 'What I like' },
-  { id: 'see',    icon: '👀', label: 'What I see',     caption: 'What I see' },
-  { id: 'hear',   icon: '👂', label: 'What I hear',    caption: 'What I hear' },
-  { id: 'notice', icon: '🔎', label: 'What I notice',  caption: 'What I notice' },
-  { id: 'feel',   icon: '🙂', label: 'How I feel',     caption: 'How I feel' },
-  { id: 'other',  icon: '✨', label: 'Something else', caption: 'My film' },
+  { id: 'like',   icon: '💚', label: 'What I like',    caption: 'What I like', voice: 'focus-like' },
+  { id: 'see',    icon: '👀', label: 'What I see',     caption: 'What I see', voice: 'focus-see' },
+  { id: 'hear',   icon: '👂', label: 'What I hear',    caption: 'What I hear', voice: 'focus-hear' },
+  { id: 'notice', icon: '🔎', label: 'What I notice',  caption: 'What I notice', voice: 'focus-notice' },
+  { id: 'feel',   icon: '🙂', label: 'How I feel',     caption: 'How I feel', voice: 'focus-feel' },
+  { id: 'other',  icon: '✨', label: 'Something else', caption: 'My film', voice: 'focus-other' },
 ];
 
 // ── Soundboard ─────────────────────────────────────────────────────────────────
@@ -59,16 +62,26 @@ export const WD_FOCUS = [
 //
 // `say` is spoken aloud via speech synthesis when tapped, so a student using the board hears it
 // too. `caption` is what lands on the film. Add entries here and they appear automatically.
+//
+// ⚠️ There used to be an "Animal sound" button here that spoke the sentence "Listen to the
+// animal". A student taps a speaker icon expecting a lion and gets a synthesised voice reading a
+// sentence, so it was a broken promise and got tapped-then-abandoned. Real animal audio now lives
+// on the Watch screen, where you are actually looking at the animal — see `sound` on WD_STOPS.
 export const WD_SOUNDBOARD = [
-  { id: 'happy',    icon: '😊', label: 'Happy',        say: 'Happy',          caption: 'Happy' },
-  { id: 'excited',  icon: '🤩', label: 'Excited',      say: 'Excited',        caption: 'Excited!' },
-  { id: 'wow',      icon: '😮', label: 'Wow!',         say: 'Wow',            caption: 'Wow!' },
-  { id: 'look',     icon: '👉', label: 'Look at that', say: 'Look at that',   caption: 'Look at that!' },
-  { id: 'fav',      icon: '⭐', label: 'My favourite', say: 'My favourite',   caption: 'My favourite' },
-  { id: 'amazing',  icon: '🌟', label: 'Amazing',      say: 'Amazing',        caption: 'Amazing!' },
-  { id: 'calm',     icon: '🌿', label: 'Calm',         say: 'Calm',           caption: 'Calm' },
-  { id: 'sounds',   icon: '🔊', label: 'Animal sound', say: 'Listen to the animal', caption: 'Listen!' },
+  { id: 'happy',    icon: '😊', label: 'Happy',        say: 'Happy',          caption: 'Happy', voice: 'word-happy' },
+  { id: 'excited',  icon: '🤩', label: 'Excited',      say: 'Excited',        caption: 'Excited!', voice: 'word-excited' },
+  { id: 'wow',      icon: '😮', label: 'Wow!',         say: 'Wow',            caption: 'Wow!', voice: 'word-wow' },
+  { id: 'look',     icon: '👉', label: 'Look at that', say: 'Look at that',   caption: 'Look at that!', voice: 'word-look' },
+  { id: 'fav',      icon: '⭐', label: 'My favourite', say: 'My favourite',   caption: 'My favourite', voice: 'word-fav' },
+  { id: 'amazing',  icon: '🌟', label: 'Amazing',      say: 'Amazing',        caption: 'Amazing!', voice: 'word-amazing' },
+  { id: 'calm',     icon: '🌿', label: 'Calm',         say: 'Calm',           caption: 'Calm', voice: 'word-calm' },
+  { id: 'funny',    icon: '😄', label: 'Funny',        say: 'Funny',          caption: 'Funny!', voice: 'word-funny' },
 ];
+
+// How many soundboard words can ride on one clip. More than one, because "Look at that" AND "My
+// favourite" is a normal thing to want to say and the board used to allow only one. Capped so the
+// caption stays readable on the film.
+export const WD_MAX_SOUNDS = 3;
 
 // ── Copy ───────────────────────────────────────────────────────────────────────
 // One idea per screen. Short enough to be read aloud by a support person in one breath.

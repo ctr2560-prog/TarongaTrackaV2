@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { speak, readAloudOn, setReadAloud, cancelSpeech } from '../speech';
+import { speak, readAloudOn, setReadAloud } from '../speech';
 import '../wildestDreams.css';
 
 // Shell — the frame every Wildest Dreams screen sits in.
@@ -24,10 +24,13 @@ export default function Shell({ title, lead, children, onBack, backLabel = 'Back
   const headingRef = useRef(null);
   const [aloud, setAloud] = useState(readAloudOn);
 
+  // ⚠️ No cancel-on-cleanup here. It used to `return cancelSpeech`, which fired a cancel() on
+  // every screen change — landing in the same window as the next screen's speak() and wedging the
+  // synthesiser, so nothing was read at all. speak() cancels a line that is genuinely still
+  // playing anyway, so the cleanup was doing nothing the next call did not already do.
   useEffect(() => {
     headingRef.current?.focus();
-    speak([title, lead].filter(Boolean).join('. '));
-    return cancelSpeech;                  // leaving a screen stops it mid-sentence
+    speak([title, lead].filter(Boolean).join('. '), { auto: true });
   }, [title, lead]);
 
   const toggleAloud = () => {
@@ -54,13 +57,18 @@ export default function Shell({ title, lead, children, onBack, backLabel = 'Back
           </button>
         </div>
 
-        {/* Progress is shown as dots rather than "3 of 6" — a count invites a student to feel
-            behind. Labelled for screen readers, where the number genuinely helps. */}
+        {/* Progress is shown as dots rather than "3 of 8" — a count invites a student to feel
+            behind. Labelled for screen readers, where the number genuinely helps.
+
+            ⚠️ Dots count animals FILMED, not the current animal's position in the list. They used
+            to do the latter, which meant filming the last animal first lit every dot and
+            announced "Stop 8 of 8" — telling a student they had finished when they had done one.
+            Position is meaningless here anyway, since animals can be filmed in any order.
+            The hollow ring marks the one being worked on now. */}
         {progress && (
-          <div className="wd-dots" role="img"
-               aria-label={`Stop ${progress.current} of ${progress.total}`}>
+          <div className="wd-dots" role="img" aria-label={progress.label}>
             {Array.from({ length: progress.total }).map((_, i) => (
-              <span key={i} className={`wd-dot ${i < progress.current ? 'wd-dot-on' : ''}`} />
+              <span key={i} className={`wd-dot ${i < progress.done ? 'wd-dot-on' : ''}${i === progress.done && progress.active ? ' wd-dot-now' : ''}`} />
             ))}
           </div>
         )}

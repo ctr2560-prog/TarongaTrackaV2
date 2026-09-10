@@ -9,12 +9,12 @@ import { speak } from '../speech';
 // itself, with a visible tick as well as the state, so the selection is never colour-only).
 //
 // Tapping speaks the label, so exploring the choices does not require reading them.
-export default function BigChoice({ icon, label, selected, onClick, toggle = false }) {
+export default function BigChoice({ icon, label, selected, onClick, toggle = false, voice = null }) {
   return (
     <button
       className="wd-choice"
       {...(toggle ? { 'aria-pressed': !!selected } : {})}
-      onClick={() => { speak(label); onClick?.(); }}
+      onClick={() => { speak(label, { clip: voice }); onClick?.(); }}
     >
       {/* The emoji is decorative — the label already says it, so announcing both is noise. */}
       <span className="wd-ico" aria-hidden="true">{icon}</span>
