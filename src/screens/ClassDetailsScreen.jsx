@@ -514,6 +514,11 @@ export default function ClassDetailsScreen() {
                 <span className="lms-nav-icon"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M11.5 2.5l2 2-7.5 7.5H4v-2l7.5-7.5z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/></svg></span> Notification Template
               </button>
             )}
+            {isEV && (
+              <button className="lms-nav-item" onClick={() => window.open('/evolve-notification.html', '_blank')}>
+                <span className="lms-nav-icon"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M11.5 2.5l2 2-7.5 7.5H4v-2l7.5-7.5z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/></svg></span> Notification Template
+              </button>
+            )}
           </nav>
 
           <p className="lms-nav-group-label" style={{ marginTop:'1rem' }}>Class Info</p>
