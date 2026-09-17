@@ -181,6 +181,54 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
   mr.start(500);
   await wait(80);
 
+  // ── Pause the whole stitch while the tab is hidden ──────────────────────────────────────
+  // The film is captured in REAL TIME, so whatever the tab is doing for those ~45 seconds is
+  // baked in permanently. Chrome clamps a hidden tab's timers to 1/second and pauses its
+  // media, so switching away used to record the remaining chapters at ~1fps — confirmed in
+  // the wild on 2026-09-17 (giraffe 1.0fps, lion 1.1fps, tiger 1.2fps, while the first two
+  // chapters, filmed while watching, were fine).
+  //
+  // The Wake Lock above only stops the SCREEN sleeping; it does nothing about switching tabs.
+  // So instead of trying to keep drawing, stop the clock: pause the recorder, the clip and the
+  // audio graph, and resume them together. The film then WAITS rather than degrading. It takes
+  // longer in wall-clock time and loses nothing.
+  const active = { video: null };
+  let hiddenSince = 0, hiddenTotal = 0;
+
+  // A monotonic "visible milliseconds" clock. Everything timed by the stitch uses this, so a
+  // card still gets its full on-screen duration and the low-fps warning does not cry wolf
+  // about seconds when nothing was being recorded anyway.
+  const activeMs = () =>
+    performance.now() - hiddenTotal - (hiddenSince ? performance.now() - hiddenSince : 0);
+
+  function pauseForHidden() {
+    if (hiddenSince) return;
+    hiddenSince = performance.now();
+    try { if (mr.state === 'recording') mr.pause(); } catch { /* not supported — degrades to old behaviour */ }
+    try { active.video?.pause(); } catch { /* nothing playing */ }
+    try { audioCtx?.suspend(); } catch { /* no audio graph */ }
+  }
+  function resumeFromHidden() {
+    if (!hiddenSince) return;
+    hiddenTotal += performance.now() - hiddenSince;
+    hiddenSince = 0;
+    try { audioCtx?.resume(); } catch { /* no audio graph */ }
+    try { active.video?.play(); } catch { /* nothing to resume */ }
+    try { if (mr.state === 'paused') mr.resume(); } catch { /* not supported */ }
+  }
+  const onVisibility = () => (document.hidden ? pauseForHidden() : resumeFromHidden());
+  document.addEventListener('visibilitychange', onVisibility);
+  if (document.hidden) pauseForHidden();          // started hidden
+
+  // Resolves after `ms` of VISIBLE time. Hidden time does not count, because the recorder is
+  // paused then and nothing is being captured.
+  const waitActive = ms => new Promise(resolve => {
+    const target = activeMs() + ms;
+    const h = setInterval(() => {
+      if (activeMs() >= target) { clearInterval(h); resolve(); }
+    }, 50);
+  });
+
   // Both draw loops are TIMER driven, not requestAnimationFrame.
   //
   // rAF stops dead the moment the tab is backgrounded or the phone screen locks. That
@@ -197,7 +245,7 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
     let settled = false;
     drawFn();
     const h = setInterval(() => { if (!cancelled() && !settled) drawFn(); }, FRAME_MS);
-    setTimeout(() => { if (settled) return; settled = true; clearInterval(h); resolve(); }, ms);
+    waitActive(ms).then(() => { if (settled) return; settled = true; clearInterval(h); resolve(); });
   });
 
   const TOTAL = clips.length + 2;
@@ -277,12 +325,15 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
       videoEl.src = src; videoEl.playsInline = true; videoEl.muted = true; videoEl.preload = 'auto';
       let rafId = null, nextId = null, watchdog = null, abSrc = null, started = false, done = false;
       let drawn = 0, startedAt = 0, lastDrawAt = 0;
-      let guard = setTimeout(finish, 20000);
+      // Safety net for a clip that never fires `ended`. Counted in VISIBLE time, so being away
+      // for two minutes no longer cuts the chapter short.
+      let guardUntil = activeMs() + 20000;
+      const guard = setInterval(() => { if (activeMs() >= guardUntil) finish(); }, 250);
 
       function finish() {
         if (done) return;
         done = true;
-        clearTimeout(guard);
+        clearInterval(guard);
         if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
         if (nextId) { clearTimeout(nextId); nextId = null; }
         if (watchdog) { clearInterval(watchdog); watchdog = null; }
@@ -290,10 +341,11 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
         // Fewer than ~5fps means the device throttled us and this chapter's footage will
         // look frozen in the finished film. Almost always the screen slept or the tab was
         // backgrounded mid-stitch.
-        const __secs = (performance.now() - startedAt) / 1000;
+        const __secs = (activeMs() - startedAt) / 1000;
         if (started && __secs > 0.5 && drawn / __secs < 5) {
           console.warn(`[evolveFilm] "${c.id}" drew only ${drawn} frames in ${__secs.toFixed(1)}s (~${(drawn / __secs).toFixed(1)}fps) - its footage will look frozen. The screen most likely slept or the tab was backgrounded.`);
         }
+        if (active.video === videoEl) active.video = null;
         // Release the element so the decoder pool frees up before the next chapter.
         try { videoEl.pause(); videoEl.removeAttribute('src'); videoEl.load(); } catch { /* noop */ }
         resolve();
@@ -371,10 +423,11 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
         started = true;
         videoEl.oncanplay = null;
         videoEl.play().then(() => {
-          clearTimeout(guard);
+          active.video = videoEl;
+          if (document.hidden) pauseForHidden();   // went away during load
           const dur = (isFinite(videoEl.duration) && videoEl.duration > 0) ? videoEl.duration : 12;
-          guard = setTimeout(finish, (dur + 5) * 1000);
-          startedAt = performance.now();
+          guardUntil = activeMs() + (dur + 5) * 1000;
+          startedAt = activeMs();
           lastDrawAt = 0;
           startAudio();
           tick();
@@ -421,7 +474,10 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
   }
 
   onProgress?.(100, clips.length);
+  document.removeEventListener('visibilitychange', onVisibility);
   releaseWakeLock();
+  // A paused recorder ignores stop() on some builds, so make sure it is running first.
+  try { if (mr.state === 'paused') mr.resume(); } catch { /* not supported */ }
   if (mr.state !== 'inactive') { try { mr.requestData(); mr.stop(); } catch { /* already stopped */ } }
   return finished;
 }

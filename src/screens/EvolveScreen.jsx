@@ -13,6 +13,44 @@ const CLIP_SECONDS = 30;
 const WATCH_SECONDS = 60;
 const INTRO_KEY = 'evolveIntroSeen';
 
+// ── Reflection drafts (offline safety) ───────────────────────────────────────────────────────
+// ⚠️ The zoo has patchy reception, and a chapter cannot be completed until its clip is in
+// Storage. That gate used to take the WRITING down with it: `saveChapter` ran after the upload,
+// so with no signal the reflection sat in React state next to a blob in a ref and neither was
+// persisted anywhere. A reload, a closed tab, or a phone evicting a backgrounded tab lost the
+// student's writing as well as their film, and they re-wrote from scratch.
+//
+// The writing is a few hundred bytes of text, so it does not need to wait for anything. It is
+// kept here as the student types and pushed to Firestore the moment it is valid, independently
+// of the clip. The clip gate is unchanged — a chapter is still not `completed` without its film.
+// ⚠️ A stored reflection is `${writeLead} ${body}`, but the textarea holds only the body — the
+// lead is rendered beside it. Putting the stored value straight back would say it twice
+// ("I will / I will plant something"). Same trap as evolveCertificates.js.
+function stripLead(reflection, lead) {
+  if (!reflection) return '';
+  if (!lead) return reflection;
+  const re = new RegExp('^\\s*' + lead.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b\\s*', 'i');
+  const out = reflection.replace(re, '').trim();
+  return out || reflection;
+}
+
+const DRAFT_KEY = (code, sid) => `evolveDrafts_${code}_${sid}`;
+
+function readDrafts(code, sid) {
+  if (!code || !sid) return {};
+  try { return JSON.parse(localStorage.getItem(DRAFT_KEY(code, sid)) || '{}'); }
+  catch { return {}; }
+}
+
+function writeDraft(code, sid, chapterId, text) {
+  if (!code || !sid) return;
+  try {
+    const all = readDrafts(code, sid);
+    if (text) all[chapterId] = text; else delete all[chapterId];
+    localStorage.setItem(DRAFT_KEY(code, sid), JSON.stringify(all));
+  } catch { /* private mode or quota — the Firestore write is still attempted */ }
+}
+
 // Shown once, before the first chapter. Stage 6 students should know what they have walked
 // into and why, without reading a briefing.
 const INTRO_STEPS = [
@@ -609,6 +647,7 @@ export default function EvolveScreen() {
 
   const [watchLeft, setWatchLeft] = useState(WATCH_SECONDS);
   const [reflectText, setReflectText] = useState('');
+  const [remoteDrafts, setRemoteDrafts] = useState({});   // unfinished chapters' saved writing
   const [saving, setSaving] = useState(false);
 
   const [recording, setRecording] = useState(false);
@@ -660,14 +699,17 @@ export default function EvolveScreen() {
         ]);
         const ev = snap.exists() ? (snap.data().evolve || {}) : {};
         if (cancelled) return;
-        const d = {}, urls = {};
+        const d = {}, urls = {}, drafts = {};
         EVOLVE_CHAPTERS.forEach(c => {
           const e = ev[c.id];
-          if (!e?.completed) return;
-          d[c.id] = { reflection: e.reflection || '' };
+          if (!e) return;
           if (e.clipURL) urls[c.id] = e.clipURL;
+          if (e.completed) { d[c.id] = { reflection: e.reflection || '' }; return; }
+          // Written but not finished — the reflection is saved before the clip now, so an
+          // unfinished chapter can legitimately hold one. Offer it back rather than lose it.
+          if (e.reflection) drafts[c.id] = e.reflection;
         });
-        setDone(d); setClipURLs(urls);
+        setDone(d); setClipURLs(urls); setRemoteDrafts(drafts);
         if (!Object.keys(d).length && !localStorage.getItem(INTRO_KEY)) setShowIntro(true);
         if (ev.filmURL) { setFilmURL(ev.filmURL); setFilmPhase('sent'); }
         if (ev.souvenirToken) setSouvenirToken(ev.souvenirToken);
@@ -727,10 +769,24 @@ export default function EvolveScreen() {
     if (done[c.id]) return;
     setChapter(c);
     setPhase('insight');
-    setReflectText(''); setCamError(''); setWatchLeft(WATCH_SECONDS);
+    // Restore anything written before, so a reload or a lost signal does not cost the writing.
+    const local = readDrafts(normaliseCode(classCode || ''), safeStudentId(studentName || ''))[c.id];
+    // A stored reflection already includes its lead; the textarea holds only the body.
+    const remote = stripLead(remoteDrafts[c.id], c.writeLead);
+    setReflectText(local || remote || ''); setCamError(''); setWatchLeft(WATCH_SECONDS);
     setCountdown(CLIP_SECONDS);
     setEvScreen('chapter');
   }
+
+  // Persist the draft locally while the student writes. Debounced: a write per keystroke is
+  // wasteful, and 600ms is far shorter than the time it takes to lose a tab.
+  useEffect(() => {
+    if (!chapter || phase !== 'write') return undefined;
+    const code = normaliseCode(classCode || '');
+    const sid  = safeStudentId(studentName || '');
+    const id = setTimeout(() => writeDraft(code, sid, chapter.id, reflectText.trim()), 600);
+    return () => clearTimeout(id);
+  }, [reflectText, chapter, phase, classCode, studentName]);
 
   function backToMap() {
     clearInterval(tickRef.current);
@@ -816,6 +872,36 @@ export default function EvolveScreen() {
   }
 
   // ── Save chapter ──
+  // ⚠️ INDIVIDUAL DOTTED FIELDS ONLY, and deliberately NOT `completed`. Writing a whole
+  // `evolve.{id}` object replaces the map and destroys clipURL — that regression has happened
+  // here before. `completed` stays in saveChapter, behind the clip gate, so a chapter is still
+  // not finished without its film; this only makes sure the writing itself cannot be lost.
+  async function saveReflectionEarly() {
+    if (!chapter || !studentName || !classCode) return;
+    const body = reflectText.trim();
+    if (!body) return;
+    const reflection = chapter.writeLead ? `${chapter.writeLead} ${body}` : body;
+    const code = normaliseCode(classCode);
+    const sid  = safeStudentId(studentName);
+    const ref  = doc(db, 'classes', code, 'students', sid);
+    try {
+      await updateDoc(ref, {
+        [`evolve.${chapter.id}.reflection`]: reflection,
+        [`evolve.${chapter.id}.chapter`]:    chapter.chapter,
+        [`evolve.${chapter.id}.order`]:      chapter.order,
+        [`evolve.${chapter.id}.updatedAt`]:  serverTimestamp(),
+      });
+    } catch {
+      // The student doc or the evolve map may not exist yet. setDoc with merge deep-merges maps,
+      // so this cannot clobber a sibling clipURL either.
+      try {
+        await setDoc(ref, { name: studentName, classCode: code,
+          evolve: { [chapter.id]: { reflection, chapter: chapter.chapter, order: chapter.order } } },
+          { merge: true });
+      } catch (e) { console.warn('Evolve early reflection write failed:', e); }
+    }
+  }
+
   async function saveChapter() {
     if (saving || !chapter) return;
     setSaving(true);
@@ -853,6 +939,7 @@ export default function EvolveScreen() {
           } catch (e) { console.warn('Advice submit failed:', e); }
         }
       }
+      writeDraft(normaliseCode(classCode || ''), safeStudentId(studentName || ''), chapter.id, '');
       setDone(prev => ({ ...prev, [chapter.id]: entry }));
       // The leg arriving at the NEXT stop is the one that has just been walked.
       setJustLit(EVOLVE_STORY_ORDER.findIndex(c => c.id === chapter.id) + 1);
@@ -1122,7 +1209,7 @@ export default function EvolveScreen() {
                 <div className={`ev-count${ready ? ' ev-count-on' : ''}`}>
                   {ready ? `${wc} word${wc === 1 ? '' : 's'}` : `${wc} / ${minWords} words`}
                 </div>
-                <button onClick={() => { setCamError(''); setPhase('record'); }} disabled={!ready}
+                <button onClick={() => { setCamError(''); saveReflectionEarly(); setPhase('record'); }} disabled={!ready}
                   style={{ width:'100%', padding:'0.95rem', borderRadius:999, border:'none', background: ready ? T.accent : 'rgba(255,255,255,0.15)', color: ready ? '#241503' : T.textDim, fontWeight:800, cursor: ready ? 'pointer' : 'not-allowed', textTransform:'uppercase', letterSpacing:'0.06em' }}>
                   {ready ? (chapter.isPledge ? 'Make this my pledge' : 'To camera') : 'Keep writing'}
                 </button>
@@ -1326,6 +1413,13 @@ export default function EvolveScreen() {
                 <>
                   <span className="ev-meta">Saved. Yours to keep.</span>
                   <button className="ev-cta" onClick={() => setEvScreen('film')}>Watch your film</button>
+                  {/* One backgrounded tab used to ruin the keepsake permanently: the film is
+                      captured in real time, and once it was sent there was no way back to this
+                      button. Re-submitting reuses the existing souvenir token, so any NFC tag
+                      already written keeps working. */}
+                  <button className="ev-skip" onClick={startFilm} style={{ marginTop:'0.5rem' }}>
+                    Make it again
+                  </button>
                 </>
               ) : allDone ? (
                 <>

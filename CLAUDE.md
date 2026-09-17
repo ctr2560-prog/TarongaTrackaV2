@@ -10,13 +10,42 @@ There is also **ZooYard** — a self-attest, no-GPS "at school" program for clas
 
 There is also **Evolve** — a Stage 6 (Year 11/12) twilight excursion supporting the Life Ready course. Five animals are five chapters of one story about leaving school; students write a reflection and film a piece to camera at each, which stitch into a single short film they keep. Deliberately has no points, badges or marks. See the Evolve Deep Reference section below.
 
+There is also **Wildest Dreams** — a video-first mode for diverse learners, particularly school support units. Students watch an animal, choose what they want to show about it, and film a short piece; the clips stitch into one documentary, "My Wildest Dreams", that they keep. No quiz, no score, no marks, no badges, no leaderboard, and no required writing **or speech**. Lives entirely under `src/modes/wildest-dreams/`. See the Wildest Dreams Deep Reference section below.
+
 Live URLs: **tarongatracka.com.au** (GitHub Pages, auto-deploys from `main`) and
 **tarongatracka.web.app** (Firebase Hosting, manual deploy). Firebase project: `tarongatracka`,
 region: `australia-southeast1`. ⚠️ See **Build & Deploy** — these two drift apart.
 
 ---
 
-## Where we left off (2026-08-31)
+## Where we left off (2026-09-17)
+
+### ⚠️ Do these first
+1. **`firebase deploy --only storage` has NOT been run.** The `wildestDreams/` rule is committed
+   but not live, so every Wildest Dreams clip and film fails to upload with
+   `storage/unauthorized` — **silently**, because uploads are backgrounded. Must run under
+   **thebiologybloke@gmail.com**. This is the only thing actually blocking students.
+2. **The ZooSnooz parent letter promises retention that does not exist.**
+   `public/zoosnooz-notification.html` tells families raw footage is "permanently deleted within
+   48 hours" and the documentary is "hosted for up to 12 months, then deleted". **There is no
+   deletion or retention job anywhere in the codebase** — no scheduled function, no
+   `deleteObject` call. That letter has already gone home to families. Either build the retention
+   job or correct the wording; do not leave it as it is. The Evolve letter deliberately does not
+   repeat the claim.
+3. **The Wildest Dreams voice clips are macOS "Karen"** and are live on the public domain.
+   Apple's system voices are licensed for use on a Mac, not for redistribution inside a product.
+   Replacing is a file drop into `public/voice/` with the same names — no code change.
+   `scripts/generate-wd-voice.sh` lists all 22 keys and their exact lines.
+
+### Recently shipped (2026-09-07 → 09-17)
+- **Wildest Dreams**, a whole new mode — see its Deep Reference below.
+- **Recorded voice** for everything a student taps in Wildest Dreams, replacing reliance on
+  `speechSynthesis`. See "Audio & speech" in the Video & media pipeline section — that section
+  is the single most expensive thing in this doc to rediscover.
+- **NSW Science Life Skills outcomes** surfaced on Create Class and on Curriculum Alignment
+  (new **Programs** group in the sidebar), plus a Wildest Dreams teacher information sheet.
+- **Evolve filming opt-out notification** — `public/evolve-notification.html`, linked from Class
+  Details for Evolve classes. Also the only place families are now told about the Advice Wall.
 
 ### Recently shipped (2026-08-25 → 08-31)
 - **ZooYard photos use a real camera** (`components/PhotoCapture.jsx`) and the self-attest photo
@@ -34,7 +63,8 @@ region: `australia-southeast1`. ⚠️ See **Build & Deploy** — these two drif
 - **tarongatracka.web.app is behind** — last manual `firebase deploy --only hosting` was
   2026-08-13, so it is still serving the **broken stitcher**. Run
   `npm run build && firebase deploy --only hosting` to resync. See Build & Deploy.
-- Firestore rules, Storage rules and Cloud Functions are all deployed and current.
+- Firestore rules and Cloud Functions are deployed and current.
+  **Storage rules are NOT** — see item 1 above.
 - **The Storage bucket's CORS policy is now set** and lives in `cors.json`. See the CORS rule in
   Video & media pipeline. Reapply with:
   `gcloud storage buckets update gs://tarongatracka.firebasestorage.app --cors-file=cors.json`
@@ -62,7 +92,12 @@ Chapter one is exempt from the sequence half. `EvolveScreen.jsx`, in the `EVOLVE
    `status: 'pending'`, `cohortYear`, and no student name — but **nothing reads that collection**.
    ⚠️ **The consent notice was removed from the giraffe write screen on 2026-08-20** at Cameron's
    request. It was the only place a student was told their writing might be shown to others, so
-   the wall now takes writing from students who were never asked. Moderation still gates what
+   the wall now takes writing from students who were never asked.
+   **Partly addressed 2026-09-17**: `public/evolve-notification.html` discloses it to families —
+   shared writing is attributed by year group only, never by name or alias, and moderated before
+   anything is shown. That is now the ONLY place anyone is told. There is deliberately **no
+   checkbox** for it (Cameron's call), so declining is a verbal arrangement with the teacher: no
+   record is kept and the staff moderation view has nothing to filter on. Moderation still gates what
    appears and it stays alias-attributed, but if consent is wanted back the cheap version is a
    checkbox setting `consented: true` on the `evolveAdvice` doc so moderation can filter on it.
    Needs: staff moderation UI, and a standalone wall. Cameron wants it as its own page, on the
@@ -142,6 +177,8 @@ taronga-tracka-vite/
 │   ├── context/
 │   │   ├── AppContext.jsx    # All teacher/admin state + history routing
 │   │   └── StudentContext.jsx
+│   ├── modes/
+│   │   └── wildest-dreams/   # Entire Wildest Dreams mode — see its Deep Reference
 │   ├── screens/
 │   │   ├── index.jsx         # Barrel export + screen router (switch on currentScreen)
 │   │   ├── HomeScreen.jsx
@@ -168,9 +205,13 @@ taronga-tracka-vite/
 ├── functions/
 │   └── index.js              # Cloud Functions: sendMagicLink, onDeviceBookingCreated, sendMentorReport
 ├── scripts/
+│   ├── generate-wd-voice.sh  # rebuilds public/voice/*.m4a — lists every key and its line
 │   └── generate-pptx.py      # Builds 32 downloadable PPTX lesson decks — legacy, not wired into the app anymore (see Pre/Post-Visit Lessons section)
 ├── public/                   # Static assets served as-is
-│   ├── images/               # logo.png, taronga-zoo-white.png, animal photos, map
+│   ├── images/               # logo.png, taronga-zoo-white.png, animal photos, map, sound-*.mp3
+│   ├── voice/                # 22 Wildest Dreams recorded voice clips (see Audio & speech)
+│   ├── zoosnooz-notification.html   # printable parent letter + opt-out slip
+│   ├── evolve-notification.html     # ditto, for Evolve
 │   ├── resources/pptx/       # 32 generated PPTX lesson decks (pre/post × subject × stage)
 │   └── *.pdf                 # Venue safety, accessibility PDFs
 ├── firestore.rules
@@ -476,6 +517,95 @@ the foreground.** You can still prove *structure* from automation — element wi
 styles, `getAnimations()` state, and stepping an animation manually via `anim.currentTime = n`.
 Just never conclude the pipeline works from it.
 
+**This applies to `speechSynthesis` too** — Chrome suppresses it in a hidden tab, so a probe from
+an automated tab reports "no event at all" on a perfectly healthy engine. Confirmed 2026-09-16.
+
+### 8. ⚠️ React will reuse ONE `<video>` node, and `srcObject` beats `src` (2026-09-09)
+
+A live camera preview and a playback player are usually the same element type in the same position
+of the same tree. React reconciles by position, so it keeps **one DOM node** and swaps the
+attributes. That node still has `srcObject` pointing at the (now stopped) MediaStream, and
+**`srcObject` takes precedence over `src`** — so the newly recorded blob URL is set and ignored,
+and playback shows a dead black frame.
+
+This cost a full round trip in Wildest Dreams: "it records but there is no playback". Fix is
+distinct `key`s on the two elements, plus nulling `srcObject` on the player via a ref callback.
+See `modes/wildest-dreams/components/Recorder.jsx`. **Evolve has the same latent trap** if its
+preview and playback videos ever end up adjacent in one tree; they are not today.
+
+### 9. ⚠️ Never restart the camera on the phase change that begins recording
+
+`Recorder.jsx` ran its camera effect for both `ready` and `recording`. `startCamera()` opens with
+`stopCamera()`, so the moment `begin()` set the phase to `recording`, the effect re-ran and
+**stopped the very tracks MediaRecorder was recording**. The recorder carried on against dead
+tracks and produced a blob under 500 bytes, which `startChapterRecording` rejects as
+`empty-recording` — so every attempt showed "That did not record" with no other symptom.
+
+Guard the effect to the idle phase only, and check `track.readyState === 'live'` before starting.
+
+---
+
+## Audio & speech — READ BEFORE TOUCHING ANYTHING THAT MAKES A NOISE
+
+Learned the hard way across 2026-09-11 → 09-16 in Wildest Dreams, over several failed attempts.
+**Every fault below fails silently** — no exception, no error event, just no sound.
+
+### The conclusion first: prefer recorded audio to `speechSynthesis`
+
+Wildest Dreams now plays **pre-recorded `<audio>` clips** for everything a student taps, because
+that vocabulary is fixed and small (8 soundboard words, 6 focus prompts, 8 animal names). A plain
+audio file is identical on every device, has no engine to wedge, no missing voice, no gesture
+rules, and can be a warm human voice. `speechSynthesis` is now only a fallback and for dynamic
+screen narration. **If you are adding spoken UI anywhere else in Tracka, do the same.**
+
+Files: `public/voice/{key}.m4a`, regenerated by `scripts/generate-wd-voice.sh`. A missing file
+falls through to the synthesiser, so the mode works with none, some or all of them present.
+
+### `speechSynthesis` faults, in the order they bit
+
+1. **`cancel()` in the same tick as `speak()` wedges Chrome.** The first implementation did
+   `cancel(); speak(u)` on every line, and every screen change ran it. That alone meant nothing
+   ever spoke. Cancel only when something is genuinely playing.
+2. **A deferred `speak()` is rejected by Safari and iOS.** They only accept `speak()` from inside
+   the user gesture that triggered it, so a `setTimeout` — even 60ms, added to dodge fault 1 —
+   puts it outside and the utterance is dropped. **Keep the common path synchronous**; defer only
+   when you genuinely had to cancel.
+3. **An unreferenced `SpeechSynthesisUtterance` can be garbage collected mid-sentence.** Hold it.
+4. **Voices load asynchronously.** Speaking before Chrome has them does nothing at all. Wait
+   briefly for `voiceschanged`, capped, so a device with no voices does not hang.
+5. **Chrome's engine can WEDGE outright**: `speak()` queues, `speechSynthesis.speaking` reports
+   `true`, and no `onstart`, no `onerror` and no sound ever follow. **Confirmed on a real machine
+   with plain `speechSynthesis` and none of our code involved** — it is a browser fault, and
+   `cancel()` alone does not clear it. Quitting Chrome fully (Cmd+Q) does. The mode now runs a
+   watchdog: if an utterance has not started in 1.2s, reset with `cancel()`+`resume()` and retry
+   **once**.
+6. **`pause()` while a `play()` promise is unresolved rejects with `AbortError`.** Treating that
+   as "the audio file is missing" and falling back to the synthesiser made two voices talk over
+   each other. Ignore `AbortError` and ignore results from a superseded request.
+7. **Two sound sources need one channel.** Recorded clips and synthesised narration overlapped
+   constantly, because tapping a button both plays a clip and changes the screen that then
+   narrates itself. Rule that works: **a tap always wins and plays now; narration waits for the
+   channel, or is dropped if a newer tap replaces it.**
+8. **Suppress repeats by WHOLE SENTENCE only.** Stripping a just-spoken phrase wherever it
+   appeared turned "Watch the Tiger. Take your time." into "Watch the . Take your time."
+9. **Match the synthesiser voice to your clips** (`en-AU` here). Left alone it picks the system
+   default, so the app ends up with two different speakers — a real accessibility problem, not a
+   polish one.
+
+### How to debug it
+
+`speech.js` logs `[wildestDreams] speech failed: <reason>` and
+`[wildestDreams] speech did not start; resetting the synthesiser`. Before those existed this whole
+class of failure was invisible.
+
+**Trace the module rather than guessing.** Bundling `speech.js` with esbuild and running it in Node
+against a stubbed engine found the real fault in minutes after several wrong guesses:
+
+```bash
+npx esbuild src/modes/wildest-dreams/speech.js --bundle --format=esm --outfile=/tmp/sp.mjs
+# then stub window.speechSynthesis / Audio / localStorage and assert what reaches the engine
+```
+
 ---
 
 ## ZooSnooz — Deep Reference
@@ -570,6 +700,7 @@ token-and-lookup approach.
 |---|---|---|
 | `zoosnooz/` | ZooSnooz clips + documentary | none (students) |
 | `evolve/` | Evolve clips + film | none (students) |
+| `wildestDreams/` | Wildest Dreams clips + film | none (students) — ⚠️ **NOT YET DEPLOYED** |
 | `zooyardHabitats/` | ZooYard attest photos | none (students) |
 | `citizenScienceEvidence/` | ZooYard Habitat Hero photos | none (students) |
 | `challengeEvidence/` | Class challenge photos | teacher (Firebase Auth) |
@@ -795,8 +926,8 @@ low-framerate warning so silent picture loss can't happen unnoticed again.
 - **`reflectionPrompt` may be a string or an array.** As an array, the first item renders bold and
   centred as the idea, and the rest as quieter paragraphs beneath. All five are arrays; they were
   split only at existing sentence boundaries, which is why the counts vary (2 or 3 parts).
-- **`EVOLVE_MIN_WORDS` is 12**, down from 40 — these are reflections, not essays. The counter shows
-  `n / 12 words` while short and just `n words` once met, so a low floor doesn't read as the target
+- **`EVOLVE_MIN_WORDS` is 10** (was 40, then 12) — these are reflections, not essays. The counter shows
+  `n / 10 words` while short and just `n words` once met, so a low floor doesn't read as the target
   and invite everyone to stop at exactly twelve. `chapter.minWords` can override per chapter.
 - **The camera step leads with the personal ask, then `filmLink`** — "Then link it back to the
   lions: no lion is raised by one animal." An earlier version put a scripted opening line *first*;
@@ -954,6 +1085,131 @@ The giraffe chapter's reflection is also written to `evolveAdvice` with
 **Attributed by cohort year, never by student name** — it is written by 17-year-olds and intended
 for 12-year-olds. Staff moderation and the wall itself are not built yet. Because Wildly shares
 this Firestore project, one collection can serve both products.
+
+---
+
+## Wildest Dreams — Deep Reference
+
+A **video-first** mode for diverse learners, particularly school support units. Built 2026-09-07
+onwards under a strict additive-only brief: nothing about any existing mode was to change.
+
+**It is deliberately unlike every other mode: no quiz, no score, no marks, no badges, no
+leaderboard, no timers, and no required writing OR speech.** The film is the whole output. Do not
+"improve" it by adding scoring — that is the entire point of it.
+
+### Where it lives
+Everything is under `src/modes/wildest-dreams/` — the only mode not in `src/screens/`:
+
+```
+src/modes/wildest-dreams/
+├── index.jsx              # sub-router: welcome | stops | watch | choose | film | building | done | leaving
+├── content.js             # EVERY string, stop, prompt, soundboard item, outcome. Edit ONLY this for content.
+├── film.js                # its own stitcher (a copy of evolveFilm.js, adapted)
+├── speech.js              # recorded-clip + speechSynthesis layer — see "Audio & speech"
+├── infoSheet.js           # teacher information sheet (house printable pattern)
+├── wildestDreams.css      # every selector prefixed .wd-*, scoped under .wd-root
+└── components/            # Shell, BigChoice, Soundboard, Recorder, OutcomesPanel
+```
+
+Plus `public/voice/*.m4a` (22 clips) and `scripts/generate-wd-voice.sh`.
+
+### The four files outside the mode that were touched
+Additive registration only. Every existing mode behaves identically.
+
+| File | Change |
+|---|---|
+| `App.jsx` | `if (sessionType === 'wildest-dreams') return <WildestDreamsScreen />;` |
+| `CreateClassScreen.jsx` | `isWildest` flag, a location option, `subject: null`, and its own outcomes panel |
+| `CurriculumAlignmentScreen.jsx` | a **Programs** sidebar group rendering `OutcomesPanel` |
+| `ClassDetailsScreen.jsx` | (Evolve notification button — unrelated, same session) |
+| `storage.rules` | additive `wildestDreams/` block |
+
+`CurriculumAlignmentScreen` keeps `subjectId` as a real subject always and tracks the program in a
+separate `programId`, so every existing lookup on that screen is untouched.
+
+### How a class becomes Wildest Dreams
+`CreateClassScreen.jsx`: location **"Taronga Sydney — Wildest Dreams"**
+(`value="wildest-dreams-sydney"`) → `sessionType: 'wildest-dreams'`, `subject: null`, subject
+picker hidden. **The stage picker stays visible** (Stages 1–5) and drives the outcomes shown.
+
+### The flow
+Welcome → pick an animal → Watch → Choose → Film → Keep/Record again → next animal → Make my film.
+Screen state is **local to `index.jsx`**, not AppContext — nothing outside the mode needs it, which
+is why AppContext required no change.
+
+Eight stops, all in `WD_STOPS`: koala, kangaroo, giraffe, chimpanzee, lion, gorilla, rhino, tiger.
+**No GPS and no proximity check** — a support unit moves as a group and a student must never be
+blocked from filming because a signal put them 30m away. Any order, any of them skippable.
+
+**Animal sounds** are real recordings (`/images/sound-{id}.mp3`) played from the Watch screen.
+Kangaroo and rhino have no file, so the button is **hidden** for them rather than shown doing
+nothing. A button that plays nothing teaches a student the button is broken.
+
+### Student data
+`classes/{code}/students/{id}`, field `wildestDreams`:
+```js
+wildestDreams: {
+  koala: { clipURL, caption, filmedAt },
+  ...,
+  filmURL, completedAt,
+}
+```
+Per-stop writes use `updateDoc` with dotted keys, with a `setDoc` merge fallback for the first
+write — same Firestore dotted-key trap as ZooSnooz/ZooYard/Evolve.
+Storage: `wildestDreams/{code}/{sid}/{stopId}.{ext}` and `.../film.{ext}`.
+
+### Accessibility decisions that are load-bearing
+Every one of these is a fix for something real. Do not undo them casually.
+
+- **72px minimum targets**, one idea per screen, no timers anywhere, everything skippable.
+- **Focus moves to the heading on every screen change** (`tabIndex={-1}`, programmatic so
+  `:focus-visible` does not fire). Without it a screen reader user is dumped to the top of the
+  document and a switch user's scan restarts — the classic SPA accessibility bug.
+- **Selection is never colour-only.** Soundboard toggles carry a tick (WCAG 1.4.1).
+- **`aria-pressed` only on real toggles.** The focus prompts navigate immediately, so the state
+  could never be observed; they are plain buttons.
+- **Progress dots count animals FILMED, not list position.** They used to count position, so
+  filming the last animal first lit every dot and announced "Stop 8 of 8" — telling a student they
+  had finished after one. The animal in progress is a ring, so "doing" never reads as "done".
+- **The soundboard sits directly under Start recording, at full strength.** It was a quiet link
+  below the camera, flip control and skip — the students the mode exists for had to scroll past
+  the speaking-student interface to reach the part built for them.
+- **Up to `WD_MAX_SOUNDS` (3) soundboard words per clip**, combined with the focus choice rather
+  than replacing it.
+- **Errors are spoken**, and leaving uses an in-page screen rather than `window.confirm`.
+
+### Outcomes (`WD_OUTCOMES` in content.js)
+Two NESA facts, both checked against the syllabus rather than assumed, and both of which look like
+bugs if you do not know them:
+
+1. **NSW Science Life Skills outcomes exist for Years 7–10 ONLY.** There are none for K–6 —
+   primary students in support units work towards the ordinary Science and Technology K–6 outcomes
+   with adjustments. Stages 1–3 therefore carry the K–6 codes with a note saying so.
+   **Do not "complete the set" by inventing ST\*LS codes; they do not exist.**
+2. **The Years 7–10 Life Skills outcomes are ONE set spanning Stage 4 and Stage 5**, not two.
+   Stage 5 is aliased off Stage 4 in code so they cannot drift, and the UI states it.
+
+Surfaced on Create Class and on Curriculum Alignment → Programs → Wildest Dreams. Both use a
+**separate panel**, not the four-subject layout, because that layout carries "minimum words",
+"points per observation" and a marking rubric — none of which exist here.
+
+### Known gaps / next pieces
+- **Emoji are not a symbol system.** 🔎 for "What I notice" means *search* to most people and
+  nothing to a student on PODD, PCS/Boardmaker, Compic or Widgit, and renders differently per OS.
+  **This is the biggest remaining accessibility barrier.** Needs a decision on which symbol set
+  the schools actually use before it can be built.
+- **No first-then structure within a stop, and no transition warning.**
+- **The film says "A film by Quoll"** — `studentName` is the join-screen alias. Evolve does that
+  deliberately for privacy of reflections; here the student's face is already in every clip, so
+  the anonymity buys nothing and costs the personalisation. Left as-is on privacy grounds
+  (decision 2026-09-11).
+- **The film has no captions of what the student says** — it captions the chosen prompt only, so a
+  Deaf viewer at a class screening gets the label, not the content.
+- **No teacher/staff view of the films.** Nothing in `ClassDetailsScreen` or the staff portal reads
+  `wildestDreams`, and there is no souvenir route like Evolve's `?doc=`. A student who does not
+  download the film on the day may end up with nothing.
+- **No still-photo alternative** for a student who will not tolerate video.
+- **No recording length limit** — an eight-minute clip is a slow upload on zoo wifi.
 
 ---
 
@@ -1118,7 +1374,7 @@ Key state exposed via `useApp()`:
 | `currentScreen` | string | Active screen name |
 | `setCurrentScreen` | fn | Navigate to a screen |
 | `appMode` | `'school'\|'public'` | Determines which student flow runs; persisted in localStorage |
-| `sessionType` | `'standard'\|'zoosnooz'` | Set at join time; determines which map the student enters |
+| `sessionType` | `'standard'\|'zoosnooz'\|'zooyard'\|'evolve'\|'wildest-dreams'` | Set at join time; `App.jsx` short-circuits on it BEFORE the `currentScreen` switch, so a mode owns the whole screen |
 | `studentName` | string | Alias chosen at join; in localStorage |
 | `classCode` | string | 6-char code; in localStorage |
 | `classStage` | number (2–5) | NSW stage, read from class doc at join time |
@@ -1301,8 +1557,8 @@ All curriculum data lives here and is imported by multiple screens:
 
 ### Printable sheets — the house pattern
 
-`teacherInfoSheet.js`, `zoosnoozInfoSheet.js`, `evolveCertificates.js` and
-**`highlightsPackage.js`** all work the same way: build one self-contained HTML document, open it
+`teacherInfoSheet.js`, `zoosnoozInfoSheet.js`, `evolveCertificates.js`,
+**`highlightsPackage.js`** and `modes/wildest-dreams/infoSheet.js` all work the same way: build one self-contained HTML document, open it
 in a new tab from a blob URL, let the browser print it or save it as a PDF. **No PDF library, no
 server round trip.** Copy this pattern for any new printable.
 
@@ -1315,6 +1571,11 @@ server round trip.** Copy this pattern for any new printable.
   the screen the teacher just left. Uses the `students` array already in memory — no extra reads.
 - Print rules that matter: `break-inside: avoid` on student blocks so responses do not split
   across pages, and `print-color-adjust: exact` because browsers strip backgrounds by default.
+- **Parent notification letters are the exception**: `public/zoosnooz-notification.html` and
+  `public/evolve-notification.html` are plain static pages, not generated, opened with
+  `window.open` from `ClassDetailsScreen` and gated on `isZZ` / `isEV`. Their styling is a
+  deliberate copy of each other rather than shared, so one can never break the other.
+  ⚠️ The ZooSnooz one makes retention promises nothing implements — see "Do these first".
 
 ---
 
@@ -1477,6 +1738,14 @@ consumes them but does not re-expose them, so destructuring them from `useStuden
 on first attempt: the value was undefined, the component's own `if (!classCode) return` swallowed
 it, and there was nothing to see. Check which context a value actually comes from.
 
+
+**A live `<video>` preview and a playback `<video>` in the same tree position share ONE DOM node,
+and `srcObject` beats `src`.** Give them distinct `key`s. See Video & media pipeline §8 — this
+presents as "it records but there is no playback" and looks nothing like a React problem.
+
+**Wildest Dreams is the only mode under `src/modes/`, not `src/screens/`.** If you are adding a
+mode, follow that layout: everything self-contained, CSS prefixed and scoped to a root class, its
+own copy of any media pipeline, and the smallest possible additive change to register it.
 
 1. **Inline styles over CSS files** — almost all component styling is inline `style={{}}` objects. The exception is the LMS layout classes and design tokens in `global.css`. Don't add new `.css` files; keep styling co-located.
 

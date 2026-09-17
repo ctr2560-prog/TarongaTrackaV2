@@ -190,4 +190,4 @@ export const EVOLVE_THEME = {
 
 // A low floor on purpose: these are reflections, not essays. Students can write as much as
 // they like, but the gate is only there to stop one-word answers.
-export const EVOLVE_MIN_WORDS = 12;
+export const EVOLVE_MIN_WORDS = 10;
