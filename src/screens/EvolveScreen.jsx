@@ -1298,7 +1298,12 @@ export default function EvolveScreen() {
                       )}
                       {failed && (
                         <p style={{ fontSize:'0.74rem', color:T.textDim, margin:'0.4rem 0 0', lineHeight:1.5 }}>
-                          Check your connection and try again. Your recording is still here.
+                          {/* ⚠️ "Your recording is still here" was true but incomplete: the clip
+                              lives in this page's memory only, so it survives exactly as long as
+                              the tab does. A student who read the old wording could reasonably
+                              lock their phone and walk to wifi, which is the one thing that loses
+                              it. Say the condition out loud until clips are stored on the device. */}
+                          Check your connection and try again. Your recording is safe as long as you keep this screen open.
                         </p>
                       )}
                     </div>
