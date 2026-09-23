@@ -82,10 +82,23 @@ souvenir link) and **🖨 Pledges** (per class: read the koala pledges, print ce
 whole class or one student). Both are deliberate copies of `ZooSnoozAdminTab`'s shape rather than
 shared components — see the comment on `EvolveFilmsTab`.
 
-**Chapters are gated in order** (2026-08-20). A chapter needs the previous one completed *and*
-the student near the animal. Sequence is tested first, so a locked card reads
-"Finish Chapter Two first" rather than a distance to an animal they have no reason to walk to yet.
-Chapter one is exempt from the sequence half. `EvolveScreen.jsx`, in the `EVOLVE_STORY_ORDER` map.
+**Chapters are gated by PROXIMITY ONLY** (2026-09-23). A chapter unlocks when the student is near
+the animal, in any order. `EvolveScreen.jsx`, in the `EVOLVE_STORY_ORDER` map.
+
+⚠️ They were also gated **in sequence** from 2026-08-20 to 2026-09-23 — a chapter needed the
+previous one finished. **Do not reinstate it.** It is fine for one class and does not survive a
+cohort: at the first full run (Ingleburn HS, 90 students in 30 groups, 2026-09-22) it forced every
+group to start at the kangaroo, produced a 90-student jam at stop one, and only 4–5 groups
+finished all five chapters.
+
+**Removing it does not affect the film.** `buildEvolveFilm` is handed `EVOLVE_STORY_ORDER`
+filtered to whichever chapters have a clip, so the film always assembles in narrative order no
+matter what order it was shot in. Verified by filming in reverse: the film still reads
+kangaroo → koala → giraffe → lion → tiger. Capture order and story order were always independent
+— that is what `order` on each chapter is for.
+
+The trail graphic now lights each leg from **that stop's own** completion rather than the previous
+chapter's, or a free-flowing student would see a dashed leg beside a chapter they had finished.
 
 ### Evolve — what is NOT built
 1. **Advice Wall.** The giraffe chapter already writes to `evolveAdvice` with
@@ -109,11 +122,11 @@ Chapter one is exempt from the sequence half. `EvolveScreen.jsx`, in the `EVOLVE
 3. **Class export** of the writing, for a school's own reflection ceremony.
 4. ~~**Souvenir URL route.**~~ **BUILT 2026-08-20** — see "Souvenir route" in the Evolve deep
    reference. `?doc=ev_{classCode}_{studentId}_{token}` resolves through `evolve_docs`.
-5. **Kangaroo GPS.** `latitude`/`longitude` are still `null` in `evolveAnimals.js`. It is now
-   **chapter one**, so it is the first thing students hit, and it currently unlocks with no
-   proximity check. Needs capturing on site at the Australian Walkabout. The photo exists.
-   ⚠️ This got worse when chapters became sequential — the one chapter with no GPS is now the
-   gate holding the entire walk open.
+5. **Kangaroo GPS.** `latitude`/`longitude` are still `null` in `evolveAnimals.js`, so that
+   chapter unlocks with no proximity check at all — from anywhere in the zoo. Needs capturing on
+   site at the Australian Walkabout. The photo exists.
+   ⚠️ Now that the sequence gate is gone (2026-09-23) this is no longer a blocker, but it is a
+   bigger hole: with proximity as the ONLY lock, the kangaroo has no lock whatsoever.
 
 ### Open decisions Cameron has parked
 - **Portrait vs landscape film.** Kept portrait: capture matches the film, students hold phones

@@ -328,6 +328,9 @@ function Shell({ children, onHome, scroll = true }) {
 
         /* The winding trail lives in its own gutter, so nodes can be placed as a percentage
            of it and the whole thing rescales on a phone without recomputing anything. */
+        /* How long the walk to the next stop takes. Every part of the arrival is keyed off
+           this, so the line, the head and the node landing can never drift apart. */
+        .ev-trail { --ev-walk: 0.95s; }
         .ev-gutter { position: absolute; left: 0; top: 0; bottom: 0; width: var(--ev-gutter); }
         .ev-seg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 
@@ -340,10 +343,18 @@ function Shell({ children, onHome, scroll = true }) {
         }
         .ev-path-dim { stroke: rgba(243,237,226,0.26); stroke-width: 2; stroke-dasharray: 0.013 0.05; }
 
-        /* The leg you have just walked draws itself from the last stop to the new one. */
+        /* The leg you have just walked draws itself from the last stop to the new one.
+           Eased to feel like setting off and arriving, rather than the stock UI decelerate. */
         .ev-path-draw {
           stroke-dasharray: 1; stroke-dashoffset: 1;
-          animation: ev-draw 1.1s cubic-bezier(0.4,0,0.2,1) forwards;
+          animation: ev-draw var(--ev-walk) cubic-bezier(0.45,0.05,0.35,1) forwards;
+        }
+        /* A single bright dot travelling the leg, in step with the line being drawn. */
+        .ev-head {
+          fill: none; stroke: #FFF2CF; stroke-width: 5; stroke-linecap: round;
+          stroke-dasharray: 0.022 0.978;
+          filter: drop-shadow(0 0 9px rgba(255,226,150,0.95));
+          animation: ev-head var(--ev-walk) cubic-bezier(0.45,0.05,0.35,1) forwards;
         }
 
         /* A brighter pulse runs down the walked route. Each leg is offset in time by its
@@ -364,6 +375,16 @@ function Shell({ children, onHome, scroll = true }) {
           background: #0B1024; border: 2px solid rgba(243,237,226,0.28); z-index: 1; transition: all 0.3s;
         }
         .ev-done   .ev-node { background: #E8B33C; border-color: #E8B33C; }
+        /* ⚠️ Sequencing, not decoration. The node used to go gold on a 0.3s transition while the
+           line took over a second to reach it, so the destination lit up before the road to it
+           and the payoff ran backwards. Holding the fill until the head lands puts it in order:
+           travel, arrive, then the tick. The tick needs no animation of its own — it is dark on
+           a dark node until the background turns gold, so it appears exactly on landing.
+           The ev-land keyframe was written when this was first built and never wired up. */
+        .ev-just.ev-done .ev-node {
+          transition-delay: var(--ev-walk);
+          animation: ev-land 0.55s ease-out var(--ev-walk) both;
+        }
         .ev-open   .ev-node { border-color: #E8B33C; animation: ev-pulse 2.6s ease-out infinite; }
         .ev-locked .ev-node { border-color: rgba(243,237,226,0.2); }
         .ev-node-end { width: 26px; height: 26px; top: 78px; font-size: 0.8rem; color: #E8B33C; }
@@ -430,6 +451,7 @@ function Shell({ children, onHome, scroll = true }) {
         @keyframes ev-rise  { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes ev-flow  { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
         @keyframes ev-draw  { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+        @keyframes ev-head  { from { stroke-dashoffset: 0; } to { stroke-dashoffset: -1; } }
         @keyframes ev-breathe {
           0%, 100% { opacity: 0.72; }
           50%      { opacity: 1; }
@@ -449,6 +471,8 @@ function Shell({ children, onHome, scroll = true }) {
           .ev-open .ev-node, .ev-path-lit, .ev-flow { animation: none; }
           .ev-flow { display: none; }
           .ev-path-draw { stroke-dasharray: none; stroke-dashoffset: 0; animation: none; }
+          .ev-head { display: none; }
+          .ev-just.ev-done .ev-node { transition-delay: 0s; animation: none; }
           .ev-card, .ev-still, .ev-cta { transition: none; }
         }
         @media (max-width: 460px) {
@@ -614,7 +638,7 @@ function BuildingFilm({ pct, stage, chapters }) {
   );
 }
 
-function Segment({ lit, side, first, last, draw, index = 0 }) {
+function Segment({ lit, side, first, last, draw, index = 0, joinTop = false, joinBottom = false }) {
   const bx = side === 'l' ? 16 : 84;
   const d = last
     ? `M50 0 C50 22 ${bx} 26 ${bx} 52`
@@ -623,13 +647,50 @@ function Segment({ lit, side, first, last, draw, index = 0 }) {
     : `M50 0 C50 26 ${bx} 28 ${bx} 50 C${bx} 72 50 76 50 100`;
   // pathLength="1" normalises the curve so dash lengths and offsets are fractions of the leg,
   // independent of how tall the card happens to be.
+
+  // Each stop lights the path THROUGH its own row — half a leg above, half below — so two
+  // finished neighbours meet exactly on the row boundary and read as one continuous line with
+  // no extra work. Chapters can now be done in any order, so a lit run can also stop dead in
+  // the middle of the trail; those loose ends are faded out into the dashes rather than left
+  // blunt, or an island reads as a broken path instead of "I have been here".
+  const gid     = `ev-fade-${index}`;
+  const fadeTop = lit && !joinTop && !first;
+  const fadeBot = lit && !joinBottom && !last;
+  const faded   = fadeTop || fadeBot;
+  const stops = [
+    ['0',    fadeTop ? 0 : 1],
+    ['0.24', 1],
+    ['0.76', 1],
+    ['1',    fadeBot ? 0 : 1],
+  ];
+
   return (
     <svg className="ev-seg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+      {faded && (
+        <defs>
+          {[['', '#E8B33C'], ['-f', '#FFE6A8']].map(([sfx, col]) => (
+            <linearGradient key={sfx} id={gid + sfx} gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="100">
+              {stops.map(([off, op]) => (
+                <stop key={off} offset={off} stopColor={col} stopOpacity={op} />
+              ))}
+            </linearGradient>
+          ))}
+        </defs>
+      )}
+
       <path className={`ev-path ${lit ? 'ev-path-lit' : 'ev-path-dim'}${draw ? ' ev-path-draw' : ''}`}
-        d={d} pathLength="1" vectorEffect="non-scaling-stroke" />
+        d={d} pathLength="1" vectorEffect="non-scaling-stroke"
+        style={faded ? { stroke: `url(#${gid})` } : undefined} />
+
+      {/* The bright head that runs ahead of the line being drawn, so finishing a chapter reads
+          as travelling to the next stop rather than a curtain being pulled across it. */}
+      {draw && (
+        <path className="ev-head" d={d} pathLength="1" vectorEffect="non-scaling-stroke" />
+      )}
+
       {lit && !draw && (
         <path className="ev-flow" d={d} pathLength="1" vectorEffect="non-scaling-stroke"
-          style={{ animationDelay: `${-index * 0.55}s` }} />
+          style={{ animationDelay: `${-index * 0.55}s`, ...(faded ? { stroke: `url(#${gid}-f)` } : {}) }} />
       )}
     </svg>
   );
@@ -675,6 +736,15 @@ export default function EvolveScreen() {
   const camRef = useRef(null);
   const recRef = useRef(null);
   const tickRef = useRef(null);
+
+  // Release the leg once its arrival has played. Without this the just-drawn leg keeps the
+  // `draw` flag forever, and `{lit && !draw && <flow>}` meant the chapter you had only just
+  // earned was the single leg missing the travelling shimmer — until you finished another one.
+  useEffect(() => {
+    if (justLit === null) return undefined;
+    const id = setTimeout(() => setJustLit(null), 1700);
+    return () => clearTimeout(id);
+  }, [justLit]);
 
   const allDone = EVOLVE_CHAPTERS.every(c => done[c.id]);
   const filmedCount = EVOLVE_CHAPTERS.filter(c => clipURLs[c.id]).length;
@@ -941,8 +1011,12 @@ export default function EvolveScreen() {
       }
       writeDraft(normaliseCode(classCode || ''), safeStudentId(studentName || ''), chapter.id, '');
       setDone(prev => ({ ...prev, [chapter.id]: entry }));
-      // The leg arriving at the NEXT stop is the one that has just been walked.
-      setJustLit(EVOLVE_STORY_ORDER.findIndex(c => c.id === chapter.id) + 1);
+      // Draw the leg at the stop just finished — or the leg to the film, if that was the last
+      // one outstanding. Which chapter completes the set is no longer fixed, so it is computed.
+      const nowDone = { ...done, [chapter.id]: entry };
+      setJustLit(EVOLVE_CHAPTERS.every(c => nowDone[c.id])
+        ? EVOLVE_CHAPTERS.length
+        : EVOLVE_STORY_ORDER.findIndex(c => c.id === chapter.id));
       backToMap();
     } finally { setSaving(false); }
   }
@@ -1375,16 +1449,33 @@ export default function EvolveScreen() {
           {EVOLVE_STORY_ORDER.map((c, i) => {
             const complete = !!done[c.id];
             const near = c.latitude == null ? { nearby: true, distance: null } : checkAnimalProximity(c);
-            const prevDone = i === 0 || !!done[EVOLVE_STORY_ORDER[i - 1].id];
-            // The story only reads in order, so a chapter needs the one before it finished as
-            // well as the student standing at the animal. Sequence is checked first because
-            // "walk to the lion" is useless advice to someone who hasn't done the koala yet.
-            const locked = !complete && (!prevDone || !near.nearby);
+            // ⚠️ NO SEQUENCE GATE. Chapters used to also require the previous one finished.
+            // That is fine for one class and does not survive a cohort: on 2026-09-22, 30 groups
+            // were all forced to start at the kangaroo, which made a 90-student traffic jam at
+            // stop one and only 4-5 groups finished. Proximity is the only lock now, so a cohort
+            // can be split across the route and each group walks its own way round.
+            //
+            // The FILM is unaffected: buildEvolveFilm is handed EVOLVE_STORY_ORDER filtered to
+            // whichever chapters have a clip, so it always assembles in narrative order no matter
+            // what order they were filmed in. Capture order and story order were always separate.
+            const locked = !complete && !near.nearby;
             const state = complete ? 'done' : locked ? 'locked' : 'open';
+            // Whether the lit run continues past this row. Two finished neighbours join on the
+            // row boundary; a run that stops here gets its end faded out instead.
+            const joinTop = i > 0 && !!done[EVOLVE_STORY_ORDER[i - 1].id];
+            const joinBottom = i < EVOLVE_STORY_ORDER.length - 1
+              ? !!done[EVOLVE_STORY_ORDER[i + 1].id]
+              : allDone;                       // the last chapter joins the leg to the film
             return (
-              <li key={c.id} className={`ev-stop ev-${state}`} style={{ animationDelay: `${0.06 * i}s` }}>
+              <li key={c.id} className={`ev-stop ev-${state}${justLit === i ? ' ev-just' : ''}`}
+                  style={{ animationDelay: `${0.06 * i}s` }}>
                 <span className="ev-gutter" aria-hidden="true">
-                  <Segment lit={prevDone} side={i % 2 === 0 ? 'l' : 'r'} first={i === 0} index={i} draw={justLit === i} />
+                  {/* Lit by this stop's own completion. It used to be the previous chapter's,
+                      which only made sense while the walk was forced into order — free-flowing,
+                      that would dash the leg beside a chapter the student had already finished.
+                      The trail now fills in wherever they have actually been. */}
+                  <Segment lit={complete} side={i % 2 === 0 ? 'l' : 'r'} first={i === 0} index={i}
+                           draw={justLit === i} joinTop={joinTop} joinBottom={joinBottom} />
                   <span className="ev-node" style={{ left: i % 2 === 0 ? '16%' : '84%' }}>{complete ? '✓' : ''}</span>
                 </span>
 
@@ -1394,7 +1485,6 @@ export default function EvolveScreen() {
                     <span className="taronga-title ev-name">{c.chapter}</span>
                     <span className="ev-meta">
                       {complete ? 'Written and filmed'
-                        : !prevDone ? `Finish Chapter ${WORDS[i - 1]} first`
                         : locked ? `Walk to the ${c.animalName.toLowerCase()}${near.distance != null ? ` · ${near.distance} m away` : ''}`
                         : c.animalName}
                     </span>
@@ -1408,7 +1498,11 @@ export default function EvolveScreen() {
           {/* The destination sits in the horizon glow at the end of the trail. */}
           <li className={`ev-stop ev-end ${allDone ? 'ev-open' : 'ev-locked'}`}>
             <span className="ev-gutter" aria-hidden="true">
-              <Segment lit={allDone} side="l" last index={EVOLVE_CHAPTERS.length} draw={justLit === EVOLVE_CHAPTERS.length} />
+              {/* joinTop: this leg is only ever lit when every chapter is, so the stop above it
+                  is lit too and the join is real. Without it the final leg would fade at the top
+                  against a solid tiger leg — a seam in the one moment the trail should be whole. */}
+              <Segment lit={allDone} side="l" last index={EVOLVE_CHAPTERS.length}
+                       draw={justLit === EVOLVE_CHAPTERS.length} joinTop={allDone} />
               <span className="ev-node ev-node-end" style={{ left: '16%' }}>✦</span>
             </span>
             <div className="ev-dest">
