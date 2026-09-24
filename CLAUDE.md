@@ -18,24 +18,75 @@ region: `australia-southeast1`. ⚠️ See **Build & Deploy** — these two drif
 
 ---
 
-## Where we left off (2026-09-17)
+## Where we left off (2026-09-24)
 
 ### ⚠️ Do these first
 1. **`firebase deploy --only storage` has NOT been run.** The `wildestDreams/` rule is committed
    but not live, so every Wildest Dreams clip and film fails to upload with
    `storage/unauthorized` — **silently**, because uploads are backgrounded. Must run under
    **thebiologybloke@gmail.com**. This is the only thing actually blocking students.
-2. **The ZooSnooz parent letter promises retention that does not exist.**
-   `public/zoosnooz-notification.html` tells families raw footage is "permanently deleted within
-   48 hours" and the documentary is "hosted for up to 12 months, then deleted". **There is no
-   deletion or retention job anywhere in the codebase** — no scheduled function, no
-   `deleteObject` call. That letter has already gone home to families. Either build the retention
-   job or correct the wording; do not leave it as it is. The Evolve letter deliberately does not
-   repeat the claim.
+2. **Decide whether Taronga actually wants a retention policy.** ⚠️ Until 2026-09-24 the ZooSnooz
+   parent letter told families raw footage was "permanently deleted within 48 hours" and the
+   documentary "hosted for up to 12 months, then deleted". **Neither was ever implemented** —
+   there is no scheduled function and no `deleteObject` call anywhere in the codebase — and that
+   letter had already gone home to families. The wording has been corrected to describe what the
+   system really does: footage is retained, and deletion can be requested via the teacher. Both
+   letters now say the same thing.
+   **Nothing is promised that is not delivered, but there is still no automatic deletion.** If a
+   retention policy is wanted, it is a scheduled Cloud Function, and it must be scoped carefully:
+   it would be an automated deleter running against real student media. The paths make it
+   feasible — clips are `zoosnooz/{code}/{sid}/{animalId}.{ext}` and the film is always
+   `.../documentary.{ext}` — but get the filter wrong and you destroy the keepsakes.
+   ⚠️ **Never restore a retention claim to a letter before the job exists and has been tested.**
 3. **The Wildest Dreams voice clips are macOS "Karen"** and are live on the public domain.
    Apple's system voices are licensed for use on a Mac, not for redistribution inside a product.
    Replacing is a file drop into `public/voice/` with the same names — no code change.
    `scripts/generate-wd-voice.sh` lists all 22 keys and their exact lines.
+
+4. **The ZooSnooz backgrounded-tab fix is LIVE BUT UNPROVEN.** Ported 2026-09-24 and pushed, but
+   never validated by a real stitch. Automated testing cannot prove it — a driven tab reports
+   itself hidden and manufactures the very bug under test. Needs a foreground run before the next
+   ZooSnooz night: build a documentary from 2–3 clips, switch away ~10s mid-way, confirm every
+   segment plays video and the console carries no `[zoosnooz] … drew only N frames` line.
+
+### The first full Evolve run — Ingleburn HS, 2026-09-22 (class `LIF0AH`)
+90 students, 30 groups of three, **one phone per group**, 2.5 hours, twilight. The numbers below
+came out of Firestore afterwards and should shape every Evolve decision from here.
+
+- **28 groups joined. 4 finished all five chapters (14%).**
+- **13 groups never wrote a single word.** Not blocked, not stuck — never started. No mechanic
+  explains that; it is facilitation, and it is the largest single number in the data.
+- **A chapter genuinely takes 14–21 minutes.** Measured from the four who finished: 56–85 minutes
+  for five chapters. So five chapters is 70–105 minutes of work, inside 2.5 hours that also has
+  to cover briefing, walking and gathering. With three students sharing one device it does not
+  fit at all — two thirds of each group are idle at any moment, which is where "reckless and
+  silly" comes from. **The behaviour was structural, not disciplinary.**
+- **19 of 37 chapter saves happened in the first 10 minutes** — everyone doing the kangaroo at
+  once, from wherever they were standing, because it is the one chapter with no GPS. Then a cliff.
+- ⚠️ **Do not read the kangaroo clustering as evidence of a GPS fault.** The sequence gate was on,
+  which forces every partial walk to be a prefix starting at the kangaroo, so a drop-out from ANY
+  cause looks identical. This was initially misread as a smoking gun; it is a confound. Seven
+  groups did get past the koala, so GPS was working for plenty of them.
+
+**What changed as a result:** the sequence gate was removed (see the Evolve reference). Still
+open: group starting points so a cohort can be split into streams, the one-phone-per-three
+question, red torches as standard kit, and whether the film should still require all five
+chapters when 4 groups in 30 reached that point.
+
+**Red torches were the night's best discovery.** Red light preserves night vision and is far less
+disturbing to nocturnal animals, which is why it is standard in nocturnal houses. Red on the
+animal gave good koala footage; red on the student made the piece to camera work. It is not yet
+in the app's filming guidance or the teacher info sheet — it should be.
+
+### Recently shipped (2026-09-18 → 09-24)
+- **ZooSnooz stitcher hardened** — see items 1 and 2 of the Video & media pipeline section, plus
+  a wake lock and a low-framerate warning it never had.
+- **Evolve is free-flowing** — chapters unlock on proximity alone, in any order.
+- **Evolve trail animation** — the arrival now runs in sequence, and lit runs fade at loose ends.
+- **Evolve writing is saved independently of the clip upload**, so a dead spot no longer costs a
+  student their reflection as well as their film.
+- **"Make it again"** on the Evolve film, so one backgrounded tab no longer ruins the keepsake.
+- **`EVOLVE_MIN_WORDS` 12 → 10.**
 
 ### Recently shipped (2026-09-07 → 09-17)
 - **Wildest Dreams**, a whole new mode — see its Deep Reference below.
@@ -139,8 +190,6 @@ chapter's, or a free-flowing student would see a dashed leg beside a chapter the
   why pledge certificates and the Advice Wall are alias/cohort-attributed.
 
 ### Known live issues elsewhere
-- **ZooSnooz stitching has the rAF-only bug** (audio, no picture, if backgrounded mid-stitch).
-  Left unfixed deliberately to keep Evolve and ZooSnooz independent — but it is a real defect.
 - **`classes/{code}` and its `students` subcollection are `allow read, write: if true`** in
   `firestore.rules` — unauthenticated write access to every student record in every class. This is
   pre-existing and a bigger hole than the teacher-enumeration one that was closed on 2026-07-27.
@@ -439,9 +488,13 @@ This one produced films with **perfect audio and no picture at all**, twice.
 A **Screen Wake Lock** is held for the whole stitch for the same reason. It is best-effort — not
 supported everywhere — so the watchdog still matters.
 
-⚠️ **ZooSnooz still has the original rAF-only loop.** It has the same latent bug: a student who
-backgrounds the app mid-stitch gets a documentary with sound and no picture. Not yet fixed, on
-purpose, to keep the two independent.
+**BOTH pipelines now have this** (ZooSnooz ported 2026-09-24). ZooSnooz additionally had no wake
+lock at all until then, so a phone dimming and locking by itself was enough to ruin a documentary
+without the student touching anything.
+
+⚠️ They remain **separate copies on purpose**. A fix in one still needs applying to the other by
+hand. Do not merge them into a shared module to avoid that — the independence is what stops a
+change to Evolve regressing live ZooSnooz.
 
 ### 3. Clips read back from Storage need CORS **and** `crossOrigin`
 
@@ -677,7 +730,7 @@ Upload progress shown as percentage. If no bytes after 30s, logs warning about S
 Triggered when student taps "Create Documentary" from the ZooSnooz collection screen. Runs client-side in the browser using Canvas + MediaRecorder.
 
 1. **Transition to stitch screen**: `zzScreen` set to `'stitch'`, `zzStitchPhase` set to `'stitching'`
-2. **Canvas setup**: offscreen `<canvas>` at **720×1280 (portrait)** — this doc previously said 1280×720, which was wrong. Draws frames at ~30fps via `requestAnimationFrame` ⚠️ see the Video & media pipeline section: rAF-only means a backgrounded stitch produces audio with no picture. Still unfixed here on purpose.
+2. **Canvas setup**: offscreen `<canvas>` at **720×1280 (portrait)** — this doc previously said 1280×720, which was wrong. Draws at ~30fps via **rAF while visible, a timer while hidden, plus a 400ms watchdog**, and the whole stitch pauses while the tab is hidden. See the Video & media pipeline section; it was rAF-only until 2026-09-24, which produced documentaries with audio and no picture.
 3. **Audio setup**: `AudioContext` + `createMediaStreamDestination` collects audio from all video clips
 4. **Intro card**: ~2s animated title card drawn to canvas ("ZooSnooz Night Documentary" + student name)
 5. **Per animal**: fetches the blob URL, plays it in a hidden `<video>` element, draws frames to canvas while the video plays; overlays animal name and counter
@@ -876,8 +929,21 @@ convention). Non-obvious bits, all load-bearing:
   card height.
 - Waypoints are positioned as a **percentage of the gutter**, so the trail rescales on a phone
   (gutter 104px → 62px) with nothing to recompute.
-- Finishing a chapter sets `justLit` to the *next* index, and that leg draws itself from the
-  last waypoint to the new one.
+- Each stop lights the path **through its own row** — half a leg above, half below — so two
+  finished neighbours meet exactly on the row boundary and read as one continuous line with no
+  extra work. Since chapters can be done in any order a lit run can stop mid-trail, so loose ends
+  fade into the dashes; an island then reads as "I have been here" rather than a broken path, and
+  the fade vanishes the moment a neighbour joins it.
+- **The arrival runs in sequence** (2026-09-24): a bright head travels the leg, the line draws in
+  behind it, and only on landing does the node pop and the tick appear. It used to run backwards —
+  the node went gold on a 0.3s transition while the line took 1.1s to reach it. One `--ev-walk`
+  variable on `.ev-trail` drives all of it so the parts cannot drift. The `ev-land` keyframe for
+  the pop had been written when this was first built and never wired to anything.
+- `justLit` is cleared ~1.7s after an arrival. Without that the just-drawn leg kept the `draw`
+  flag forever and `{lit && !draw && <flow>}` left it as the one leg missing the shimmer.
+- Finishing a chapter sets `justLit` to **that chapter's own index** — or to
+  `EVOLVE_CHAPTERS.length`, lighting the leg to the film, if it was the last one outstanding.
+  It used to be the *next* index, which only made sense while the walk was forced into order.
 - Cards are a **fixed 146px** with the title clamped to two lines, so the five read as one set.
 
 The palette is a **cool sky over a warm horizon** — deep indigo at the top through violet to
@@ -952,11 +1018,32 @@ low-framerate warning so silent picture loss can't happen unnoticed again.
   `evolveAnimals.js`, `EvolveScreen.jsx`, the pledge sheet titles and the film's outro card in
   `evolveFilm.js`. Code comments were left alone.
 
-### Upload gating
+### Upload gating, and what survives no reception
+
 A student **cannot leave a chapter until its clip is fully in Storage** — the button reads
-"Waiting for your clip…" and is disabled until the upload reports `done`. Walking away mid-upload
-silently loses that chapter from the film. On failure they get "Try saving again", which re-uploads
-the blob held in memory (no re-filming); there is deliberately no skip.
+"Waiting for your clip…" and is disabled until the upload reports `done`. On failure they get
+"Try saving again", which re-uploads the blob held in memory (no re-filming); there is
+deliberately no skip.
+
+**The writing no longer rides on that gate** (2026-09-17). It used to: `saveChapter` ran after the
+upload, so with no signal the reflection sat in React state beside a blob in a ref and *neither*
+was persisted. A reload, or a phone evicting a backgrounded tab, lost the student's writing as
+well as their film. Now the reflection is kept in `localStorage` as they type (debounced, keyed
+`evolveDrafts_{code}_{studentId}`) and pushed to Firestore when they leave the write step, and
+restored from either on resume. `completed` still sits behind the clip gate.
+
+⚠️ **The early write uses individual dotted fields only**, and its `setDoc` fallback relies on
+deep-merge. Writing a whole `evolve.{id}` object replaces the map and destroys `clipURL` — that
+regression has happened here before. Restoring also runs `stripLead`, because a stored reflection
+already carries its lead but the textarea holds only the body.
+
+**What is still fragile: the clip itself.** It lives in page memory only — there is no IndexedDB
+and no retry-on-reconnect. It survives exactly as long as the tab does, which is why the failure
+message says "safe as long as you keep this screen open" rather than the older, shorter, and
+misleading "your recording is still here". Practical workaround for an excursion: a teacher
+hotspot at the enclosure beats walking a student to wifi, because the app must stay on screen the
+whole way. The real fixes, unbuilt: store clips on the device, and upload automatically when the
+connection returns.
 
 ### Teacher view — deliberately just a table
 Evolve has no points, badges or scores, so `ClassDetailsScreen` hides the stat cards **and**
@@ -1588,7 +1675,9 @@ server round trip.** Copy this pattern for any new printable.
   `public/evolve-notification.html` are plain static pages, not generated, opened with
   `window.open` from `ClassDetailsScreen` and gated on `isZZ` / `isEV`. Their styling is a
   deliberate copy of each other rather than shared, so one can never break the other.
-  ⚠️ The ZooSnooz one makes retention promises nothing implements — see "Do these first".
+  ⚠️ Keep both letters truthful about what the system actually does. The ZooSnooz one promised
+  48-hour deletion and 12-month hosting that were never built; corrected 2026-09-24. See
+  "Do these first" before adding any retention claim back.
 
 ---
 
