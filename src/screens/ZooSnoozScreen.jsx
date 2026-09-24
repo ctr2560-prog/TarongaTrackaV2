@@ -621,10 +621,20 @@ export default function ZooSnoozScreen() {
   useEffect(() => {
     if (zzScreen !== 'stitch' || zzStitchPhase !== 'stitching') return;
     let cancelled = false;
+    // Declared out here so the effect cleanup can reach them — leaving a visibilitychange
+    // listener or a wake lock behind would outlive the stitch.
+    let detachVisibility = null, releaseWakeLock = null;
     const { videoURLs, completed } = zzStitchDataRef.current;
     const videosToStitch = ZOOSNOOZ_ANIMALS.filter(a => videoURLs[a.id]);
 
     (async () => {
+      // Hold the screen awake for the whole stitch. Best effort — unsupported on some browsers,
+      // which is why the visibility handling below still matters. ZooSnooz had none of this;
+      // a phone dimming and locking on its own was enough to ruin the documentary.
+      let wakeLock = null;
+      try { wakeLock = await navigator.wakeLock?.request('screen'); } catch { /* unsupported or denied */ }
+      releaseWakeLock = () => { try { wakeLock?.release(); } catch { /* already gone */ } wakeLock = null; };
+
       const W = 720, H = 1280;
       const cvs = document.createElement('canvas');
       cvs.width = W; cvs.height = H;
@@ -721,20 +731,72 @@ export default function ZooSnoozScreen() {
       mr.start(500);
       await new Promise(res => setTimeout(res, 80)); // let MediaRecorder settle before first frame
 
-      const wait = ms => new Promise(res => setTimeout(res, ms));
-      // Redraws drawFn at rAF rate for ms milliseconds - ensures captureStream gets frames for static cards
+      // ── Surviving a backgrounded tab ──────────────────────────────────────────────────────
+      // The documentary is captured in REAL TIME, so whatever the tab is doing for that minute
+      // is baked in permanently. ZooSnooz is a night program — phones in pockets, screens
+      // locking, students switching apps — so this is not an edge case here.
+      //
+      // Two independent failures used to follow, both silent:
+      //   1. The draw loops were requestAnimationFrame only, and rAF does not slow down in a
+      //      hidden tab, it STOPS DEAD. The documentary came out with perfect audio and NO
+      //      PICTURE at all — just the animal cards with black between them. Audio survives
+      //      because it plays from buffers decoded up front, on a completely separate path.
+      //   2. Chrome also pauses a hidden tab's media and clamps its timers to 1/second.
+      //
+      // So: hold the screen awake, and when the tab does go hidden, stop the clock entirely —
+      // pause the recorder, the clip and the audio graph together, and resume them together.
+      // The documentary WAITS rather than degrading. Longer in wall-clock, loses nothing.
+      //
+      // ⚠️ Ported from utils/evolveFilm.js, deliberately as a COPY. The two pipelines are
+      // independent on purpose so a change to one can never regress the other. Do not merge them.
+      const FRAME_MS = 33;
+      const active = { video: null };
+      let hiddenSince = 0, hiddenTotal = 0;
+
+      // A monotonic "visible milliseconds" clock. Everything the stitch times runs on this, or
+      // the fix breaks what it is fixing: cards would be cut short, the per-clip guard would kill
+      // an animal while the student was away, and the low-framerate warning would blame them for
+      // seconds when the recorder was deliberately paused.
+      const activeMs = () =>
+        performance.now() - hiddenTotal - (hiddenSince ? performance.now() - hiddenSince : 0);
+
+      function pauseForHidden() {
+        if (hiddenSince) return;
+        hiddenSince = performance.now();
+        try { if (mr.state === 'recording') mr.pause(); } catch { /* unsupported — degrades to the old behaviour */ }
+        try { active.video?.pause(); } catch { /* nothing playing */ }
+        try { audioCtx?.suspend(); } catch { /* no audio graph */ }
+      }
+      function resumeFromHidden() {
+        if (!hiddenSince) return;
+        hiddenTotal += performance.now() - hiddenSince;
+        hiddenSince = 0;
+        try { audioCtx?.resume(); } catch { /* no audio graph */ }
+        try { active.video?.play(); } catch { /* nothing to resume */ }
+        try { if (mr.state === 'paused') mr.resume(); } catch { /* unsupported */ }
+      }
+      const onVisibility = () => (document.hidden ? pauseForHidden() : resumeFromHidden());
+      document.addEventListener('visibilitychange', onVisibility);
+      detachVisibility = () => document.removeEventListener('visibilitychange', onVisibility);
+      if (document.hidden) pauseForHidden();          // started hidden
+
+      // Resolves after `ms` of VISIBLE time. Hidden time does not count, because the recorder is
+      // paused then and nothing is being captured.
+      const waitActive = ms => new Promise(resolve => {
+        const target = activeMs() + ms;
+        const h = setInterval(() => {
+          if (activeMs() >= target) { clearInterval(h); resolve(); }
+        }, 50);
+      });
+
+      // A still canvas emits no frames, so a static card is redrawn for its whole duration.
+      // Timer driven rather than rAF, so it keeps drawing even if the tab is hidden.
       const drawCardFor = (drawFn, ms) => new Promise(resolve => {
         if (cancelled) { resolve(); return; }
-        const end = performance.now() + ms;
-        let raf, settled = false;
-        function finish() { if (!settled) { settled = true; if (raf) cancelAnimationFrame(raf); resolve(); } }
-        function tick() {
-          if (cancelled || settled) { finish(); return; }
-          drawFn();
-          if (performance.now() < end) { raf = requestAnimationFrame(tick); } else { finish(); }
-        }
-        tick();
-        setTimeout(finish, ms + 200);
+        let settled = false;
+        drawFn();
+        const h = setInterval(() => { if (!cancelled && !settled) drawFn(); }, FRAME_MS);
+        waitActive(ms).then(() => { if (settled) return; settled = true; clearInterval(h); resolve(); });
       });
       const TOTAL = videosToStitch.length + 2;
 
@@ -821,14 +883,28 @@ export default function ZooSnoozScreen() {
             // out as cards only. Requires the CORS policy in cors.json to be live on the bucket.
             videoEl.crossOrigin = 'anonymous';
             videoEl.src = videoSrc; videoEl.playsInline = true; videoEl.muted = true; videoEl.preload = 'auto';
-            let rafId = null, abSrc = null, lastFrameTime = 0, started = false, done = false;
-            let guard = setTimeout(finish, 20000);
+            let rafId = null, nextId = null, watchdog = null, abSrc = null;
+            let lastFrameTime = 0, started = false, done = false, drawn = 0, startedAt = 0;
+            // Counted in VISIBLE time, so a student who looks away for two minutes no longer has
+            // the clip cut short underneath them.
+            let guardUntil = activeMs() + 20000;
+            const guard = setInterval(() => { if (activeMs() >= guardUntil) finish(); }, 250);
             function finish() {
               if (done) return;
               done = true;
-              clearTimeout(guard);
+              clearInterval(guard);
               if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+              if (nextId) { clearTimeout(nextId); nextId = null; }
+              if (watchdog) { clearInterval(watchdog); watchdog = null; }
               if (abSrc) { try { abSrc.stop(); abSrc.disconnect(); } catch(e) {} abSrc = null; }
+              // Fewer than ~5fps means this clip's footage will look frozen in the finished
+              // documentary. Before this warning existed the whole failure was invisible — a
+              // student just got a film with sound and no picture and nobody knew why.
+              const secs = (activeMs() - startedAt) / 1000;
+              if (started && secs > 0.5 && drawn / secs < 5) {
+                console.warn(`[zoosnooz] "${animal.id}" drew only ${drawn} frames in ${secs.toFixed(1)}s (~${(drawn / secs).toFixed(1)}fps) - its footage will look frozen.`);
+              }
+              if (active.video === videoEl) active.video = null;
               // Release the media element so the browser's decoder pool frees up for the next clip
               try { videoEl.pause(); videoEl.removeAttribute('src'); videoEl.load(); } catch(e) {}
               resolve();
@@ -838,12 +914,28 @@ export default function ZooSnoozScreen() {
                 try { abSrc = audioCtx.createBufferSource(); abSrc.buffer = audioDecodedBuffers[animal.id]; abSrc.connect(audioDest); abSrc.start(); } catch(e) { abSrc = null; }
               }
             }
+            // rAF is display-synced and gives smooth, evenly-spaced frames; a bare setInterval
+            // drifts and bunches up when the draw work overruns, which reads as choppy footage.
+            // But rAF STOPS DEAD in a hidden tab, so a watchdog restarts the loop on a timer if
+            // no frame has been drawn recently. Smooth when visible, alive when not.
+            function schedule() {
+              if (done) return;
+              if (document.hidden) nextId = setTimeout(tick, FRAME_MS);
+              else rafId = requestAnimationFrame(tick);
+            }
+            function tick() {
+              rafId = null; nextId = null;
+              if (done) return;
+              drawFrame();
+              schedule();
+            }
             function drawFrame() {
               if (cancelled || done || videoEl.ended) { finish(); return; }
-              if (videoEl.paused) { rafId = requestAnimationFrame(drawFrame); return; }
+              if (videoEl.paused) return;
               const now = performance.now();
-              if (now - lastFrameTime < 33) { rafId = requestAnimationFrame(drawFrame); return; } // ~30fps cap
+              if (now - lastFrameTime < 33) return; // ~30fps cap
               lastFrameTime = now;
+              drawn++;
               drawBg();
               try {
                 const vW = videoEl.videoWidth || W, vH2 = videoEl.videoHeight || vidH;
@@ -896,7 +988,6 @@ export default function ZooSnoozScreen() {
                 }
                 if (line) ctx.fillText(line, 24, lineY);
               }
-              rafId = requestAnimationFrame(drawFrame);
             }
             videoEl.onended = finish;
             videoEl.onerror = finish;
@@ -905,12 +996,23 @@ export default function ZooSnoozScreen() {
               started = true;
               videoEl.oncanplay = null;
               videoEl.play().then(() => {
+                active.video = videoEl;                  // so a hidden tab can pause this clip
+                if (document.hidden) pauseForHidden();   // went away while it was loading
                 // Re-arm the guard around actual playback length; start audio in sync with video
-                clearTimeout(guard);
                 const dur = (isFinite(videoEl.duration) && videoEl.duration > 0) ? videoEl.duration : 12;
-                guard = setTimeout(finish, (dur + 5) * 1000);
+                guardUntil = activeMs() + (dur + 5) * 1000;
+                startedAt = activeMs();
+                lastFrameTime = 0;
                 startAudio();
-                rafId = requestAnimationFrame(drawFrame);
+                tick();
+                watchdog = setInterval(() => {
+                  if (done) return;
+                  if (performance.now() - lastFrameTime > 400) {
+                    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+                    if (nextId) { clearTimeout(nextId); nextId = null; }
+                    tick();
+                  }
+                }, 500);
               }).catch(finish);
             };
             videoEl.load();
@@ -942,10 +1044,14 @@ export default function ZooSnoozScreen() {
         }, 2000);
       }
 
+      detachVisibility?.();
+      releaseWakeLock?.();
+      // A paused recorder ignores stop() on some builds, so make sure it is running first.
+      try { if (mr.state === 'paused') mr.resume(); } catch { /* unsupported */ }
       if (mr.state !== 'inactive') { try { mr.requestData(); mr.stop(); } catch(e) {} }
     })();
 
-    return () => { cancelled = true; };
+    return () => { cancelled = true; detachVisibility?.(); releaseWakeLock?.(); };
   }, [zzScreen, zzStitchPhase]);
 
   // ── Final submit ──────────────────────────────────────────────────────────
