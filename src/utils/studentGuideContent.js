@@ -18,6 +18,13 @@ export function getGuideContent(screen, stage = 4, subject = 'science', animal =
     case 'mission-bushwalk':  return missionBushwalk(stage, subject);
     case 'mission-buffalo':   return missionBuffalo(stage, subject);
     case 'mission-concertlawn': return missionConcertLawn(stage, subject);
+    case 'zooyard':           return zooyardHabitats(stage);
+    case 'zooyard-attest':    return zooyardAttest(stage);
+    case 'zooyard-activity':  return zooyardActivity(stage);
+    case 'zooyard-written':   return zooyardWritten(stage);
+    case 'zooyard-citizen':   return zooyardCitizen(stage);
+    case 'zooyard-video':     return zooyardVideo(stage);
+    case 'zooyard-badge':     return zooyardBadge(stage);
     default:                  return mapContent();
   }
 }
@@ -949,6 +956,162 @@ function mapContent() {
       unlock:   `When you're close enough, the card will glow and say 'Tap to Discover.' Just give it a tap and you've found it!`,
       badge:    `Complete the activity at each animal — answer the quiz and write your observation — and you'll earn a badge!`,
       start:    `Look at the list — the closest animal is at the top! That's your first stop. Follow the yellow arrow and you're on your way!`,
+    },
+  };
+}
+
+// ─── ZooYard ──────────────────────────────────────────────────────────────────
+// ZooYard runs in a schoolyard, not the zoo, so none of the map or distance answers apply:
+// there is no GPS, nothing to walk towards and no "you are too far away". A student is
+// standing in their own playground being asked to see it as habitat, which is a genuinely
+// odd ask, so these answers keep pointing them back outside at the real thing.
+// Stages 2-5. Written plainly enough for a Year 3 without sounding babyish to a Year 10.
+
+function zooyardHabitats(stage) {
+  return {
+    greeting: `Hi! I'm Dr. Cam. You're going to explore three habitats right here at your school. Need a hand?`,
+    options: [
+      { label: 'What do I do?',        key: 'what'   },
+      { label: 'Which one first?',     key: 'order'  },
+      { label: 'Do I go outside?',     key: 'out'    },
+      { label: 'What is a habitat?',   key: 'habitat'},
+      { label: 'What is the last task?', key: 'hero' },
+    ],
+    responses: {
+      what:    byStage({
+        2: `Pick an animal. I'll tell you a spot to go and stand in. Take a photo, answer a question, then write what you see. That's it!`,
+        4: `Pick an animal and I'll send you to a matching spot in your schoolyard. Photograph it, answer a question about the animal, then write up what you observed. Three habitats to complete.`,
+      }, stage),
+      order:   `Any order you like. None of them are locked, so start with whichever one you like the look of.`,
+      out:     `Yes! Every habitat asks you to go and stand somewhere real in your schoolyard. You can't do this one from your desk.`,
+      habitat: byStage({
+        2: `A habitat is an animal's home. It gives them food, water and somewhere safe to rest.`,
+        4: `A habitat is the place an animal lives in and depends on. It has to provide food, water, shelter and space to move around.`,
+      }, stage),
+      hero:    `Once all three habitats are done, Habitat Hero unlocks. You build something real at school to help local wildlife, then photograph it.`,
+    },
+  };
+}
+
+function zooyardAttest(stage) {
+  return {
+    greeting: `This bit is easy: go and stand in the spot on the card, then take a photo of it.`,
+    options: [
+      { label: 'I can\'t find the spot',  key: 'find'  },
+      { label: 'Why a photo?',           key: 'photo' },
+      { label: 'Does it have to be perfect?', key: 'perfect' },
+    ],
+    responses: {
+      find:    `Have a good look around your whole schoolyard, not just near the door. If there's really nothing, ask your teacher for the closest thing you can find.`,
+      photo:   `Two reasons. It proves you actually went outside, and you'll need to look at it again in a minute when you write about the spot.`,
+      perfect: byStage({
+        2: `Nope! It just has to be a real spot that you're standing in. Any tree, any shady place, any grassy area.`,
+        4: `No. It doesn't have to be impressive, it just has to be real and it has to be one you're actually standing in. The point is observing a real place.`,
+      }, stage),
+    },
+  };
+}
+
+function zooyardActivity(stage) {
+  return {
+    greeting: `One question about this animal. Have a proper think before you pick.`,
+    options: [
+      { label: 'I don\'t know the answer', key: 'stuck' },
+      { label: 'Can I guess?',            key: 'guess' },
+      { label: 'What happens after?',     key: 'after' },
+    ],
+    responses: {
+      stuck: byStage({
+        2: `Read the question again slowly. Think about what the animal needs to stay alive: food, water and a safe place.`,
+        4: `Read it again and rule out the ones that can't be right. Most threats to animals come back to losing habitat, so think about what would take that away.`,
+      }, stage),
+      guess: `Give it your best thinking first. Whatever you pick, you'll get an explanation straight after, so you'll learn the answer either way.`,
+      after: `You'll write about the spot you're standing in. Then you earn this animal's badge.`,
+    },
+  };
+}
+
+function zooyardWritten(stage) {
+  return {
+    greeting: `Time to write up what you found. Look at your spot while you write.`,
+    options: [
+      { label: 'What is the field study?',  key: 'field'  },
+      { label: 'I have no partner',         key: 'alone'  },
+      { label: 'I don\'t know what to say', key: 'stuck'  },
+      { label: 'How much do I write?',      key: 'length' },
+      { label: 'What makes a good answer?', key: 'good'   },
+    ],
+    responses: {
+      field:  `Follow the three numbered steps, then type your number in the box. There is no right answer. Whatever you actually measure is the correct one, and your score does not depend on it.`,
+      alone:  `Ask anyone nearby, or your teacher. If you really cannot, pop something the size of a bag where you were crouching and walk away from that instead. It is not quite as good, but it works.`,
+      stuck:  byStage({
+        2: `Look at your number first. Is it big or small? Then say what that would mean for the animal trying to live there.`,
+        4: `Start from your number. Compare it to the benchmark just above the question, then explain what the difference means for the animal.`,
+      }, stage),
+      length: `Keep writing until the bar fills up. Once it turns green you've written enough, but you can always say more.`,
+      good:   byStage({
+        2: `Use your number, then say why it matters. "I counted 7 steps, so a koala would be on the ground for a long time and a dog could get it."`,
+        4: `Use your result as evidence, compare it to the benchmark, then explain the consequence for the animal. A good answer links all three.`,
+      }, stage),
+    },
+  };
+}
+
+function zooyardCitizen(stage) {
+  return {
+    greeting: `Last one, and this is the real one. You're going to build something that actually helps wildlife.`,
+    options: [
+      { label: 'What should I build?',   key: 'build' },
+      { label: 'Does it have to be big?', key: 'size' },
+      { label: 'Why does this matter?',  key: 'why'   },
+      { label: 'What happens to my photo?', key: 'photo' },
+    ],
+    responses: {
+      build: `Pick one from the list: a leaf pile, a native plant, a bug hotel, a water dish for birds, or a patch of grass left unmown. Whichever suits your school.`,
+      size:  `No. Small is fine. A dish of water or a pile of leaves in a quiet corner is genuinely useful to insects and birds.`,
+      why:   byStage({
+        2: `All three animals you learned about are losing their homes. You can't fix that from here, but you can make one small home right where you are.`,
+        4: `Every animal you've studied is losing habitat somewhere in the world. You can't change that directly, but habitat loss is also happening locally, and this is one small piece of it going back.`,
+      }, stage),
+      photo: `It goes to Taronga staff to check. If they approve it, your school earns points on the leaderboard.`,
+    },
+  };
+}
+
+function zooyardVideo(stage) {
+  return {
+    greeting: `Watch this before you head back out. It shows the animal in its real habitat.`,
+    options: [
+      { label: 'What should I look for?', key: 'look' },
+      { label: 'There is no video',       key: 'none' },
+      { label: 'Can I skip it?',          key: 'skip' },
+    ],
+    responses: {
+      look: byStage({
+        2: `Look at the place the animal lives. What is around it? Trees, grass, water? You are about to find something like it outside.`,
+        4: `Watch the habitat rather than just the animal. Notice what it provides: cover, food, water, space. You will be looking for the same features in your schoolyard.`,
+      }, stage),
+      none: `Then your teacher has not added one yet. No problem at all, just tap Continue and keep going.`,
+      skip: `You can, but it is the part that shows you what the real habitat looks like, which makes the writing a lot easier later.`,
+    },
+  };
+}
+
+function zooyardBadge(stage) {
+  return {
+    greeting: `Nice work, that habitat is done. Want to know what the numbers mean?`,
+    options: [
+      { label: 'What are my scores?', key: 'scores' },
+      { label: 'Can I do better?',    key: 'better' },
+      { label: 'What happens next?',  key: 'next'   },
+    ],
+    responses: {
+      scores: byStage({
+        2: `They show how well you described the spot. More detail and more reasons means a higher score.`,
+        4: `Three things: what you observed, how much detail you gave, and how clearly you wrote it. Explaining why something matters lifts all three.`,
+      }, stage),
+      better: `On the next habitat, describe more of what you can actually see, then say why it matters to the animal. That is what lifts a score.`,
+      next:   `Back to the habitats. There are three altogether, and finishing them all opens something else up.`,
     },
   };
 }

@@ -8,6 +8,7 @@ import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage
 import { db, storage } from '../firebase';
 import { normaliseCode, safeStudentId, getMinWords, getStageScaffoldTip } from '../utils/helpers';
 import PhotoCapture from '../components/PhotoCapture';
+import StudentGuide from '../components/StudentGuide';
 import { buildObservationScore, isLowQualityResponse } from '../utils/scoring';
 
 // PhotoCapture hands back a canvas Blob, which has no `.name` — only a File from the fallback
@@ -62,6 +63,159 @@ function ZyDoneScreen({ classCode, studentName, totalPoints, onDone }) {
   );
 }
 
+// A looping video behind a writing task is lovely for most students and genuinely unpleasant for
+// some. Respect the device setting rather than assuming.
+const reduceMotion = typeof window !== 'undefined'
+  && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+// ── First-run instructions, delivered by Dr. Cam ──────────────────────────────────────────────
+// ZooYard asks something genuinely unusual: go outside, stand in your own playground, and treat
+// it as habitat. Without being told that up front, a student sits at a desk waiting for the app
+// to do something. So this runs ONCE, before the habitat picker, and its whole job is to get
+// them out the door knowing what the loop is.
+//
+// Deliberately four steps and no more. Large type, one idea per line, no paragraph a Year 3
+// has to decode, and nothing so simplified that a Year 10 feels talked down to.
+const ZY_STEPS = [
+  { icon: '🚶', title: 'Go outside',    body: 'I will send you to a real spot in your schoolyard.' },
+  { icon: '📸', title: 'Take a photo',  body: 'Snap the spot you are standing in.' },
+  { icon: '🤔', title: 'Answer and write', body: 'One question about the animal, then write what you can see.' },
+  { icon: '🏅', title: 'Earn a badge',  body: 'One for each habitat. Three to collect.' },
+];
+
+// ⚠️ Worded to build anticipation, NOT to reframe the three habitats as a warm-up. Telling a
+// student the first three tasks exist to lead somewhere else is a quick way to make them do
+// those three badly. So this says what the last task IS and what it feels like (building, not
+// writing), and leaves the connection for them to make once they get there.
+const ZY_TEASER = {
+  icon: '🌱',
+  title: 'And one more thing',
+  body: 'Finish all three and a final task opens up. No writing in that one. You will be building something real for wildlife, right here at your school.',
+};
+
+function ZooYardIntro({ onStart }) {
+  return (
+    <div style={{ position:'fixed', inset:0, background:'linear-gradient(165deg,#0B2415,#14472C,#1F6B42)', overflowY:'auto', fontFamily:'var(--t-font)' }}>
+      <div style={{ maxWidth:560, margin:'0 auto', padding:'2rem 1.25rem 2.5rem', minHeight:'100%', display:'flex', flexDirection:'column', justifyContent:'center' }}>
+
+        <div className="animate-scale-in" style={{ textAlign:'center', marginBottom:'1.5rem' }}>
+          <img src="/images/guide-character.png" alt="Dr. Cam"
+            style={{ width:120, height:120, borderRadius:'50%', objectFit:'cover', objectPosition:'50% 12%', border:'4px solid rgba(255,255,255,0.85)', boxShadow:'0 10px 30px rgba(0,0,0,0.4)' }}
+            onError={e => { e.target.style.display = 'none'; }} />
+          <h1 className="taronga-title" style={{ color:'white', fontSize:'clamp(1.9rem,7vw,2.6rem)', margin:'0.9rem 0 0.4rem', lineHeight:1.1 }}>
+            Welcome to ZooYard
+          </h1>
+          <p style={{ color:'rgba(255,255,255,0.88)', fontSize:'clamp(1.05rem,3.4vw,1.2rem)', lineHeight:1.5, margin:0, textWrap:'balance' }}>
+            I am Dr. Cam. Your schoolyard is about to become three animal habitats.
+          </p>
+        </div>
+
+        <div style={{ display:'flex', flexDirection:'column', gap:'0.7rem', marginBottom:'1rem' }}>
+          {ZY_STEPS.map((st, i) => (
+            <div key={st.title} className="animate-fade-in-up"
+              style={{ display:'flex', alignItems:'center', gap:'1rem', background:'rgba(255,255,255,0.97)', borderRadius:16, padding:'1rem 1.1rem', animationDelay:`${0.12 * i}s`, boxShadow:'0 6px 20px rgba(0,0,0,0.2)' }}>
+              <span style={{ fontSize:'2.1rem', lineHeight:1, flexShrink:0 }} aria-hidden="true">{st.icon}</span>
+              <div style={{ minWidth:0 }}>
+                <div style={{ fontWeight:800, color:'#0A2F1F', fontSize:'clamp(1.05rem,3.4vw,1.2rem)', lineHeight:1.25 }}>{st.title}</div>
+                <div style={{ color:'#3A4A3F', fontSize:'clamp(0.92rem,2.8vw,1rem)', lineHeight:1.45, marginTop:'0.15rem' }}>{st.body}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Visually set apart from the four steps: this is not another instruction, it is what
+            the day is actually for. */}
+        <div className="animate-fade-in-up" style={{ display:'flex', alignItems:'flex-start', gap:'1rem', background:'linear-gradient(135deg, rgba(232,179,60,0.18), rgba(232,179,60,0.08))', border:'1.5px solid rgba(232,179,60,0.5)', borderRadius:16, padding:'1rem 1.1rem', marginBottom:'1.6rem', animationDelay:'0.55s' }}>
+          <span style={{ fontSize:'2.1rem', lineHeight:1, flexShrink:0 }} aria-hidden="true">{ZY_TEASER.icon}</span>
+          <div style={{ minWidth:0 }}>
+            <div style={{ fontWeight:800, color:'#FFD98A', fontSize:'clamp(1.05rem,3.4vw,1.2rem)', lineHeight:1.25 }}>{ZY_TEASER.title}</div>
+            <div style={{ color:'rgba(255,255,255,0.92)', fontSize:'clamp(0.92rem,2.8vw,1rem)', lineHeight:1.5, marginTop:'0.2rem' }}>{ZY_TEASER.body}</div>
+          </div>
+        </div>
+
+        <button onClick={onStart}
+          style={{ width:'100%', padding:'1.1rem', borderRadius:999, border:'none', background:'linear-gradient(135deg,#4A9E6B,#2E7D55)', color:'white', fontSize:'1.1rem', fontWeight:800, cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.08em', boxShadow:'0 10px 28px rgba(46,125,85,0.55)' }}>
+          Let us go
+        </button>
+        <p style={{ textAlign:'center', color:'rgba(255,255,255,0.65)', fontSize:'0.82rem', marginTop:'0.9rem', lineHeight:1.5 }}>
+          Stuck at any point? Tap me in the corner and I will help.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ── Feedback on the written response ──────────────────────────────────────────────────────────
+// Same shape as the daily BadgeScreen: pick the student's strongest domain for "what you did
+// well" and their weakest for "next time". The wording is ZooYard's own rather than reused,
+// because the daily messages are about watching an animal behave ("write down exactly what the
+// animal is doing") and here the student is describing a PLACE and arguing what an animal would
+// need from it. The generic set would have been quietly wrong on every habitat.
+//
+// Two tiers rather than one. ZooYard runs Stage 2 to Stage 5, and "finish with a full stop" is
+// the right nudge for a Year 3 and slightly insulting to a Year 10.
+const ZY_FEEDBACK = {
+  junior: {
+    behaviour: {
+      well: 'You described your spot really clearly. Great looking!',
+      next: 'Go back and look at your spot again. Write down more of what you can see.',
+    },
+    detail: {
+      well: 'You worked out what the animal would need from a place like yours!',
+      next: 'Try saying WHY it matters. What would the animal use it for?',
+    },
+    writing: {
+      well: 'Your sentences were clear and easy to read!',
+      next: 'Start with a capital letter and finish with a full stop.',
+    },
+  },
+  senior: {
+    behaviour: {
+      well: 'Precise description of the spot you actually observed.',
+      next: 'Add more specific detail about what is really there: size, cover, what surrounds it.',
+    },
+    detail: {
+      well: 'You connected your spot to what the animal needs to survive.',
+      next: 'Explain the link. What does this spot provide, and why does the animal depend on it?',
+    },
+    writing: {
+      well: 'Clearly structured and easy to follow.',
+      next: 'Tighten your sentences so each one carries one clear idea.',
+    },
+  },
+};
+
+// Shown instead of a correction when even the weakest domain is already strong. Telling a
+// student who scored 5/4/5 to fix their weakest area reads as though the app did not notice
+// how well they did, which is a quick way to lose the ones who are trying hardest.
+const ZY_STRETCH = {
+  junior: 'You are doing really well. At your next habitat, see if you can spot one thing most people would miss.',
+  senior: 'Strong across all three. At your next habitat, push for the detail most people would walk straight past.',
+};
+
+// Display labels only. The stored field is still `behaviour`, but a student here is describing a
+// place, not an animal's behaviour, so calling the column Behaviour on screen made no sense.
+const ZY_DOMAINS = [
+  { key: 'behaviour', label: 'Observation' },
+  { key: 'detail',    label: 'Detail' },
+  { key: 'writing',   label: 'Writing' },
+];
+
+function zyFeedback(scores, stage) {
+  const set = (stage || 4) <= 3 ? ZY_FEEDBACK.junior : ZY_FEEDBACK.senior;
+  const ranked = [...ZY_DOMAINS].sort((a, b) => (scores[b.key] ?? 0) - (scores[a.key] ?? 0));
+  const best = ranked[0], worst = ranked[ranked.length - 1];
+  const junior = (stage || 4) <= 3;
+  return {
+    // Below 3 there is nothing honest to praise about that domain, so encourage the attempt
+    // instead of inventing a strength they did not show.
+    well: (scores[best.key] ?? 0) >= 3 ? set[best.key].well : 'You gave it a go. Have another look at your spot and try the next habitat.',
+    next: (scores[worst.key] ?? 0) >= 4 ? (junior ? ZY_STRETCH.junior : ZY_STRETCH.senior) : set[worst.key].next,
+  };
+}
+
+const zyIntroKey = (code, sid) => `zooyardIntroSeen_${code}_${sid}`;
+
 export default function ZooYardScreen() {
   const { zyScreen, setZyScreen, setSessionType, setCurrentScreen, studentName, classCode, classStage, clearStudentSession } = useApp();
   const { setCompletionCardDismissed } = useStudent();
@@ -75,12 +229,14 @@ export default function ZooYardScreen() {
   const [mcqCorrect,  setMcqCorrect]  = useState(null);
   const [mcqRevealed, setMcqRevealed] = useState(false);
 
+  const [fieldValue, setFieldValue] = useState('');   // the field study result, as typed
   const [obsText, setObsText] = useState('');
   const [obsError, setObsError] = useState('');
   const [hintsOpen, setHintsOpen] = useState(false);
   const [savingObs, setSavingObs] = useState(false);
 
   const [hydrating, setHydrating] = useState(true);
+  const [showIntro, setShowIntro] = useState(false);
   const [habitatPhotos, setHabitatPhotos] = useState({});  // { [animalId]: downloadURL }
   const [attestPreview, setAttestPreview] = useState(null);
   const [attestUploading, setAttestUploading] = useState(false);
@@ -119,6 +275,13 @@ export default function ZooYardScreen() {
         setZyCompleted(done);
         setHabitatPhotos(photos);
         if (zy.sessionCompleted || zy.citizenScience) setZyScreen('done');
+        // Gated on BOTH: never shown twice, and never shown to someone already part way
+        // through, so a mid-session reload does not drop them back on the welcome screen.
+        else if (!Object.keys(done).length) {
+          let seen = false;
+          try { seen = !!localStorage.getItem(zyIntroKey(normaliseCode(classCode), safeStudentId(studentName))); } catch { /* private mode */ }
+          if (!seen) setShowIntro(true);
+        }
       } catch (e) {
         console.warn('ZooYard resume failed:', e);
       } finally {
@@ -133,7 +296,7 @@ export default function ZooYardScreen() {
     setZyAnimal(animal);
     setZyPhase('attest');
     setMcqAnswer(null); setMcqCorrect(null); setMcqRevealed(false);
-    setObsText(''); setObsError('');
+    setObsText(''); setObsError(''); setFieldValue('');
     setHintsOpen(false);
     setAttestPreview(null); setAttestError('');
   }
@@ -160,6 +323,21 @@ export default function ZooYardScreen() {
   async function submitWritten() {
     if (!zyAnimal || savingObs) return;
 
+    // The whole point of the change is that the writing analyses a real result, so the result
+    // has to exist. Bounded, because an unbounded field in a dataset eventually receives 99999.
+    const fsDef = zyAnimal.fieldStudy;
+    const measured = parseInt(fieldValue, 10);
+    if (fsDef) {
+      if (!Number.isFinite(measured) || measured < 0) {
+        setObsError('Do the field study first, then write down your number above.');
+        return;
+      }
+      if (measured > fsDef.max) {
+        setObsError(`That looks too high. Enter a number up to ${fsDef.max}.`);
+        return;
+      }
+    }
+
     // The scorers already floor gibberish to 1/1/1, but silently — a student could submit
     // keyboard mash and still collect a badge plus the 20-point quiz bonus with no feedback.
     if (isLowQualityResponse(obsText)) {
@@ -180,6 +358,12 @@ export default function ZooYardScreen() {
         behaviour: scoreResult.behaviour, detail: scoreResult.detail, writing: scoreResult.writing,
         observation: obsText,
       };
+      // Recorded as data, never as a score. Points come from the quiz and the written analysis
+      // only, so an honest low reading costs a student nothing. Stored with its method id and
+      // unit so the number is still interpretable if the method is ever reworded.
+      if (fsDef && Number.isFinite(measured)) {
+        badgeData.fieldStudy = { method: fsDef.title, value: measured, unit: fsDef.unit };
+      }
       const photoUrl = habitatPhotos[zyAnimal.id];
       if (photoUrl) badgeData.habitatPhotoUrl = photoUrl;
 
@@ -202,7 +386,7 @@ export default function ZooYardScreen() {
       }
 
       setZyCompleted(prev => ({ ...prev, [zyAnimal.id]: { points, quizCorrect: !!mcqCorrect, behaviour: scoreResult.behaviour, detail: scoreResult.detail, writing: scoreResult.writing } }));
-      setBadgeReveal({ animal: zyAnimal, ...badgeData });
+      setBadgeReveal({ animal: zyAnimal, ...badgeData, overall: scoreResult.overallFeedback });
       setZyPhase('badge');
     } finally {
       setSavingObs(false);
@@ -310,6 +494,14 @@ export default function ZooYardScreen() {
 
   // Held until the resume read finishes so the picker never flashes "Tap to begin" for a
   // habitat the student has already completed.
+  const dismissIntro = () => {
+    try { localStorage.setItem(zyIntroKey(normaliseCode(classCode || ''), safeStudentId(studentName || '')), '1'); }
+    catch { /* private mode — they will see it once more, which is harmless */ }
+    setShowIntro(false);
+  };
+
+  if (showIntro) return <ZooYardIntro onStart={dismissIntro} />;
+
   if (hydrating) {
     return (
       <div style={{ position:'fixed', inset:0, background:'linear-gradient(135deg, var(--jungle-deep) 0%, var(--jungle-mid) 50%, var(--jungle-light) 100%)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'1.25rem' }}>
@@ -383,6 +575,7 @@ export default function ZooYardScreen() {
             </button>
           </div>
         </div>
+        <StudentGuide screen="zooyard-citizen" />
       </div>
     );
   }
@@ -402,11 +595,28 @@ export default function ZooYardScreen() {
           style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover' }}
         />
         <div style={{ position:'absolute', inset:0, background:'linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.3) 40%, rgba(0,0,0,0.6) 100%)' }} />
-        <div className="animate-scale-in" style={{ position:'relative', background:'white', borderRadius:20, padding:'2rem 1.75rem', maxWidth:420, width:'100%', textAlign:'center' }}>
-          <div style={{ fontSize:'2.5rem', marginBottom:'0.5rem' }}>📍</div>
-          <h2 className="taronga-title" style={{ fontSize:'1.5rem', color:'#0A2F1F', marginBottom:'0.5rem' }}>{zyAnimal.habitatLabel}</h2>
-          <p style={{ color:'#3A4A3F', fontSize:'0.95rem', lineHeight:1.6, marginBottom:'1.5rem' }}>{zyAnimal.selfAttestPrompt}</p>
-          <p style={{ fontWeight:700, color:'#0A2F1F', marginBottom:'1rem' }}>{zyAnimal.selfAttestQuestion}</p>
+        <div className="animate-scale-in" style={{ position:'relative', background:'white', borderRadius:20, padding:'1.6rem 1.5rem 1.75rem', maxWidth:470, width:'100%', textAlign:'center', maxHeight:'92vh', overflowY:'auto' }}>
+          {/* ⚠️ The instruction is the biggest thing on this card on purpose. It used to sit at
+              0.95rem UNDER a 1.5rem habitat title, so the one line a student actually has to act
+              on was the smallest text on screen. Kids skim past instructions; this one tells them
+              where to physically walk, and everything after it depends on them having gone there.
+              The habitat name is context, so it is now a small kicker above. Keep this hierarchy:
+              WHERE TO GO first and largest, detail second, confirmation question last. */}
+          <div style={{ fontSize:'1.9rem', lineHeight:1, marginBottom:'0.35rem' }} aria-hidden="true">📍</div>
+          <p style={{ fontSize:'0.7rem', fontWeight:800, letterSpacing:'0.14em', textTransform:'uppercase', color: zyAnimal.habitatColor, margin:'0 0 0.9rem' }}>
+            {zyAnimal.habitatLabel}
+          </p>
+
+          <div style={{ background: attestTheme.accentSoft, border:`2px solid ${attestTheme.accentBorder}`, borderRadius:16, padding:'1.1rem 1rem', marginBottom:'1rem' }}>
+            <p className="taronga-title" style={{ fontSize:'clamp(1.45rem,5.6vw,1.95rem)', lineHeight:1.15, color:'#0A2F1F', margin:0, textWrap:'balance' }}>
+              {zyAnimal.selfAttestWhere}
+            </p>
+            <p style={{ color:'#3A4A3F', fontSize:'clamp(0.95rem,2.6vw,1.05rem)', lineHeight:1.5, margin:'0.6rem 0 0', textWrap:'pretty' }}>
+              {zyAnimal.selfAttestPrompt}
+            </p>
+          </div>
+
+          <p style={{ fontWeight:800, color:'#0A2F1F', fontSize:'1.05rem', margin:'0 0 1rem' }}>{zyAnimal.selfAttestQuestion}</p>
 
           {/* Photo turns the self-attest tick-box into evidence the teacher can mark the
               written response against - the prompts ask students to describe this spot. */}
@@ -450,6 +660,7 @@ export default function ZooYardScreen() {
             ← Not yet, go back
           </button>
         </div>
+        <StudentGuide screen="zooyard-attest" />
       </div>
     );
   }
@@ -476,6 +687,7 @@ export default function ZooYardScreen() {
             Continue
           </button>
         </div>
+        <StudentGuide screen="zooyard-video" />
       </div>
     );
   }
@@ -541,6 +753,7 @@ export default function ZooYardScreen() {
             </button>
           </div>
         )}
+        <StudentGuide screen="zooyard-activity" />
       </div>
     );
   }
@@ -548,89 +761,225 @@ export default function ZooYardScreen() {
   if (zyAnimal && zyPhase === 'written') {
     const minWords = getMinWords(classStage);
     const wordCount = obsText.trim().match(/\b\w+\b/g)?.length || 0;
-    const prompt = zyAnimal.writingPromptByStage[classStage] || zyAnimal.writingPromptByStage[4];
+    const fs = zyAnimal.fieldStudy;
+    // Bounded so a stray keypress cannot put 99999 into a dataset. Blank stays blank rather
+    // than becoming 0, or an untouched field would read as a real measurement of zero.
+    const rawNum = parseInt(fieldValue, 10);
+    const fieldNum = Number.isFinite(rawNum) && rawNum >= 0 && rawNum <= (fs?.max ?? 999) ? rawNum : null;
+    const rawPrompt = zyAnimal.writingPromptByStage[classStage] || zyAnimal.writingPromptByStage[4];
+    // The prompt quotes their own result back at them, so the analysis has something concrete
+    // to argue about instead of "describe your tree".
+    const prompt = rawPrompt.replace('{n}', fieldNum === null ? 'your' : String(fieldNum));
     const tip = getStageScaffoldTip(classStage);
     const writtenTheme = ZOOYARD_HABITAT_THEME[zyAnimal.habitatArea] || ZOOYARD_HABITAT_THEME.bushland;
     return (
-      <div style={{ position:'fixed', inset:0, background:'#F0EDE6', display:'flex', flexDirection:'column', fontFamily:'var(--t-font)' }}>
-        <HomeButton dark onHome={backToHabitats} />
-        <div style={{ background:zyAnimal.habitatColor, padding:'0.9rem 1.2rem', color:'white', fontWeight:700 }}>{zyAnimal.name} · Write it up</div>
-        <div style={{ flex:1, overflowY:'auto', padding:'1.5rem 1.2rem', maxWidth:520, margin:'0 auto', width:'100%', boxSizing:'border-box' }}>
-          <p style={{ fontSize:'1.05rem', color:'#0A2F1F', marginBottom:'1rem', lineHeight:1.5, fontWeight:600 }}>{prompt}</p>
+      // ⚠️ The habitat video carries through from the attest screen on purpose. A student walks
+      // outside, stands in the real spot, and then used to drop onto a flat beige form: the
+      // immersion died exactly where the thinking was supposed to start. The video is heavily
+      // blurred and darkened here, NOT played clean. It is atmosphere at the edges; the writing
+      // itself sits on an opaque card so nothing moves behind the text while they type.
+      <div style={{ position:'fixed', inset:0, background:'#0A1410', display:'flex', flexDirection:'column', fontFamily:'var(--t-font)', overflow:'hidden' }}>
+        {!reduceMotion && (
+          <video key={writtenTheme.videoBg} autoPlay loop muted playsInline src={writtenTheme.videoBg}
+            style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover', filter:'blur(14px) saturate(1.15)', transform:'scale(1.12)' }} />
+        )}
+        <div style={{ position:'absolute', inset:0, background:`linear-gradient(180deg, rgba(4,12,8,0.62) 0%, rgba(4,12,8,0.5) 45%, rgba(4,12,8,0.78) 100%)` }} />
 
-          <div style={{ marginBottom:'1rem' }}>
-            <button onClick={() => setHintsOpen(o => !o)}
-              style={{ width:'100%', display:'flex', justifyContent:'space-between', alignItems:'center', background:writtenTheme.accentSoft, border:`1px solid ${writtenTheme.accentBorder}`, borderRadius: hintsOpen ? '10px 10px 0 0' : '10px', padding:'0.7rem 1rem', cursor:'pointer', color:writtenTheme.accent, fontWeight:700, fontSize:'0.85rem', textAlign:'left', fontFamily:'inherit' }}>
-              <span>💡 Need a hint?</span>
-              <span style={{ fontSize:'0.7rem' }}>{hintsOpen ? '▲' : '▼'}</span>
-            </button>
-            {hintsOpen && (
-              <div style={{ background:writtenTheme.accentSoft, border:`1px solid ${writtenTheme.accentBorder}`, borderTop:'none', borderRadius:'0 0 10px 10px', padding:'0.8rem 1rem' }}>
-                {tip.points.length > 0 && (
-                  <>
-                    <p style={{ fontSize:'0.72rem', fontWeight:700, color:writtenTheme.accent, textTransform:'uppercase', letterSpacing:'0.05em', margin:'0 0 0.35rem' }}>{tip.header}</p>
-                    <ul style={{ margin:'0 0 0.7rem', paddingLeft:'1.1rem', fontSize:'0.82rem', color:'#3A4A3F', lineHeight:1.8 }}>
-                      {tip.points.map((pt, i) => <li key={i}>{pt}</li>)}
-                    </ul>
-                  </>
-                )}
-                <p style={{ fontSize:'0.72rem', fontWeight:700, color:writtenTheme.accent, textTransform:'uppercase', letterSpacing:'0.05em', margin:'0 0 0.25rem' }}>Sentence starters:</p>
-                {tip.starters.map((s, i) => (
-                  <p key={i} style={{ fontSize:'0.82rem', color:'#3A4A3F', margin:'0.15rem 0', paddingLeft:'0.5rem', fontStyle:'italic' }}>"{s}"</p>
-                ))}
+        <HomeButton dark onHome={backToHabitats} />
+        <div style={{ position:'relative', zIndex:1, background:`${zyAnimal.habitatColor}D9`, backdropFilter:'blur(10px)', WebkitBackdropFilter:'blur(10px)', padding:'0.9rem 1.2rem', color:'white', fontWeight:700, boxShadow:'0 2px 14px rgba(0,0,0,0.3)' }}>
+          {zyAnimal.name} · Write it up
+        </div>
+
+        <div style={{ position:'relative', zIndex:1, flex:1, overflowY:'auto', padding:'1.25rem 1.1rem 1.5rem', maxWidth:560, margin:'0 auto', width:'100%', boxSizing:'border-box' }}>
+          {/* The field notebook. A naturalist writing up what they just went and looked at is
+              exactly what this task is, so the page says so rather than reading as a form. */}
+          <div style={{ background:'linear-gradient(170deg,#FDFBF5,#F3EFE3)', borderRadius:18, padding:'1.15rem 1.15rem 1.3rem', boxShadow:'0 18px 44px rgba(0,0,0,0.42)', border:'1px solid rgba(255,255,255,0.5)' }}>
+
+            <div style={{ display:'flex', alignItems:'center', gap:'0.55rem', marginBottom:'0.85rem' }}>
+              <span style={{ fontSize:'1.1rem' }} aria-hidden="true">{writtenTheme.icon}</span>
+              <span style={{ fontSize:'0.66rem', fontWeight:800, letterSpacing:'0.16em', textTransform:'uppercase', color:writtenTheme.accent }}>Field notes</span>
+              <span style={{ flex:1, height:1, background:writtenTheme.accentBorder }} />
+            </div>
+
+            {habitatPhotos[zyAnimal.id] && (
+              <div style={{ background:'white', padding:'7px 7px 9px', borderRadius:6, boxShadow:'0 6px 18px rgba(0,0,0,0.22)', marginBottom:'1rem', transform:'rotate(-0.8deg)' }}>
+                <img src={habitatPhotos[zyAnimal.id]} alt="The spot you photographed"
+                  style={{ width:'100%', maxHeight:150, objectFit:'cover', borderRadius:3, display:'block' }} />
+                <div style={{ fontSize:'0.66rem', fontWeight:700, color:'#6B6B62', textTransform:'uppercase', letterSpacing:'0.07em', marginTop:'6px', textAlign:'center' }}>Your spot</div>
               </div>
             )}
-          </div>
 
-          {habitatPhotos[zyAnimal.id] && (
+            {/* ── Field study ──────────────────────────────────────────────────────────────
+                The measurement sits INSIDE the notebook rather than on a step of its own. Two
+                reasons: it keeps the per-animal flow at five steps, and a naturalist records a
+                number and then writes about it on the same page, which is exactly what this is.
+                The number is deliberately NOT scored. Scoring it would produce invented data,
+                which is a well documented way to ruin a citizen science dataset. Only the
+                written analysis is marked, and a student who honestly records a poor result
+                can still score full marks for explaining what it means. */}
+            {fs && (
+              <div style={{ background:writtenTheme.accentSoft, border:`2px solid ${writtenTheme.accentBorder}`, borderRadius:14, padding:'1rem 1.05rem', marginBottom:'1.1rem', textAlign:'left' }}>
+                <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', marginBottom:'0.6rem' }}>
+                  <span style={{ fontSize:'1.2rem' }} aria-hidden="true">{fs.icon}</span>
+                  <span style={{ fontSize:'0.68rem', fontWeight:800, letterSpacing:'0.13em', textTransform:'uppercase', color:writtenTheme.accent }}>Field study</span>
+                </div>
+                <p className="taronga-title" style={{ fontSize:'clamp(1.1rem,4vw,1.3rem)', color:'#0A2F1F', margin:'0 0 0.6rem', lineHeight:1.25 }}>{fs.title}</p>
+
+                <ol style={{ margin:'0 0 0.9rem', paddingLeft:'1.2rem', color:'#3A4A3F', fontSize:'0.93rem', lineHeight:1.65 }}>
+                  {fs.steps.map((st, i) => <li key={i} style={{ marginBottom:'0.15rem' }}>{st}</li>)}
+                </ol>
+
+                <label style={{ display:'block', fontSize:'0.9rem', fontWeight:700, color:'#0A2F1F', marginBottom:'0.4rem' }}>
+                  {fs.question}
+                </label>
+                <div style={{ display:'flex', alignItems:'center', gap:'0.6rem' }}>
+                  <input type="number" inputMode="numeric" min="0" max={fs.max}
+                    value={fieldValue}
+                    onChange={e => { setFieldValue(e.target.value); if (obsError) setObsError(''); }}
+                    placeholder="0"
+                    style={{ width:110, padding:'0.7rem 0.8rem', borderRadius:10, border:`1.5px solid ${writtenTheme.accentBorder}`, background:'white', fontSize:'1.25rem', fontWeight:800, fontFamily:'inherit', color:'#0A2F1F', textAlign:'center', boxSizing:'border-box' }} />
+                  <span style={{ fontSize:'0.95rem', fontWeight:700, color:'#3A4A3F' }}>{fs.unit}</span>
+                </div>
+
+                {/* Held back until they have their own result, so the benchmark reads as
+                    something to compare against rather than an answer to work backwards from. */}
+                {fieldNum !== null && (
+                  <p style={{ margin:'0.85rem 0 0', paddingTop:'0.75rem', borderTop:`1px solid ${writtenTheme.accentBorder}`, fontSize:'0.88rem', lineHeight:1.6, color:'#3A4A3F' }}>
+                    <strong style={{ color:writtenTheme.accent }}>For comparison: </strong>{fs.benchmark}
+                  </p>
+                )}
+              </div>
+            )}
+
+            <p className="taronga-title" style={{ fontSize:'clamp(1.15rem,4.2vw,1.4rem)', color:'#0A2F1F', margin:'0 0 1rem', lineHeight:1.3, textWrap:'pretty' }}>{prompt}</p>
+
             <div style={{ marginBottom:'1rem' }}>
-              <div style={{ fontSize:'0.68rem', fontWeight:700, color:'var(--t-slate,#6B6B62)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'0.35rem' }}>Your spot</div>
-              <img src={habitatPhotos[zyAnimal.id]} alt="" style={{ width:'100%', maxHeight:180, objectFit:'cover', borderRadius:12, display:'block' }} />
+              <button onClick={() => setHintsOpen(o => !o)}
+                style={{ width:'100%', display:'flex', justifyContent:'space-between', alignItems:'center', background:writtenTheme.accentSoft, border:`1px solid ${writtenTheme.accentBorder}`, borderRadius: hintsOpen ? '10px 10px 0 0' : '10px', padding:'0.7rem 1rem', cursor:'pointer', color:writtenTheme.accent, fontWeight:700, fontSize:'0.85rem', textAlign:'left', fontFamily:'inherit' }}>
+                <span>💡 Need a hint?</span>
+                <span style={{ fontSize:'0.7rem' }}>{hintsOpen ? '▲' : '▼'}</span>
+              </button>
+              {hintsOpen && (
+                <div style={{ background:writtenTheme.accentSoft, border:`1px solid ${writtenTheme.accentBorder}`, borderTop:'none', borderRadius:'0 0 10px 10px', padding:'0.8rem 1rem' }}>
+                  {tip.points.length > 0 && (
+                    <>
+                      <p style={{ fontSize:'0.72rem', fontWeight:700, color:writtenTheme.accent, textTransform:'uppercase', letterSpacing:'0.05em', margin:'0 0 0.35rem' }}>{tip.header}</p>
+                      <ul style={{ margin:'0 0 0.7rem', paddingLeft:'1.1rem', fontSize:'0.82rem', color:'#3A4A3F', lineHeight:1.8 }}>
+                        {tip.points.map((pt, i) => <li key={i}>{pt}</li>)}
+                      </ul>
+                    </>
+                  )}
+                  <p style={{ fontSize:'0.72rem', fontWeight:700, color:writtenTheme.accent, textTransform:'uppercase', letterSpacing:'0.05em', margin:'0 0 0.25rem' }}>Sentence starters:</p>
+                  {tip.starters.map((s, i) => (
+                    <p key={i} style={{ fontSize:'0.82rem', color:'#3A4A3F', margin:'0.15rem 0', paddingLeft:'0.5rem', fontStyle:'italic' }}>"{s}"</p>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
 
-          {obsError && (
-            <p style={{ background:'#FEF2F2', border:'1px solid #FCA5A5', color:'#B91C1C', fontSize:'0.82rem', lineHeight:1.5, borderRadius:10, padding:'0.7rem 0.9rem', margin:'0 0 0.85rem' }}>{obsError}</p>
-          )}
+            {obsError && (
+              <p style={{ background:'#FEF2F2', border:'1px solid #FCA5A5', color:'#B91C1C', fontSize:'0.82rem', lineHeight:1.5, borderRadius:10, padding:'0.7rem 0.9rem', margin:'0 0 0.85rem' }}>{obsError}</p>
+            )}
 
-          <textarea value={obsText} onChange={e => { setObsText(e.target.value); if (obsError) setObsError(''); }} rows={7}
-            placeholder="Write your response here..."
-            style={{ width:'100%', padding:'0.9rem', borderRadius:12, border:'1px solid #D8D4C8', fontSize:'0.95rem', fontFamily:'inherit', resize:'vertical', boxSizing:'border-box', lineHeight:1.6 }} />
-          <div style={{ textAlign:'right', fontSize:'0.78rem', color: wordCount >= minWords ? '#2E7D55' : '#A8B4AC', marginTop:'0.4rem', fontWeight:600 }}>
-            {wordCount} / {minWords} words minimum
+            {/* Ruled like a notebook page. The line spacing, the line-height and the top padding are
+                tied together (28px rules, 28px line-height, 14px top padding, background offset to
+                match) — change one and the text stops sitting on the lines. `background-attachment:
+                local` keeps the rules moving with the text as it scrolls. */}
+            <textarea value={obsText} onChange={e => { setObsText(e.target.value); if (obsError) setObsError(''); }} rows={7}
+              placeholder="Write your response here..."
+              style={{
+                width:'100%', padding:'14px 14px 16px', borderRadius:12,
+                border:`1.5px solid ${writtenTheme.accentBorder}`, background:'#FFFDF7',
+                backgroundImage:'repeating-linear-gradient(to bottom, transparent 0px, transparent 27px, rgba(10,47,31,0.11) 27px, rgba(10,47,31,0.11) 28px)',
+                backgroundPosition:'0 14px', backgroundAttachment:'local',
+                fontSize:'1rem', lineHeight:'28px', fontFamily:'inherit', resize:'vertical',
+                boxSizing:'border-box', color:'#16241C', outline:'none',
+              }} />
+
+            {/* A bar fills as they write, instead of a bare "12 / 40". Seeing it move is a much
+                better nudge for a reluctant writer than a number that just sits there. */}
+            <div style={{ display:'flex', alignItems:'center', gap:'0.7rem', marginTop:'0.65rem' }}>
+              <div style={{ flex:1, height:7, borderRadius:999, background:'rgba(10,47,31,0.1)', overflow:'hidden' }}>
+                <div style={{ height:'100%', width:`${Math.min(100, Math.round((wordCount / Math.max(minWords,1)) * 100))}%`,
+                  background: wordCount >= minWords ? 'linear-gradient(90deg,#2E7D55,#4A9E6B)' : writtenTheme.accent,
+                  borderRadius:999, transition:'width 0.3s ease' }} />
+              </div>
+              <span style={{ fontSize:'0.78rem', fontWeight:800, color: wordCount >= minWords ? '#2E7D55' : '#7C8A80', whiteSpace:'nowrap' }}>
+                {wordCount >= minWords ? '✓ Ready' : `${wordCount} / ${minWords} words`}
+              </span>
+            </div>
           </div>
         </div>
-        <div style={{ padding:'1rem 1.2rem 1.5rem', maxWidth:520, margin:'0 auto', width:'100%', boxSizing:'border-box' }}>
+        <div style={{ position:'relative', zIndex:1, padding:'0.9rem 1.1rem 1.4rem', maxWidth:560, margin:'0 auto', width:'100%', boxSizing:'border-box', background:'linear-gradient(180deg, rgba(4,12,8,0) 0%, rgba(4,12,8,0.55) 45%)' }}>
           <button onClick={submitWritten} disabled={wordCount < minWords || savingObs}
-            style={{ width:'100%', padding:'0.9rem', borderRadius:999, border:'none', background: wordCount < minWords || savingObs ? '#CCC' : 'linear-gradient(135deg,#2E7D55,#1A5238)', color:'white', fontSize:'0.95rem', fontWeight:800, cursor: wordCount < minWords || savingObs ? 'not-allowed' : 'pointer', textTransform:'uppercase', letterSpacing:'0.05em' }}>
+            style={{ width:'100%', padding:'0.95rem', borderRadius:999, border:'none',
+              background: wordCount < minWords || savingObs ? 'rgba(255,255,255,0.18)' : 'linear-gradient(135deg,#2E7D55,#1A5238)',
+              color: wordCount < minWords || savingObs ? 'rgba(255,255,255,0.65)' : 'white',
+              fontSize:'0.95rem', fontWeight:800, cursor: wordCount < minWords || savingObs ? 'not-allowed' : 'pointer',
+              textTransform:'uppercase', letterSpacing:'0.05em',
+              boxShadow: wordCount < minWords || savingObs ? 'none' : '0 8px 24px rgba(46,125,85,0.5)',
+              backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)', transition:'all 0.25s' }}>
             {savingObs ? 'Saving…' : wordCount < minWords ? 'Write more to continue' : 'Submit & Earn Badge'}
           </button>
         </div>
+        <StudentGuide screen="zooyard-written" />
       </div>
     );
   }
 
   if (zyAnimal && zyPhase === 'badge' && badgeReveal) {
     return (
-      <div style={{ position:'fixed', inset:0, background:'linear-gradient(160deg,#071E14,#0D3322,#1A5238)', display:'flex', alignItems:'center', justifyContent:'center', padding:'1.5rem' }}>
+      <div style={{ position:'fixed', inset:0, background:'linear-gradient(160deg,#071E14,#0D3322,#1A5238)', display:'flex', alignItems:'flex-start', justifyContent:'center', padding:'1.25rem', overflowY:'auto' }}>
         <HomeButton dark onHome={backToHabitats} />
-        <div className="animate-scale-in" style={{ background:'white', borderRadius:20, padding:'2rem 1.75rem', maxWidth:420, width:'100%', textAlign:'center' }}>
+        <div className="animate-scale-in" style={{ background:'white', borderRadius:20, padding:'1.75rem 1.5rem', maxWidth:440, width:'100%', textAlign:'center', margin:'auto' }}>
           <img src={badgeReveal.animal.image} alt="" style={{ width:88, height:88, objectFit:'cover', borderRadius:'50%', margin:'0 auto 1rem', display:'block', border:`4px solid ${badgeReveal.animal.habitatColor}` }} />
           <h2 className="taronga-title" style={{ fontSize:'1.5rem', color:'#0A2F1F', marginBottom:'0.3rem' }}>{badgeReveal.animal.name} Badge Earned!</h2>
-          <p style={{ fontSize:'1.8rem', fontWeight:800, color:'#2E7D55', margin:'0.5rem 0 1.25rem' }}>+{badgeReveal.points} pts</p>
-          <div style={{ display:'flex', gap:'0.6rem', marginBottom:'1.5rem' }}>
-            {[['Behaviour', badgeReveal.behaviour], ['Detail', badgeReveal.detail], ['Writing', badgeReveal.writing]].map(([label, val]) => (
-              <div key={label} style={{ flex:1, background:'#F0EDE6', borderRadius:10, padding:'0.6rem 0.4rem' }}>
-                <div style={{ fontSize:'1.1rem', fontWeight:800, color:'#0A2F1F' }}>{val}/5</div>
-                <div style={{ fontSize:'0.66rem', color:'#6B6B62', textTransform:'uppercase', fontWeight:700 }}>{label}</div>
-              </div>
-            ))}
+          <p style={{ fontSize:'1.8rem', fontWeight:800, color:'#2E7D55', margin:'0.5rem 0 1rem' }}>+{badgeReveal.points} pts</p>
+
+          {badgeReveal.overall && (
+            <p style={{ fontSize:'0.95rem', color:'#0A2F1F', fontWeight:600, lineHeight:1.5, margin:'0 0 1.1rem', textWrap:'pretty' }}>
+              {badgeReveal.overall}
+            </p>
+          )}
+
+          <div style={{ display:'flex', gap:'0.6rem', marginBottom:'1rem' }}>
+            {ZY_DOMAINS.map(({ key, label }) => {
+              const val = badgeReveal[key] ?? 0;
+              return (
+                <div key={key} style={{ flex:1, background:'#F0EDE6', borderRadius:10, padding:'0.6rem 0.4rem' }}>
+                  <div style={{ fontSize:'1.1rem', fontWeight:800, color:'#0A2F1F' }}>{val}/5</div>
+                  <div style={{ width:'100%', height:3, background:'#D8D4C8', borderRadius:2, margin:'0.3rem 0' }}>
+                    <div style={{ width:`${Math.round((val / 5) * 100)}%`, height:'100%', background: badgeReveal.animal.habitatColor, borderRadius:2 }} />
+                  </div>
+                  <div style={{ fontSize:'0.64rem', color:'#6B6B62', textTransform:'uppercase', fontWeight:700, letterSpacing:'0.04em' }}>{label}</div>
+                </div>
+              );
+            })}
           </div>
+
+          {/* One strength and one thing to work on. Any more than that and a student stops
+              reading, which is the whole reason the daily version settled on two panels. */}
+          {(() => {
+            const fb = zyFeedback(badgeReveal, classStage);
+            return (
+              <div style={{ display:'grid', gridTemplateColumns:'1fr', gap:'0.5rem', marginBottom:'1.25rem', textAlign:'left' }}>
+                <div style={{ background:'#F0FDF4', border:'1px solid #BBF7D0', borderRadius:12, padding:'0.7rem 0.85rem' }}>
+                  <div style={{ fontSize:'0.6rem', fontWeight:800, color:'#15803D', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:'0.3rem' }}>What you did well</div>
+                  <p style={{ margin:0, fontSize:'0.82rem', color:'#166534', lineHeight:1.5 }}>{fb.well}</p>
+                </div>
+                <div style={{ background:'#FFF7ED', border:'1px solid #FED7AA', borderRadius:12, padding:'0.7rem 0.85rem' }}>
+                  <div style={{ fontSize:'0.6rem', fontWeight:800, color:'#C2410C', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:'0.3rem' }}>Next time, try to...</div>
+                  <p style={{ margin:0, fontSize:'0.82rem', color:'#9A3412', lineHeight:1.5 }}>{fb.next}</p>
+                </div>
+              </div>
+            );
+          })()}
           <button onClick={backToHabitats}
             style={{ width:'100%', padding:'0.85rem', borderRadius:999, border:'none', background:'linear-gradient(135deg,#2E7D55,#1A5238)', color:'white', fontSize:'0.95rem', fontWeight:800, cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.05em' }}>
             Continue
           </button>
         </div>
+        <StudentGuide screen="zooyard-badge" />
       </div>
     );
   }
@@ -728,6 +1077,7 @@ export default function ZooYardScreen() {
             🚪 Log Out
           </button>
         </div>
+        <StudentGuide screen="zooyard" />
       </div>
     );
   }
@@ -788,6 +1138,7 @@ export default function ZooYardScreen() {
           );
         })}
       </div>
+      <StudentGuide screen="zooyard" />
     </div>
   );
 }

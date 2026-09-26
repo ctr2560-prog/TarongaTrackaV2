@@ -501,23 +501,17 @@ export default function HomeScreen() {
           <p className="animate-fade-in-up" style={{ fontSize:'clamp(0.95rem,2.2vw,1.15rem)', color:'rgba(255,255,255,0.9)', margin:'0 0 clamp(1.5rem,4vh,2.4rem)', maxWidth:'340px', lineHeight:1.55, textShadow:'0 2px 12px rgba(0,0,0,0.55)', textWrap:'balance', animationDelay:'0.45s' }}>
             Track animals, record observations and earn badges across the zoo.
           </p>
-          <button onClick={() => setCurrentScreen('comingSoon')} className="animate-scale-in"
+          {/* The main call to action IS joining a class. It used to open a Coming Soon
+              placeholder while a separate public-facing entry was planned; that will be its own
+              application rather than a mode in here, so the placeholder served no purpose. */}
+          <button onClick={() => setCurrentScreen('studentJoin')} className="animate-scale-in"
             style={{ background:'linear-gradient(135deg,var(--sunset-orange) 0%,var(--earth-clay) 100%)', color:'white', border:'none', padding:'clamp(0.85rem,2vh,1.05rem) clamp(2.5rem,6vw,3rem)', fontSize:'clamp(1rem,2.2vw,1.15rem)', fontWeight:700, borderRadius:'var(--t-r-pill)', cursor:'pointer', boxShadow:'0 8px 28px rgba(180,90,40,0.45)', animationDelay:'0.55s', textTransform:'uppercase', letterSpacing:'0.12em', width:'min(88vw,380px)', marginBottom:'0.6rem', transition:'all 0.2s' }}
             onMouseEnter={e => { e.currentTarget.style.transform='translateY(-2px)'; e.currentTarget.style.boxShadow='0 12px 36px rgba(180,90,40,0.55)'; }}
             onMouseLeave={e => { e.currentTarget.style.transform='translateY(0)'; e.currentTarget.style.boxShadow='0 8px 28px rgba(180,90,40,0.45)'; }}>
             Let's Track!
           </button>
-          <button onClick={() => setCurrentScreen('studentJoin')} className="animate-scale-in"
-            style={{ padding:'clamp(0.75rem,1.8vh,0.95rem) clamp(2rem,5vw,2.5rem)', borderRadius:'var(--t-r-pill)', border:'1.5px solid rgba(255,255,255,0.28)', background:'rgba(26,82,56,0.6)', backdropFilter:'blur(10px)', WebkitBackdropFilter:'blur(10px)', color:'white', cursor:'pointer', fontWeight:600, width:'min(88vw,380px)', boxShadow:'0 4px 16px rgba(0,0,0,0.2)', transition:'all 0.2s', textTransform:'uppercase', letterSpacing:'0.1em', fontSize:'clamp(0.9rem,2vw,1rem)', marginBottom:'0.6rem', animationDelay:'0.65s' }}
-            onMouseEnter={e => { e.currentTarget.style.background='rgba(26,82,56,0.85)'; e.currentTarget.style.transform='translateY(-1px)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background='rgba(26,82,56,0.6)'; e.currentTarget.style.transform='translateY(0)'; }}>
-            <span style={{ display:'inline-flex', alignItems:'center', justifyContent:'center', gap:'0.6rem' }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0, opacity:0.85 }}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-              Join a Class
-            </span>
-          </button>
           <button onClick={() => setCurrentScreen('teacherLogin')} className="animate-scale-in"
-            style={{ padding:'clamp(0.75rem,1.8vh,0.95rem) clamp(2rem,5vw,2.5rem)', borderRadius:'var(--t-r-pill)', border:'1.5px solid rgba(255,255,255,0.28)', background:'rgba(26,82,56,0.6)', backdropFilter:'blur(10px)', WebkitBackdropFilter:'blur(10px)', color:'white', cursor:'pointer', fontWeight:600, width:'min(88vw,380px)', boxShadow:'0 4px 16px rgba(0,0,0,0.2)', transition:'all 0.2s', textTransform:'uppercase', letterSpacing:'0.1em', fontSize:'clamp(0.9rem,2vw,1rem)', animationDelay:'0.75s' }}
+            style={{ padding:'clamp(0.75rem,1.8vh,0.95rem) clamp(2rem,5vw,2.5rem)', borderRadius:'var(--t-r-pill)', border:'1.5px solid rgba(255,255,255,0.28)', background:'rgba(26,82,56,0.6)', backdropFilter:'blur(10px)', WebkitBackdropFilter:'blur(10px)', color:'white', cursor:'pointer', fontWeight:600, width:'min(88vw,380px)', boxShadow:'0 4px 16px rgba(0,0,0,0.2)', transition:'all 0.2s', textTransform:'uppercase', letterSpacing:'0.1em', fontSize:'clamp(0.9rem,2vw,1rem)', animationDelay:'0.65s' }}
             onMouseEnter={e => { e.currentTarget.style.background='rgba(26,82,56,0.85)'; e.currentTarget.style.transform='translateY(-1px)'; }}
             onMouseLeave={e => { e.currentTarget.style.background='rgba(26,82,56,0.6)'; e.currentTarget.style.transform='translateY(0)'; }}>
             <span style={{ display:'inline-flex', alignItems:'center', justifyContent:'center', gap:'0.6rem' }}>
