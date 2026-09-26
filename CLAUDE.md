@@ -18,7 +18,7 @@ region: `australia-southeast1`. ⚠️ See **Build & Deploy** — these two drif
 
 ---
 
-## Where we left off (2026-09-24)
+## Where we left off (2026-09-26)
 
 ### ⚠️ Do these first
 1. **`firebase deploy --only storage` has NOT been run.** The `wildestDreams/` rule is committed
@@ -77,6 +77,17 @@ chapters when 4 groups in 30 reached that point.
 disturbing to nocturnal animals, which is why it is standard in nocturnal houses. Red on the
 animal gave good koala footage; red on the student made the piece to camera work. It is not yet
 in the app's filming guidance or the teacher info sheet — it should be.
+
+### Recently shipped (2026-09-25 → 09-26) — ZooYard pass
+- **Field study per habitat** — the change that moves ZooYard from nature appreciation to
+  science. See the ZooYard reference, and note the never-score-the-measurement rule.
+- **Dr. Cam** — first-run instructions plus the helper bot on all eight ZooYard screens.
+- **Written feedback** on the badge screen, ZooYard's own wording, tiered by stage.
+- **Immersive write-up screen** — habitat video carried through, field-notebook card.
+- **Home screen** — the orange "Let's Track!" button now joins a class instead of opening a
+  Coming Soon placeholder, and the duplicate Join a Class button is gone. Public mode already
+  had no route in from the home screen, which makes the eventual public/school split cleaner
+  than expected.
 
 ### Recently shipped (2026-09-18 → 09-24)
 - **ZooSnooz stitcher hardened** — see items 1 and 2 of the Video & media pipeline section, plus
@@ -797,14 +808,52 @@ ZooYard is a self-attest, single-session, no-GPS program built for classes that 
 ### Content (`src/data/zooyardAnimals.js`)
 Three animals, deliberately reusing the **same ids** as `src/data/animals.js` (`koala`, `tiger`, `giraffe`) to get their existing photos/badge art for free, and because koala/giraffe already have hand-tuned keyword-scoring branches in `scoreObservation()` (tiger falls through to the generic fallback — fine, just less tailored feedback). Safe to reuse ids because a ZooYard class is a completely separate `classes/{code}` document — no student doc ever mixes ZooYard and daytime data.
 
-Each entry: `habitatArea`/`habitatLabel` (bushland/rainforest/savannah), `selfAttestPrompt` + `selfAttestQuestion` (the "find a tree, are you ready?" self-report — no GPS check at all), `videoUrl` (null until Cameron records real footage — `ZooYardScreen` shows a "Video coming soon" placeholder card when unset), `activity` (single MCQ + fact), `writingPromptByStage` (stages 2–5, conservation-flavoured).
+Each entry: `habitatArea`/`habitatLabel` (bushland/rainforest/savannah), `selfAttestWhere` (the
+short, very large "go and stand next to a tree" line) + `selfAttestPrompt` (supporting detail) +
+`selfAttestQuestion`, **no GPS check at all**; `videoUrl` (still null — see Known gaps);
+`activity` (single MCQ + fact); `fieldStudy`; `writingPromptByStage` (stages 2–5).
+
+### ⚠️ The field study, and the one rule that must not be broken (2026-09-26)
+
+Until 2026-09-26 all twelve writing prompts began **Look, Describe or Explain**. Nothing was ever
+measured, which made ZooYard nature appreciation with a photo attached rather than science. Each
+habitat now runs a real ecological method, chosen so it tests the one thing that species actually
+depends on. No device, no equipment, about two minutes:
+
+| Animal | `fieldStudy.title` | Method | Why that species |
+|---|---|---|---|
+| koala | Canopy Connection | big steps to the nearest other tree | koalas die on the ground (dogs, cars); conservation is about connected canopy, not individual trees |
+| tiger | The Concealment Test | crouch, a partner walks off, they stop when you vanish | an ambush hunter must close to ~20 m unseen or the hunt is over |
+| giraffe | Sightline Survey | one full turn, count everything blocking the view | giraffes trade cover for vision; fences and buildings cut the sightlines they defend themselves with |
+
+**🚫 NEVER SCORE THE MEASUREMENT.** Points come from the quiz and the written analysis only. A
+student who honestly records a terrible result must lose nothing. Attaching points to a number is
+a well documented way to get invented data and ruin a dataset — if this ever feeds a shared or
+cross-school dataset, that rule becomes load-bearing rather than merely principled.
+
+Other decisions worth keeping:
+- **It lives inside the notebook on the written screen, NOT on a step of its own.** That keeps the
+  per-animal flow at five steps, and a naturalist records a number then writes about it on the
+  same page, which is exactly what the task is.
+- **The benchmark is withheld until they enter a result**, so it reads as something to compare
+  against rather than an answer to work backwards from.
+- **Every prompt carries a `{n}` placeholder** and quotes the student's own number back at them.
+  A prompt without it renders "You counted  steps". Stored value is bounded (`fieldStudy.max`)
+  because an unbounded number field eventually receives 99999, and blank stays blank rather than
+  becoming 0, or an untouched field reads as a real measurement of zero.
+- It is stored as `fieldStudy: { method, value, unit }` — the unit travels with the number so it
+  stays interpretable if a method is ever reworded.
 
 `ZOOYARD_CITIZEN_SCIENCE_TASK` — the single "Habitat Hero" task (build one small wildlife feature at school: leaf pile, native plant, bug hotel, water dish, no-mow patch) that unlocks once all three habitats are complete.
 
 ### `ZooYardScreen.jsx` — self-contained sub-router
 Mirrors `ZooSnoozScreen.jsx`'s pattern exactly: own local component state (no `StudentContext` badges/foundAnimals), cascading `if (phase === ...) return <JSX/>` blocks rather than a switch. Top-level phase (`zyScreen`/`setZyScreen`: `'habitats' | 'citizenScience' | 'done'`) lives in `AppContext.jsx` next to `zzScreen` so it survives the screen's own re-renders; per-animal phase (`attest → video → activity → written → badge`) is local `useState`.
 
-Flow: habitat picker (3 cards, any order) → self-attest confirm → video/placeholder → single MCQ → written response (scored via `buildObservationScore(text, animalId, classStage, 'science')`, points formula same as ZooSnooz: `Math.round((behaviour+detail+writing)/15*100) + (quizCorrect?20:0)`) → badge reveal → back to picker. Once all 3 done, a "Habitat Hero unlocked!" banner appears; the citizen science task collects a photo (client `uploadBytes` to `citizenScienceEvidence/{classCode}/{studentId}-{timestamp}.{ext}`) + optional note, writes to `citizenScienceSubmissions` (see below) and marks `zooyard.sessionCompleted`/`totalPoints` on the student doc, then a `ZzDoneScreen`-style completion screen with `StudentFeedbackModal`.
+Flow: **first-run intro** (once) → habitat picker (3 cards, any order) → self-attest confirm +
+required photo → video/placeholder → single MCQ → **field study + written analysis** (scored via
+`buildObservationScore(text, animalId, classStage, 'science')`, points formula same as ZooSnooz:
+`Math.round((behaviour+detail+writing)/15*100) + (quizCorrect?20:0)`) → badge reveal **with
+feedback** → back to picker. Once all 3 done, a "Habitat Hero unlocked!" banner appears; the citizen science task collects a photo (client `uploadBytes` to `citizenScienceEvidence/{classCode}/{studentId}-{timestamp}.{ext}`) + optional note, writes to `citizenScienceSubmissions` (see below) and marks `zooyard.sessionCompleted`/`totalPoints` on the student doc, then a `ZzDoneScreen`-style completion screen with `StudentFeedbackModal`.
 
 ### Student doc shape
 `classes/{code}/students/{id}`, field `zooyard`:
@@ -848,6 +897,69 @@ class with student and habitat, click to enlarge. ZooYard runs with no GPS check
 are the only evidence anyone went outside — and the panel names students who finished without one
 rather than letting a teacher assume.
 
+### Dr. Cam in ZooYard (2026-09-26)
+
+**A first-run instruction screen** (`ZooYardIntro`, local to `ZooYardScreen.jsx`): Dr. Cam, four
+big steps, then a visually separate gold card teasing Habitat Hero.
+
+- Gated on **both** a `localStorage` flag *and* no completed habitats, so a mid-session reload
+  does not drop a student back on the welcome screen.
+- The flag is keyed **per student** (`zooyardIntroSeen_{code}_{sid}`), not per device, because
+  school tablets get shared and the next student still needs the instructions.
+- ⚠️ The teaser says what the final task **is** (building, not writing) and deliberately does
+  **not** say the three habitats lead up to it. Telling students the first three exist to unlock
+  something else is a fast way to get three habitats done badly.
+
+**The helper bot on all eight working screens**, via the shared `StudentGuide` component with
+ZooYard keys in `utils/studentGuideContent.js`: `zooyard`, `-attest`, `-video`, `-activity`,
+`-written`, `-badge`, `-citizen`.
+
+⚠️ **None of the pre-existing guide content works here.** It is all about walking to animals,
+distances and GPS unlocking, none of which ZooYard has. The ZooYard answers keep pointing students
+back outside at the real thing instead. The `-written` set also covers the two things the field
+study will actually generate: *"What is the field study?"* and *"I have no partner"* (the tiger
+concealment test needs one).
+
+The habitat picker is the **default return at the bottom of the file**, not a named `if` block —
+it was the one screen missed on the first pass. Check it explicitly when adding anything global.
+
+### Written feedback on the badge screen (2026-09-26)
+
+`buildObservationScore` had always returned `overallFeedback` and per-domain `rationale`; ZooYard
+computed it and threw it away, keeping only the three numbers. The badge screen now shows the same
+**"What you did well" / "Next time, try to..."** pair as the daily `BadgeScreen` — strongest
+domain becomes the praise, weakest becomes the next step.
+
+- **The wording is ZooYard's own, not reused.** The daily science messages say things like "write
+  down exactly what the animal is doing", which is quietly wrong when the task is describing a
+  *place*.
+- **Two tiers by stage.** ZooYard runs Stage 2 to Stage 5; "finish with a full stop" is right for
+  a Year 3 and mildly insulting to a Year 10.
+- **A stretch message when even the weakest domain is 4+.** The daily version tells a 5/4/5
+  student to fix their weakest area, which reads as not having noticed how well they did.
+- Below 3 there is nothing honest to praise, so it encourages the attempt rather than inventing a
+  strength the student did not show.
+- **"Behaviour" is labelled "Observation" on screen.** Display only; the stored field is unchanged.
+
+### The write-up screen (2026-09-26)
+
+The habitat video carries through from the attest screen, **blurred and darkened**, with the
+writing on an opaque field-notebook card. Atmosphere at the edges, nothing moving behind the text
+while a student types. Their photo is framed as a polaroid, the textarea is ruled like paper, and
+the word count is a filling bar rather than a bare fraction.
+
+⚠️ The ruled paper ties **28px rules, 28px line-height and 14px top padding** together, with
+`background-attachment: local` so the rules scroll with the text. Change one and the text stops
+sitting on the lines. The video is skipped entirely under `prefers-reduced-motion`.
+
+**On the attest card**, the instruction is now the largest thing on screen, in its own tinted
+panel. It used to be 0.95rem sitting *under* a 1.5rem habitat title — the one line a student has
+to act on was the smallest text on the card, and kids skim instructions. Hence the split into a
+short `selfAttestWhere` ("Go and stand next to a tree") plus supporting detail.
+
+All student-facing ZooYard copy is **free of em dashes** (colons or full stops instead), matching
+the Evolve house style. Code comments are exempt.
+
 ### Citizen science moderation (`citizenScienceSubmissions` collection)
 ```js
 {
@@ -861,6 +973,29 @@ rather than letting a teacher assume.
 Rules: `allow read, write, delete: if true` — same open pattern as `challengeSubmissions` (staff portal is code-based, no Firebase Auth). Moderation split by UI, not database rules (matches the app's existing trust model):
 - **Staff** (`ZooYardAdminTab` in `AdminDashboardScreen.jsx`, now **Programmes → 🌳 ZooYard**) can approve or deny any submission. Approving awards **+30 pts to the school leaderboard** (`schools/{schoolId}.totalPoints`), same pattern as `challengeSubmissions` approval — not a retroactive rewrite of the student's own record.
 - **Teachers** (new section in `ClassDetailsScreen.jsx`, gated on `isZY = cls.sessionType === 'zooyard'`) can view their own class's submissions (query scoped to `classCode`) and **deny or delete** — no approve button rendered. This is a genuinely new capability; `challengeSubmissions` has no teacher-moderation precedent to compare against.
+
+### ZooYard — known gaps
+
+⚠️ **It has never been run.** As of 2026-09-26 Firestore holds **one** ZooYard class (`A3BKK5`,
+"TEST09", one student), zero completed habitats, zero finished sessions, and one pending Habitat
+Hero submission. Everything above is built and unverified in the field. The field study in
+particular needs a real class before it is trusted, especially whether students actually do the
+concealment test or just type a number.
+
+1. **The videos are still `videoUrl: null`** on all three animals, so every student hits "Video
+   coming soon" three times. They now have a clear job: each must **demonstrate its field study
+   method**, not just deliver facts. That is the single highest-value missing asset.
+   ⚠️ Do not confuse this with `ZOOYARD_HABITAT_THEME[x].videoBg` — those three files in
+   `public/videos/` exist and are the ambient habitat backgrounds, a different thing. They are
+   also heavy (savannah 3.5MB, bushland 2.8MB) for a school network with a class on it at once.
+2. **No curriculum outcomes anywhere.** ZooYard is the only mode with nothing to show a teacher:
+   no info sheet, nothing on Curriculum Alignment. With the field study in it can now defensibly
+   claim Working Scientifically data outcomes, and arguably maths, which would also address its
+   being Science-only and thinner than the other modes.
+3. **Stage 1 is offered in the class picker but has no content.** `writingPromptByStage` only has
+   2–5, so a Stage 1 class silently falls back to the Stage 4 wording, which is far too hard.
+4. Three animals and **one MCQ each** is still thin next to Evolve's five chapters or Wildest
+   Dreams' eight stops.
 
 ### Class details / GPS panel
 `ClassDetailsScreen.jsx` gates the GPS toggle panel and the old daytime "Class Insights" (badge-array-based analytics) with `!isZY` — both are meaningless for ZooYard (no GPS check ever happens; badges live under `zooyard`, not the shared `badges` array). Stat cards get a ZooYard-specific branch: Students / Avg Points / Habitat Badges / Completed, reading `student.zooyard?.totalPoints`/`sessionCompleted`/`{animalId}.completed`. Note **Avg Points only reflects fully-submitted sessions** — `zooyard.totalPoints` is written once, at citizen science submission, not incrementally per animal, so an in-progress student shows 0 there even after earning badges.
