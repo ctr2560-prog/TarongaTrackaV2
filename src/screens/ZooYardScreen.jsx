@@ -9,6 +9,8 @@ import { db, storage } from '../firebase';
 import { normaliseCode, safeStudentId, getMinWords, getStageScaffoldTip } from '../utils/helpers';
 import PhotoCapture from '../components/PhotoCapture';
 import StudentGuide from '../components/StudentGuide';
+import ZooYardZoo3D from '../components/ZooYardZoo3D';
+import { preloadZooModel } from '../utils/zooyardModel';
 import { buildObservationScore, isLowQualityResponse } from '../utils/scoring';
 
 // PhotoCapture hands back a canvas Blob, which has no `.name` — only a File from the fallback
@@ -94,6 +96,13 @@ const ZY_TEASER = {
 };
 
 function ZooYardIntro({ onStart }) {
+  // ⚠️ The whole point of this effect. A student spends ten or twenty seconds reading the four
+  // steps below; starting the 6MB zoo download now means it is usually cached by the time they
+  // reach the map. Without it, thirty students hit the download simultaneously at the exact
+  // moment the lesson starts. Fire and forget: the map joins this same request rather than
+  // starting a second one, and shows its loading screen only if this has not finished.
+  useEffect(() => { preloadZooModel(); }, []);
+
   return (
     <div style={{ position:'fixed', inset:0, background:'linear-gradient(165deg,#0B2415,#14472C,#1F6B42)', overflowY:'auto', fontFamily:'var(--t-font)' }}>
       <div style={{ maxWidth:560, margin:'0 auto', padding:'2rem 1.25rem 2.5rem', minHeight:'100%', display:'flex', flexDirection:'column', justifyContent:'center' }}>
@@ -241,6 +250,7 @@ export default function ZooYardScreen() {
   const [attestPreview, setAttestPreview] = useState(null);
   const [attestUploading, setAttestUploading] = useState(false);
   const [attestError, setAttestError] = useState('');
+  const [unlockAnimal, setUnlockAnimal] = useState(null);   // habitat being unlocked on the map
 
   const [csFile, setCsFile] = useState(null);
   const [csPreview, setCsPreview] = useState(null);
@@ -265,12 +275,15 @@ export default function ZooYardScreen() {
         const done = {}, photos = {};
         ZOOYARD_ANIMALS.forEach(a => {
           const d = zy[a.id];
-          if (!d?.completed) return;
+          if (!d) return;
+          // Outside the completed check on purpose: the photo is the unlock, so a student who
+          // attested but has not finished the habitat must still come back to an open padlock.
+          if (d.habitatPhotoUrl) photos[a.id] = d.habitatPhotoUrl;
+          if (!d.completed) return;
           done[a.id] = {
             points: d.points || 0, quizCorrect: !!d.quizCorrect,
             behaviour: d.behaviour ?? 0, detail: d.detail ?? 0, writing: d.writing ?? 0,
           };
-          if (d.habitatPhotoUrl) photos[a.id] = d.habitatPhotoUrl;
         });
         setZyCompleted(done);
         setHabitatPhotos(photos);
@@ -291,13 +304,27 @@ export default function ZooYardScreen() {
     return () => { cancelled = true; };
   }, [classCode, studentName, setZyScreen]);
 
+  // Entering a habitat always starts at the video now. Proving where you are happens on the
+  // map, in the unlock sheet, so by the time this runs the padlock is already open.
   function openAnimal(animal) {
     if (zyCompleted[animal.id]) return;
     setZyAnimal(animal);
-    setZyPhase('attest');
+    setZyPhase('video');
     setMcqAnswer(null); setMcqCorrect(null); setMcqRevealed(false);
     setObsText(''); setObsError(''); setFieldValue('');
     setHintsOpen(false);
+  }
+
+  // What tapping a marker does, which depends entirely on whether it is locked.
+  function tapMarker(animal) {
+    if (zyCompleted[animal.id]) return;
+    if (habitatPhotos[animal.id]) { openAnimal(animal); return; }   // already proved it
+    setAttestPreview(null); setAttestError('');
+    setUnlockAnimal(animal);                                        // stay on the map
+  }
+
+  function closeUnlock() {
+    setUnlockAnimal(null);
     setAttestPreview(null); setAttestError('');
   }
 
@@ -359,10 +386,10 @@ export default function ZooYardScreen() {
         observation: obsText,
       };
       // Recorded as data, never as a score. Points come from the quiz and the written analysis
-      // only, so an honest low reading costs a student nothing. Stored with its method id and
-      // unit so the number is still interpretable if the method is ever reworded.
+      // only, so an honest low reading costs a student nothing. `methodId` is the stable key;
+      // `method` is the human title and will get reworded eventually.
       if (fsDef && Number.isFinite(measured)) {
-        badgeData.fieldStudy = { method: fsDef.title, value: measured, unit: fsDef.unit };
+        badgeData.fieldStudy = { methodId: fsDef.id, method: fsDef.title, value: measured, unit: fsDef.unit };
       }
       const photoUrl = habitatPhotos[zyAnimal.id];
       if (photoUrl) badgeData.habitatPhotoUrl = photoUrl;
@@ -378,8 +405,14 @@ export default function ZooYardScreen() {
           const runningTotal = ZOOYARD_ANIMALS.reduce((sum, a) => (
             sum + (a.id === zyAnimal.id ? points : (zyCompleted[a.id]?.points || 0))
           ), 0);
+          // ⚠️ Individual dotted fields, NOT a whole zooyard.{id} object. Assigning the object
+          // replaces the map, which would delete habitatPhotoUrl any time the local copy had
+          // been lost. That used to be cosmetic; now the photo IS the unlock, so wiping it
+          // would re-lock a habitat the student had already earned their way into.
           await updateDoc(doc(db, 'classes', code, 'students', sid), {
-            [`zooyard.${zyAnimal.id}`]: { completed: true, ...badgeData, updatedAt: serverTimestamp() },
+            ...Object.fromEntries(Object.entries({ completed: true, ...badgeData })
+              .map(([k, v]) => [`zooyard.${zyAnimal.id}.${k}`, v])),
+            [`zooyard.${zyAnimal.id}.updatedAt`]: serverTimestamp(),
             'zooyard.totalPoints': runningTotal,
           });
         } catch (e) { console.warn('ZooYard badge write failed:', e); }
@@ -396,7 +429,7 @@ export default function ZooYardScreen() {
   // Upload the moment the photo is taken, rather than waiting for "Yes, I'm ready". The student
   // watches it save and only then gets the button, so nobody discovers a failed upload at the
   // point they thought they were moving on.
-  async function onAttestPhoto(blob, dataUrl) {
+  async function onAttestPhoto(blob, dataUrl, animal) {
     setAttestPreview(dataUrl);
     setAttestError('');
     setAttestUploading(true);
@@ -404,10 +437,30 @@ export default function ZooYardScreen() {
       const code = normaliseCode(classCode);
       const sid  = safeStudentId(studentName);
       const ext  = photoExt(blob);
-      const path = `zooyardHabitats/${code}/${sid}-${zyAnimal.id}-${Date.now()}.${ext}`;
+      const path = `zooyardHabitats/${code}/${sid}-${animal.id}-${Date.now()}.${ext}`;
       const snap = await uploadBytes(storageRef(storage, path), blob, { contentType: blob.type || 'image/jpeg' });
       const url  = await getDownloadURL(snap.ref);
-      setHabitatPhotos(prev => ({ ...prev, [zyAnimal.id]: url }));
+      setHabitatPhotos(prev => ({ ...prev, [animal.id]: url }));
+
+      // ⚠️ This used to live only in React state, written to Firestore at badge time. Now the
+      // photo is what UNLOCKS the habitat on the map, so it has to persist the moment it is
+      // taken: a student who photographs their spot and then reloads must not find the padlock
+      // back on. Individual dotted fields, never a whole zooyard.{id} object, or this would
+      // wipe anything written alongside it.
+      try {
+        await updateDoc(doc(db, 'classes', code, 'students', sid), {
+          [`zooyard.${animal.id}.habitatPhotoUrl`]: url,
+          [`zooyard.${animal.id}.unlockedAt`]: new Date().toISOString(),
+        });
+      } catch {
+        // First write for this student: the nested map does not exist yet.
+        try {
+          await setDoc(doc(db, 'classes', code, 'students', sid),
+            { name: studentName, classCode: code,
+              zooyard: { [animal.id]: { habitatPhotoUrl: url, unlockedAt: new Date().toISOString() } } },
+            { merge: true });
+        } catch (e2) { console.warn('ZooYard unlock write failed:', e2); }
+      }
     } catch (err) {
       console.warn('ZooYard habitat photo upload failed:', err);
       setAttestError('That photo did not save. Check your connection and take it again.');
@@ -417,24 +470,16 @@ export default function ZooYardScreen() {
     }
   }
 
-  function retakeAttestPhoto() {
+  function retakeAttestPhoto(animal) {
     setAttestPreview(null);
     setAttestError('');
     setHabitatPhotos(prev => {
       const next = { ...prev };
-      delete next[zyAnimal.id];
+      delete next[animal.id];
       return next;
     });
   }
 
-  // The photo is now required: it is the only evidence a student went anywhere, since ZooYard
-  // runs without any GPS check. The upload already happened in onAttestPhoto, so this just moves
-  // on. PhotoCapture falls back to a file picker when the camera is unavailable, so a locked-down
-  // device still has a route through.
-  function continueFromAttest() {
-    if (attestUploading || !habitatPhotos[zyAnimal.id]) return;
-    setZyPhase('video');
-  }
 
   function onCsPhoto(blob, dataUrl) {
     setCsFile(blob);
@@ -581,90 +626,6 @@ export default function ZooYardScreen() {
   }
 
   // ── Per-animal phases ────────────────────────────────────────────────────
-  if (zyAnimal && zyPhase === 'attest') {
-    const attestTheme = ZOOYARD_HABITAT_THEME[zyAnimal.habitatArea] || ZOOYARD_HABITAT_THEME.bushland;
-    // The upload finished and we have a URL back — not merely that a photo was taken.
-    const photoSaved = !!habitatPhotos[zyAnimal.id] && !attestUploading;
-    return (
-      <div style={{ position:'fixed', inset:0, background:attestTheme.bgGradient, display:'flex', alignItems:'center', justifyContent:'center', padding:'1.5rem', overflow:'hidden' }}>
-        <HomeButton dark onHome={backToHabitats} />
-        <video
-          key={attestTheme.videoBg}
-          autoPlay loop muted playsInline
-          src={attestTheme.videoBg}
-          style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover' }}
-        />
-        <div style={{ position:'absolute', inset:0, background:'linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.3) 40%, rgba(0,0,0,0.6) 100%)' }} />
-        <div className="animate-scale-in" style={{ position:'relative', background:'white', borderRadius:20, padding:'1.6rem 1.5rem 1.75rem', maxWidth:470, width:'100%', textAlign:'center', maxHeight:'92vh', overflowY:'auto' }}>
-          {/* ⚠️ The instruction is the biggest thing on this card on purpose. It used to sit at
-              0.95rem UNDER a 1.5rem habitat title, so the one line a student actually has to act
-              on was the smallest text on screen. Kids skim past instructions; this one tells them
-              where to physically walk, and everything after it depends on them having gone there.
-              The habitat name is context, so it is now a small kicker above. Keep this hierarchy:
-              WHERE TO GO first and largest, detail second, confirmation question last. */}
-          <div style={{ fontSize:'1.9rem', lineHeight:1, marginBottom:'0.35rem' }} aria-hidden="true">📍</div>
-          <p style={{ fontSize:'0.7rem', fontWeight:800, letterSpacing:'0.14em', textTransform:'uppercase', color: zyAnimal.habitatColor, margin:'0 0 0.9rem' }}>
-            {zyAnimal.habitatLabel}
-          </p>
-
-          <div style={{ background: attestTheme.accentSoft, border:`2px solid ${attestTheme.accentBorder}`, borderRadius:16, padding:'1.1rem 1rem', marginBottom:'1rem' }}>
-            <p className="taronga-title" style={{ fontSize:'clamp(1.45rem,5.6vw,1.95rem)', lineHeight:1.15, color:'#0A2F1F', margin:0, textWrap:'balance' }}>
-              {zyAnimal.selfAttestWhere}
-            </p>
-            <p style={{ color:'#3A4A3F', fontSize:'clamp(0.95rem,2.6vw,1.05rem)', lineHeight:1.5, margin:'0.6rem 0 0', textWrap:'pretty' }}>
-              {zyAnimal.selfAttestPrompt}
-            </p>
-          </div>
-
-          <p style={{ fontWeight:800, color:'#0A2F1F', fontSize:'1.05rem', margin:'0 0 1rem' }}>{zyAnimal.selfAttestQuestion}</p>
-
-          {/* Photo turns the self-attest tick-box into evidence the teacher can mark the
-              written response against - the prompts ask students to describe this spot. */}
-          {attestPreview ? (
-            <div style={{ marginBottom:'0.85rem' }}>
-              <div style={{ position:'relative' }}>
-                <img src={attestPreview} alt="" style={{ width:'100%', maxHeight:170, objectFit:'cover', borderRadius:12, display:'block' }} />
-                {attestUploading && (
-                  <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.45)', borderRadius:12, display:'flex', alignItems:'center', justifyContent:'center', color:'white', fontSize:'0.85rem', fontWeight:700 }}>
-                    Saving photo…
-                  </div>
-                )}
-              </div>
-              {photoSaved && (
-                <div style={{ fontSize:'0.78rem', fontWeight:700, color:'#166534', marginTop:'0.4rem' }}>✓ Photo saved</div>
-              )}
-              <button onClick={retakeAttestPhoto} disabled={attestUploading}
-                style={{ background:'none', border:'none', color:'#6B6B62', fontSize:'0.78rem', cursor: attestUploading ? 'default' : 'pointer', marginTop:'0.3rem', fontFamily:'inherit', textDecoration:'underline' }}>
-                Retake photo
-              </button>
-            </div>
-          ) : (
-            <PhotoCapture onCapture={onAttestPhoto} accentColor={zyAnimal.habitatColor}
-              label="Take a photo of your spot" hint="You will write about it in a moment" />
-          )}
-          {attestError && <p style={{ color:'#DC2626', fontSize:'0.8rem', margin:'0 0 0.7rem' }}>{attestError}</p>}
-
-          {/* Only appears once the photo is safely uploaded — the student sees the tick, then
-              the button. Before that, a line saying what is still needed. */}
-          {photoSaved ? (
-            <button onClick={continueFromAttest}
-              style={{ width:'100%', padding:'0.85rem', borderRadius:999, border:'none', background: zyAnimal.habitatColor, color:'white', fontSize:'0.95rem', fontWeight:800, cursor:'pointer', marginBottom:'0.6rem', textTransform:'uppercase', letterSpacing:'0.05em' }}>
-              Yes, I&apos;m ready
-            </button>
-          ) : (
-            <p style={{ fontSize:'0.8rem', color:'#6B6B62', margin:'0 0 0.8rem', lineHeight:1.5 }}>
-              {attestUploading ? 'Saving your photo…' : 'Take a photo of your spot to continue.'}
-            </p>
-          )}
-          <button onClick={backToHabitats} disabled={attestUploading} style={{ background:'none', border:'none', color:'#6B6B62', fontSize:'0.85rem', cursor: attestUploading ? 'not-allowed' : 'pointer' }}>
-            ← Not yet, go back
-          </button>
-        </div>
-        <StudentGuide screen="zooyard-attest" />
-      </div>
-    );
-  }
-
   if (zyAnimal && zyPhase === 'video') {
     return (
       <div style={{ position:'fixed', inset:0, background:'#071E14', display:'flex', flexDirection:'column' }}>
@@ -1082,62 +1043,149 @@ export default function ZooYardScreen() {
     );
   }
 
+  // Locals for the unlock sheet. Plain consts rather than an inline IIFE in the JSX: an arrow
+  // invoked during render drags its whole call graph into render analysis, which had the linter
+  // flagging Date.now() inside the photo upload as an impure render call.
+  const ua = unlockAnimal;
+  const unlockTheme = ua ? (ZOOYARD_HABITAT_THEME[ua.habitatArea] || {}) : {};
+  const unlockSaved = !!ua && !!habitatPhotos[ua.id] && !attestUploading;
+
   // ── Habitat picker (default) ─────────────────────────────────────────────
+  // The zoo IS the screen. The header floats over it on a scrim rather than sitting in a band
+  // above it, because a 540px viewport strip with a green gradient filling the rest looked like
+  // the 3D had been dropped into a page it did not belong to.
   return (
-    <div style={{ position:'fixed', inset:0, background:'linear-gradient(135deg, var(--jungle-deep) 0%, var(--jungle-mid) 50%, var(--jungle-light) 100%)', overflowY:'auto' }}>
-      <div className="student-header">
-        <div className="student-banner-mobile student-header-inner">
-          <div className="logo-title-block" style={{ display:'flex', alignItems:'center', gap:'1rem' }}>
-            <img src="/images/logo.png" alt="Taronga Tracka" style={{ height:'90px', width:'auto' }} onError={e => e.target.style.display='none'} />
-            <div>
-              <h1 className="taronga-title" style={{ fontSize:'clamp(1.6rem, 3.5vw, 2.2rem)', color:'white', marginBottom:'0.2rem', letterSpacing:'0.04em', textShadow:'0 2px 8px rgba(0,0,0,0.4)' }}>ZooYard</h1>
-              <p className="serif-accent" style={{ color:'var(--safari-gold)', fontSize:'1rem' }}>Build your habitat, right here at school</p>
-            </div>
+    <div style={{ position:'fixed', inset:0, overflow:'hidden', background:'#0B2415' }}>
+
+      <div style={{ position:'absolute', inset:0 }}>
+        <ZooYardZoo3D
+          animals={ZOOYARD_ANIMALS}
+          completed={zyCompleted}
+          unlocked={habitatPhotos}
+          themes={ZOOYARD_HABITAT_THEME}
+          onSelect={tapMarker}
+        />
+      </div>
+
+      {/* Scrim only, no solid bar: enough contrast for white text without walling off the sky.
+          pointerEvents none so a drag that starts up here still swings the zoo. */}
+      <div style={{ position:'absolute', top:0, left:0, right:0, zIndex:2, pointerEvents:'none',
+                    background:'linear-gradient(180deg, rgba(4,16,10,0.72) 0%, rgba(4,16,10,0.42) 55%, rgba(4,16,10,0) 100%)',
+                    padding:'0.9rem 1.1rem 2.2rem' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:'0.9rem', maxWidth:1100, margin:'0 auto' }}>
+          <img src="/images/logo.png" alt="" style={{ height:'clamp(38px,7vw,52px)', width:'auto', flexShrink:0, filter:'drop-shadow(0 2px 6px rgba(0,0,0,0.5))' }}
+               onError={e => e.target.style.display='none'} />
+          <div style={{ minWidth:0, flex:1 }}>
+            <h1 className="taronga-title" style={{ fontSize:'clamp(1.25rem,4.4vw,1.85rem)', color:'white', margin:0, letterSpacing:'0.04em', lineHeight:1.1, textShadow:'0 2px 10px rgba(0,0,0,0.6)' }}>ZooYard</h1>
+            <p style={{ color:'var(--safari-gold,#E8B33C)', fontSize:'clamp(0.7rem,2.4vw,0.86rem)', margin:'0.1rem 0 0', fontWeight:600, textShadow:'0 1px 6px rgba(0,0,0,0.6)' }}>
+              Build your habitat, right here at school
+            </p>
           </div>
+
+          {/* Re-enabled individually, since the scrim itself must stay transparent to drags. */}
           {studentName && (
-            <div className="student-name-pill" style={{ background:'rgba(255,255,255,0.12)', border:'1px solid rgba(255,255,255,0.22)', borderRadius:'var(--t-r-pill)', padding:'0.4rem 0.9rem', backdropFilter:'blur(10px)', WebkitBackdropFilter:'blur(10px)' }}>
-              <span style={{ color:'white', fontSize:'0.82rem', fontWeight:600 }}>👤 {studentName}</span>
+            <div style={{ pointerEvents:'auto', background:'rgba(255,255,255,0.14)', border:'1px solid rgba(255,255,255,0.25)', borderRadius:999, padding:'0.35rem 0.8rem', backdropFilter:'blur(10px)', WebkitBackdropFilter:'blur(10px)', whiteSpace:'nowrap', flexShrink:0 }}>
+              <span style={{ color:'white', fontSize:'0.78rem', fontWeight:600 }}>👤 {studentName}</span>
             </div>
           )}
-          <button className="student-points-chip" onClick={() => setZyScreen('collection')}>
-            <div className="pts-value">{totalPoints}</div>
-            <div className="pts-label">{Object.keys(zyCompleted).length}/{ZOOYARD_ANIMALS.length} Habitats</div>
+          <button onClick={() => setZyScreen('collection')}
+            style={{ pointerEvents:'auto', flexShrink:0, background:'rgba(255,255,255,0.14)', border:'1px solid rgba(255,255,255,0.25)', borderRadius:14, padding:'0.35rem 0.75rem', cursor:'pointer', backdropFilter:'blur(10px)', WebkitBackdropFilter:'blur(10px)', textAlign:'center', fontFamily:'inherit' }}>
+            <div style={{ color:'white', fontWeight:800, fontSize:'1rem', lineHeight:1 }}>{totalPoints}</div>
+            <div style={{ color:'rgba(255,255,255,0.75)', fontSize:'0.58rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.05em', marginTop:'0.15rem' }}>
+              {Object.keys(zyCompleted).length}/{ZOOYARD_ANIMALS.length} Habitats
+            </div>
           </button>
         </div>
       </div>
 
+      {/* Floats at the foot of the zoo rather than pushing it up the page. */}
       {allDone && (
-        <div style={{ margin:'1.25rem 1.2rem 0', background:'rgba(255,255,255,0.95)', borderRadius:16, padding:'1.25rem 1.5rem', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'1rem', flexWrap:'wrap', boxShadow:'0 8px 28px rgba(7,30,20,0.2)' }}>
-          <div>
-            <p style={{ margin:0, fontWeight:800, color:'#0A2F1F', fontSize:'1rem' }}>🌱 Habitat Hero unlocked!</p>
-            <p style={{ margin:'0.2rem 0 0', color:'#6B6B62', fontSize:'0.85rem' }}>All three habitats complete — time for your citizen science task.</p>
+        <div style={{ position:'absolute', left:'50%', bottom:'1.1rem', transform:'translateX(-50%)', zIndex:2,
+                      width:'min(560px, calc(100vw - 2rem))', background:'rgba(255,255,255,0.96)', borderRadius:16,
+                      padding:'0.9rem 1.1rem', display:'flex', alignItems:'center', justifyContent:'space-between',
+                      gap:'0.9rem', flexWrap:'wrap', boxShadow:'0 14px 40px rgba(0,0,0,0.45)', backdropFilter:'blur(8px)' }}>
+          <div style={{ minWidth:0 }}>
+            <p style={{ margin:0, fontWeight:800, color:'#0A2F1F', fontSize:'0.98rem' }}>🌱 Habitat Hero unlocked!</p>
+            <p style={{ margin:'0.15rem 0 0', color:'#6B6B62', fontSize:'0.82rem' }}>All three habitats complete. Time for your citizen science task.</p>
           </div>
           <button onClick={() => setZyScreen('citizenScience')}
-            style={{ padding:'0.7rem 1.4rem', borderRadius:999, border:'none', background:'linear-gradient(135deg,#2E7D55,#1A5238)', color:'white', fontSize:'0.88rem', fontWeight:800, cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.05em', whiteSpace:'nowrap' }}>
+            style={{ padding:'0.65rem 1.3rem', borderRadius:999, border:'none', background:'linear-gradient(135deg,#2E7D55,#1A5238)', color:'white', fontSize:'0.85rem', fontWeight:800, cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.05em', whiteSpace:'nowrap' }}>
             Start Habitat Hero
           </button>
         </div>
       )}
 
-      <div className="discovery-grid">
-        {ZOOYARD_ANIMALS.map(animal => {
-          const done = !!zyCompleted[animal.id];
-          return (
-            <div key={animal.id} className={`discovery-card${done ? ' dc-found' : ''}`} onClick={() => openAnimal(animal)}>
-              <div className="discovery-card-img" style={{ backgroundImage:`url(${animal.image})` }} />
-              <div className="discovery-card-overlay" />
-              <div className="discovery-card-body">
-                <div className="dc-pill" style={{ background: done ? 'rgba(46,125,85,0.85)' : 'rgba(255,255,255,0.18)', marginBottom:'0.5rem' }}>{animal.habitatLabel}</div>
-                <div className="dc-name">{animal.name}</div>
-                <div className="dc-scientific">{animal.scientificName}</div>
-                <p style={{ margin:0, color:'rgba(255,255,255,0.85)', fontSize:'0.85rem', fontWeight:700 }}>
-                  {done ? `✓ Complete · +${zyCompleted[animal.id].points} pts` : 'Tap to begin'}
+      {/* ── Unlock sheet ────────────────────────────────────────────────────────────────
+          Proving where you are happens HERE, over the map, not on a screen of its own. The zoo
+          stays visible behind it, so the padlock the student just tapped is still in view and
+          the act reads as opening that specific enclosure rather than navigating away.
+          Getting through to the video and everything after it requires this. */}
+      {unlockAnimal && (
+          <div style={{ position:'absolute', inset:0, zIndex:5, display:'flex', alignItems:'flex-end', justifyContent:'center' }}>
+            <button onClick={closeUnlock} aria-label="Close"
+              style={{ position:'absolute', inset:0, border:'none', background:'rgba(4,14,9,0.62)', backdropFilter:'blur(3px)', cursor:'pointer' }} />
+
+            <div className="animate-scale-in" style={{ position:'relative', width:'min(460px, 100%)', maxHeight:'88%', overflowY:'auto',
+                          background:'white', borderRadius:'22px 22px 0 0', padding:'1.1rem 1.25rem 1.5rem',
+                          boxShadow:'0 -14px 44px rgba(0,0,0,0.5)', textAlign:'center' }}>
+              <div style={{ width:44, height:4, borderRadius:999, background:'#D8D4C8', margin:'0 auto 0.9rem' }} aria-hidden="true" />
+
+              <p style={{ fontSize:'0.66rem', fontWeight:800, letterSpacing:'0.14em', textTransform:'uppercase', color:ua.habitatColor, margin:'0 0 0.6rem' }}>
+                {unlockTheme.icon} {ua.habitatLabel}
+              </p>
+
+              {/* Biggest thing in the sheet: the one line they have to act on. */}
+              <div style={{ background:unlockTheme.accentSoft, border:`2px solid ${unlockTheme.accentBorder}`, borderRadius:16, padding:'1rem', marginBottom:'0.9rem' }}>
+                <p className="taronga-title" style={{ fontSize:'clamp(1.35rem,5.4vw,1.75rem)', lineHeight:1.15, color:'#0A2F1F', margin:0, textWrap:'balance' }}>
+                  {ua.selfAttestWhere}
+                </p>
+                <p style={{ color:'#3A4A3F', fontSize:'clamp(0.92rem,2.6vw,1rem)', lineHeight:1.5, margin:'0.55rem 0 0' }}>
+                  {ua.selfAttestPrompt}
                 </p>
               </div>
+
+              {attestPreview ? (
+                <div style={{ marginBottom:'0.8rem' }}>
+                  <div style={{ position:'relative' }}>
+                    <img src={attestPreview} alt="" style={{ width:'100%', maxHeight:170, objectFit:'cover', borderRadius:12, display:'block' }} />
+                    {attestUploading && (
+                      <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.45)', borderRadius:12, display:'flex', alignItems:'center', justifyContent:'center', color:'white', fontWeight:700 }}>
+                        Saving photo…
+                      </div>
+                    )}
+                  </div>
+                  {unlockSaved && <div style={{ fontSize:'0.8rem', fontWeight:800, color:'#166534', marginTop:'0.45rem' }}>🔓 Unlocked</div>}
+                  <button onClick={() => retakeAttestPhoto(ua)} disabled={attestUploading}
+                    style={{ background:'none', border:'none', color:'#6B6B62', fontSize:'0.8rem', cursor: attestUploading ? 'default' : 'pointer', marginTop:'0.25rem', fontFamily:'inherit', textDecoration:'underline' }}>
+                    Retake photo
+                  </button>
+                </div>
+              ) : (
+                <PhotoCapture onCapture={(b, d) => onAttestPhoto(b, d, ua)} accentColor={ua.habitatColor}
+                  label="Take a photo of your spot" hint="This unlocks the habitat" />
+              )}
+
+              {attestError && <p style={{ color:'#DC2626', fontSize:'0.82rem', margin:'0 0 0.7rem' }}>{attestError}</p>}
+
+              {unlockSaved ? (
+                <button onClick={() => { const a = ua; setUnlockAnimal(null); openAnimal(a); }}
+                  style={{ width:'100%', padding:'0.95rem', borderRadius:999, border:'none', background:ua.habitatColor, color:'white', fontSize:'1rem', fontWeight:800, cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.05em' }}>
+                  Enter the habitat →
+                </button>
+              ) : (
+                <p style={{ fontSize:'0.84rem', color:'#6B6B62', margin:'0 0 0.6rem', lineHeight:1.5 }}>
+                  {attestUploading ? 'Saving your photo…' : 'Take a photo of your spot to unlock it.'}
+                </p>
+              )}
+
+              <button onClick={closeUnlock} disabled={attestUploading}
+                style={{ background:'none', border:'none', color:'#6B6B62', fontSize:'0.85rem', cursor:'pointer', marginTop:'0.6rem', fontFamily:'inherit' }}>
+                ← Not yet, back to the map
+              </button>
             </div>
-          );
-        })}
-      </div>
+          </div>
+      )}
+
       <StudentGuide screen="zooyard" />
     </div>
   );

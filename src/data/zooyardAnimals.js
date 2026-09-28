@@ -24,14 +24,15 @@ export const ZOOYARD_ANIMALS = [
       fact: 'Land clearing for housing, farming and roads is the single biggest driver of koala decline. Without enough trees, koalas lose their food, shelter and safe pathways between habitats.',
     },
     fieldStudy: {
+      id: 'koala-canopy',
       title: 'Canopy Connection',
       icon: '🌳',
       steps: [
         'Stand at your tree and look around for the nearest other tree.',
-        'Walk straight to it, counting big steps as you go.',
+        'Walk straight to it, counting your normal steps as you go.',
         'Write down how many steps it took.',
       ],
-      question: 'How many big steps to the nearest other tree?',
+      question: 'How many steps to the nearest other tree?',
       unit: 'steps',
       max: 200,
       benchmark: 'Koalas are built for climbing, not walking. On the ground they are exposed to dogs and cars, and it is where most koala deaths happen. A gap of more than about 20 steps is a crossing many koalas will not risk.',
@@ -62,6 +63,7 @@ export const ZOOYARD_ANIMALS = [
       fact: 'Sumatra\'s rainforest is being cleared at a rapid rate for palm oil and paper plantations, fragmenting the last wild spaces tigers need to hunt and roam.',
     },
     fieldStudy: {
+      id: 'tiger-concealment',
       title: 'The Concealment Test',
       icon: '👁️',
       steps: [
@@ -100,6 +102,7 @@ export const ZOOYARD_ANIMALS = [
       fact: 'Giraffe numbers have dropped sharply in recent decades as open savannah is fragmented by farms, fences and settlements, cutting off the long routes giraffes travel to find food and water.',
     },
     fieldStudy: {
+      id: 'giraffe-sightline',
       title: 'Sightline Survey',
       icon: '🔭',
       steps: [

@@ -972,6 +972,7 @@ function zooyardHabitats(stage) {
     greeting: `Hi! I'm Dr. Cam. You're going to explore three habitats right here at your school. Need a hand?`,
     options: [
       { label: 'What do I do?',        key: 'what'   },
+      { label: 'Why are they locked?', key: 'locked' },
       { label: 'Which one first?',     key: 'order'  },
       { label: 'Do I go outside?',     key: 'out'    },
       { label: 'What is a habitat?',   key: 'habitat'},
@@ -979,10 +980,11 @@ function zooyardHabitats(stage) {
     ],
     responses: {
       what:    byStage({
-        2: `Pick an animal. I'll tell you a spot to go and stand in. Take a photo, answer a question, then write what you see. That's it!`,
-        4: `Pick an animal and I'll send you to a matching spot in your schoolyard. Photograph it, answer a question about the animal, then write up what you observed. Three habitats to complete.`,
+        2: `Every habitat starts locked. Tap one, go and stand in the spot I give you, and take a photo. That unlocks it. Then you watch, answer a question and write.`,
+        4: `Each habitat is locked until you prove you have been there. Tap one, go to the matching spot in your schoolyard and photograph it; that unlocks the rest. Then a video, a question, and your written analysis.`,
       }, stage),
-      order:   `Any order you like. None of them are locked, so start with whichever one you like the look of.`,
+      locked:  `They all start locked, and a photo of the real spot is the key. You cannot unlock one from inside the classroom, which is the whole idea.`,
+      order:   `Any order you like. The padlocks are not a sequence, so start with whichever one you fancy.`,
       out:     `Yes! Every habitat asks you to go and stand somewhere real in your schoolyard. You can't do this one from your desk.`,
       habitat: byStage({
         2: `A habitat is an animal's home. It gives them food, water and somewhere safe to rest.`,
@@ -1003,7 +1005,7 @@ function zooyardAttest(stage) {
     ],
     responses: {
       find:    `Have a good look around your whole schoolyard, not just near the door. If there's really nothing, ask your teacher for the closest thing you can find.`,
-      photo:   `Two reasons. It proves you actually went outside, and you'll need to look at it again in a minute when you write about the spot.`,
+      photo:   `It is the key to the padlock. It proves you actually went outside, and you will look at it again when you write about the spot.`,
       perfect: byStage({
         2: `Nope! It just has to be a real spot that you're standing in. Any tree, any shady place, any grassy area.`,
         4: `No. It doesn't have to be impressive, it just has to be real and it has to be one you're actually standing in. The point is observing a real place.`,
