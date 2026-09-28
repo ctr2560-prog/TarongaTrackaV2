@@ -18,7 +18,7 @@ region: `australia-southeast1`. ⚠️ See **Build & Deploy** — these two drif
 
 ---
 
-## Where we left off (2026-09-26)
+## Where we left off (2026-09-28)
 
 ### ⚠️ Do these first
 1. **`firebase deploy --only storage` has NOT been run.** The `wildestDreams/` rule is committed
@@ -77,6 +77,17 @@ chapters when 4 groups in 30 reached that point.
 disturbing to nocturnal animals, which is why it is standard in nocturnal houses. Red on the
 animal gave good koala footage; red on the student made the piece to camera work. It is not yet
 in the app's filming guidance or the teacher info sheet — it should be.
+
+### Recently shipped (2026-09-27 → 09-28) — ZooYard, the 3D zoo
+- **The habitat picker is a 3D model of Taronga**, full screen, with a marker welded to each
+  habitat. See "The 3D zoo map" in the ZooYard reference — the compression recipe there is not
+  optional and is the most expensive thing in this document to rediscover.
+- **Habitats are locked** until a student photographs the real spot, and that unlock happens in
+  a sheet **over the map** rather than on a screen of its own.
+- **`@google/model-viewer` added** — the first new runtime dependency in a long while. ZooYard
+  only, dynamically imported.
+- **`blue-mountains-bushwalk.jpg` was 7.4MB** (a 3543x2362 original) and is now 419KB. It was
+  being served to every student on that mission.
 
 ### Recently shipped (2026-09-25 → 09-26) — ZooYard pass
 - **Field study per habitat** — the change that moves ZooYard from nature appreciation to
@@ -228,10 +239,11 @@ chapter's, or a free-flowing student would see a dashed leg beside a chapter the
 
 | Layer | Choice |
 |---|---|
-| Framework | React 18 + Vite |
+| Framework | React 19 + Vite |
 | State | React Context (no Redux/Zustand) |
 | Backend | Firebase — Firestore, Auth (email + password), Storage, Functions v2 |
 | Email | Resend API (via Cloud Functions) |
+| 3D | `@google/model-viewer` — ZooYard only, dynamically imported. See the ZooYard reference. |
 | Hosting | Firebase Hosting (`dist/` folder) |
 | Runtime (Functions) | Node.js 22 |
 
@@ -282,6 +294,9 @@ taronga-tracka-vite/
 │   └── generate-pptx.py      # Builds 32 downloadable PPTX lesson decks — legacy, not wired into the app anymore (see Pre/Post-Visit Lessons section)
 ├── public/                   # Static assets served as-is
 │   ├── images/               # logo.png, taronga-zoo-white.png, animal photos, map, sound-*.mp3
+│   ├── models/               # taronga-zoo.glb — the 3D zoo (6MB). See the ZooYard reference.
+│   ├── draco/                # Self-hosted Draco decoder. Do not delete: model-viewer would
+│   │                         # otherwise fetch it from a Google CDN, which schools block.
 │   ├── voice/                # 22 Wildest Dreams recorded voice clips (see Audio & speech)
 │   ├── zoosnooz-notification.html   # printable parent letter + opt-out slip
 │   ├── evolve-notification.html     # ditto, for Evolve
@@ -849,17 +864,25 @@ Other decisions worth keeping:
 ### `ZooYardScreen.jsx` — self-contained sub-router
 Mirrors `ZooSnoozScreen.jsx`'s pattern exactly: own local component state (no `StudentContext` badges/foundAnimals), cascading `if (phase === ...) return <JSX/>` blocks rather than a switch. Top-level phase (`zyScreen`/`setZyScreen`: `'habitats' | 'citizenScience' | 'done'`) lives in `AppContext.jsx` next to `zzScreen` so it survives the screen's own re-renders; per-animal phase (`attest → video → activity → written → badge`) is local `useState`.
 
-Flow: **first-run intro** (once) → habitat picker (3 cards, any order) → self-attest confirm +
-required photo → video/placeholder → single MCQ → **field study + written analysis** (scored via
-`buildObservationScore(text, animalId, classStage, 'science')`, points formula same as ZooSnooz:
+Flow: **first-run intro** (once) → **3D zoo map with a locked marker per habitat** → tap a
+padlock → **unlock sheet over the map** (go and stand there, photograph it) → video/placeholder →
+single MCQ → **field study + written analysis** (scored via `buildObservationScore(text,
+animalId, classStage, 'science')`, points formula same as ZooSnooz:
 `Math.round((behaviour+detail+writing)/15*100) + (quizCorrect?20:0)`) → badge reveal **with
-feedback** → back to picker. Once all 3 done, a "Habitat Hero unlocked!" banner appears; the citizen science task collects a photo (client `uploadBytes` to `citizenScienceEvidence/{classCode}/{studentId}-{timestamp}.{ext}`) + optional note, writes to `citizenScienceSubmissions` (see below) and marks `zooyard.sessionCompleted`/`totalPoints` on the student doc, then a `ZzDoneScreen`-style completion screen with `StudentFeedbackModal`.
+feedback** → back to the map.
+
+⚠️ There is **no `attest` phase any more**. `openAnimal()` always starts at `video`, because
+proving where you are now happens on the map before you can enter at all. See "Locks" below. Once all 3 done, a "Habitat Hero unlocked!" banner appears; the citizen science task collects a photo (client `uploadBytes` to `citizenScienceEvidence/{classCode}/{studentId}-{timestamp}.{ext}`) + optional note, writes to `citizenScienceSubmissions` (see below) and marks `zooyard.sessionCompleted`/`totalPoints` on the student doc, then a `ZzDoneScreen`-style completion screen with `StudentFeedbackModal`.
 
 ### Student doc shape
 `classes/{code}/students/{id}`, field `zooyard`:
 ```js
 zooyard: {
-  koala:  { completed: true, points, behaviour, detail, writing, quizCorrect, observation, updatedAt },
+  koala: {
+    habitatPhotoUrl, unlockedAt,          // written the moment the photo lands: this is the UNLOCK
+    completed: true, points, behaviour, detail, writing, quizCorrect, observation, updatedAt,
+    fieldStudy: { methodId, method, value, unit },   // recorded, never scored
+  },
   tiger:  { ... }, giraffe: { ... },
   sessionCompleted: true, totalPoints,
   citizenScience: { status: 'pending'|'approved'|'denied', photoUrl, note, submittedAt },
@@ -974,6 +997,113 @@ Rules: `allow read, write, delete: if true` — same open pattern as `challengeS
 - **Staff** (`ZooYardAdminTab` in `AdminDashboardScreen.jsx`, now **Programmes → 🌳 ZooYard**) can approve or deny any submission. Approving awards **+30 pts to the school leaderboard** (`schools/{schoolId}.totalPoints`), same pattern as `challengeSubmissions` approval — not a retroactive rewrite of the student's own record.
 - **Teachers** (new section in `ClassDetailsScreen.jsx`, gated on `isZY = cls.sessionType === 'zooyard'`) can view their own class's submissions (query scoped to `classCode`) and **deny or delete** — no approve button rendered. This is a genuinely new capability; `challengeSubmissions` has no teacher-moderation precedent to compare against.
 
+### The 3D zoo map (`components/ZooYardZoo3D.jsx`, 2026-09-28)
+
+The habitat picker is a **GLB model of Taronga Zoo**, full screen, with a marker welded to each
+habitat. Three earlier attempts are recorded so nobody repeats them: an abstract green island
+(looked like nothing), the printed map tilted in CSS (better, still flat), and full-size cards
+anchored in 3D (overlapped each other and hid behind hills when rotated).
+
+**Why `@google/model-viewer` and not three.js.** Hotspots. It anchors slotted DOM to a 3D point
+and tracks it as the camera moves, which is the entire feature, and it keeps every marker a real
+`<button>` with a real label — a canvas-only approach would leave keyboard and screen reader
+users with nothing. Camera orbit, clamping, lighting and tone mapping come free. It is
+**dynamically imported**, so its ~290KB only reaches ZooYard students.
+
+#### ⚠️ Regenerating the model — the recipe is not optional
+
+33MB as delivered, shipped at **6.0MB**. Textures FIRST, then geometry:
+
+```bash
+gltf-transform webp  <in> tmp.glb
+gltf-transform draco tmp.glb <out> --quantize-position 16 --quantize-normal 12 \
+                                   --quantize-color 12 --quantize-texcoord 10 \
+                                   --quantize-generic 16
+```
+
+- **Order matters.** Running `webp` *after* `draco` decompresses the geometry and blows it back
+  out to 35MB.
+- **The quantise flags are not optional.** Draco's defaults (position 14, normal 10) mean
+  0.044-unit steps across a 717-unit zoo — enough to visibly wobble fence posts and roof trim.
+  16-bit costs 189KB and is four times finer.
+- **Never run `gltf-transform optimize`.** Its `simplify` and `join` steps flattened 225 nodes to
+  4 and destroyed every named anchor, to save 228KB.
+- Meshopt was tried: 4.1MB against Draco's 1.1MB unlit. Draco wins by a distance.
+
+**Baked lighting costs ~5MB and that is NOT recoverable by compressing harder.** It rides on
+per-face atlas UVs which have no spatial coherence, so Draco's prediction fails on them; dropping
+UV precision from 12 to 8 bits saved only 240KB, and `weld` could not merge a single vertex. The
+escape hatch, if the size ever bites, is asking for the lighting baked to **vertex colours**
+instead of textures: same look, no UV atlas, and 198 fewer draw calls.
+
+⚠️ **`public/draco/` is self-hosted on purpose.** model-viewer otherwise fetches the decoder from
+a Google CDN at runtime, which is exactly the sort of request a school network blocks.
+
+#### Downloading it once per device, ever (`utils/zooyardModel.js`)
+
+HTTP caching cannot do this: GitHub Pages serves `max-age=600`, so a student returning after
+lunch would refetch 6MB. The model goes through the **Cache API**, which survives reloads and
+sessions regardless of host headers. Verified: warm read of the full 6.01MB in 1–2ms, zero bytes
+transferred.
+
+The loader is a **module-level singleton promise**, because the intro screen and the map are
+different components that must share ONE request. Verified in a harness that a second caller
+joins the first: **1 fetch, not 2**.
+
+**The intro screen starts the download** while the student reads Dr. Cam's four steps, turning
+dead time into a head start. The map's loading screen still appears if it has not finished, and
+is seeded from the shared progress so the bar does not flash back to 0.
+
+Progress comes from a **stream reader**, not model-viewer's `progress` event, which conflates
+download with decode.
+
+⚠️ **The object URL is deliberately never revoked.** It is shared between the intro and the map
+and survives a student moving between habitats, so revoking on any one unmount breaks the next.
+~6MB held for the session; the browser reclaims it on unload.
+
+#### Markers, and the locks
+
+`SPOTS` in the component holds a **3D coordinate per habitat**, read out of the GLB's scene graph
+and keyed by animal id (not array position, so reordering `ZOOYARD_ANIMALS` cannot move a marker
+to the wrong enclosure).
+
+⚠️ **The model contains no koala exhibit** — nothing koala-named exists in it. That position was
+derived from the printed map by interpolating between two things present in both (Corroboree
+Frogs and the Hive, which sit either side of it), then checked to land inside `terrain_bushland`
+so the marker stands on ground rather than floating.
+
+Three states: **locked** (slate disc + padlock, no animal photo), **unlocked** (animal photo,
+habitat colour), **complete** (gold ring + tick).
+
+#### Locks: proving where you are is the gate
+
+Tapping a padlock raises a **sheet over the map**, not a separate screen — the zoo stays visible
+behind it so the act reads as opening that enclosure rather than navigating away. The sheet
+carries the big "go and stand next to a tree" instruction and the camera. A photo unlocks it, and
+only then do the video and everything after become reachable.
+
+Two things had to change for this to work, both worth knowing:
+
+1. **The unlock had to persist.** The attest photo used to live in React state and only reach
+   Firestore at badge time, so a student who photographed their spot and reloaded found the
+   padlock back on. `onAttestPhoto` now writes `habitatPhotoUrl` and `unlockedAt` immediately,
+   and the resume path loads them for **all** habitats rather than only completed ones.
+2. ⚠️ **The badge write was assigning a whole `zooyard.{id}` object**, which replaces the map.
+   Harmless while the photo was decorative; now that the photo IS the unlock, it would re-lock a
+   habitat the student had earned. Converted to individual dotted fields — the same rule recorded
+   for Evolve and ZooSnooz.
+
+#### Layout
+
+The zoo **is** the screen: `position:fixed; inset:0`, with the header floating over a gradient
+scrim rather than sitting in a band above it. The scrim is `pointer-events:none` so a drag
+started up there still swings the zoo; the name pill and points chip re-enable events on
+themselves.
+
+⚠️ There is a **card-grid fallback** if the model or model-viewer fails to load. It is not a
+nicety: a 6MB GLB plus a WASM decoder is a lot to ask of a locked-down school device, and a
+student who cannot render it still has to be able to pick a habitat.
+
 ### ZooYard — known gaps
 
 ⚠️ **It has never been run.** As of 2026-09-26 Firestore holds **one** ZooYard class (`A3BKK5`,
@@ -988,6 +1118,8 @@ concealment test or just type a number.
    ⚠️ Do not confuse this with `ZOOYARD_HABITAT_THEME[x].videoBg` — those three files in
    `public/videos/` exist and are the ambient habitat backgrounds, a different thing. They are
    also heavy (savannah 3.5MB, bushland 2.8MB) for a school network with a class on it at once.
+   ⚠️ They are also now **only used on the write-up screen**, since the habitat picker is the 3D
+   model rather than a video-backed card list.
 2. **No curriculum outcomes anywhere.** ZooYard is the only mode with nothing to show a teacher:
    no info sheet, nothing on Curriculum Alignment. With the field study in it can now defensibly
    claim Working Scientifically data outcomes, and arguably maths, which would also address its
@@ -1827,6 +1959,18 @@ server round trip.** Copy this pattern for any new printable.
 ---
 
 ## Static Assets (`public/`)
+
+⚠️ **Photos are routinely shipped at full camera resolution and nobody notices.**
+`blue-mountains-bushwalk.jpg` was a 3543x2362 original at **7.4MB**, served to every student on
+that mission, until 2026-09-28. The house norm is roughly **1000–1500px and ~200–400KB**
+(`rhino.jpg` is 1500x1000 at 237KB). Resize with
+`sips -Z 1500 in.jpg --out tmp.jpg && sips -s format jpeg -s formatOptions 80 tmp.jpg --out out.jpg`,
+and **check the result by eye** rather than by filesize: the Blue Mountains photo is a Regent
+Honeyeater, and fine feather detail is exactly what falls apart under aggressive JPEG.
+
+Still oversized and worth the same treatment: `lemur.jpg` (975KB, 2880x1860) and
+`asian-water-buffalo.jpg` (737KB, 2880x1357).
+
 
 | File | Purpose |
 |---|---|
