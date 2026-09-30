@@ -2110,7 +2110,7 @@ function ZooYardAdminTab({ classes }) {
   };
 
   const deny = async (sub) => {
-    if (!window.confirm(`Deny this Habitat Hero submission from ${sub.studentName}?`)) return;
+    if (!window.confirm(`Deny this citizen science submission from ${sub.studentName}?`)) return;
     setActioning(sub.id);
     try {
       await updateDoc(doc(db, 'citizenScienceSubmissions', sub.id), { status: 'denied', reviewedAt: serverTimestamp(), reviewedBy: 'staff' });
@@ -2152,11 +2152,11 @@ function ZooYardAdminTab({ classes }) {
         )}
       </div>
 
-      {/* Habitat Hero submissions */}
+      {/* Citizen science submissions, one per habitat */}
       <div style={{ background:'white', borderRadius:'var(--t-r-lg)', border:'1px solid var(--t-stone)', padding:'1.25rem' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'1rem', gap:'1rem', flexWrap:'wrap' }}>
           <h3 style={{ fontSize:'0.9rem', fontWeight:700, color:'var(--t-deep)', margin:0, textTransform:'uppercase', letterSpacing:'0.06em' }}>
-            Habitat Hero Submissions
+            Citizen Science Submissions
             {pendingCount > 0 && <span style={{ marginLeft:'0.6rem', background:'#EF4444', color:'white', fontSize:'0.65rem', fontWeight:800, padding:'0.1rem 0.5rem', borderRadius:'var(--t-r-pill)' }}>{pendingCount} pending</span>}
           </h3>
           <div style={{ display:'flex', gap:'0.4rem' }}>
@@ -2183,6 +2183,11 @@ function ZooYardAdminTab({ classes }) {
                   <div style={{ minWidth:0 }}>
                     <div style={{ display:'flex', alignItems:'center', gap:'0.6rem', marginBottom:'0.3rem', flexWrap:'wrap' }}>
                       <span style={{ fontSize:'0.88rem', fontWeight:700, color:'var(--t-deep)' }}>{sub.studentName}</span>
+                      {/* Students now submit one per habitat, so which task this is matters.
+                          Older submissions predate the field and simply show nothing. */}
+                      {sub.habitatTitle && (
+                        <span style={{ fontSize:'0.65rem', fontWeight:700, padding:'0.15rem 0.5rem', borderRadius:'var(--t-r-pill)', background:'var(--t-foam)', color:'var(--t-mid)' }}>{sub.habitatTitle}</span>
+                      )}
                       <span style={{ fontSize:'0.65rem', fontWeight:700, padding:'0.15rem 0.5rem', borderRadius:'var(--t-r-pill)', ...statusStyle(sub.status) }}>{sub.status}</span>
                     </div>
                     <div style={{ fontSize:'0.76rem', color:'var(--t-slate)', marginBottom:'0.2rem' }}>{sub.schoolName} · Class {sub.classCode} · {fmtDate(sub.submittedAt)}</div>

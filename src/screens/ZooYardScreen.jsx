@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { useStudent } from '../context/StudentContext';
-import { ZOOYARD_ANIMALS, ZOOYARD_CITIZEN_SCIENCE_TASK, ZOOYARD_HABITAT_THEME } from '../data/zooyardAnimals';
+import { ZOOYARD_ANIMALS, ZOOYARD_HABITAT_THEME } from '../data/zooyardAnimals';
 import StudentFeedbackModal from '../components/StudentFeedbackModal';
 import { doc, getDoc, setDoc, updateDoc, addDoc, collection, serverTimestamp, increment } from 'firebase/firestore';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -50,9 +50,9 @@ function ZyDoneScreen({ classCode, studentName, totalPoints, onDone }) {
     <div style={{ position:'fixed', inset:0, background:'linear-gradient(160deg,#071E14,#0D3322,#1A5238)', display:'flex', alignItems:'center', justifyContent:'center', padding:'1.5rem' }}>
       <div className="animate-scale-in" style={{ textAlign:'center', maxWidth:'420px', width:'100%' }}>
         <div style={{ fontSize:'4rem', marginBottom:'1rem' }}>🌳</div>
-        <h2 className="taronga-title" style={{ fontSize:'2rem', color:'white', marginBottom:'0.5rem', letterSpacing:'0.06em' }}>Habitat Hero Submitted!</h2>
+        <h2 className="taronga-title" style={{ fontSize:'2rem', color:'white', marginBottom:'0.5rem', letterSpacing:'0.06em' }}>Your ZooYard is built.</h2>
         <p style={{ color:'#7EC89A', marginBottom:'0.5rem', fontSize:'0.95rem', fontWeight:700 }}>{totalPoints} points earned</p>
-        <p style={{ color:'rgba(255,255,255,0.65)', marginBottom:'2rem', fontSize:'0.9rem', lineHeight:1.6 }}>Your photo has been sent to the Taronga team for approval. Great work building your ZooYard.</p>
+        <p style={{ color:'rgba(255,255,255,0.65)', marginBottom:'2rem', fontSize:'0.9rem', lineHeight:1.6 }}>Three habitats measured, three things built. Your photos have gone to the Taronga team for approval.</p>
         <button onClick={onDone}
           style={{ width:'100%', padding:'0.9rem', background:'linear-gradient(135deg,#2E7D55,#1A5238)', border:'none', borderRadius:'var(--t-r-pill)', color:'white', fontSize:'1rem', fontWeight:800, cursor:'pointer', letterSpacing:'0.06em', textTransform:'uppercase', boxShadow:'0 6px 20px rgba(46,125,85,0.5)' }}>
           Back to Home
@@ -79,20 +79,21 @@ const reduceMotion = typeof window !== 'undefined'
 // Deliberately four steps and no more. Large type, one idea per line, no paragraph a Year 3
 // has to decode, and nothing so simplified that a Year 10 feels talked down to.
 const ZY_STEPS = [
-  { icon: '🚶', title: 'Go outside',    body: 'I will send you to a real spot in your schoolyard.' },
-  { icon: '📸', title: 'Take a photo',  body: 'Snap the spot you are standing in.' },
-  { icon: '🤔', title: 'Answer and write', body: 'One question about the animal, then write what you can see.' },
-  { icon: '🏅', title: 'Earn a badge',  body: 'One for each habitat. Three to collect.' },
+  { icon: '🚶', title: 'Go outside',    body: 'I will send you to a real spot in your schoolyard. Photograph it to unlock the habitat.' },
+  { icon: '👀', title: 'Watch, then measure', body: 'Two minutes of just looking, then you take one real measurement.' },
+  { icon: '🌱', title: 'Build something', body: 'Fix a bit of what your measurement just showed you.' },
+  { icon: '🏅', title: 'Write it up',   body: 'Explain the link, earn the badge. Three habitats to collect.' },
 ];
 
-// ⚠️ Worded to build anticipation, NOT to reframe the three habitats as a warm-up. Telling a
-// student the first three tasks exist to lead somewhere else is a quick way to make them do
-// those three badly. So this says what the last task IS and what it feels like (building, not
-// writing), and leaves the connection for them to make once they get there.
+// ⚠️ Worded to build anticipation, NOT to reframe the habitats as a warm-up for something
+// later. Every habitat now ends in building something, so there is no final task to tease:
+// this says what the building IS and what it feels like, and leaves the rest to land in the
+// moment. Do not turn it back into "finish all three and X unlocks" — that framing is a quick
+// way to get three habitats done badly.
 const ZY_TEASER = {
   icon: '🌱',
-  title: 'And one more thing',
-  body: 'Finish all three and a final task opens up. No writing in that one. You will be building something real for wildlife, right here at your school.',
+  title: 'This one is real',
+  body: 'You will not just be writing about wildlife. At every habitat you build something for it, right here at your school, and photograph what you made.',
 };
 
 function ZooYardIntro({ onStart }) {
@@ -230,7 +231,7 @@ export default function ZooYardScreen() {
   const { setCompletionCardDismissed } = useStudent();
 
   const [zyAnimal, setZyAnimal] = useState(null);       // currently open animal object
-  const [zyPhase,  setZyPhase]  = useState('attest');    // attest | video | activity | written | badge
+  const [zyPhase,  setZyPhase]  = useState('attest');    // video | activity | observe | action | written | badge
   const [zyCompleted, setZyCompleted] = useState({});    // { [animalId]: { points, quizCorrect } }
   const [badgeReveal, setBadgeReveal] = useState(null);  // { animal, points, quizCorrect, behaviour, detail, writing }
 
@@ -257,6 +258,21 @@ export default function ZooYardScreen() {
   const [csNote, setCsNote] = useState('');
   const [csUploading, setCsUploading] = useState(false);
   const [csError, setCsError] = useState('');
+  const [actionPhotoUrl, setActionPhotoUrl] = useState(null);  // uploaded evidence for THIS habitat
+
+  // The quiet observation window. Timestamp-based, never a tick counter: a school tablet that
+  // locks or a tab pushed to the background stops firing intervals, and a counter would sit
+  // frozen at whatever it reached, either finishing early or never finishing at all.
+  const [observeEndsAt, setObserveEndsAt] = useState(null);
+  const [observeNow, setObserveNow] = useState(0);
+  const observeDone = observeEndsAt !== null && observeNow >= observeEndsAt;
+  const observeLeft = observeEndsAt === null ? 0 : Math.max(0, Math.ceil((observeEndsAt - observeNow) / 1000));
+
+  useEffect(() => {
+    if (observeEndsAt === null) return;
+    const t = setInterval(() => setObserveNow(Date.now()), 250);
+    return () => clearInterval(t);
+  }, [observeEndsAt]);
 
   const allDone = ZOOYARD_ANIMALS.every(a => zyCompleted[a.id]);
   const totalPoints = Object.values(zyCompleted).reduce((s, c) => s + (c.points || 0), 0);
@@ -287,7 +303,7 @@ export default function ZooYardScreen() {
         });
         setZyCompleted(done);
         setHabitatPhotos(photos);
-        if (zy.sessionCompleted || zy.citizenScience) setZyScreen('done');
+        if (zy.sessionCompleted) setZyScreen('done');
         // Gated on BOTH: never shown twice, and never shown to someone already part way
         // through, so a mid-session reload does not drop them back on the welcome screen.
         else if (!Object.keys(done).length) {
@@ -313,6 +329,8 @@ export default function ZooYardScreen() {
     setMcqAnswer(null); setMcqCorrect(null); setMcqRevealed(false);
     setObsText(''); setObsError(''); setFieldValue('');
     setHintsOpen(false);
+    setObserveEndsAt(null); setObserveNow(0);
+    setCsFile(null); setCsPreview(null); setCsNote(''); setCsError(''); setActionPhotoUrl(null);
   }
 
   // What tapping a marker does, which depends entirely on whether it is locked.
@@ -393,6 +411,7 @@ export default function ZooYardScreen() {
       }
       const photoUrl = habitatPhotos[zyAnimal.id];
       if (photoUrl) badgeData.habitatPhotoUrl = photoUrl;
+      if (actionPhotoUrl) badgeData.actionPhotoUrl = actionPhotoUrl;
 
       if (studentName && classCode) {
         const code = normaliseCode(classCode);
@@ -416,6 +435,33 @@ export default function ZooYardScreen() {
             'zooyard.totalPoints': runningTotal,
           });
         } catch (e) { console.warn('ZooYard badge write failed:', e); }
+
+        // ── The shared dataset ──────────────────────────────────────────────────────────
+        // A flat, DE-IDENTIFIED copy of the measurement, so readings can be aggregated across
+        // classes and schools without digging through every class's students subcollection.
+        // ⚠️ NO student name, alias or studentId goes in here, and no photo. School, stage and
+        // the reading are everything an aggregate needs; anything more is a children's dataset
+        // sitting in a collection designed to be queried across schools.
+        // `visit: 1` is deliberate. Nothing re-measures a habitat today, but a return visit is
+        // the obvious next version and a schema without this field would need migrating.
+        if (fsDef && Number.isFinite(measured)) {
+          try {
+            const classSnap = await getDoc(doc(db, 'classes', code));
+            const schoolName = classSnap.exists() ? (classSnap.data().schoolName || '') : '';
+            await addDoc(collection(db, 'habitatObservations'), {
+              program: 'zooyard',
+              schoolId: schoolName.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'unknown',
+              schoolName,
+              stage: classStage ?? null,
+              habitatId: zyAnimal.id,
+              methodId: fsDef.id,
+              value: measured,
+              unit: fsDef.unit,
+              visit: 1,
+              recordedAt: serverTimestamp(),
+            });
+          } catch (e) { console.warn('habitatObservations write failed:', e); }
+        }
       }
 
       setZyCompleted(prev => ({ ...prev, [zyAnimal.id]: { points, quizCorrect: !!mcqCorrect, behaviour: scoreResult.behaviour, detail: scoreResult.detail, writing: scoreResult.writing } }));
@@ -487,8 +533,15 @@ export default function ZooYardScreen() {
     setCsError('');
   }
 
-  async function submitCitizenScience() {
-    if (!csFile || csUploading) return;
+  // One submission PER HABITAT, not one at the end of the session. The standalone Habitat Hero
+  // task was absorbed into every animal: the student measures a deficit, then builds something
+  // that addresses that specific deficit, then writes about the link. The moderation plumbing
+  // (citizenScienceSubmissions, the staff approve/deny tab, the teacher panel on class details)
+  // is unchanged and simply carries three times the traffic — `taskId` now identifies which
+  // habitat's task it was rather than always being 'habitat-hero'.
+  async function submitHabitatAction() {
+    if (!csFile || csUploading || !zyAnimal) return;
+    const task = zyAnimal.citizenScience;
     setCsUploading(true);
     setCsError('');
     try {
@@ -501,40 +554,55 @@ export default function ZooYardScreen() {
       const schoolName   = classData.schoolName || '';
 
       const ext  = photoExt(csFile);
-      const path = `citizenScienceEvidence/${code}/${sid}-${Date.now()}.${ext}`;
+      const path = `citizenScienceEvidence/${code}/${sid}-${zyAnimal.id}-${Date.now()}.${ext}`;
       const snap = await uploadBytes(storageRef(storage, path), csFile, { contentType: csFile.type || 'image/jpeg' });
       const photoUrl = await getDownloadURL(snap.ref);
 
       await addDoc(collection(db, 'citizenScienceSubmissions'), {
         classCode: code, studentId: sid, studentName, teacherEmail, schoolName,
-        program: 'zooyard', taskId: ZOOYARD_CITIZEN_SCIENCE_TASK.id,
+        program: 'zooyard', taskId: task.id, habitatId: zyAnimal.id, habitatTitle: task.title,
         photoUrl, note: csNote.trim(),
         status: 'pending',
         submittedAt: serverTimestamp(),
       });
 
-      await setDoc(doc(db, 'classes', code, 'students', sid), {
-        zooyard: {
-          citizenScience: { status: 'pending', photoUrl, note: csNote.trim(), submittedAt: serverTimestamp() },
-          sessionCompleted: true, totalPoints,
-        },
-      }, { merge: true });
+      try {
+        await updateDoc(doc(db, 'classes', code, 'students', sid), {
+          [`zooyard.${zyAnimal.id}.action`]: { taskId: task.id, status: 'pending', photoUrl, note: csNote.trim(), submittedAt: new Date().toISOString() },
+        });
+      } catch (e) { console.warn('ZooYard action write failed:', e); }
 
-      // Non-blocking school leaderboard bonus, mirrors completeActivity()'s +10 pattern
-      if (schoolName) {
-        try {
-          const schoolId = schoolName.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-          setDoc(doc(db, 'schools', schoolId), { name: schoolName, totalPoints: increment(10), lastUpdated: serverTimestamp() }, { merge: true }).catch(() => {});
-        } catch {}
-      }
-
-      setZyScreen('done');
+      setActionPhotoUrl(photoUrl);
+      setZyPhase('written');
     } catch (e) {
-      console.error('Citizen science submit failed:', e);
+      console.error('Habitat action submit failed:', e);
       setCsError('Something went wrong uploading your photo. Please try again.');
     } finally {
       setCsUploading(false);
     }
+  }
+
+  // Ends the session once all three habitats are done. The +10 school leaderboard bonus that
+  // used to ride on the single Habitat Hero submit moves here, so it stays once per student
+  // rather than becoming three times as generous.
+  async function finishSession() {
+    if (!studentName || !classCode) { setZyScreen('done'); return; }
+    const code = normaliseCode(classCode);
+    const sid  = safeStudentId(studentName);
+    try {
+      await updateDoc(doc(db, 'classes', code, 'students', sid), {
+        'zooyard.sessionCompleted': true,
+        'zooyard.totalPoints': totalPoints,
+        'zooyard.completedAt': serverTimestamp(),
+      });
+      const classSnap = await getDoc(doc(db, 'classes', code));
+      const schoolName = classSnap.exists() ? (classSnap.data().schoolName || '') : '';
+      if (schoolName) {
+        const schoolId = schoolName.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+        setDoc(doc(db, 'schools', schoolId), { name: schoolName, totalPoints: increment(10), lastUpdated: serverTimestamp() }, { merge: true }).catch(() => {});
+      }
+    } catch (e) { console.warn('ZooYard session completion write failed:', e); }
+    setZyScreen('done');
   }
 
   // Held until the resume read finishes so the picker never flashes "Tap to begin" for a
@@ -572,58 +640,6 @@ export default function ZooYardScreen() {
     );
   }
 
-  // ── Citizen science task ─────────────────────────────────────────────────
-  if (zyScreen === 'citizenScience') {
-    const task = ZOOYARD_CITIZEN_SCIENCE_TASK;
-    return (
-      <div style={{ position:'fixed', inset:0, background:'#F0EDE6', overflowY:'auto', fontFamily:'var(--t-font)' }}>
-        <HomeButton dark onHome={goHome} />
-        <div style={{ background:'linear-gradient(160deg,#071E14,#0D3322,#1A5238)', padding:'2rem 1.5rem 2.5rem', textAlign:'center' }}>
-          <div style={{ fontSize:'3rem', marginBottom:'0.5rem' }}>🌱</div>
-          <h1 className="taronga-title" style={{ color:'white', fontSize:'clamp(1.6rem,4vw,2.2rem)', margin:'0 0 0.5rem' }}>{task.title}</h1>
-          <p style={{ color:'rgba(255,255,255,0.7)', maxWidth:480, margin:'0 auto', fontSize:'0.92rem', lineHeight:1.6 }}>{task.intro}</p>
-        </div>
-
-        <div style={{ maxWidth:520, margin:'0 auto', padding:'1.5rem 1.2rem 3rem' }}>
-          <div style={{ background:'white', borderRadius:16, padding:'1.5rem', boxShadow:'0 4px 20px rgba(7,30,20,0.08)', marginBottom:'1.25rem' }}>
-            <p style={{ fontWeight:700, color:'#0A2F1F', marginBottom:'0.7rem' }}>{task.instructions}</p>
-            <ul style={{ margin:'0 0 1rem', paddingLeft:'1.2rem', color:'#3A4A3F', lineHeight:1.8, fontSize:'0.92rem' }}>
-              {task.options.map(o => <li key={o}>{o}</li>)}
-            </ul>
-            <p style={{ margin:0, color:'#6B6B62', fontSize:'0.88rem', fontWeight:600 }}>{task.callToAction}</p>
-          </div>
-
-          <div style={{ background:'white', borderRadius:16, padding:'1.5rem', boxShadow:'0 4px 20px rgba(7,30,20,0.08)' }}>
-            <label style={{ display:'block', fontWeight:700, color:'#0A2F1F', marginBottom:'0.6rem' }}>Photo evidence</label>
-            {csPreview ? (
-              <>
-                <img src={csPreview} alt="" style={{ width:'100%', maxHeight:280, objectFit:'cover', borderRadius:12, marginBottom:'0.4rem' }} />
-                <button onClick={() => { setCsFile(null); setCsPreview(''); }} disabled={csUploading}
-                  style={{ background:'none', border:'none', color:'#6B6B62', fontSize:'0.78rem', cursor:'pointer', marginBottom:'1rem', fontFamily:'inherit', textDecoration:'underline' }}>
-                  Retake photo
-                </button>
-              </>
-            ) : (
-              <PhotoCapture onCapture={onCsPhoto} accentColor="#2E7D55" label="Take a photo of what you built" />
-            )}
-
-            <label style={{ display:'block', fontWeight:700, color:'#0A2F1F', marginBottom:'0.4rem' }}>Tell us about it (optional)</label>
-            <textarea value={csNote} onChange={e => setCsNote(e.target.value)} rows={3}
-              placeholder="What did you build or improve, and why does it help wildlife?"
-              style={{ width:'100%', padding:'0.7rem', borderRadius:10, border:'1px solid #D8D4C8', fontSize:'0.9rem', fontFamily:'inherit', resize:'vertical', boxSizing:'border-box', marginBottom:'1rem' }} />
-
-            {csError && <p style={{ color:'#DC2626', fontSize:'0.85rem', marginBottom:'0.8rem' }}>{csError}</p>}
-
-            <button onClick={submitCitizenScience} disabled={!csFile || csUploading}
-              style={{ width:'100%', padding:'0.9rem', borderRadius:999, border:'none', background: !csFile || csUploading ? '#CCC' : 'linear-gradient(135deg,#2E7D55,#1A5238)', color:'white', fontSize:'0.95rem', fontWeight:800, cursor: !csFile || csUploading ? 'not-allowed' : 'pointer', textTransform:'uppercase', letterSpacing:'0.06em' }}>
-              {csUploading ? 'Submitting…' : 'Submit Habitat Hero'}
-            </button>
-          </div>
-        </div>
-        <StudentGuide screen="zooyard-citizen" />
-      </div>
-    );
-  }
 
   // ── Per-animal phases ────────────────────────────────────────────────────
   if (zyAnimal && zyPhase === 'video') {
@@ -708,13 +724,179 @@ export default function ZooYardScreen() {
 
         {mcqRevealed && (
           <div style={{ position:'relative', padding:'1rem 1.2rem 1.5rem', maxWidth:480, margin:'0 auto', width:'100%', boxSizing:'border-box' }}>
-            <button onClick={() => setZyPhase('written')}
+            <button onClick={() => setZyPhase('observe')}
               style={{ width:'100%', padding:'0.9rem', borderRadius:999, border:'none', background:`linear-gradient(135deg, ${theme.accent}, #0A2F1F)`, color:'white', fontSize:'0.95rem', fontWeight:800, cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.05em', boxShadow:`0 8px 22px ${theme.accent}55` }}>
-              Continue
+              Go outside and observe
             </button>
           </div>
         )}
         <StudentGuide screen="zooyard-activity" />
+      </div>
+    );
+  }
+
+  // ── Observe, then measure ────────────────────────────────────────────────
+  // The countdown is the whole point of this screen. Without a forced quiet window students
+  // read the method, type a plausible number and move on, which is exactly the "just type a
+  // number" risk the field study was always exposed to. There is deliberately NOTHING to type
+  // while the timer runs: a text box on screen means they write for two minutes instead of
+  // looking for two minutes.
+  if (zyAnimal && zyPhase === 'observe') {
+    const ob = zyAnimal.observation;
+    const fs = zyAnimal.fieldStudy;
+    const theme = ZOOYARD_HABITAT_THEME[zyAnimal.habitatArea] || ZOOYARD_HABITAT_THEME.bushland;
+    const rawNum = parseInt(fieldValue, 10);
+    const fieldNum = Number.isFinite(rawNum) && rawNum >= 0 && rawNum <= (fs?.max ?? 999) ? rawNum : null;
+    const started = observeEndsAt !== null;
+    const mm = String(Math.floor(observeLeft / 60)).padStart(1, '0');
+    const ss = String(observeLeft % 60).padStart(2, '0');
+
+    return (
+      <div style={{ position:'fixed', inset:0, background:theme.bgGradient, overflowY:'auto', fontFamily:'var(--t-font)' }}>
+        <HomeButton dark onHome={backToHabitats} />
+        <div style={{ padding:'0.9rem 1.2rem', color:'white', fontWeight:700 }}>{zyAnimal.name} · Observe</div>
+
+        <div style={{ maxWidth:520, margin:'0 auto', padding:'0.5rem 1.1rem 2.5rem', boxSizing:'border-box' }}>
+
+          {!observeDone && (
+            <div style={{ background:'rgba(255,255,255,0.96)', borderRadius:18, padding:'1.4rem 1.2rem', boxShadow:'0 14px 38px rgba(0,0,0,0.3)', textAlign:'center' }}>
+              <div style={{ fontSize:'2.2rem', marginBottom:'0.3rem' }} aria-hidden="true">{ob.icon || theme.icon}</div>
+              <h2 className="taronga-title" style={{ fontSize:'clamp(1.3rem,4.5vw,1.6rem)', color:'#0A2F1F', margin:'0 0 0.5rem' }}>{ob.title}</h2>
+              <p style={{ margin:'0 0 1.1rem', color:'#3A4A3F', fontSize:'0.95rem', lineHeight:1.6 }}>{ob.instruction}</p>
+
+              {!started ? (
+                <>
+                  <ul style={{ textAlign:'left', margin:'0 0 1.2rem', paddingLeft:'1.2rem', color:'#3A4A3F', fontSize:'0.92rem', lineHeight:1.75 }}>
+                    {ob.lookFor.map((l, i) => <li key={i}>{l}</li>)}
+                  </ul>
+                  <button onClick={() => { const now = Date.now(); setObserveNow(now); setObserveEndsAt(now + ob.seconds * 1000); }}
+                    style={{ width:'100%', padding:'0.95rem', borderRadius:999, border:'none', background:`linear-gradient(135deg, ${theme.accent}, #0A2F1F)`, color:'white', fontSize:'0.95rem', fontWeight:800, cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.05em' }}>
+                    Start the {Math.round(ob.seconds / 60)} minutes
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div aria-live="polite" style={{ fontSize:'3.4rem', fontWeight:800, color:theme.accent, fontVariantNumeric:'tabular-nums', lineHeight:1.1, margin:'0.5rem 0 0.3rem' }}>
+                    {mm}:{ss}
+                  </div>
+                  <p style={{ margin:'0 0 1.1rem', color:'#6B6B62', fontSize:'0.85rem' }}>Eyes up. Put the screen down.</p>
+                  {/* A class outdoors runs on a bell, and a stuck timer with thirty students
+                      waiting is worse than a short observation. Deliberately quiet, same as
+                      Evolve's "Skip the timer". */}
+                  <button onClick={() => { const now = Date.now(); setObserveNow(now); setObserveEndsAt(now - 1); }}
+                    style={{ background:'none', border:'none', color:'#6B6B62', fontSize:'0.78rem', textDecoration:'underline', cursor:'pointer', fontFamily:'inherit' }}>
+                    Skip the timer
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+
+          {observeDone && fs && (
+            <div style={{ background:'rgba(255,255,255,0.96)', borderRadius:18, padding:'1.3rem 1.2rem', boxShadow:'0 14px 38px rgba(0,0,0,0.3)' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', marginBottom:'0.6rem' }}>
+                <span style={{ fontSize:'1.2rem' }} aria-hidden="true">{fs.icon}</span>
+                <span style={{ fontSize:'0.68rem', fontWeight:800, letterSpacing:'0.13em', textTransform:'uppercase', color:theme.accent }}>Field study</span>
+              </div>
+              <p className="taronga-title" style={{ fontSize:'clamp(1.15rem,4vw,1.4rem)', color:'#0A2F1F', margin:'0 0 0.7rem', lineHeight:1.25 }}>{fs.title}</p>
+
+              <ol style={{ margin:'0 0 1rem', paddingLeft:'1.2rem', color:'#3A4A3F', fontSize:'0.93rem', lineHeight:1.7 }}>
+                {fs.steps.map((st, i) => <li key={i}>{st}</li>)}
+              </ol>
+
+              <label style={{ display:'block', fontSize:'0.9rem', fontWeight:700, color:'#0A2F1F', marginBottom:'0.4rem' }}>{fs.question}</label>
+              <div style={{ display:'flex', alignItems:'center', gap:'0.6rem' }}>
+                <input type="number" inputMode="numeric" min="0" max={fs.max}
+                  value={fieldValue}
+                  onChange={e => { setFieldValue(e.target.value); if (obsError) setObsError(''); }}
+                  placeholder="0"
+                  style={{ width:110, padding:'0.7rem 0.8rem', borderRadius:10, border:`1.5px solid ${theme.accentBorder}`, background:'white', fontSize:'1.25rem', fontWeight:800, fontFamily:'inherit', color:'#0A2F1F', textAlign:'center', boxSizing:'border-box' }} />
+                <span style={{ fontSize:'0.95rem', fontWeight:700, color:'#3A4A3F' }}>{fs.unit}</span>
+              </div>
+
+              {/* Held back until they have their own result, so the benchmark reads as something
+                  to compare against rather than an answer to work backwards from. */}
+              {fieldNum !== null && (
+                <p style={{ margin:'0.85rem 0 0', paddingTop:'0.75rem', borderTop:`1px solid ${theme.accentBorder}`, fontSize:'0.88rem', lineHeight:1.6, color:'#3A4A3F' }}>
+                  <strong style={{ color:theme.accent }}>For comparison: </strong>{fs.benchmark}
+                </p>
+              )}
+
+              {obsError && <p style={{ color:'#DC2626', fontSize:'0.85rem', margin:'0.8rem 0 0' }}>{obsError}</p>}
+
+              <button
+                onClick={() => {
+                  if (fieldNum === null) { setObsError(`Write down your result first: a number up to ${fs.max}.`); return; }
+                  setObsError('');
+                  setZyPhase('action');
+                }}
+                style={{ width:'100%', marginTop:'1.1rem', padding:'0.95rem', borderRadius:999, border:'none', background:`linear-gradient(135deg, ${theme.accent}, #0A2F1F)`, color:'white', fontSize:'0.95rem', fontWeight:800, cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.05em' }}>
+                Now do something about it
+              </button>
+            </div>
+          )}
+        </div>
+        <StudentGuide screen="zooyard-observe" />
+      </div>
+    );
+  }
+
+  // ── The build ────────────────────────────────────────────────────────────
+  // This is the absorbed Habitat Hero task, once per habitat. It sits AFTER the measurement on
+  // purpose: the student has just measured a specific deficit, and the thing they build is the
+  // response to that number. Measure, act, then explain the link is a complete loop; building
+  // first would make it decoration again.
+  if (zyAnimal && zyPhase === 'action') {
+    const task = zyAnimal.citizenScience;
+    const theme = ZOOYARD_HABITAT_THEME[zyAnimal.habitatArea] || ZOOYARD_HABITAT_THEME.bushland;
+    return (
+      <div style={{ position:'fixed', inset:0, background:'#F0EDE6', overflowY:'auto', fontFamily:'var(--t-font)' }}>
+        <HomeButton dark onHome={backToHabitats} />
+        <div style={{ background:theme.bgGradient, padding:'1.8rem 1.5rem 2.2rem', textAlign:'center' }}>
+          <div style={{ fontSize:'2.8rem', marginBottom:'0.4rem' }} aria-hidden="true">{task.icon}</div>
+          <h1 className="taronga-title" style={{ color:'white', fontSize:'clamp(1.5rem,4vw,2rem)', margin:'0 0 0.5rem' }}>{task.title}</h1>
+          <p style={{ color:'rgba(255,255,255,0.78)', maxWidth:440, margin:'0 auto', fontSize:'0.92rem', lineHeight:1.6 }}>{task.brief}</p>
+        </div>
+
+        <div style={{ maxWidth:520, margin:'0 auto', padding:'1.3rem 1.1rem 3rem', boxSizing:'border-box' }}>
+          <div style={{ background:'white', borderRadius:16, padding:'1.4rem', boxShadow:'0 4px 20px rgba(7,30,20,0.08)', marginBottom:'1.2rem' }}>
+            <p style={{ margin:'0 0 0.9rem', fontWeight:700, color:'#0A2F1F', fontSize:'1rem', lineHeight:1.55 }}>{task.primary}</p>
+            {/* ⚠️ The fallback is not a nicety. Planting into the ground needs permission, a
+                season and somebody to water it in the holidays, and a task half the schools
+                cannot start is a task that does not run. */}
+            <p style={{ margin:0, padding:'0.75rem 0.9rem', background:theme.accentSoft, borderRadius:10, color:'#3A4A3F', fontSize:'0.88rem', lineHeight:1.6 }}>
+              <strong style={{ color:theme.accent }}>Cannot do that at your school? </strong>{task.fallback}
+            </p>
+          </div>
+
+          <div style={{ background:'white', borderRadius:16, padding:'1.4rem', boxShadow:'0 4px 20px rgba(7,30,20,0.08)' }}>
+            <label style={{ display:'block', fontWeight:700, color:'#0A2F1F', marginBottom:'0.6rem' }}>{task.photoPrompt}</label>
+            {csPreview ? (
+              <>
+                <img src={csPreview} alt="" style={{ width:'100%', maxHeight:280, objectFit:'cover', borderRadius:12, marginBottom:'0.4rem' }} />
+                <button onClick={() => { setCsFile(null); setCsPreview(null); }} disabled={csUploading}
+                  style={{ background:'none', border:'none', color:'#6B6B62', fontSize:'0.78rem', cursor:'pointer', marginBottom:'1rem', fontFamily:'inherit', textDecoration:'underline' }}>
+                  Retake photo
+                </button>
+              </>
+            ) : (
+              <PhotoCapture onCapture={onCsPhoto} accentColor={theme.accent} label="Take a photo of what you built" />
+            )}
+
+            <label style={{ display:'block', fontWeight:700, color:'#0A2F1F', marginBottom:'0.4rem' }}>Tell us about it (optional)</label>
+            <textarea value={csNote} onChange={e => setCsNote(e.target.value)} rows={3}
+              placeholder="What did you build, and where did you put it?"
+              style={{ width:'100%', padding:'0.7rem', borderRadius:10, border:'1px solid #D8D4C8', fontSize:'0.9rem', fontFamily:'inherit', resize:'vertical', boxSizing:'border-box', marginBottom:'1rem' }} />
+
+            {csError && <p style={{ color:'#DC2626', fontSize:'0.85rem', marginBottom:'0.8rem' }}>{csError}</p>}
+
+            <button onClick={submitHabitatAction} disabled={!csFile || csUploading}
+              style={{ width:'100%', padding:'0.9rem', borderRadius:999, border:'none', background: !csFile || csUploading ? '#CCC' : `linear-gradient(135deg, ${theme.accent}, #0A2F1F)`, color:'white', fontSize:'0.95rem', fontWeight:800, cursor: !csFile || csUploading ? 'not-allowed' : 'pointer', textTransform:'uppercase', letterSpacing:'0.06em' }}>
+              {csUploading ? 'Saving…' : 'Save and write it up'}
+            </button>
+          </div>
+        </div>
+        <StudentGuide screen="zooyard-citizen" />
       </div>
     );
   }
@@ -739,8 +921,11 @@ export default function ZooYardScreen() {
       // immersion died exactly where the thinking was supposed to start. The video is heavily
       // blurred and darkened here, NOT played clean. It is atmosphere at the edges; the writing
       // itself sits on an opaque card so nothing moves behind the text while they type.
-      <div style={{ position:'fixed', inset:0, background:'#0A1410', display:'flex', flexDirection:'column', fontFamily:'var(--t-font)', overflow:'hidden' }}>
-        {!reduceMotion && (
+      <div style={{ position:'fixed', inset:0, background: writtenTheme.videoBg ? '#0A1410' : writtenTheme.bgGradient, display:'flex', flexDirection:'column', fontFamily:'var(--t-font)', overflow:'hidden' }}>
+        {/* ⚠️ videoBg is null for coast/forest/wetland — there is no ambient clip for those yet,
+            and rendering a <video> with a null src shows a broken element rather than nothing.
+            The gradient behind it carries the screen on its own. */}
+        {!reduceMotion && writtenTheme.videoBg && (
           <video key={writtenTheme.videoBg} autoPlay loop muted playsInline src={writtenTheme.videoBg}
             style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover', filter:'blur(14px) saturate(1.15)', transform:'scale(1.12)' }} />
         )}
@@ -770,45 +955,30 @@ export default function ZooYardScreen() {
               </div>
             )}
 
-            {/* ── Field study ──────────────────────────────────────────────────────────────
-                The measurement sits INSIDE the notebook rather than on a step of its own. Two
-                reasons: it keeps the per-animal flow at five steps, and a naturalist records a
-                number and then writes about it on the same page, which is exactly what this is.
-                The number is deliberately NOT scored. Scoring it would produce invented data,
-                which is a well documented way to ruin a citizen science dataset. Only the
-                written analysis is marked, and a student who honestly records a poor result
-                can still score full marks for explaining what it means. */}
-            {fs && (
-              <div style={{ background:writtenTheme.accentSoft, border:`2px solid ${writtenTheme.accentBorder}`, borderRadius:14, padding:'1rem 1.05rem', marginBottom:'1.1rem', textAlign:'left' }}>
-                <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', marginBottom:'0.6rem' }}>
-                  <span style={{ fontSize:'1.2rem' }} aria-hidden="true">{fs.icon}</span>
-                  <span style={{ fontSize:'0.68rem', fontWeight:800, letterSpacing:'0.13em', textTransform:'uppercase', color:writtenTheme.accent }}>Field study</span>
+            {/* ── What they measured, and what they built ──────────────────────────────────
+                Both are shown back as a record, not as inputs: the measurement was taken on the
+                observe screen and the build happened on the action screen, and the writing's
+                whole job is to connect the two. The number is deliberately NOT scored. Scoring
+                it would produce invented data, which is a well documented way to ruin a citizen
+                science dataset. Only the written analysis is marked, and a student who honestly
+                records a poor result can still score full marks for explaining what it means. */}
+            {fs && fieldNum !== null && (
+              <div style={{ background:writtenTheme.accentSoft, border:`2px solid ${writtenTheme.accentBorder}`, borderRadius:14, padding:'0.9rem 1.05rem', marginBottom:'1.1rem' }}>
+                <div style={{ display:'flex', alignItems:'baseline', gap:'0.5rem', flexWrap:'wrap' }}>
+                  <span style={{ fontSize:'0.66rem', fontWeight:800, letterSpacing:'0.13em', textTransform:'uppercase', color:writtenTheme.accent }}>{fs.title}</span>
+                  <span style={{ fontSize:'1.35rem', fontWeight:800, color:'#0A2F1F', fontVariantNumeric:'tabular-nums' }}>{fieldNum}</span>
+                  <span style={{ fontSize:'0.9rem', fontWeight:700, color:'#3A4A3F' }}>{fs.unit}</span>
                 </div>
-                <p className="taronga-title" style={{ fontSize:'clamp(1.1rem,4vw,1.3rem)', color:'#0A2F1F', margin:'0 0 0.6rem', lineHeight:1.25 }}>{fs.title}</p>
+                <p style={{ margin:'0.6rem 0 0', paddingTop:'0.6rem', borderTop:`1px solid ${writtenTheme.accentBorder}`, fontSize:'0.86rem', lineHeight:1.6, color:'#3A4A3F' }}>
+                  <strong style={{ color:writtenTheme.accent }}>For comparison: </strong>{fs.benchmark}
+                </p>
+              </div>
+            )}
 
-                <ol style={{ margin:'0 0 0.9rem', paddingLeft:'1.2rem', color:'#3A4A3F', fontSize:'0.93rem', lineHeight:1.65 }}>
-                  {fs.steps.map((st, i) => <li key={i} style={{ marginBottom:'0.15rem' }}>{st}</li>)}
-                </ol>
-
-                <label style={{ display:'block', fontSize:'0.9rem', fontWeight:700, color:'#0A2F1F', marginBottom:'0.4rem' }}>
-                  {fs.question}
-                </label>
-                <div style={{ display:'flex', alignItems:'center', gap:'0.6rem' }}>
-                  <input type="number" inputMode="numeric" min="0" max={fs.max}
-                    value={fieldValue}
-                    onChange={e => { setFieldValue(e.target.value); if (obsError) setObsError(''); }}
-                    placeholder="0"
-                    style={{ width:110, padding:'0.7rem 0.8rem', borderRadius:10, border:`1.5px solid ${writtenTheme.accentBorder}`, background:'white', fontSize:'1.25rem', fontWeight:800, fontFamily:'inherit', color:'#0A2F1F', textAlign:'center', boxSizing:'border-box' }} />
-                  <span style={{ fontSize:'0.95rem', fontWeight:700, color:'#3A4A3F' }}>{fs.unit}</span>
-                </div>
-
-                {/* Held back until they have their own result, so the benchmark reads as
-                    something to compare against rather than an answer to work backwards from. */}
-                {fieldNum !== null && (
-                  <p style={{ margin:'0.85rem 0 0', paddingTop:'0.75rem', borderTop:`1px solid ${writtenTheme.accentBorder}`, fontSize:'0.88rem', lineHeight:1.6, color:'#3A4A3F' }}>
-                    <strong style={{ color:writtenTheme.accent }}>For comparison: </strong>{fs.benchmark}
-                  </p>
-                )}
+            {actionPhotoUrl && (
+              <div style={{ background:'white', padding:'7px 7px 9px', borderRadius:6, boxShadow:'0 6px 18px rgba(0,0,0,0.22)', marginBottom:'1rem', transform:'rotate(0.7deg)' }}>
+                <img src={actionPhotoUrl} alt="What you built" style={{ width:'100%', maxHeight:150, objectFit:'cover', borderRadius:3, display:'block' }} />
+                <div style={{ fontSize:'0.66rem', fontWeight:700, color:'#6B6B62', textTransform:'uppercase', letterSpacing:'0.07em', marginTop:'6px', textAlign:'center' }}>What you built</div>
               </div>
             )}
 
@@ -1105,12 +1275,12 @@ export default function ZooYardScreen() {
                       padding:'0.9rem 1.1rem', display:'flex', alignItems:'center', justifyContent:'space-between',
                       gap:'0.9rem', flexWrap:'wrap', boxShadow:'0 14px 40px rgba(0,0,0,0.45)', backdropFilter:'blur(8px)' }}>
           <div style={{ minWidth:0 }}>
-            <p style={{ margin:0, fontWeight:800, color:'#0A2F1F', fontSize:'0.98rem' }}>🌱 Habitat Hero unlocked!</p>
-            <p style={{ margin:'0.15rem 0 0', color:'#6B6B62', fontSize:'0.82rem' }}>All three habitats complete. Time for your citizen science task.</p>
+            <p style={{ margin:0, fontWeight:800, color:'#0A2F1F', fontSize:'0.98rem' }}>🌱 Three habitats, three things built.</p>
+            <p style={{ margin:'0.15rem 0 0', color:'#6B6B62', fontSize:'0.82rem' }}>Your schoolyard is measurably better than it was. Finish up.</p>
           </div>
-          <button onClick={() => setZyScreen('citizenScience')}
+          <button onClick={finishSession}
             style={{ padding:'0.65rem 1.3rem', borderRadius:999, border:'none', background:'linear-gradient(135deg,#2E7D55,#1A5238)', color:'white', fontSize:'0.85rem', fontWeight:800, cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.05em', whiteSpace:'nowrap' }}>
-            Start Habitat Hero
+            Finish
           </button>
         </div>
       )}

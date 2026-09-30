@@ -22,6 +22,7 @@ export function getGuideContent(screen, stage = 4, subject = 'science', animal =
     case 'zooyard-attest':    return zooyardAttest(stage);
     case 'zooyard-activity':  return zooyardActivity(stage);
     case 'zooyard-written':   return zooyardWritten(stage);
+    case 'zooyard-observe':   return zooyardObserve(stage);
     case 'zooyard-citizen':   return zooyardCitizen(stage);
     case 'zooyard-video':     return zooyardVideo(stage);
     case 'zooyard-badge':     return zooyardBadge(stage);
@@ -990,7 +991,7 @@ function zooyardHabitats(stage) {
         2: `A habitat is an animal's home. It gives them food, water and somewhere safe to rest.`,
         4: `A habitat is the place an animal lives in and depends on. It has to provide food, water, shelter and space to move around.`,
       }, stage),
-      hero:    `Once all three habitats are done, Habitat Hero unlocks. You build something real at school to help local wildlife, then photograph it.`,
+      hero:    `Every habitat ends with you building something real at school to help local wildlife, then photographing it. Three habitats, three things built.`,
     },
   };
 }
@@ -1035,33 +1036,50 @@ function zooyardActivity(stage) {
 
 function zooyardWritten(stage) {
   return {
-    greeting: `Time to write up what you found. Look at your spot while you write.`,
+    greeting: `Time to write up what you found. Your number and your photo are both on the page.`,
     options: [
-      { label: 'What is the field study?',  key: 'field'  },
-      { label: 'I have no partner',         key: 'alone'  },
       { label: 'I don\'t know what to say', key: 'stuck'  },
       { label: 'How much do I write?',      key: 'length' },
       { label: 'What makes a good answer?', key: 'good'   },
     ],
     responses: {
-      field:  `Follow the three numbered steps, then type your number in the box. There is no right answer. Whatever you actually measure is the correct one, and your score does not depend on it.`,
-      alone:  `Ask anyone nearby, or your teacher. If you really cannot, pop something the size of a bag where you were crouching and walk away from that instead. It is not quite as good, but it works.`,
       stuck:  byStage({
-        2: `Look at your number first. Is it big or small? Then say what that would mean for the animal trying to live there.`,
-        4: `Start from your number. Compare it to the benchmark just above the question, then explain what the difference means for the animal.`,
+        2: `Look at your number first. Is it big or small? Then say how the thing you built helps with that.`,
+        4: `Start from your number, compare it to the benchmark beside it, then explain how what you built addresses the gap it shows.`,
       }, stage),
       length: `Keep writing until the bar fills up. Once it turns green you've written enough, but you can always say more.`,
       good:   byStage({
-        2: `Use your number, then say why it matters. "I counted 7 steps, so a koala would be on the ground for a long time and a dog could get it."`,
-        4: `Use your result as evidence, compare it to the benchmark, then explain the consequence for the animal. A good answer links all three.`,
+        2: `Use your number, then say what you built and why it helps. "I counted 7 steps, so a koala would be on the ground a long time. I planted a tree in the gap."`,
+        4: `Use your result as evidence, compare it to the benchmark, then explain how what you built addresses it. A good answer links all three.`,
       }, stage),
+    },
+  };
+}
+
+function zooyardObserve(stage) {
+  return {
+    greeting: `Two minutes of just looking, then you take your measurement. No writing yet.`,
+    options: [
+      { label: 'Why do I have to wait?',   key: 'why'    },
+      { label: 'What is the field study?', key: 'field'  },
+      { label: 'I have no partner',        key: 'alone'  },
+      { label: 'Is my number wrong?',      key: 'wrong'  },
+    ],
+    responses: {
+      why:   byStage({
+        2: `Because you see more after a while. Things that were hiding start moving once you stand still.`,
+        4: `Because most of what lives in a place will not show itself to someone who glances and walks off. Two minutes of stillness is the difference between looking and observing.`,
+      }, stage),
+      field: `Follow the three numbered steps, then type your number in the box. There is no right answer. Whatever you actually measure is the correct one, and your score does not depend on it.`,
+      alone: `Ask anyone nearby, or your teacher. If you really cannot, pop something the size of a bag where you were crouching and walk away from that instead. It is not quite as good, but it works.`,
+      wrong: `It cannot be. The number is data, not a test. It is never scored, and an honest low result is worth exactly as much as a high one.`,
     },
   };
 }
 
 function zooyardCitizen(stage) {
   return {
-    greeting: `Last one, and this is the real one. You're going to build something that actually helps wildlife.`,
+    greeting: `This is the real part. You measured a problem, and now you fix a bit of it.`,
     options: [
       { label: 'What should I build?',   key: 'build' },
       { label: 'Does it have to be big?', key: 'size' },
@@ -1069,7 +1087,7 @@ function zooyardCitizen(stage) {
       { label: 'What happens to my photo?', key: 'photo' },
     ],
     responses: {
-      build: `Pick one from the list: a leaf pile, a native plant, a bug hotel, a water dish for birds, or a patch of grass left unmown. Whichever suits your school.`,
+      build: `The screen tells you the one for this habitat. If your school cannot do that one, use the backup underneath it. Either is fine.`,
       size:  `No. Small is fine. A dish of water or a pile of leaves in a quiet corner is genuinely useful to insects and birds.`,
       why:   byStage({
         2: `All three animals you learned about are losing their homes. You can't fix that from here, but you can make one small home right where you are.`,

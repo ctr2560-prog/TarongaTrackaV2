@@ -6,7 +6,7 @@ Taronga Tracka is an educational field-study app for school excursions to Tarong
 
 There is also **ZooSnooz** — a separate night-mode variant with NFC stations, keeper interactions, video recording, and a documentary stitching pipeline, sharing the same codebase.
 
-There is also **ZooYard** — a self-attest, no-GPS "at school" program for classes that can't visit the zoo (built for NSW DoE devices, which block geolocation). Students work through three habitats in their own schoolyard, then complete a citizen science task. See the ZooYard Deep Reference section below.
+There is also **ZooYard** — a self-attest, no-GPS "at school" program for classes that can't visit the zoo (built for NSW DoE devices, which block geolocation). Students work through three habitats in their own schoolyard, each one ending in a real citizen science build. See the ZooYard Deep Reference section below.
 
 There is also **Evolve** — a Stage 6 (Year 11/12) twilight excursion supporting the Life Ready course. Five animals are five chapters of one story about leaving school; students write a reflection and film a piece to camera at each, which stitch into a single short film they keep. Deliberately has no points, badges or marks. See the Evolve Deep Reference section below.
 
@@ -77,6 +77,19 @@ chapters when 4 groups in 30 reached that point.
 disturbing to nocturnal animals, which is why it is standard in nocturnal houses. Red on the
 animal gave good koala footage; red on the student made the piece to camera work. It is not yet
 in the app's filming guidance or the teacher info sheet — it should be.
+
+### Recently shipped (2026-09-28) — ZooYard: measure, act, explain
+- **Habitat Hero was absorbed into every habitat.** The standalone end-of-session task is gone;
+  each animal now carries its own `citizenScience` block. See "Measure, act, explain" in the
+  ZooYard reference, including why the action must come *after* the measurement.
+- **A two-minute observation countdown** before the measurement, and the measurement moved off
+  the write-up screen onto its own step with it.
+- **`habitatObservations`** — a flat, deliberately de-identified collection so readings can be
+  aggregated across schools. ⚠️ Read the warning on it before adding any field.
+- **Stage 1 writing prompts** now exist on all three animals, closing the silent fallback-to-
+  Stage-4 bug (known gap 3).
+- ⚠️ **Not yet run in a browser.** Built and build-checked only; the camera and countdown paths
+  need a real pass. `firestore.rules` has an undeployed `habitatObservations` block.
 
 ### Recently shipped (2026-09-27 → 09-28) — ZooYard, the 3D zoo
 - **The habitat picker is a 3D model of Taronga**, full screen, with a marker welded to each
@@ -441,7 +454,8 @@ The staff portal uses code-based login (no Firebase Auth), so **any collection t
 | `deviceBookings/{bookingId}` | Tracka device booking calendar entries |
 | `resources/{docId}` | (Reserved for future resource library) |
 | `prePostLinks/{subject}_{stage}_{timing}` | Admin-managed Canva pre/post-visit lesson links — see Pre/Post-Visit Lessons section |
-| `citizenScienceSubmissions/{submissionId}` | ZooYard "Habitat Hero" photo submissions — see ZooYard Deep Reference section |
+| `citizenScienceSubmissions/{submissionId}` | ZooYard citizen science photo submissions, **one per habitat** — see ZooYard Deep Reference |
+| `habitatObservations/{observationId}` | ZooYard field-study readings, **de-identified**, for cross-school aggregation — see ZooYard Deep Reference |
 
 ### ZooSnooz student data location
 ZooSnooz per-animal data lives on the **student document** at `classes/{classCode}/students/{studentId}` under the `zoosnooz` field:
@@ -794,7 +808,7 @@ token-and-lookup approach.
 | `evolve/` | Evolve clips + film | none (students) |
 | `wildestDreams/` | Wildest Dreams clips + film | none (students) — ⚠️ **NOT YET DEPLOYED** |
 | `zooyardHabitats/` | ZooYard attest photos | none (students) |
-| `citizenScienceEvidence/` | ZooYard Habitat Hero photos | none (students) |
+| `citizenScienceEvidence/` | ZooYard citizen science photos (one per habitat) | none (students) |
 | `challengeEvidence/` | Class challenge photos | teacher (Firebase Auth) |
 | `resources/` | **Wildly** resource PDFs | Wildly staff (Firebase Auth) |
 
@@ -821,7 +835,38 @@ ZooYard is a self-attest, single-session, no-GPS program built for classes that 
 `App.jsx` `Router()`: `if (sessionType === 'zooyard') return <ZooYardScreen />;`, mirroring the ZooSnooz short-circuit — this means `ZooYardScreen.jsx` is fully self-contained and the daytime `currentScreen` switch never runs for a ZooYard class.
 
 ### Content (`src/data/zooyardAnimals.js`)
-Three animals, deliberately reusing the **same ids** as `src/data/animals.js` (`koala`, `tiger`, `giraffe`) to get their existing photos/badge art for free, and because koala/giraffe already have hand-tuned keyword-scoring branches in `scoreObservation()` (tiger falls through to the generic fallback — fine, just less tailored feedback). Safe to reuse ids because a ZooYard class is a completely separate `classes/{code}` document — no student doc ever mixes ZooYard and daytime data.
+
+**Eight habitats as of 2026-09-29** (was three). The five added — `blue-mountains-bushwalk`,
+`sea-lion`, `chimpanzee`, `gorilla`, `rhino` — are marked **DRAFT** in the file: the structure is
+final, the wording is a first pass awaiting Cameron's review. Three design rules hold across all
+eight and should survive any content edit:
+
+1. Each field study tests the ONE thing that species depends on, needs no equipment, takes ~2 min.
+2. **Each action is different from every other habitat's.** Five schoolyards of identical bird
+   baths would be a worksheet. Ground layer · litter pickup · missing forest layer · plant variety
+   · insect waterer.
+3. Every prompt carries `{n}` and every animal has stages **1–5**.
+
+| Animal | Habitat area | Measures | Builds |
+|---|---|---|---|
+| koala | bushland | steps to next tree | plants into the canopy gap |
+| tiger | rainforest | steps until concealed | a cover pile |
+| giraffe | savannah | sightline blockers | open-sited bird water |
+| blue-mountains-bushwalk | bushland | bare steps out of ten | rakes a ground layer back |
+| sea-lion | coast | rubbish along 20 steps from a drain | clears that line |
+| chimpanzee | forest | vertical plant layers | plants the missing middle layer |
+| gorilla | forest | plant *kinds* within arm's reach | adds a kind that is missing |
+| rhino | wetland | steps to drinkable water | insect waterer with landing stones |
+
+⚠️ **`coast`, `forest` and `wetland` have `videoBg: null`** — no ambient clip exists for them.
+The write-up screen checks for it and falls back to the theme gradient. A path to a file that
+does not exist renders a broken `<video>`; null does not. Do not "fix" the null with a guess.
+
+⚠️ **Eight habitats is a lot of session.** Each one is now video → MCQ → 2-min observation →
+measurement → build → writing. Three was already a full lesson each. Nothing in the app lets a
+teacher choose a subset, so a class currently sees all eight — that decision is open.
+
+Ids are deliberately reused from `src/data/animals.js` (`koala`, `tiger`, `giraffe`) to get their existing photos/badge art for free, and because koala/giraffe already have hand-tuned keyword-scoring branches in `scoreObservation()` (tiger falls through to the generic fallback — fine, just less tailored feedback). Safe to reuse ids because a ZooYard class is a completely separate `classes/{code}` document — no student doc ever mixes ZooYard and daytime data.
 
 Each entry: `habitatArea`/`habitatLabel` (bushland/rainforest/savannah), `selfAttestWhere` (the
 short, very large "go and stand next to a tree" line) + `selfAttestPrompt` (supporting detail) +
@@ -859,20 +904,92 @@ Other decisions worth keeping:
 - It is stored as `fieldStudy: { method, value, unit }` — the unit travels with the number so it
   stays interpretable if a method is ever reworded.
 
-`ZOOYARD_CITIZEN_SCIENCE_TASK` — the single "Habitat Hero" task (build one small wildlife feature at school: leaf pile, native plant, bug hotel, water dish, no-mow patch) that unlocks once all three habitats are complete.
+### Measure, act, explain (2026-09-28) — the current shape of a habitat
+
+The standalone "Habitat Hero" task that used to unlock after all three habitats **no longer
+exists**. `ZOOYARD_CITIZEN_SCIENCE_TASK` was deleted. Every animal now carries its own
+`citizenScience` block and the build happens inside each habitat:
+
+| Animal | Measures | Then builds |
+|---|---|---|
+| koala | steps to the nearest other tree | plants a native tree or shrub **into that gap** (pot if the ground is not allowed) |
+| tiger | steps until they vanish from view | a cover pile: logs, sticks, bark, rocks (leaf litter as fallback) |
+| giraffe | things blocking one full turn | a water dish **sited where a drinking bird has clear sightlines** (no-mow patch as fallback) |
+
+⚠️ **The order is load-bearing: observe → measure → act → write.** The student measures a
+specific deficit, builds the thing that addresses *that number*, and the writing connects the
+two. Building first, or writing before building, turns the measurement back into decoration —
+which is exactly the fault the field study was introduced to fix. Measure, act, justify is one
+complete loop inside a single sitting, and it is what lets ZooYard claim Working Scientifically
+without needing a return visit.
+
+**Every task has a `fallback`, and that is not politeness.** Planting into the ground needs
+permission, a season and somebody to water it in the holidays. A task half the schools cannot
+start is a task that does not run.
+
+**Why there is no return visit.** Re-measuring after a fortnight is better science and was
+considered and rejected: an optional, delayed, unprompted task in a school has near-zero
+completion, and it would have been the most complex part of the system built for the fewest
+students. The compromise is `visit: 1` on every `habitatObservations` record — a return flow
+stays an addition rather than a migration. The payoff of the dataset is intended to be a
+**staff-side** view of what many students measured, not a student-side revisit.
+
+#### The observation countdown (`zyPhase === 'observe'`)
+
+Two minutes, per-animal `observation.seconds`, with `lookFor` prompts shown before it starts.
+
+- ⚠️ **Timestamp-based, never a tick counter.** A school tablet that locks, or a tab pushed to
+  the background, stops firing intervals — a counter would freeze wherever it reached. The state
+  is an absolute `observeEndsAt`; the interval only re-reads the clock.
+- **Nothing is typeable while it runs.** A text box on screen means students write for two
+  minutes instead of looking for two minutes.
+- **"Skip the timer" exists and is deliberately quiet**, same reasoning as Evolve's: thirty
+  students outdoors on a bell cannot always be held still.
+- The measurement moved here, off the write-up screen. The earlier note that it belonged in the
+  notebook beside the writing no longer applies — it has to precede the build.
+
+#### `habitatObservations` — the cross-school dataset
+
+```js
+{ program:'zooyard', schoolId, schoolName, stage, habitatId, methodId, value, unit,
+  visit: 1, recordedAt }
+```
+
+🚫 **No student name, alias, studentId or photo, ever.** This is the one ZooYard collection
+designed to be queried across schools, so anything identifying in it is exposed far more widely
+than a class document. Rules are `read, create: if true` with update and delete **denied** —
+nothing in the app edits a reading, and allowing it would let one device rewrite another
+school's data. ⚠️ Not yet deployed (`firebase deploy --only firestore:rules`).
+
+Per-student data is unaffected: the same reading still lands on the student doc under
+`zooyard.{animalId}.fieldStudy`, where the teacher needs a name attached to it.
+
+#### What this changed elsewhere
+
+- `citizenScienceSubmissions` now carries **`habitatId` and `habitatTitle`**, and there are
+  **three per student** instead of one. `taskId` is the per-habitat task id, no longer always
+  `'habitat-hero'`. The staff tab and the teacher panel on Class Details show the habitat as a
+  pill; older submissions lack the field and simply show nothing. Both headings now read
+  "Citizen Science Submissions".
+- **`zooyard.sessionCompleted` moved.** It used to be written by the Habitat Hero submit; it is
+  now written by `finishSession()` when all three habitats are done. The **+10 school
+  leaderboard bonus moved with it**, so it stays once per student rather than firing three times.
+- `zooyard.{animalId}.action` holds `{ taskId, status, photoUrl, note, submittedAt }`.
+- The resume path no longer treats a legacy `zooyard.citizenScience` field as "session done".
 
 ### `ZooYardScreen.jsx` — self-contained sub-router
-Mirrors `ZooSnoozScreen.jsx`'s pattern exactly: own local component state (no `StudentContext` badges/foundAnimals), cascading `if (phase === ...) return <JSX/>` blocks rather than a switch. Top-level phase (`zyScreen`/`setZyScreen`: `'habitats' | 'citizenScience' | 'done'`) lives in `AppContext.jsx` next to `zzScreen` so it survives the screen's own re-renders; per-animal phase (`attest → video → activity → written → badge`) is local `useState`.
+Mirrors `ZooSnoozScreen.jsx`'s pattern exactly: own local component state (no `StudentContext` badges/foundAnimals), cascading `if (phase === ...) return <JSX/>` blocks rather than a switch. Top-level phase (`zyScreen`/`setZyScreen`: `'habitats' | 'collection' | 'done'` — `'citizenScience'` was removed 2026-09-28) lives in `AppContext.jsx` next to `zzScreen` so it survives the screen's own re-renders; per-animal phase (`video → activity → observe → action → written → badge`) is local `useState`.
 
 Flow: **first-run intro** (once) → **3D zoo map with a locked marker per habitat** → tap a
 padlock → **unlock sheet over the map** (go and stand there, photograph it) → video/placeholder →
-single MCQ → **field study + written analysis** (scored via `buildObservationScore(text,
+single MCQ → **two-minute observation countdown + field study measurement** → **build the thing
+and photograph it** → **written analysis** (scored via `buildObservationScore(text,
 animalId, classStage, 'science')`, points formula same as ZooSnooz:
 `Math.round((behaviour+detail+writing)/15*100) + (quizCorrect?20:0)`) → badge reveal **with
 feedback** → back to the map.
 
 ⚠️ There is **no `attest` phase any more**. `openAnimal()` always starts at `video`, because
-proving where you are now happens on the map before you can enter at all. See "Locks" below. Once all 3 done, a "Habitat Hero unlocked!" banner appears; the citizen science task collects a photo (client `uploadBytes` to `citizenScienceEvidence/{classCode}/{studentId}-{timestamp}.{ext}`) + optional note, writes to `citizenScienceSubmissions` (see below) and marks `zooyard.sessionCompleted`/`totalPoints` on the student doc, then a `ZzDoneScreen`-style completion screen with `StudentFeedbackModal`.
+proving where you are now happens on the map before you can enter at all. See "Locks" below. Each habitat's build collects a photo (client `uploadBytes` to `citizenScienceEvidence/{classCode}/{studentId}-{animalId}-{timestamp}.{ext}`) + optional note and writes to `citizenScienceSubmissions`. Once all 3 are done a banner offers **Finish**, which calls `finishSession()` to mark `zooyard.sessionCompleted`/`totalPoints` and award the one-off +10 school bonus, then a `ZzDoneScreen`-style completion screen with `StudentFeedbackModal`.
 
 ### Student doc shape
 `classes/{code}/students/{id}`, field `zooyard`:
@@ -923,15 +1040,16 @@ rather than letting a teacher assume.
 ### Dr. Cam in ZooYard (2026-09-26)
 
 **A first-run instruction screen** (`ZooYardIntro`, local to `ZooYardScreen.jsx`): Dr. Cam, four
-big steps, then a visually separate gold card teasing Habitat Hero.
+big steps, then a visually separate gold card saying the building is real.
 
 - Gated on **both** a `localStorage` flag *and* no completed habitats, so a mid-session reload
   does not drop a student back on the welcome screen.
 - The flag is keyed **per student** (`zooyardIntroSeen_{code}_{sid}`), not per device, because
   school tablets get shared and the next student still needs the instructions.
-- ⚠️ The teaser says what the final task **is** (building, not writing) and deliberately does
-  **not** say the three habitats lead up to it. Telling students the first three exist to unlock
-  something else is a fast way to get three habitats done badly.
+- ⚠️ The teaser says what the building **is** and deliberately does **not** frame the habitats
+  as leading up to anything. Since 2026-09-28 every habitat ends in a build, so there is no
+  final task to tease. Do not reword it back to "finish all three and X unlocks" — telling
+  students the first tasks exist to unlock something else is a fast way to get them done badly.
 
 **The helper bot on all eight working screens**, via the shared `StudentGuide` component with
 ZooYard keys in `utils/studentGuideContent.js`: `zooyard`, `-attest`, `-video`, `-activity`,
@@ -1072,6 +1190,44 @@ derived from the printed map by interpolating between two things present in both
 Frogs and the Hive, which sit either side of it), then checked to land inside `terrain_bushland`
 so the marker stands on ground rather than floating.
 
+#### Reading a position out of the GLB (2026-09-29)
+
+**Every node's translation is zero** — the geometry is baked into the mesh vertices, so walking
+the scene graph for transforms returns `0 0 0` for all 225 nodes and tells you nothing. A
+position comes from the **centre of that node's POSITION accessor `min`/`max`**, with the marker
+placed at the bounding box's **top y + 9**. That offset is not arbitrary: it is what the original
+three already used (`animals_giraffes` tops out at y 65, its marker sits at 74), so a new marker
+floats exactly as far above its exhibit as the existing ones.
+
+⚠️ **Some nodes are merged meshes spanning the whole zoo, and their centroid is meaningless.**
+`aviary_frames` and `aviary_mesh` look like the obvious way to locate an aviary and are a trap:
+both hold *every* aviary as a single primitive, span x −176..220, z −114..109, and their centre
+lands at (22, −3) — not an aviary at all, and sitting on top of the gorillas. **Check the
+bounding-box size before trusting a centre.** To split one: round-trip through
+`npx @gltf-transform/cli cp <in> <out>` (that decodes Draco), read the POSITION floats out of the
+`.bin`, and grid-cluster in xz. That yields the nine separate aviaries.
+
+#### ⚠️ Use the printed map, not a screenshot — the Blue Mountains Bushwalk took three attempts
+
+Wrong twice before it was right, so do it this way:
+
+1. ❌ **`backyard_to_bush`** — placed on an assumption that the zoo has no such exhibit. It does.
+2. ❌ **`moore_park_aviary`** — the only *individually named* aviary, so it looked obvious. Wrong
+   aviary. Also reached by fitting the camera projection from the existing markers and reading
+   off a screenshot: that fit is fine *near* the markers and extrapolates badly, landing on the
+   Wildlife Retreat lodges ~90 units out.
+3. ✅ **The printed zoo map.** Render `tz-map-online.pdf` with `pdftoppm -r 200 -png`, then fit an
+   affine map from map pixels to GLB xz on landmarks named in **both**: `function_centre`,
+   `nocturnal_country`, `nura_diya_australia`, `tree_shelter`, `floral_clock_border`,
+   `forest_adventure`. Residuals come in at **1–4 world units**.
+
+**Validate the fit on a landmark you did not fit on.** This one solved the Function Centre
+rotunda to (−183, 32) against the model's actual `retreat_pavilion_canopy` at (−185, 30), which
+is what made the answer trustworthy rather than merely plausible.
+
+The Bushwalk is the walk-through aviary beside that rotunda: **x −160..−145, y 52..64, z −1..10**,
+marker at `-153 73 5`.
+
 Three states: **locked** (slate disc + padlock, no animal photo), **unlocked** (animal photo,
 habitat colour), **complete** (gold ring + tick).
 
@@ -1124,10 +1280,35 @@ concealment test or just type a number.
    no info sheet, nothing on Curriculum Alignment. With the field study in it can now defensibly
    claim Working Scientifically data outcomes, and arguably maths, which would also address its
    being Science-only and thinner than the other modes.
-3. **Stage 1 is offered in the class picker but has no content.** `writingPromptByStage` only has
-   2–5, so a Stage 1 class silently falls back to the Stage 4 wording, which is far too hard.
+3. ~~**Stage 1 has no content.**~~ **CLOSED 2026-09-28** — all three animals now carry a stage 1
+   writing prompt, so the silent fallback to Stage 4 wording is gone.
 4. Three animals and **one MCQ each** is still thin next to Evolve's five chapters or Wildest
-   Dreams' eight stops.
+   Dreams' eight stops. The observe → measure → build → write flow lengthened each habitat
+   considerably, so this is less pressing than it was.
+5. **Nothing persists a half-finished habitat.** `zyPhase` is local state, so a student who
+   reloads after building but before writing returns to the map and re-enters that habitat from
+   the video. Harmless today because a habitat is one sitting; it would matter the moment
+   anything spans lessons.
+6. **Teachers cannot see the dataset.** `habitatObservations` is written and nothing reads it.
+   A staff-side view of readings across schools is the whole reason it is de-identified and flat.
+7. ⚠️ **The scorer marks the five new habitats harshly at Stage 5, and this is measured, not
+   suspected.** Scoring a strong, on-topic answer for each (2026-09-29):
+
+   | Animal | Stage 3 behaviour | Stage 5 behaviour |
+   |---|---|---|
+   | blue-mountains-bushwalk | 4 | **2** |
+   | sea-lion | 5 | **2** |
+   | chimpanzee | 3 | **2** |
+   | gorilla | 3 | **2** |
+   | rhino | 5 | 5 |
+
+   This is fault #1 in the Scoring System section: the new prompts are about litter, drains,
+   vertical layers and plant variety, and those animals' vocabulary lists do not contain those
+   words. **It is not purely new content** — the pre-existing giraffe does the same thing (5 at
+   Stage 4, **2** at Stage 5), so there is a Stage 5 behaviour path worth looking at on its own.
+   Fixing it means widening the per-animal word lists and re-verifying across every stage and
+   subject, which is its own piece of work. Do not tune thresholds; score real text first.
+8. **No teacher control over which habitats run.** See the warning on eight habitats above.
 
 ### Class details / GPS panel
 `ClassDetailsScreen.jsx` gates the GPS toggle panel and the old daytime "Class Insights" (badge-array-based analytics) with `!isZY` — both are meaningless for ZooYard (no GPS check ever happens; badges live under `zooyard`, not the shared `badges` array). Stat cards get a ZooYard-specific branch: Students / Avg Points / Habitat Badges / Completed, reading `student.zooyard?.totalPoints`/`sessionCompleted`/`{animalId}.completed`. Note **Avg Points only reflects fully-submitted sessions** — `zooyard.totalPoints` is written once, at citizen science submission, not incrementally per animal, so an in-progress student shows 0 there even after earning badges.
@@ -1671,7 +1852,7 @@ ZooSnooz internal screens (`zzScreen` values): `map` → `animal` (phases: insig
 | `teacherLogin` | `TeacherLoginScreen.jsx` | Magic link email entry |
 | `teacherDashboard` | `TeacherDashboardScreen.jsx` | Quick actions, class cards, resource cards, challenge tile |
 | `createClass` | `CreateClassScreen.jsx` | Create class form; sets stage, subject, session type, access code |
-| `classDetails` | `ClassDetailsScreen.jsx` | Per-class analytics, student list, RadarSVG, ZooSnooz data, ZooYard Habitat Hero moderation, info sheet |
+| `classDetails` | `ClassDetailsScreen.jsx` | Per-class analytics, student list, RadarSVG, ZooSnooz data, ZooYard citizen science moderation, info sheet |
 | `teacherGuide` | `TeacherGuideScreen.jsx` | Timeline checklist, 4 phases, tap-to-tick, localStorage progress |
 | `assessmentIdeas` | `AssessmentIdeasScreen.jsx` | In-app evidence + 20 post-visit tasks per subject; generates unique printable AT Notification docs |
 | `teacherMap` | `TeacherMapScreen.jsx` | Zoo map with student pins, zoom in/out, starts at 0.8 scale |

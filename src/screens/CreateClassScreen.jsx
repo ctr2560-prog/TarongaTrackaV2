@@ -195,7 +195,7 @@ export default function CreateClassScreen() {
               {isZooYard && (
                 <div style={{ background:'#f0f7f2', border:'1px solid #b6d9c3', borderRadius:'10px', padding:'0.9rem 1rem', marginBottom:'1rem' }}>
                   <p style={{ margin:0, fontSize:'0.8rem', color:'#1a4a2a', lineHeight:1.6 }}>
-                    ZooYard runs entirely at school — no GPS, no zoo visit. Students explore three habitats (bushland, rainforest, savannah), then complete a Habitat Hero citizen science task. Science only for now.
+                    ZooYard runs entirely at school — no GPS, no zoo visit. At each of three habitats (bushland, rainforest, savannah) students observe, take one real measurement, then build something at school that addresses what they measured. Science only for now.
                   </p>
                 </div>
               )}

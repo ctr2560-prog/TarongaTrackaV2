@@ -148,7 +148,7 @@ export default function ClassDetailsScreen() {
   }, [selectedClass]);
 
   const denyZySubmission = async (sub) => {
-    if (!window.confirm(`Deny this Habitat Hero submission from ${sub.studentName}?`)) return;
+    if (!window.confirm(`Deny this citizen science submission from ${sub.studentName}?`)) return;
     setZySubBusy(p => ({ ...p, [sub.id]: true }));
     try {
       await updateDoc(doc(db, 'citizenScienceSubmissions', sub.id), { status: 'denied', reviewedAt: serverTimestamp(), reviewedBy: teacherEmail });
@@ -1236,7 +1236,7 @@ export default function ClassDetailsScreen() {
                 </div>
               )}
 
-              {/* ── ZooYard Habitat Hero submissions ── */}
+              {/* ── ZooYard citizen science submissions, one per habitat ── */}
               {/* ── Where students went ──────────────────────────────────────────
                   ZooYard has no GPS check by design (DoE devices block geolocation), so the
                   self-attest photo is the ONLY evidence a student actually went outside. It was
@@ -1298,7 +1298,7 @@ export default function ClassDetailsScreen() {
 
               {isZY && (
                 <div style={{ background:'var(--t-chalk)', borderRadius:'var(--t-r-md)', padding:'1.15rem', marginBottom:'1.75rem', border:'1px solid var(--t-stone)' }}>
-                  <h3 style={{ fontSize:'0.9rem', fontWeight:700, color:'var(--t-deep)', margin:'0 0 0.9rem' }}>🌱 Habitat Hero Submissions</h3>
+                  <h3 style={{ fontSize:'0.9rem', fontWeight:700, color:'var(--t-deep)', margin:'0 0 0.9rem' }}>🌱 Citizen Science Submissions</h3>
                   {zySubmissions.length === 0 ? (
                     <p style={{ fontSize:'0.82rem', color:'var(--t-ash)', fontStyle:'italic', margin:0 }}>No submissions from this class yet.</p>
                   ) : (
@@ -1309,6 +1309,9 @@ export default function ClassDetailsScreen() {
                           <div style={{ minWidth:0 }}>
                             <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', flexWrap:'wrap' }}>
                               <span style={{ fontWeight:700, fontSize:'0.84rem', color:'var(--t-deep)' }}>{sub.studentName}</span>
+                              {sub.habitatTitle && (
+                                <span style={{ fontSize:'0.63rem', fontWeight:700, padding:'0.12rem 0.45rem', borderRadius:'var(--t-r-pill)', background:'var(--t-foam)', color:'var(--t-mid)' }}>{sub.habitatTitle}</span>
+                              )}
                               <span style={{ fontSize:'0.63rem', fontWeight:700, padding:'0.12rem 0.45rem', borderRadius:'var(--t-r-pill)',
                                 color: sub.status === 'approved' ? '#166534' : sub.status === 'denied' ? '#991B1B' : '#92400E',
                                 background: sub.status === 'approved' ? '#DCFCE7' : sub.status === 'denied' ? '#FEE2E2' : '#FEF3C7' }}>

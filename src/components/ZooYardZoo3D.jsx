@@ -58,6 +58,31 @@ import { preloadZooModel, onZooModelProgress, zooModelState } from '../utils/zoo
 //
 // Keyed by animal id, not array position, so reordering ZOOYARD_ANIMALS cannot move a marker to
 // the wrong enclosure. Y sits just above each anchor's top so the marker clears the buildings.
+// ⚠️ HOW TO PLACE A MARKER, learned the expensive way on the Blue Mountains Bushwalk (three
+// wrong positions before the right one). Read this before adding one.
+//
+// 1. Node translations are ALL ZERO — the geometry is baked into the mesh vertices. Walking the
+//    scene graph for transforms returns 0 0 0 for all 225 nodes and tells you nothing.
+// 2. For a node that IS one structure, the position is the centre of its POSITION accessor
+//    min/max, with the marker at the bounding box top y + 9. That +9 matches the original three
+//    (animals_giraffes tops out at 65, its marker sits at 74).
+// 3. ⚠️ SOME NODES ARE MERGED MESHES SPANNING THE WHOLE ZOO, and their centroid is meaningless.
+//    `aviary_frames` and `aviary_mesh` hold EVERY aviary as a single primitive: both span
+//    x -176..220, z -114..109, and their centre lands at (22, -3), which is not an aviary at all
+//    and happens to sit on the gorillas. Always check the box size first — hundreds of units
+//    across means merged. To split one, round-trip the GLB through
+//    `npx @gltf-transform/cli cp <in> <out>` (this decodes Draco), read the POSITION floats out
+//    of the .bin, and grid-cluster them in xz. That yields the nine separate aviaries.
+// 4. ⚠️ DO NOT eyeball a position from a screenshot of the map. Fitting the projection from the
+//    existing markers works near them and extrapolates badly: it put the Bushwalk on the
+//    Wildlife Retreat lodges, ~90 units from the truth.
+//    Use the PRINTED ZOO MAP instead (`tz-map-online.pdf`). Render it with
+//    `pdftoppm -r 200 -png`, then fit an affine map from map pixels to GLB xz using landmarks
+//    named in BOTH — function_centre, nocturnal_country, nura_diya_australia, tree_shelter,
+//    floral_clock_border, forest_adventure all work. That fit lands inside 1-4 world units, and
+//    it is how this one was finally resolved. Sanity-check it by solving for a landmark you did
+//    NOT fit on: it put the Function Centre rotunda at (-183, 32) against the model's actual
+//    `retreat_pavilion_canopy` at (-185, 30).
 const SPOTS = {
   // ⚠️ The model has NO koala exhibit: nothing koala-named exists in it anywhere. This position
   // was derived from the printed map instead, by interpolating between two things that DO exist
@@ -67,6 +92,21 @@ const SPOTS = {
   koala:   { pos: '41 80 160',   where: 'the koala exhibit, by the Institute of Science and Learning' },
   giraffe: { pos: '159 74 90',   where: 'African Savannah' },
   tiger:   { pos: '253 68 67',   where: 'Tiger Trek' },
+
+  // Added 2026-09-29. All five were read out of the GLB the same way the first three were:
+  // the model's node transforms are all zero (geometry is baked into the mesh vertices), so a
+  // position is the CENTRE of that node's POSITION accessor bounds, with the marker sat at the
+  // bounding box's top y + 9. That +9 is not arbitrary — it is the offset the original three
+  // already used (animals_giraffes tops out at y 65 and its marker sits at 74), so a new marker
+  // floats exactly as far above its exhibit as the existing ones do.
+  chimpanzee: { pos: '177 75 160',  where: 'the chimpanzee exhibit' },      // animals_chimpanzees
+  gorilla:    { pos: '23 55 -6',    where: 'the gorilla exhibit' },         // animals_gorillas
+  rhino:      { pos: '136 49 -79',  where: 'the rhino exhibit' },           // animals_rhinos
+  'sea-lion': { pos: '16 46 -93',   where: 'the seal and sea lion pools' }, // animals_seals
+
+  // The walk-through aviary beside the Taronga Function Centre rotunda. Its extent is
+  // x -160..-145, y 52..64, z -1..10. Took three attempts, so the method is written down below.
+  'blue-mountains-bushwalk': { pos: '-153 73 5', where: 'the Blue Mountains Bushwalk aviary' },
 };
 
 // theta (spin) phi (height) radius (distance). The zoo is ~717 units across, so the radius has
