@@ -1044,8 +1044,8 @@ function zooyardWritten(stage) {
     ],
     responses: {
       stuck:  byStage({
-        2: `Look at your number first. Is it big or small? Then say how the thing you built helps with that.`,
-        4: `Start from your number, compare it to the benchmark beside it, then explain how what you built addresses the gap it shows.`,
+        2: `Think about what you noticed first. What was missing from your spot? Then say how the thing you built helps with that.`,
+        4: `Start from what you noticed was missing, then explain how the thing you built addresses it, and why this animal would need it.`,
       }, stage),
       length: `Keep writing until the bar fills up. Once it turns green you've written enough, but you can always say more.`,
       good:   byStage({
@@ -1058,21 +1058,24 @@ function zooyardWritten(stage) {
 
 function zooyardObserve(stage) {
   return {
-    greeting: `Two minutes of just looking, then you take your measurement. No writing yet.`,
+    greeting: `Two minutes of just looking. Nothing to type, nothing to fill in. Put the screen down.`,
     options: [
       { label: 'Why do I have to wait?',   key: 'why'    },
-      { label: 'What is the field study?', key: 'field'  },
-      { label: 'I have no partner',        key: 'alone'  },
-      { label: 'Is my number wrong?',      key: 'wrong'  },
+      { label: 'What am I looking for?',   key: 'what'   },
+      { label: 'I cannot see anything',    key: 'empty'  },
+      { label: 'Do I write this down?',    key: 'record' },
     ],
     responses: {
       why:   byStage({
         2: `Because you see more after a while. Things that were hiding start moving once you stand still.`,
         4: `Because most of what lives in a place will not show itself to someone who glances and walks off. Two minutes of stillness is the difference between looking and observing.`,
       }, stage),
-      field: `Follow the three numbered steps, then type your number in the box. There is no right answer. Whatever you actually measure is the correct one, and your score does not depend on it.`,
-      alone: `Ask anyone nearby, or your teacher. If you really cannot, pop something the size of a bag where you were crouching and walk away from that instead. It is not quite as good, but it works.`,
-      wrong: `It cannot be. The number is data, not a test. It is never scored, and an honest low result is worth exactly as much as a high one.`,
+      what:  `The three points on the screen before you started. They are all about one thing this animal needs, and whether your schoolyard has it. Keep that in your head and look for it.`,
+      empty: byStage({
+        2: `That is an answer too. If there is nothing living here, that tells you something about the place. Keep looking anyway, right until the timer stops.`,
+        4: `An empty result is still a result, and it is worth noticing rather than treating as a failure. A place with nothing in it is telling you what it is missing, which is exactly what you are about to fix.`,
+      }, stage),
+      record: `Not yet. There is no box on this screen on purpose. Watch now, build next, and the writing comes after that.`,
     },
   };
 }

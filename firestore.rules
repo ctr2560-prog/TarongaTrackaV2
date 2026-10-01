@@ -127,17 +127,6 @@ service cloud.firestore {
       allow read, write, delete: if true;
     }
 
-    // ZooYard field-study readings, aggregated across classes and schools.
-    // ⚠️ DE-IDENTIFIED BY CONSTRUCTION — no student name, alias, studentId or photo is ever
-    // written here, only schoolId/schoolName, stage, method, value, unit and visit. Keep it
-    // that way: this is the one ZooYard collection designed to be queried across schools, so
-    // anything identifying that lands in it is exposed far more widely than a class document.
-    // Create-only for students (they are unauthenticated); nothing in the app edits or deletes
-    // a reading, and allowing it would let one device rewrite another school's data.
-    match /habitatObservations/{observationId} {
-      allow read, create: if true;
-      allow update, delete: if false;
-    }
 
     // ── Evolve (Stage 6) ──────────────────────────────────────────────────────
     // Advice written at the giraffe chapter, queued for staff moderation before any

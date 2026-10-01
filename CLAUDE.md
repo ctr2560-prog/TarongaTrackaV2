@@ -78,18 +78,24 @@ disturbing to nocturnal animals, which is why it is standard in nocturnal houses
 animal gave good koala footage; red on the student made the piece to camera work. It is not yet
 in the app's filming guidance or the teacher info sheet — it should be.
 
-### Recently shipped (2026-09-28) — ZooYard: measure, act, explain
+### Recently shipped (2026-09-28 → 10-01) — ZooYard: watch, build, explain
 - **Habitat Hero was absorbed into every habitat.** The standalone end-of-session task is gone;
-  each animal now carries its own `citizenScience` block. See "Measure, act, explain" in the
-  ZooYard reference, including why the action must come *after* the measurement.
-- **A two-minute observation countdown** before the measurement, and the measurement moved off
-  the write-up screen onto its own step with it.
-- **`habitatObservations`** — a flat, deliberately de-identified collection so readings can be
-  aggregated across schools. ⚠️ Read the warning on it before adding any field.
-- **Stage 1 writing prompts** now exist on all three animals, closing the silent fallback-to-
-  Stage-4 bug (known gap 3).
-- ⚠️ **Not yet run in a browser.** Built and build-checked only; the camera and countdown paths
-  need a real pass. `firestore.rules` has an undeployed `habitatObservations` block.
+  each animal carries its own `citizenScience` block. See "Watch, build, explain".
+- **Eight habitats** (was three): koala, tiger, giraffe, blue-mountains-bushwalk, sea-lion,
+  chimpanzee, gorilla, rhino. The five new ones are **DRAFT content**, marked as such.
+- **A two-minute watch that records nothing.** The measurement step was added 09-26 and removed
+  10-01 as one step too many. ⚠️ Do not reinstate a counting activity — read the reasoning first.
+- **`habitatObservations` was built and then removed** with the measurement that fed it. Never
+  deployed, never written to.
+- **MCQ answers scattered.** All eight sat at `correct: 0`; now two per position.
+- **Stage 1 writing prompts** on all eight, closing the silent fallback-to-Stage-4 bug.
+- ✅ **Walked in a browser 2026-10-01**: map with 8 markers → unlock → video placeholder → quiz →
+  watch (timer counts down, skip works) → build screen. No app errors in the console. The timer
+  was validated in a *driven* tab, which Chrome reports as hidden — a rAF-based countdown would
+  have frozen there, and the timestamp one did not.
+- ⚠️ **The two camera steps remain unverified.** Automation cannot drive `getUserMedia`, so the
+  habitat unlock photo and the build photo have never actually been captured and uploaded. That
+  is the one path left to check by hand, and both are required to finish a habitat.
 
 ### Recently shipped (2026-09-27 → 09-28) — ZooYard, the 3D zoo
 - **The habitat picker is a 3D model of Taronga**, full screen, with a marker welded to each
@@ -841,7 +847,8 @@ ZooYard is a self-attest, single-session, no-GPS program built for classes that 
 final, the wording is a first pass awaiting Cameron's review. Three design rules hold across all
 eight and should survive any content edit:
 
-1. Each field study tests the ONE thing that species depends on, needs no equipment, takes ~2 min.
+1. Each habitat names ONE environmental quality the animal depends on, and the watch is about
+   noticing whether the schoolyard has it.
 2. **Each action is different from every other habitat's.** Five schoolyards of identical bird
    baths would be a worksheet. Ground layer · litter pickup · missing forest layer · plant variety
    · insect waterer.
@@ -871,98 +878,102 @@ Ids are deliberately reused from `src/data/animals.js` (`koala`, `tiger`, `giraf
 Each entry: `habitatArea`/`habitatLabel` (bushland/rainforest/savannah), `selfAttestWhere` (the
 short, very large "go and stand next to a tree" line) + `selfAttestPrompt` (supporting detail) +
 `selfAttestQuestion`, **no GPS check at all**; `videoUrl` (still null — see Known gaps);
-`activity` (single MCQ + fact); `fieldStudy`; `writingPromptByStage` (stages 2–5).
+`activity` (single MCQ + fact); `observation` (`seconds`/`focus`/`title`/`instruction`/`lookFor`);
+`citizenScience`; `writingPromptByStage` (**stages 1–5**, no `{n}` placeholders any more).
 
-### ⚠️ The field study, and the one rule that must not be broken (2026-09-26)
+### ⚠️ Watch, build, explain (2026-10-01) — the current shape of a habitat
 
-Until 2026-09-26 all twelve writing prompts began **Look, Describe or Explain**. Nothing was ever
-measured, which made ZooYard nature appreciation with a photo attached rather than science. Each
-habitat now runs a real ecological method, chosen so it tests the one thing that species actually
-depends on. No device, no equipment, about two minutes:
+Five beats, each doing one job:
 
-| Animal | `fieldStudy.title` | Method | Why that species |
-|---|---|---|---|
-| koala | Canopy Connection | big steps to the nearest other tree | koalas die on the ground (dogs, cars); conservation is about connected canopy, not individual trees |
-| tiger | The Concealment Test | crouch, a partner walks off, they stop when you vanish | an ambush hunter must close to ~20 m unseen or the hunt is over |
-| giraffe | Sightline Survey | one full turn, count everything blocking the view | giraffes trade cover for vision; fences and buildings cut the sightlines they defend themselves with |
+> photo unlock → video → quiz → **two-minute watch** → **build it** → write it up
 
-**🚫 NEVER SCORE THE MEASUREMENT.** Points come from the quiz and the written analysis only. A
-student who honestly records a terrible result must lose nothing. Attaching points to a number is
-a well documented way to get invented data and ruin a dataset — if this ever feeds a shared or
-cross-school dataset, that rule becomes load-bearing rather than merely principled.
+**There is no measurement step and `fieldStudy` no longer exists.** One was added on 2026-09-26
+(pace out the canopy gap, run a concealment test, count sightline blockers) and removed on
+2026-10-01 as one step too many. It was the most fragile part of the mode: the tiger method
+needed a partner, "blockers" needed interpreting, it was the one place a student could fake the
+whole task with a plausible number, and it sat exactly between the watching and the building,
+which is where a speed bump hurts most.
 
-Other decisions worth keeping:
-- **It lives inside the notebook on the written screen, NOT on a step of its own.** That keeps the
-  per-animal flow at five steps, and a naturalist records a number then writes about it on the
-  same page, which is exactly what the task is.
-- **The benchmark is withheld until they enter a result**, so it reads as something to compare
-  against rather than an answer to work backwards from.
-- **Every prompt carries a `{n}` placeholder** and quotes the student's own number back at them.
-  A prompt without it renders "You counted  steps". Stored value is bounded (`fieldStudy.max`)
-  because an unbounded number field eventually receives 99999, and blank stays blank rather than
-  becoming 0, or an untouched field reads as a real measurement of zero.
-- It is stored as `fieldStudy: { method, value, unit }` — the unit travels with the number so it
-  stays interpretable if a method is ever reworded.
+⚠️ **Do not reinstate a counting activity.** If quantitative data is ever wanted again, harvest it
+from the watch itself ("how many birds landed?") so the counting *is* the watching, rather than
+adding a sixth beat.
 
-### Measure, act, explain (2026-09-28) — the current shape of a habitat
+#### The organising rule — protect this when editing content
 
-The standalone "Habitat Hero" task that used to unlock after all three habitats **no longer
-exists**. `ZOOYARD_CITIZEN_SCIENCE_TASK` was deleted. Every animal now carries its own
-`citizenScience` block and the build happens inside each habitat:
+Each habitat names **one environmental quality the animal depends on**. The student spends two
+minutes noticing where that quality exists in their schoolyard and where it does not, then builds
+something that provides it. `observation.focus` names the quality, and `citizenScience` must
+answer that same quality and nothing else (`primary`, `fallback`, `steps`, `photoPrompt`). **Watching and building have to be about the same
+thing** or the habitat falls apart into two unrelated tasks.
 
-| Animal | Measures | Then builds |
+| Animal | Quality (`observation.focus`) | Builds |
 |---|---|---|
-| koala | steps to the nearest other tree | plants a native tree or shrub **into that gap** (pot if the ground is not allowed) |
-| tiger | steps until they vanish from view | a cover pile: logs, sticks, bark, rocks (leaf litter as fallback) |
-| giraffe | things blocking one full turn | a water dish **sited where a drinking bird has clear sightlines** (no-mow patch as fallback) |
+| koala | connected trees | plants into the canopy gap |
+| tiger | cover to hide in | a cover pile |
+| giraffe | long views and water | open-sited bird water |
+| blue-mountains-bushwalk | a living ground layer | rakes a ground layer back |
+| sea-lion | where the water goes | clears the stormwater path |
+| chimpanzee | layers at different heights | plants the missing middle layer |
+| gorilla | variety of plants | adds a kind that is missing |
+| rhino | shade and cooling | makes a shaded, cooler refuge |
 
-⚠️ **The order is load-bearing: observe → measure → act → write.** The student measures a
-specific deficit, builds the thing that addresses *that number*, and the writing connects the
-two. Building first, or writing before building, turns the measurement back into decoration —
-which is exactly the fault the field study was introduced to fix. Measure, act, justify is one
-complete loop inside a single sitting, and it is what lets ZooYard claim Working Scientifically
-without needing a return visit.
+⚠️ **Every action is deliberately different.** Eight schoolyards of identical bird baths would be
+a worksheet. Check the table before adding a ninth habitat.
 
-**Every task has a `fallback`, and that is not politeness.** Planting into the ground needs
-permission, a season and somebody to water it in the holidays. A task half the schools cannot
-start is a task that does not run.
+**The rhino moved from water to shade** on 2026-10-01. Greater one-horned rhinos wallow to
+thermoregulate, so shade *is* the need; it stops duplicating the giraffe's water dish; and it is
+the action a school is least likely to ban, where standing water is the most likely.
 
-**Why there is no return visit.** Re-measuring after a fortnight is better science and was
-considered and rejected: an optional, delayed, unprompted task in a school has near-zero
-completion, and it would have been the most complex part of the system built for the fewest
-students. The compromise is `visit: 1` on every `habitatObservations` record — a return flow
-stays an addition rather than a migration. The payoff of the dataset is intended to be a
-**staff-side** view of what many students measured, not a student-side revisit.
+#### The build screen (`zyPhase === 'action'`)
 
-#### The observation countdown (`zyPhase === 'observe'`)
+⚠️ **It is read standing outside, one-handed, by a kid about to pocket the phone and walk off.**
+It is a memorise-and-go screen, not a reading screen, and that drives every decision:
 
-Two minutes, per-animal `observation.seconds`, with `lookFor` prompts shown before it starts.
+- **One instruction**, `task.primary`, in the Taronga display face at display size. It previously
+  competed with a task title, a recap sentence and a photo-prompt heading all saying the same
+  thing four ways.
+- **No card around it.** The habitat gradient IS the page, so each of the eight feels like a
+  different place and the screen stops reading as a form. **Colour says what to do; the white
+  panel is the tool.** Do not move instructions into the white panel.
+- ⚠️ **Keep the scrim light.** Crush it for contrast and all six habitat gradients collapse into
+  the same dark green, losing the only cue that says which place you are in. A radial pool of
+  `theme.accent` behind the headline does the lifting instead.
+- **Two disclosures, both shut by default**, in this order: **"How do I do it?"** (numbered
+  `citizenScience.steps`, 5 per habitat) then **"Cannot do that here?"** (`citizenScience.
+  fallback`). Steps come first because far more students need them than need the fallback.
+  Neither may compete with the headline for a student who already knows what to do.
+- **The step numerals carry information** — these are a real sequence worked through in order,
+  which is the only thing that justifies numbering a list.
+- 🚫 **No note field.** It used to carry an optional "tell us about it", which asked for the same
+  thing the write-up screen asks for properly and scores. Two writing moments in one habitat
+  means the first gets a shrug. Staff moderation therefore sees a photo with no words beside it;
+  if that bites, copy the written response onto the submission afterwards rather than putting a
+  box back here.
 
-- ⚠️ **Timestamp-based, never a tick counter.** A school tablet that locks, or a tab pushed to
-  the background, stops firing intervals — a counter would freeze wherever it reached. The state
-  is an absolute `observeEndsAt`; the interval only re-reads the clock.
-- **Nothing is typeable while it runs.** A text box on screen means students write for two
-  minutes instead of looking for two minutes.
+#### The watch (`zyPhase === 'observe'`)
+
+Two minutes, per-animal `observation.seconds`, with `observation.focus` shown as a pill and the
+`lookFor` prompts listed before it starts.
+
+- 🚫 **Nothing is recorded, and there is no input on the screen at all.** A box to fill in means a
+  student writes for two minutes instead of looking for two minutes, which is the opposite of the
+  point. This is deliberate, not an omission.
+- ⚠️ **Timestamp-based, never a tick counter.** A school tablet that locks, or a tab pushed to the
+  background, stops firing intervals — a counter would freeze wherever it reached.
 - **"Skip the timer" exists and is deliberately quiet**, same reasoning as Evolve's: thirty
   students outdoors on a bell cannot always be held still.
-- The measurement moved here, off the write-up screen. The earlier note that it belonged in the
-  notebook beside the writing no longer applies — it has to precede the build.
 
-#### `habitatObservations` — the cross-school dataset
+#### `habitatObservations` — built, then removed unused
 
-```js
-{ program:'zooyard', schoolId, schoolName, stage, habitatId, methodId, value, unit,
-  visit: 1, recordedAt }
-```
+A flat, de-identified collection for aggregating field-study readings across schools. It was
+written on 2026-09-28 and removed on 2026-10-01 along with the measurement that fed it: with no
+number there was nothing to aggregate. **Its Firestore rule was removed too, and it was never
+deployed, so no document was ever written.** Nothing references it.
 
-🚫 **No student name, alias, studentId or photo, ever.** This is the one ZooYard collection
-designed to be queried across schools, so anything identifying in it is exposed far more widely
-than a class document. Rules are `read, create: if true` with update and delete **denied** —
-nothing in the app edits a reading, and allowing it would let one device rewrite another
-school's data. ⚠️ Not yet deployed (`firebase deploy --only firestore:rules`).
-
-Per-student data is unaffected: the same reading still lands on the student doc under
-`zooyard.{animalId}.fieldStudy`, where the teacher needs a name attached to it.
+If a count ever returns on the watch screen, `ZooYardScreen.jsx` carries a comment at the old
+write site. The design worth keeping if so: `schoolId`, `schoolName`, `stage`, `habitatId`,
+`methodId`, `value`, `unit`, `visit` — and 🚫 **no student name, alias, studentId or photo**,
+because that is the one ZooYard collection meant to be queried across schools.
 
 #### What this changed elsewhere
 
@@ -982,8 +993,8 @@ Mirrors `ZooSnoozScreen.jsx`'s pattern exactly: own local component state (no `S
 
 Flow: **first-run intro** (once) → **3D zoo map with a locked marker per habitat** → tap a
 padlock → **unlock sheet over the map** (go and stand there, photograph it) → video/placeholder →
-single MCQ → **two-minute observation countdown + field study measurement** → **build the thing
-and photograph it** → **written analysis** (scored via `buildObservationScore(text,
+single MCQ → **two-minute watch, nothing recorded** → **build the thing and photograph it** →
+**written analysis** (scored via `buildObservationScore(text,
 animalId, classStage, 'science')`, points formula same as ZooSnooz:
 `Math.round((behaviour+detail+writing)/15*100) + (quizCorrect?20:0)`) → badge reveal **with
 feedback** → back to the map.
@@ -998,7 +1009,6 @@ zooyard: {
   koala: {
     habitatPhotoUrl, unlockedAt,          // written the moment the photo lands: this is the UNLOCK
     completed: true, points, behaviour, detail, writing, quizCorrect, observation, updatedAt,
-    fieldStudy: { methodId, method, value, unit },   // recorded, never scored
   },
   tiger:  { ... }, giraffe: { ... },
   sessionCompleted: true, totalPoints,
@@ -1058,8 +1068,8 @@ ZooYard keys in `utils/studentGuideContent.js`: `zooyard`, `-attest`, `-video`, 
 ⚠️ **None of the pre-existing guide content works here.** It is all about walking to animals,
 distances and GPS unlocking, none of which ZooYard has. The ZooYard answers keep pointing students
 back outside at the real thing instead. The `-written` set also covers the two things the field
-study will actually generate: *"What is the field study?"* and *"I have no partner"* (the tiger
-concealment test needs one).
+watch will actually produce: *"What am I looking for?"* and *"I cannot see anything"* (an empty
+result is a real result, and students read it as failure).
 
 The habitat picker is the **default return at the bottom of the file**, not a named `if` block —
 it was the one screen missed on the first pass. Check it explicitly when adding anything global.
@@ -1264,22 +1274,24 @@ student who cannot render it still has to be able to pick a habitat.
 
 ⚠️ **It has never been run.** As of 2026-09-26 Firestore holds **one** ZooYard class (`A3BKK5`,
 "TEST09", one student), zero completed habitats, zero finished sessions, and one pending Habitat
-Hero submission. Everything above is built and unverified in the field. The field study in
-particular needs a real class before it is trusted, especially whether students actually do the
-concealment test or just type a number.
+Hero submission. Everything above is built and unverified in the field. The two-minute watch in
+particular needs a real class before it is trusted: it records nothing, so it is the easiest step
+in the mode for a student to stand through without actually looking.
 
 1. **The videos are still `videoUrl: null`** on all three animals, so every student hits "Video
-   coming soon" three times. They now have a clear job: each must **demonstrate its field study
-   method**, not just deliver facts. That is the single highest-value missing asset.
+   coming soon", now on all eight habitats. They have a clear job: each must set up the one
+   quality that habitat is about, so a student knows what they are walking out to look for.
+   That is the single highest-value missing asset.
    ⚠️ Do not confuse this with `ZOOYARD_HABITAT_THEME[x].videoBg` — those three files in
    `public/videos/` exist and are the ambient habitat backgrounds, a different thing. They are
    also heavy (savannah 3.5MB, bushland 2.8MB) for a school network with a class on it at once.
    ⚠️ They are also now **only used on the write-up screen**, since the habitat picker is the 3D
    model rather than a video-backed card list.
 2. **No curriculum outcomes anywhere.** ZooYard is the only mode with nothing to show a teacher:
-   no info sheet, nothing on Curriculum Alignment. With the field study in it can now defensibly
-   claim Working Scientifically data outcomes, and arguably maths, which would also address its
-   being Science-only and thinner than the other modes.
+   no info sheet, nothing on Curriculum Alignment. ⚠️ This got **harder** on 2026-10-01: the
+   measurement was what would have supported a Working Scientifically *data* claim, and it is
+   gone. The defensible claim now is observation and conservation action rather than data
+   collection. Worth settling before the mode is sold to a school on its outcomes.
 3. ~~**Stage 1 has no content.**~~ **CLOSED 2026-09-28** — all three animals now carry a stage 1
    writing prompt, so the silent fallback to Stage 4 wording is gone.
 4. Three animals and **one MCQ each** is still thin next to Evolve's five chapters or Wildest
