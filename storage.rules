@@ -29,6 +29,38 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
+    // ⚠️ Student paths must accept UNAUTHENTICATED writes (students have no logins), which
+    //    means anyone can upload. Until 2026-10-02 that meant anyone could upload ANYTHING:
+    //    an HTML phishing page, an executable, a pirated film, hosted on Taronga's bucket.
+    //    That is a reputational and legal problem well beyond this app.
+    //
+    //    isStudentMedia() limits uploads to images and video under 300MB. Real files top out
+    //    around 7MB and are all video/webm, so this is deliberately generous — it exists to
+    //    block the abuse case, not to police students.
+    //
+    // ⚠️ It is a MITIGATION, NOT A CURE. An attacker can still declare contentType:'video/mp4'
+    //    and upload arbitrary bytes. What it does buy: the file is then SERVED as video, so it
+    //    cannot be used as a working phishing page or drive-by download. The real fix is
+    //    authenticated uploads or App Check.
+    //
+    // ⚠️ DELETE IS DENIED on these paths. `write` covers create + update + DELETE, and a delete
+    //    carries no request.resource, so folding delete into isStudentMedia() would deny it by
+    //    accident. It is denied ON PURPOSE and stated explicitly: nothing in Tracka or Wildly
+    //    calls deleteObject(), and an anonymous client should never be able to destroy a
+    //    student's film. A future retention job must run server-side with the Admin SDK, which
+    //    bypasses these rules anyway.
+    //
+    // ⚠️ Every student upload already sets contentType explicitly (ZooSnooz, Evolve, Wildest
+    //    Dreams and ZooYard all pass it). If you add an upload that does NOT, it will fail
+    //    SILENTLY — uploads are backgrounded and nobody sees the error. Check this first when
+    //    a new upload path "does nothing".
+    function isStudentMedia() {
+      return request.resource.size < 300 * 1024 * 1024
+        && request.resource.contentType != null
+        && (request.resource.contentType.matches('image/.*')
+            || request.resource.contentType.matches('video/.*'));
+    }
+
     // ── Student paths ────────────────────────────────────────────────────────
     // Students have no Firebase Auth at all — they join with a class code and a chosen
     // alias — so these must allow UNAUTHENTICATED writes. They are the only exception to
@@ -39,35 +71,40 @@ service firebase.storage {
     match /zoosnooz/{allPaths=**} {
       allow get: if true;      // download a known file
       allow list: if false;    // 🚫 no folder browsing
-      allow write: if true;
+      allow create, update: if isStudentMedia();
+      allow delete: if false;   // 🚫 nobody anonymous destroys a student's keepsake
     }
 
     // Evolve: per-chapter pieces to camera and the final stitched film.
     match /evolve/{allPaths=**} {
       allow get: if true;      // download a known file
       allow list: if false;    // 🚫 no folder browsing
-      allow write: if true;
+      allow create, update: if isStudentMedia();
+      allow delete: if false;   // 🚫 nobody anonymous destroys a student's keepsake
     }
 
     // Wildest Dreams: per-animal student clips and the final stitched film.
     match /wildestDreams/{allPaths=**} {
       allow get: if true;      // download a known file
       allow list: if false;    // 🚫 no folder browsing
-      allow write: if true;
+      allow create, update: if isStudentMedia();
+      allow delete: if false;   // 🚫 nobody anonymous destroys a student's keepsake
     }
 
     // ZooYard: self-attest habitat photos (the student's tree / shady spot / open space).
     match /zooyardHabitats/{allPaths=**} {
       allow get: if true;      // download a known file
       allow list: if false;    // 🚫 no folder browsing
-      allow write: if true;
+      allow create, update: if isStudentMedia();
+      allow delete: if false;   // 🚫 nobody anonymous destroys a student's keepsake
     }
 
     // ZooYard: Habitat Hero citizen science evidence photos.
     match /citizenScienceEvidence/{allPaths=**} {
       allow get: if true;      // download a known file
       allow list: if false;    // 🚫 no folder browsing
-      allow write: if true;
+      allow create, update: if isStudentMedia();
+      allow delete: if false;   // 🚫 nobody anonymous destroys a student's keepsake
     }
 
     // ── Default ──────────────────────────────────────────────────────────────

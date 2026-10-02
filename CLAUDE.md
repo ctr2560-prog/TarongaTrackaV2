@@ -260,9 +260,17 @@ no login at all**, returned: `classes` 10, `students` (collection group) 104, `z
    (kept) and `list` (denied) on all five student paths plus the catch-all; verified
    `storage/unauthorized` on all five from an unauthenticated client, while a real stored clip
    still returns 206. Neither app ever calls `listAll()`, so this cost nothing.
-   ⚠️ Still only security-by-unguessable-URL, and the paths still allow unauthenticated
-   **write**. Real fix is short-lived signed URLs; that touches every media read path
-   (stitchers, DocumentaryViewer, admin tabs) so it is its own piece of work, not a quick one.
+   ⚠️ Still only security-by-unguessable-URL. Real fix is short-lived signed URLs; that touches
+   every media read path (stitchers, DocumentaryViewer, admin tabs) so it is its own piece of
+   work, not a quick one.
+   **Also hardened the same day:** uploads to student paths are now limited to `image/*` and
+   `video/*` under 300MB (`isStudentMedia()` in `storage.rules`), and **delete is denied
+   outright**. Before this, anyone could upload an HTML phishing page or an executable onto
+   Taronga's bucket, or delete a student's film. Verified live: html/pdf/octet-stream rejected,
+   `video/webm;codecs=vp9,opus` and `image/jpeg` accepted, delete blocked, folder listing blocked.
+   ⚠️ A mitigation, not a cure — an attacker can still declare `video/mp4` and upload bytes. What
+   it buys is that the file is then *served* as video, so it cannot work as a phishing page.
+   ⚠️ Any new student upload MUST set `contentType` or it will fail **silently**.
 2. **`classes` and `students` are `allow read, write: if true`** — 104 student records readable,
    alterable and deletable by anyone. Needs the Cloud Function write pattern.
 3. **No retention or deletion anywhere.** Every clip ever filmed is still stored, indefinitely.
