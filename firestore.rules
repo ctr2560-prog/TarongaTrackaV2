@@ -22,14 +22,32 @@ service cloud.firestore {
     // ── Classes ───────────────────────────────────────────────────────────────
     // Students find their class by code without logging in → public read.
     // Write is open so the staff portal (code-based login) can delete classes.
+    // ⚠️ Students look up their class by code with no login, so `read` must stay open.
+    //    The class DOCUMENT itself is only ever written by an authenticated teacher
+    //    (CreateClassScreen, and the GPS toggle on ClassDetailsScreen) — verified by
+    //    grepping every write path — so create/update/delete require Firebase Auth.
     match /classes/{classCode} {
       allow read: if true;
-      allow write: if true;
+      allow create, update, delete: if request.auth != null;
 
-      // Student records — students have no Firebase Auth; they write with a
-      // class code + chosen alias.  Teachers and admins read all students.
+      // Student records.
+      // ⚠️ `create` and `update` MUST stay open: students have no Firebase Auth at all, they
+      //    join with a class code and an alias, and every mode writes progress as they go.
+      //    This is the single biggest remaining hole in the system — anyone can read or alter
+      //    any student record — and closing it properly means routing student writes through
+      //    a Cloud Function. That is weeks of work, not a rules tweak. Do not pretend
+      //    otherwise.
+      //
+      // 🚫 `delete` is now DENIED to unauthenticated clients (2026-10-02). It was open, which
+      //    meant anyone could wipe every class and every student in the system — the one
+      //    irreversible action available. Teachers delete students from Class Details and are
+      //    authenticated, so they still can. The staff Control Room's "wipe all data" has no
+      //    Firebase Auth and now goes through the `adminWipeAllData` Cloud Function instead.
+      //    ⚠️ If a staff delete ever "stops working", fix the function — do NOT reopen this.
       match /students/{studentId} {
-        allow read, write: if true;
+        allow read: if true;
+        allow create, update: if true;
+        allow delete: if request.auth != null;
       }
     }
 

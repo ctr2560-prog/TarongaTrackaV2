@@ -367,6 +367,81 @@ async function checkAdminCode(db, rawCode, ip) {
   return { ok, locked: false };
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// adminWipeAllData — the staff Control Room "wipe all data" button.
+//
+// ⚠️ WHY THIS MOVED SERVER-SIDE (2026-10-02). This used to run in the browser, deleting
+// every class and every student document directly, and it worked because `classes` and
+// `students` were `allow write: if true` — i.e. ANYONE could run the same deletion, with or
+// without the staff portal. firestore.rules now requires Firebase Auth to delete, and the
+// staff portal has no Firebase Auth, so the operation lives here instead and is gated on the
+// access code verified with the Admin SDK.
+//
+// ⚠️ The Control Room's own password is HARDCODED IN THE CLIENT as a plain string. Anyone
+// reading the JS bundle can see it. It is a UI speed bump, NOT a security control, and must
+// never be the only thing standing in front of a destructive action — which is exactly why
+// this function re-checks the real access code server-side regardless of what the UI did.
+//
+// This is the most destructive operation in the system. It requires the access code AND an
+// explicit confirm string, and it logs who ran it.
+exports.adminWipeAllData = onRequest(
+  { region: 'australia-southeast1', invoker: 'public' },
+  async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type');
+
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    const { code, confirm } = req.body || {};
+    if (confirm !== 'WIPE') {
+      res.status(400).json({ error: 'Confirmation text did not match.' });
+      return;
+    }
+
+    // Validate before touching Firestore: an empty/missing code produces an invalid document
+    // path and throws, which surfaced as a bare 500 with no body instead of a clean refusal.
+    if (!code || typeof code !== 'string' || !code.trim()) {
+      res.status(403).json({ error: 'Invalid or inactive access code.' });
+      return;
+    }
+
+    const db = admin.firestore();
+    const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.ip;
+    try {
+      const { ok, locked } = await checkAdminCode(db, code, ip);
+      if (locked) { res.status(429).json({ error: 'Too many attempts. Try again in 15 minutes.' }); return; }
+      if (!ok)    { res.status(403).json({ error: 'Invalid or inactive access code.' }); return; }
+    } catch (err) {
+      console.error('adminWipeAllData code check failed:', err);
+      res.status(500).json({ error: 'Could not verify the access code.' });
+      return;
+    }
+
+    try {
+      let classes = 0, students = 0;
+      const classesSnap = await db.collection('classes').get();
+      for (const classDoc of classesSnap.docs) {
+        const studentsSnap = await db.collection('classes').doc(classDoc.id).collection('students').get();
+        // Firestore caps a batch at 500 writes.
+        let batch = db.batch(), n = 0;
+        for (const s of studentsSnap.docs) {
+          batch.delete(s.ref); students++;
+          if (++n >= 450) { await batch.commit(); batch = db.batch(); n = 0; }
+        }
+        batch.delete(classDoc.ref); classes++;
+        await batch.commit();
+      }
+      console.warn(`[adminWipeAllData] WIPED ${classes} classes and ${students} students from ip=${ip}`);
+      res.json({ ok: true, classes, students });
+    } catch (err) {
+      console.error('adminWipeAllData failed:', err);
+      res.status(500).json({ error: 'Wipe failed: ' + err.message });
+    }
+  }
+);
+
 exports.verifyAdminCode = onRequest(
   { region: 'australia-southeast1', invoker: 'public' },
   async (req, res) => {

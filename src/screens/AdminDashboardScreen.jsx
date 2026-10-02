@@ -2468,19 +2468,26 @@ function ControlRoomTab({ adminAccessCode }) {
     finally { setGpsLoading(false); }
   };
 
+  // ⚠️ Runs SERVER-SIDE now. This used to delete every class and student straight from the
+  // browser, which only worked because `classes`/`students` were world-writable — meaning
+  // anyone could run the same deletion without the staff portal at all. Deleting now requires
+  // Firebase Auth in firestore.rules, and the staff portal has none, so the operation goes
+  // through adminWipeAllData which re-verifies the access code with the Admin SDK.
+  // ⚠️ Do not "fix" a wipe failure by reopening delete in the rules.
   const wipeAllData = async () => {
     if (wipeConfirm.trim().toUpperCase() !== 'WIPE') return;
     setWiping(true);
     try {
-      const classesSnap = await getDocs(collection(db, 'classes'));
-      for (const classDoc of classesSnap.docs) {
-        const studentsSnap = await getDocs(collection(db, 'classes', classDoc.id, 'students'));
-        for (const s of studentsSnap.docs) await deleteDoc(s.ref);
-        await deleteDoc(classDoc.ref);
-      }
+      const res = await fetch('https://australia-southeast1-tarongatracka.cloudfunctions.net/adminWipeAllData', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: adminAccessCode, confirm: 'WIPE' }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data?.error || 'Wipe failed');
       setWipeStep(0);
       setWipeConfirm('');
-      alert('All class and student data has been wiped.');
+      alert(`Wiped ${data.classes} classes and ${data.students} student records.`);
     } catch (e) { alert('Wipe failed: ' + e.message); }
     finally { setWiping(false); }
   };
