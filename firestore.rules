@@ -143,19 +143,26 @@ service cloud.firestore {
     match /challengeSubmissions/{submissionId} {
       allow read, update: if true;
       allow create: if request.auth != null;
+      allow delete: if false;   // 🚫 nothing deletes these
     }
 
     // ── ZooSnooz session documents ────────────────────────────────────────────
+    // 🚫 delete denied (2026-10-02) — nothing deletes these, and they back the ZooSnooz NFC
+    //    souvenir cards.
     match /zoosnooz_docs/{docId} {
-      allow read, write: if true;
+      allow read, create, update: if true;
+      allow delete: if false;
     }
 
     // ── ZooYard citizen science submissions ───────────────────────────────────
     // Students (no Firebase Auth) create submissions. Staff portal approves/denies
     // without Firebase Auth (code-based login). Teachers deny/delete their own
     // class's submissions — scoped client-side, same trust model as challengeSubmissions.
+    // ⚠️ delete requires a login (2026-10-02). Teachers remove their own class's submissions
+    //    from Class Details and are Firebase-authenticated; nothing else deletes these.
     match /citizenScienceSubmissions/{submissionId} {
-      allow read, write, delete: if true;
+      allow read, create, update: if true;
+      allow delete: if request.auth != null;
     }
 
 
@@ -164,14 +171,21 @@ service cloud.firestore {
     // younger student sees it. Students have no Firebase Auth, and the staff portal is
     // code-based, so both ends are open — same trust model as challengeSubmissions.
     // Documents carry a cohort year, never a student name.
+    // 🚫 delete denied (2026-10-02) — nothing in the app deletes advice, and this is the
+    //    moderation queue. Staff change `status`, which is an update, not a delete.
     match /evolveAdvice/{adviceId} {
-      allow read, write, delete: if true;
+      allow read, create, update: if true;
+      allow delete: if false;
     }
 
     // Per-student Evolve keepsake record (film URL + reflections), read by the souvenir
     // link the student keeps.
+    // 🚫 delete denied (2026-10-02). Nothing in the app deletes these, and each one backs a
+    //    PHYSICAL NFC souvenir tag already handed to a student — deleting the document bricks
+    //    the tag permanently, with no way to reissue it.
     match /evolve_docs/{docId} {
-      allow read, write: if true;
+      allow read, create, update: if true;
+      allow delete: if false;
     }
 
     // ── Device bookings ───────────────────────────────────────────────────────
