@@ -230,11 +230,53 @@ chapter's, or a free-flowing student would see a dashed leg beside a chapter the
 - **Student attribution is by animal alias** (Quoll, Bilby). Evolve stores no real names, which is
   why pledge certificates and the Advice Wall are alias/cohort-attributed.
 
-### Known live issues elsewhere
-- **`classes/{code}` and its `students` subcollection are `allow read, write: if true`** in
-  `firestore.rules` — unauthenticated write access to every student record in every class. This is
-  pre-existing and a bigger hole than the teacher-enumeration one that was closed on 2026-07-27.
-  Fixing it needs the Cloud Function pattern, since students have no Firebase Auth. Not started.
+### ⚠️ Security posture (assessed against the LIVE project, 2026-10-02)
+
+**Root cause, and the thing to understand before touching any of this:** students have no logins
+and the staff portal had no real login, so the browser talks straight to Firestore and Storage.
+For the app to work, the database had to be left open. Nearly every finding below follows from
+that one decision.
+
+Measured, not theorised. A 15-line script using only the public config from the JS bundle, **with
+no login at all**, returned: `classes` 10, `students` (collection group) 104, `zoosnooz_docs` 38,
+`studentFeedback` 32, `evolveAdvice` 21, `accessCodes` 90, `adminAccess` 1 — in **1.4 seconds**.
+`teachers` was correctly DENIED.
+
+#### ✅ FIXED and verified 2026-10-02
+- **Staff portal authentication bypass.** `adminAccess` was `allow read: if true` and the document
+  ID *is* the access code, so listing the collection returned the staff password. Now
+  `read, write: if false`, verified denied from an unauthenticated client. Verification moved to
+  the **`verifyAdminCode`** Cloud Function (Admin SDK, bypasses rules), with per-IP lockout in
+  `adminAuthAttempts` after 10 failures in 15 minutes — because moving the check server-side
+  without throttling just converts "read the code" into "guess it fast".
+  ⚠️ **Never reopen `read` on `adminAccess` to debug a login problem. That IS the vulnerability.**
+- **App Check scaffolding** in `src/firebase.js`, inert until `VITE_APPCHECK_SITE_KEY` is set.
+  Read the rollout notes in that file before enabling — **Wildly shares this project and will go
+  down if enforcement is switched on before Wildly sends tokens too.**
+
+#### 🔴 STILL OPEN — in rough priority order
+1. **Every student video and photo is listable and downloadable with no login.** Confirmed:
+   `listAll()` on `zoosnooz/`, `evolve/`, `zooyardHabitats/`, `citizenScienceEvidence/` all
+   succeed unauthenticated. This is **not** security-by-unguessable-URL as was assumed — the
+   folder tree can be walked, and it is organised by class code and student alias. These are
+   identifiable children's faces and voices. The same paths also allow unauthenticated **write**.
+2. **`classes` and `students` are `allow read, write: if true`** — 104 student records readable,
+   alterable and deletable by anyone. Needs the Cloud Function write pattern.
+3. **No retention or deletion anywhere.** Every clip ever filmed is still stored, indefinitely.
+   ⚠️ The ZooSnooz parent letter once promised 48-hour deletion that was never built; wording has
+   been corrected, but there is still no deletion job.
+4. **No consent record.** Filming opt-out is a verbal arrangement with the teacher; nothing in the
+   data marks a student as not-to-be-filmed, so moderation has nothing to filter on.
+5. Open writes on `accessCodes` (90 teacher invite codes), `settings`, `schools`, `prePostLinks`.
+
+#### Privacy — what is genuinely good, and worth defending
+- **Students never enter real names**; they pick an animal alias. This is the single biggest
+  protection in the system and it is deliberate. Do not let a future feature ask for real names.
+- Evolve's Advice Wall stores cohort year only.
+- Teacher enumeration was closed (2026-07-27) and still holds — `list` on `teachers` is denied.
+- ⚠️ But **aliases do not survive video**. A clip of a child's face is identifiable regardless of
+  what the document calls them, and class code → class doc → school name is public, so an alias is
+  re-identifiable to anyone at that school.
 
 ### Test data sitting in Firebase (safe to delete)
 - Class **`EVOLVE`** — students `Bilby`, `Quoll`, with webcam test clips under `evolve/EVOLVE/`.
