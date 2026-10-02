@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
+import { initializeAppCheck, ReCaptchaEnterpriseProvider } from 'firebase/app-check';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getAuth } from 'firebase/auth';
@@ -38,7 +38,7 @@ const app = initializeApp(firebaseConfig);
 // This code is deliberately INERT until VITE_APPCHECK_SITE_KEY is set, so it is safe to
 // ship today and turn on later. Enabling it is a three-step job, in this order:
 //
-//   1. Firebase Console → App Check → register the web app with reCAPTCHA v3. Copy the
+//   1. Firebase Console → App Check → register the web app under **Fraud Defense**. Copy the
 //      SITE key (public, belongs in .env; the SECRET key stays in the Console).
 //   2. Put `VITE_APPCHECK_SITE_KEY=<site key>` in `.env` and in the GitHub Actions build
 //      env, then deploy. Tokens now flow but NOTHING is blocked yet — watch the Console's
@@ -63,7 +63,7 @@ if (appCheckSiteKey) {
   }
   try {
     initializeAppCheck(app, {
-      provider: new ReCaptchaV3Provider(appCheckSiteKey),
+      provider: new ReCaptchaEnterpriseProvider(appCheckSiteKey),
       isTokenAutoRefreshEnabled: true,
     });
   } catch (err) {
