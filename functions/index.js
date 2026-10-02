@@ -324,6 +324,89 @@ function buildMentorReportHtml(reportText) {
 // rules), so the Firestore rule for `teachers` can restrict `list` to real
 // Firebase-authenticated staff (see firestore.rules) while this stays the only
 // way the code-based admin portal can still see the full roster.
+// ─────────────────────────────────────────────────────────────────────────────
+// verifyAdminCode — server-side check of the staff portal access code.
+//
+// ⚠️ WHY THIS EXISTS. The staff portal code used to be verified IN THE BROWSER by
+// reading `adminAccess/{code}` directly, and that collection was world-readable. The
+// document ID *is* the code, so listing the collection returned the password. Verified
+// against the live project on 2026-10-02: an unauthenticated 15-line script read it in
+// 1.4 seconds. That was a complete authentication bypass for the staff portal.
+//
+// The client now posts the code here and never reads the collection; `adminAccess` is
+// denied to clients entirely in firestore.rules. The Admin SDK bypasses rules, so only
+// this function (and getAdminTeacherRoster, which does the same check) can see it.
+//
+// ⚠️ Moving the check server-side is NOT sufficient on its own — without throttling it
+// just converts "read the code" into "guess the code a thousand times a second". Hence
+// the lockout below. Attempts are tracked per IP in `adminAuthAttempts`, which clients
+// cannot read or write.
+const ADMIN_MAX_ATTEMPTS = 10;
+const ADMIN_WINDOW_MS = 15 * 60 * 1000;
+
+async function checkAdminCode(db, rawCode, ip) {
+  const key = String(ip || 'unknown').replace(/[^a-zA-Z0-9.:_-]/g, '_').slice(0, 120) || 'unknown';
+  const attemptRef = db.collection('adminAuthAttempts').doc(key);
+  const now = Date.now();
+
+  const snap = await attemptRef.get();
+  const rec = snap.exists ? snap.data() : null;
+  const fresh = rec && (now - (rec.windowStart || 0)) < ADMIN_WINDOW_MS;
+  const count = fresh ? (rec.count || 0) : 0;
+  if (count >= ADMIN_MAX_ATTEMPTS) return { ok: false, locked: true };
+
+  const code = String(rawCode || '').trim().toLowerCase();
+  const codeSnap = await db.collection('adminAccess').doc(code).get();
+  const ok = codeSnap.exists && codeSnap.data().active === true;
+
+  if (ok) {
+    if (snap.exists) await attemptRef.delete();
+  } else {
+    await attemptRef.set({ count: count + 1, windowStart: fresh ? rec.windowStart : now, lastAt: now }, { merge: true });
+  }
+  return { ok, locked: false };
+}
+
+exports.verifyAdminCode = onRequest(
+  { region: 'australia-southeast1', invoker: 'public' },
+  async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type');
+
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    const { code } = req.body || {};
+    if (!code || typeof code !== 'string') {
+      res.status(400).json({ error: 'An access code is required.' });
+      return;
+    }
+
+    try {
+      const db = admin.firestore();
+      const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.ip;
+      const { ok, locked } = await checkAdminCode(db, code, ip);
+
+      if (locked) {
+        res.status(429).json({ error: 'Too many attempts. Try again in 15 minutes.' });
+        return;
+      }
+      if (!ok) {
+        // Deliberately slow and deliberately vague: no hint about whether the code
+        // exists but is inactive, which would halve an attacker's search.
+        await new Promise((r) => setTimeout(r, 600));
+        res.status(403).json({ error: 'Invalid or inactive access code.' });
+        return;
+      }
+      res.json({ ok: true });
+    } catch (err) {
+      console.error('Admin code verification failed:', err);
+      res.status(500).json({ error: 'Failed to verify access code.' });
+    }
+  }
+);
+
 exports.getAdminTeacherRoster = onRequest(
   { region: 'australia-southeast1', invoker: 'public' },
   async (req, res) => {

@@ -1,7 +1,13 @@
 import { useState } from 'react';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../firebase';
 import { useApp } from '../context/AppContext';
+
+// ⚠️ The access code is verified SERVER-SIDE and must stay that way. This screen used to
+// read `adminAccess/{code}` straight from Firestore, and that collection was world-readable
+// with the code as the document ID — so listing it returned the staff password. Confirmed
+// against the live project on 2026-10-02: read in 1.4s with no login. `adminAccess` is now
+// denied to clients in firestore.rules, so a direct read here would simply fail.
+// Do not "simplify" this back into a getDoc.
+const VERIFY_URL = 'https://australia-southeast1-tarongatracka.cloudfunctions.net/verifyAdminCode';
 
 export default function AdminLoginScreen() {
   const { setCurrentScreen, adminAccessCode, setAdminAccessCode } = useApp();
@@ -12,15 +18,22 @@ export default function AdminLoginScreen() {
     if (!code) return;
     setLoading(true);
     try {
-      const snap = await getDoc(doc(db, 'adminAccess', code));
-      if (snap.exists() && snap.data().active === true) {
+      const res = await fetch(VERIFY_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.ok) {
         setCurrentScreen('adminDashboard');
       } else {
-        alert('Invalid or inactive access code');
+        // The server repeats its own wording back, so a lockout reads as a lockout
+        // ("Too many attempts...") rather than as a wrong code.
+        alert(data.error || 'Invalid or inactive access code');
       }
     } catch (err) {
       console.error('Admin login error:', err);
-      alert('Failed to verify access code. Please try again.');
+      alert('Could not reach the server to check that code. Check your connection and try again.');
     } finally {
       setLoading(false);
     }

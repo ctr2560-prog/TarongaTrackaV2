@@ -78,12 +78,25 @@ service cloud.firestore {
     }
 
     // ── Admin access verification ─────────────────────────────────────────────
-    // The access code IS the credential — the login screen reads this collection
-    // unauthenticated to verify the code. Security comes from the code being secret,
-    // not from Firebase Auth (which isn't used for admin login).
+    // 🚫 CLOSED TO CLIENTS ENTIRELY (2026-10-02). The document ID IS the staff portal
+    // access code, and this used to be `allow read: if true` so the login screen could
+    // check it in the browser. That meant listing this collection returned the staff
+    // password: a complete authentication bypass for the staff portal. Verified against
+    // the live project — an unauthenticated script read it in 1.4 seconds.
+    //
+    // Verification now happens in the `verifyAdminCode` Cloud Function, which uses the
+    // Admin SDK and therefore bypasses these rules. `getAdminTeacherRoster` does the same
+    // check the same way. NOTHING in the client may read this collection.
+    // ⚠️ Do not reopen `read` to "fix" an admin login problem — that is the vulnerability.
     match /adminAccess/{docId} {
-      allow read: if true;
-      allow write: if false;
+      allow read, write: if false;
+    }
+
+    // Per-IP failed-login counters for the staff portal, written only by the Admin SDK
+    // inside verifyAdminCode. Clients have no business reading or writing these: exposing
+    // them would let an attacker clear their own lockout.
+    match /adminAuthAttempts/{ip} {
+      allow read, write: if false;
     }
 
     // ── Global app settings ───────────────────────────────────────────────────
