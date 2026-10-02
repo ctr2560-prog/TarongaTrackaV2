@@ -249,7 +249,8 @@ no login at all**, returned: `classes` 10, `students` (collection group) 104, `z
   `adminAuthAttempts` after 10 failures in 15 minutes — because moving the check server-side
   without throttling just converts "read the code" into "guess it fast".
   ⚠️ **Never reopen `read` on `adminAccess` to debug a login problem. That IS the vulnerability.**
-- **Storage folder listing closed.** See item 1 below.
+- **Storage folder listing closed, uploads restricted to media, deletes denied.** See item 1.
+- **Destructive writes now need a login.** See item 2.
 - **App Check scaffolding** in `src/firebase.js`, inert until `VITE_APPCHECK_SITE_KEY` is set.
   Read the rollout notes in that file before enabling — **Wildly shares this project and will go
   down if enforcement is switched on before Wildly sends tokens too.**
@@ -271,8 +272,20 @@ no login at all**, returned: `classes` 10, `students` (collection group) 104, `z
    ⚠️ A mitigation, not a cure — an attacker can still declare `video/mp4` and upload bytes. What
    it buys is that the file is then *served* as video, so it cannot work as a phishing page.
    ⚠️ Any new student upload MUST set `contentType` or it will fail **silently**.
-2. **`classes` and `students` are `allow read, write: if true`** — 104 student records readable,
-   alterable and deletable by anyone. Needs the Cloud Function write pattern.
+2. **`students` create/update is still open** — 104 student records readable and *alterable* by
+   anyone with no login. 🟡 **Deletion was closed 2026-10-02**: `classes` create/update/delete
+   and `students` delete now require Firebase Auth, so the one irreversible action is gone.
+   Verified live, unauthenticated: delete class / delete student / create class / change a class
+   setting all BLOCKED, while student join and progress saves still work.
+   ⚠️ `students` create/update **must** stay open until student writes are routed through a
+   Cloud Function — students have no auth at all and every mode saves progress as they go. That
+   is the remaining big piece and it is weeks of work, not a rules tweak.
+   The staff Control Room's wipe-all-data relied on the open deletes and now goes through the
+   `adminWipeAllData` function (access code re-verified server-side, explicit confirm string,
+   batched, logged).
+   ⚠️ **The Control Room's own password is HARDCODED IN THE CLIENT BUNDLE in plain text.** It is
+   a UI speed bump, not a security control. Never let it be the only gate on a destructive
+   action — which is why the function re-checks the real access code regardless.
 3. **No retention or deletion anywhere.** Every clip ever filmed is still stored, indefinitely.
    ⚠️ The ZooSnooz parent letter once promised 48-hour deletion that was never built; wording has
    been corrected, but there is still no deletion job.
