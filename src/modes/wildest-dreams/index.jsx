@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useApp } from '../../context/AppContext';
 import { doc, getDoc, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { makeSouvenirToken, wildestDreamsSouvenirLink } from '../../utils/evolveSouvenir';
 import { db, storage } from '../../firebase';
 import { normaliseCode, safeStudentId } from '../../utils/helpers';
 import { pickMimeType } from '../../utils/evolveFilm';
@@ -37,6 +38,7 @@ export default function WildestDreamsScreen() {
   const [filmPct, setFilmPct]   = useState(0);
   const [filmURL, setFilmURL]   = useState(null);
   const [saveNote, setSaveNote] = useState('');
+  const [souvenir, setSouvenir] = useState(null);   // keepsake link, set once the film is saved
   const filmBlobRef = useRef(null);
 
   const code = normaliseCode(classCode || '');
@@ -132,11 +134,37 @@ export default function WildestDreamsScreen() {
           const path = `wildestDreams/${code}/${sid}/film.${fileExt}`;
           const snap = await uploadBytes(storageRef(storage, path), result.blob, { contentType });
           const url  = await getDownloadURL(snap.ref);
+
+          // ── The keepsake record ──────────────────────────────────────────────────────────
+          // ⚠️ Until 2026-10-02 this mode had NO souvenir route. The film existed only as a
+          // blob in the page and a file in Storage that nothing could reach: a student who did
+          // not download it on the day was left with nothing, and no staff screen could find
+          // it either. This writes the same shape of keepsake doc Evolve uses, so the link
+          // resolves through Firestore and survives the film being re-made or re-uploaded.
+          // ⚠️ Reuse an existing token if there is one — re-making a film must not invalidate
+          // a link already given to a student or written onto a tag.
+          const keepRef = doc(db, 'wildestDreams_docs', `${code}_${sid}`);
+          let token;
+          try {
+            const existing = await getDoc(keepRef);
+            token = existing.exists() ? (existing.data().souvenirToken || makeSouvenirToken())
+                                      : makeSouvenirToken();
+          } catch { token = makeSouvenirToken(); }
+
+          await setDoc(keepRef, {
+            classCode: code, studentId: sid, studentName,
+            filmURL: url, captions, completedAt: serverTimestamp(), souvenirToken: token,
+          }, { merge: true });
+
           await setDoc(doc(db, 'classes', code, 'students', sid),
             { name: studentName, classCode: code,
-              wildestDreams: { filmURL: url, completedAt: serverTimestamp() } },
+              wildestDreams: { filmURL: url, souvenirToken: token, completedAt: serverTimestamp() } },
             { merge: true });
-          if (!cancelled) setSaveNote('Saved. Yours to keep.');
+
+          if (!cancelled) {
+            setSouvenir(wildestDreamsSouvenirLink(code, sid, token));
+            setSaveNote('Saved. Yours to keep.');
+          }
         } catch {
           if (!cancelled) setSaveNote('Your film is ready. It will save when you are back online.');
         }
@@ -336,6 +364,30 @@ export default function WildestDreamsScreen() {
           ⬇ Save my film
         </a>
       )}
+      {/* ── The keepsake link ────────────────────────────────────────────────────────────
+          ⚠️ "Save my film" above downloads to THIS device, which is usually a borrowed school
+          tablet that gets wiped. That is why the download alone was never enough: students
+          walked away with nothing. This link resolves through Firestore, so it keeps working
+          after the film is re-made, and it is the thing a teacher or parent can keep.
+          Written in plain text as well as a button, because a student may be photographing the
+          screen or reading it to someone who writes it down. */}
+      {souvenir && (
+        <div style={{ background:'var(--wd-card, #fff)', border:'2px solid var(--wd-line)', borderRadius:16, padding:'1rem', marginBottom:'0.75rem' }}>
+          <p className="wd-lead" style={{ marginTop:0, marginBottom:'0.6rem' }}>
+            <strong>Keep this link.</strong> It opens your film again later, on any device.
+          </p>
+          <p style={{ wordBreak:'break-all', fontSize:'0.85rem', margin:'0 0 0.75rem', color:'var(--wd-ink, #222)' }}>{souvenir}</p>
+          <button className="wd-btn" style={{ marginBottom:0 }}
+            onClick={() => {
+              navigator.clipboard?.writeText(souvenir)
+                .then(() => setSaveNote('Link copied.'))
+                .catch(() => setSaveNote('Write the link down to keep it.'));
+            }}>
+            📋 Copy my link
+          </button>
+        </div>
+      )}
+
       <button className="wd-btn wd-btn-quiet" onClick={() => setPhase('stops')}>
         Film another animal
       </button>

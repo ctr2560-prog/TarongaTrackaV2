@@ -51,3 +51,33 @@ export async function writeNfcTag(url, signal) {
     return { ok: false, reason: 'failed', message: 'That did not work.' };
   }
 }
+
+// ── Shared souvenir plumbing (2026-10-02) ────────────────────────────────────────────────────
+// Generalised out of Evolve so every mode produces a keepsake a student actually keeps. The
+// goal is a longitudinal Year 7 → Year 12 comparison, which only works if the Year 7 artefact
+// is still reachable six years later — so a souvenir link must NEVER name a Storage file
+// directly. It resolves through Firestore, so the film underneath can be re-stitched, moved or
+// re-uploaded without breaking a link already handed to a student (or printed on a tag).
+
+// 8 lowercase base36 characters (~41 bits). Without a token these URLs are trivially guessable:
+// class codes are six characters and aliases come from a short list, so anyone holding one link
+// could walk a whole cohort's films. Short enough that the link still fits an NTAG213.
+export function makeSouvenirToken() {
+  const a = new Uint8Array(6);
+  (window.crypto || window.msCrypto).getRandomValues(a);
+  return Array.from(a).map(n => n.toString(36).padStart(2, '0')).join('').slice(0, 8);
+}
+
+// ?doc={prefix}_{classCode}_{studentId}_{token}
+// ⚠️ The student id is taken from the MIDDLE on parse, because safeStudentId only strips
+//    \ / # . $ [ ] — underscores survive, so an alias like "Sugar_Glider" breaks a naive split.
+export const souvenirLink = (prefix, classCode, studentId, token) =>
+  (classCode && studentId && token)
+    ? `${EVOLVE_SOUVENIR_HOST}/?doc=${prefix}_${classCode}_${studentId}_${token}`
+    : null;
+
+// Wildest Dreams keepsake link. Its films had NO souvenir route at all until 2026-10-02: a
+// student who did not download the film on the day was left with nothing, and nothing in the
+// staff portal could reach it either.
+export const wildestDreamsSouvenirLink = (classCode, studentId, token) =>
+  souvenirLink('wd', classCode, studentId, token);

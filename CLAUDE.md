@@ -523,6 +523,7 @@ The staff portal uses code-based login (no Firebase Auth), so **any collection t
 | `teacherFeedback/{docId}` | Teacher feedback |
 | `challengeSubmissions/{submissionId}` | Class challenge photo + text submissions |
 | `zoosnooz_docs/{docId}` | ZooSnooz portal/NFC summary records — doc ID: `{classCode}_{studentId}` |
+| `wildestDreams_docs/{docId}` | Wildest Dreams keepsake records (film + souvenir token) — doc ID: `{classCode}_{studentId}` |
 | `deviceBookings/{bookingId}` | Tracka device booking calendar entries |
 | `resources/{docId}` | (Reserved for future resource library) |
 | `prePostLinks/{subject}_{stage}_{timing}` | Admin-managed Canva pre/post-visit lesson links — see Pre/Post-Visit Lessons section |
@@ -1831,9 +1832,15 @@ Surfaced on Create Class and on Curriculum Alignment → Programs → Wildest Dr
   (decision 2026-09-11).
 - **The film has no captions of what the student says** — it captions the chosen prompt only, so a
   Deaf viewer at a class screening gets the label, not the content.
-- **No teacher/staff view of the films.** Nothing in `ClassDetailsScreen` or the staff portal reads
-  `wildestDreams`, and there is no souvenir route like Evolve's `?doc=`. A student who does not
-  download the film on the day may end up with nothing.
+- ~~**No souvenir route.**~~ ✅ **BUILT 2026-10-02.** `?doc=wd_{classCode}_{studentId}_{token}`
+  resolves through `wildestDreams_docs/{classCode}_{studentId}`, the same shape and trust model
+  as Evolve's. The done screen now shows the link in plain text plus a copy button.
+  ⚠️ **"Save my film" alone was never enough** — it downloads to a borrowed school tablet that
+  gets wiped. The link is what a student, teacher or parent can actually keep.
+  ⚠️ The token is reused if one already exists: re-making a film must never invalidate a link
+  already handed out.
+  **Still missing:** no teacher/staff view of the films — nothing in `ClassDetailsScreen` or the
+  staff portal reads `wildestDreams`.
 - **No still-photo alternative** for a student who will not tolerate video.
 - **No recording length limit** — an eight-minute clip is a slow upload on zoo wifi.
 

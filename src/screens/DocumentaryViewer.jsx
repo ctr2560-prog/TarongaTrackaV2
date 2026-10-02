@@ -10,6 +10,7 @@ import { EVOLVE_STORY_ORDER, EVOLVE_CHAPTER_WORDS as WORDS, EVOLVE_THEME as EV }
 // doc param formats:
 //   zzv_{animalId}_{classCode}_{studentId} - personal ZooSnooz souvenir
 //   ev_{classCode}_{studentId}_{token}     - personal Evolve film souvenir
+//   wd_{classCode}_{studentId}_{token}     - personal Wildest Dreams film souvenir
 //   {animalId} - generic animal info card
 
 function parseDocCode(code) {
@@ -19,6 +20,19 @@ function parseDocCode(code) {
     if (parts.length >= 3) {
       const [animalId, classCode, ...nameParts] = parts;
       return { type: 'zoosnooz', animalId, classCode, studentId: nameParts.join('_') };
+    }
+  }
+  // Wildest Dreams. Same shape as Evolve, same reason for taking the student id from the
+  // middle: aliases can contain underscores.
+  if (code.startsWith('wd_')) {
+    const parts = code.slice(3).split('_');
+    if (parts.length >= 3) {
+      return {
+        type: 'wildestDreams',
+        classCode: parts[0],
+        studentId: parts.slice(1, -1).join('_'),
+        token: parts[parts.length - 1],
+      };
     }
   }
   if (code.startsWith('ev_')) {
@@ -51,10 +65,34 @@ export default function DocumentaryViewer() {
   const { docViewCode, setDocViewCode } = useApp();
   const parsed = parseDocCode(docViewCode);
 
-  const [loading,     setLoading]     = useState(parsed.type === 'zoosnooz' || parsed.type === 'evolve');
+  const [loading,     setLoading]     = useState(parsed.type === 'zoosnooz' || parsed.type === 'evolve' || parsed.type === 'wildestDreams');
   const [zzData,      setZzData]      = useState(null);
   const [fetchError,  setFetchError]  = useState(false);
   const [evData,      setEvData]      = useState(null);
+  const [wdData,      setWdData]      = useState(null);
+
+  // Wildest Dreams souvenir. Resolves through wildestDreams_docs rather than naming a Storage
+  // file, so the link survives the film being re-made. Refuses a doc with no token, and refuses
+  // a token that does not match — without that check the URL is guessable and one link would
+  // open a whole cohort's films.
+  useEffect(() => {
+    if (parsed.type !== 'wildestDreams') return;
+    (async () => {
+      try {
+        const code = normaliseCode(parsed.classCode);
+        const snap = await getDoc(doc(db, 'wildestDreams_docs', `${code}_${parsed.studentId}`));
+        if (snap.exists() && snap.data().souvenirToken && snap.data().souvenirToken === parsed.token) {
+          setWdData(snap.data());
+        } else {
+          setFetchError(true);
+        }
+      } catch {
+        setFetchError(true);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [parsed.type, parsed.classCode, parsed.studentId, parsed.token]);
 
   // Evolve souvenir: the keepsake doc written on submit holds everything this page needs, so
   // the film survives being re-stitched or re-uploaded — the tag points here, not at Storage.
@@ -113,6 +151,49 @@ export default function DocumentaryViewer() {
     return (
       <div style={{ position:'fixed', inset:0, background:'#0B0F14', display:'flex', alignItems:'center', justifyContent:'center' }}>
         <div style={{ color:'rgba(255,255,255,0.6)', fontSize:'0.9rem' }}>Loading souvenir…</div>
+      </div>
+    );
+  }
+
+  // ── Wildest Dreams souvenir ───────────────────────────────────────────────
+  // Deliberately plain: this mode exists for diverse learners, and the film is the whole point.
+  // Big type, high contrast, one obvious action. No scores, badges or conservation status —
+  // Wildest Dreams has none of those by design and inventing some here would misrepresent it.
+  if (parsed.type === 'wildestDreams' && wdData) {
+    return (
+      <div style={{ position:'fixed', inset:0, background:'linear-gradient(170deg,#0B2A3A,#124058,#1B5E7E)', overflowY:'auto', fontFamily:'var(--t-font)' }}>
+        <div style={{ maxWidth:560, margin:'0 auto', padding:'2.5rem 1.15rem 3.5rem' }}>
+          <div style={{ textAlign:'center', marginBottom:'1.5rem' }}>
+            <div style={{ fontSize:'0.6rem', fontWeight:800, letterSpacing:'0.24em', textTransform:'uppercase', color:'rgba(255,255,255,0.62)', marginBottom:'0.8rem' }}>
+              Taronga Zoo Sydney
+            </div>
+            <h1 className="taronga-title" style={{ color:'white', fontSize:'clamp(2rem,7.5vw,2.8rem)', margin:'0 0 0.3rem', letterSpacing:'0.03em' }}>
+              My Wildest Dreams
+            </h1>
+            {wdData.studentName && (
+              <p style={{ color:'rgba(255,255,255,0.75)', margin:0, fontSize:'1rem' }}>A film by {wdData.studentName}</p>
+            )}
+          </div>
+
+          {wdData.filmURL && (
+            <video src={wdData.filmURL} controls playsInline
+              style={{ width:'100%', borderRadius:20, background:'#000', marginBottom:'1.1rem' }} />
+          )}
+
+          {wdData.filmURL && (
+            <a href={wdData.filmURL} download="My Wildest Dreams.webm"
+              style={{ display:'block', textAlign:'center', textDecoration:'none', background:'white', color:'#0B2A3A',
+                       padding:'1rem', borderRadius:999, fontSize:'1.05rem', fontWeight:800, marginBottom:'0.8rem' }}>
+              ⬇ Save this film
+            </a>
+          )}
+
+          <button onClick={() => setDocViewCode(null)}
+            style={{ width:'100%', background:'rgba(255,255,255,0.12)', border:'1px solid rgba(255,255,255,0.3)', color:'white',
+                     padding:'0.85rem', borderRadius:999, fontSize:'0.95rem', fontWeight:700, cursor:'pointer' }}>
+            Back to App
+          </button>
+        </div>
       </div>
     );
   }
@@ -191,6 +272,7 @@ export default function DocumentaryViewer() {
 
   // ── Unknown / error ───────────────────────────────────────────────────────
   if (parsed.type === 'unknown' || (parsed.type === 'evolve' && fetchError) ||
+      (parsed.type === 'wildestDreams' && fetchError) ||
       (parsed.type === 'zoosnooz' && fetchError && !animal)) {
     return (
       <div style={{ position:'fixed', inset:0, background:'#0B0F14', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'1rem', padding:'2rem' }}>

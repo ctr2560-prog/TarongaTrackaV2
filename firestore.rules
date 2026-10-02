@@ -147,6 +147,16 @@ service cloud.firestore {
     }
 
     // ── ZooSnooz session documents ────────────────────────────────────────────
+    // Wildest Dreams keepsake records — the film link a student keeps. Same shape and same
+    // trust model as evolve_docs: students write them with no Firebase Auth, the souvenir link
+    // reads them, and the unguessable token in the document is what actually gates access.
+    // 🚫 delete denied — these are keepsakes, and the whole point is that they outlast the
+    //    session. A retention job must run server-side with the Admin SDK.
+    match /wildestDreams_docs/{docId} {
+      allow read, create, update: if true;
+      allow delete: if false;
+    }
+
     // 🚫 delete denied (2026-10-02) — nothing deletes these, and they back the ZooSnooz NFC
     //    souvenir cards.
     match /zoosnooz_docs/{docId} {
