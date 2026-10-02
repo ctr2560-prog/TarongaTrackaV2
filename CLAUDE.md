@@ -301,6 +301,7 @@ no login at all**, returned: `classes` 10, `students` (collection group) 104, `z
    the shared code and tightening the `if true` collections to `isWildlyStaff()`.
 
 #### Staff portal sign-in (2026-10-03) — a real account, not a shared code
+✅ **Verified in the field by Cameron**: real password set, sign-in works, portal functions.
 
 The Taronga staff portal now signs in with **Firebase Auth email + password**, checked against an
 email allowlist. The shared access code is gone from the portal entirely.
