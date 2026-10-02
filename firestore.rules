@@ -239,23 +239,27 @@ service cloud.firestore {
     }
 
     // ── Wildly by Taronga ──────────────────────────────────────────────────────
-    // Wildly shares this Firebase project (and the `teachers/{email}` identity
-    // above) rather than having its own — see taronga-tracka-vite CLAUDE.md,
-    // "Taronga Education ecosystem" section. isWildlyStaff() mirrors Wildly's
-    // former standalone isStaff() check, just against the shared teacher doc.
-    function roleOf(data) {
-      return ('role' in data) ? data.role : null;
-    }
-
-    function grantsStaffRole(data) {
-      return roleOf(data) in ['Education Staff', 'Curriculum Leader', 'School Leader'];
-    }
-
+    // Wildly shares this Firebase project (and the `teachers/{email}` identity above) rather
+    // than having its own — see taronga-tracka-vite CLAUDE.md, "Taronga Education ecosystem".
+    //
+    // ⚠️ STAFF IS AN EXPLICIT EMAIL ALLOWLIST (2026-10-03). It used to be a `role` field on the
+    //    user's own teacher document — a field THEY could write — which meant anyone who signed
+    //    up could set role: "Education Staff" and become Taronga staff. An allowlist here cannot
+    //    be escalated into: changing who is staff requires deploying this file, which requires
+    //    access to the Firebase project itself.
+    //
+    // ⚠️ TO APPOINT A STAFF MEMBER: add their email below, lowercase, and run
+    //    `firebase deploy --only firestore:rules` from THIS repo. That is deliberately slow and
+    //    deliberately requires project access. Do NOT reintroduce a role-based check, an
+    //    "appoint staff" screen, or a Cloud Function that grants this — an endpoint whose job is
+    //    handing out privilege is the thing we just removed.
+    //
+    // ⚠️ `teachers/{email}.role` still exists as a PROFILE field and still drives some client-side
+    //    UI in Wildly. It confers NO access. Never make it authoritative again.
     function isWildlyStaff() {
       return request.auth != null
-        && exists(/databases/$(database)/documents/teachers/$(request.auth.token.email))
-        && get(/databases/$(database)/documents/teachers/$(request.auth.token.email)).data.role in [
-          "Education Staff", "Curriculum Leader", "School Leader"
+        && request.auth.token.email in [
+          'thebiologybloke@gmail.com'
         ];
     }
 

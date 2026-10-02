@@ -295,8 +295,9 @@ no login at all**, returned: `classes` 10, `students` (collection group) 104, `z
 6. **No real staff logins.** The portal is still one shared access code — now server-verified and
    rate-limited, but shared, so there is no accountability for who approved or deleted what, and
    no per-person revocation. 🟡 The groundwork landed 2026-10-03 (see the role-escalation fix
-   below); the remaining work is signing staff in with Firebase Auth and a staff role, then
-   retiring the code and tightening the `if true` collections to `isWildlyStaff()`.
+   below): `isWildlyStaff()` is now a trustworthy email allowlist. The remaining work is signing
+   staff into the Tracka portal with Firebase Auth checked against that allowlist, then retiring
+   the shared code and tightening the `if true` collections to `isWildlyStaff()`.
 
 #### ⚠️ Privilege escalation via self-assigned staff role — FIXED 2026-10-03
 
@@ -313,12 +314,31 @@ The fix is in `firestore.rules`: a user may still write their own profile but ma
 itself a staff role, and may not change one once set. Existing staff can set anyone's role.
 ⚠️ **Narrowing the dropdown is defence in depth, not the fix** — the rule is the control.
 
-**`setTeacherRole` Cloud Function** (admin-code gated, Admin SDK) is now the only way to appoint
-a staff member. It exists because the rule also means nothing in the client can appoint the
-*first* one — without it, a project with no staff account would be locked out of Wildly's staff
-console permanently. It logs every change.
-⚠️ **This must stay admin-code gated.** Make it callable by a signed-in teacher and the
-escalation is straight back.
+**Then the role check was removed entirely.** Later the same day `isWildlyStaff()` was changed
+from "has one of these roles" to an **explicit email allowlist** in `firestore.rules`:
+
+```
+function isWildlyStaff() {
+  return request.auth != null
+    && request.auth.token.email in ['thebiologybloke@gmail.com'];
+}
+```
+
+An allowlist cannot be escalated into. The role field lived in a document the user could write;
+this lives in a file only someone with Firebase project access can deploy.
+
+⚠️ **TO APPOINT A STAFF MEMBER:** add their email (lowercase) to that list and run
+`firebase deploy --only firestore:rules` from this repo. Deliberately slow, deliberately
+requires project access.
+
+🚫 **`setTeacherRole` was built and then deleted the same day** (source removed, function deleted
+from the project, endpoint now 404s). An always-on endpoint whose only job is handing out
+privilege, gated by a shared secret, is the pattern being retired. **Do not reintroduce an
+"appoint staff" endpoint or screen.**
+
+⚠️ **`teachers/{email}.role` still exists as a profile field** and still drives some client-side
+UI in Wildly. It now confers **no access whatsoever**. Never make it authoritative again. The
+self-grant guard on it is kept as defence in depth.
 
 #### Privacy — what is genuinely good, and worth defending
 - **Students never enter real names**; they pick an animal alias. This is the single biggest

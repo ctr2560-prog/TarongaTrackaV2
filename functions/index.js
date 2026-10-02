@@ -384,77 +384,14 @@ async function checkAdminCode(db, rawCode, ip) {
 //
 // This is the most destructive operation in the system. It requires the access code AND an
 // explicit confirm string, and it logs who ran it.
-// ─────────────────────────────────────────────────────────────────────────────
-// setTeacherRole — the ONLY way to grant or revoke a Taronga staff role.
-//
-// ⚠️ WHY THIS EXISTS (2026-10-03). `teachers/{email}.role` is what isWildlyStaff() reads, and
-// users write their own teacher document. Wildly's "About you" page offered the staff roles in
-// a self-select dropdown, so any teacher who signed up could promote themselves to Taronga
-// staff: list every teacher's email and school, edit Wildly's content, delete other accounts.
-// firestore.rules now refuses a self-granted staff role. That closes the hole but also means
-// nothing in the client can appoint the FIRST staff member — hence this function, which runs
-// with the Admin SDK (bypassing rules) behind the staff access code.
-//
-// ⚠️ Keep this admin-code gated. If it ever becomes callable by a signed-in teacher, the
-// escalation is straight back.
-const STAFF_ROLES = ['Education Staff', 'Curriculum Leader', 'School Leader'];
-const NON_STAFF_ROLES = ['Teacher', 'School Leader Pending', 'Parent', 'Student'];
-
-exports.setTeacherRole = onRequest(
-  { region: 'australia-southeast1', invoker: 'public' },
-  async (req, res) => {
-    res.set('Access-Control-Allow-Origin', '*');
-    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.set('Access-Control-Allow-Headers', 'Content-Type');
-
-    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
-    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
-
-    const { code, email, role } = req.body || {};
-    if (!code || typeof code !== 'string' || !code.trim()) {
-      res.status(403).json({ error: 'Invalid or inactive access code.' });
-      return;
-    }
-    if (!email || typeof email !== 'string' || !email.includes('@')) {
-      res.status(400).json({ error: 'A teacher email is required.' });
-      return;
-    }
-    if (!role || ![...STAFF_ROLES, ...NON_STAFF_ROLES].includes(role)) {
-      res.status(400).json({ error: 'Unknown role.' });
-      return;
-    }
-
-    const db = admin.firestore();
-    const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.ip;
-    try {
-      const { ok, locked } = await checkAdminCode(db, code, ip);
-      if (locked) { res.status(429).json({ error: 'Too many attempts. Try again in 15 minutes.' }); return; }
-      if (!ok)    { res.status(403).json({ error: 'Invalid or inactive access code.' }); return; }
-    } catch (err) {
-      console.error('setTeacherRole code check failed:', err);
-      res.status(500).json({ error: 'Could not verify the access code.' });
-      return;
-    }
-
-    try {
-      const key = email.trim().toLowerCase();
-      const ref = db.collection('teachers').doc(key);
-      const snap = await ref.get();
-      if (!snap.exists) {
-        res.status(404).json({ error: 'No account exists for that email. They must sign up first.' });
-        return;
-      }
-      const previous = snap.data().role || null;
-      await ref.set({ role }, { merge: true });
-      // Granting staff access is worth a log line you can go back and read.
-      console.warn(`[setTeacherRole] ${key}: ${previous} -> ${role} (ip=${ip})`);
-      res.json({ ok: true, email: key, previousRole: previous, role });
-    } catch (err) {
-      console.error('setTeacherRole failed:', err);
-      res.status(500).json({ error: 'Could not update that role.' });
-    }
-  }
-);
+// ⚠️ `setTeacherRole` was added and then REMOVED on 2026-10-03, deliberately. It granted
+// Taronga staff roles behind the shared admin access code. It is gone because staff is now an
+// explicit EMAIL ALLOWLIST inside firestore.rules (`isWildlyStaff()`), which cannot be
+// escalated into: changing who is staff requires deploying the rules, which requires access to
+// the Firebase project. An always-on endpoint whose only job is handing out privilege, gated by
+// a shared secret, is exactly the pattern being retired.
+// 🚫 Do not reintroduce an "appoint staff" endpoint. To appoint someone, add their email to the
+//    allowlist in firestore.rules and deploy. Slow on purpose.
 
 exports.adminWipeAllData = onRequest(
   { region: 'australia-southeast1', invoker: 'public' },
