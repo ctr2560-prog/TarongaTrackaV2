@@ -375,39 +375,97 @@ async function verifyStaff(req) {
 // the guarantee that a mistake, or a compromised staff account removing the others, can never
 // lock Taronga out of its own project.
 
+// ── Branded email shell ──────────────────────────────────────────────────────────────────────
+// The header and footer are lifted from buildMentorReportHtml (the Friday report), which is the
+// look Cameron wants on everything: deep green banner, white title, muted green subtitle, logos
+// right-aligned, and the "For the Wild" lockup in the footer banner.
+//
+// ⚠️ The techniques below are not decoration, they are what makes it survive real mail clients:
+//   · TABLES, not flexbox or grid. Outlook's rendering engine is Word and ignores modern CSS.
+//   · INLINE styles. Gmail strips <style> blocks.
+//   · bgcolor="" attributes ALONGSIDE background-color, so Outlook's dark-mode colour remapping
+//     does not invert the banners.
+//   · color-scheme / supported-color-schemes meta, same reason.
+//   · Images are absolute https URLs on tarongatracka.web.app. A relative path shows a broken
+//     image in every client.
+//
+// ⚠️ buildMentorReportHtml deliberately still has its own copy. It is the one email Cameron
+//    relies on weekly, and refactoring a working thing to save duplication is not worth the risk
+//    of breaking it. If the brand changes, change both.
+function brandedEmailShell({ title, subtitle, bodyHtml, previewTitle }) {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="color-scheme" content="light">
+<meta name="supported-color-schemes" content="light">
+<title>${previewTitle || title}</title>
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background:#ffffff;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;">
+    <tr>
+      <td bgcolor="#0A2F1F" style="background-color:#0A2F1F;padding:28px 32px;">
+        <table width="100%" cellpadding="0" cellspacing="0">
+          <tr>
+            <td valign="middle" align="left" bgcolor="#0A2F1F" style="background-color:#0A2F1F;">
+              <p style="margin:0;color:#ffffff;font-size:20px;font-weight:bold;">${title}</p>
+              <p style="margin:4px 0 0;color:#a8c8b0;font-size:13px;">${subtitle}</p>
+            </td>
+            <td valign="middle" align="right" bgcolor="#0A2F1F" style="background-color:#0A2F1F;">
+              <table cellpadding="0" cellspacing="0"><tr>
+                <td valign="middle" style="padding-right:14px;">
+                  <img src="https://tarongatracka.web.app/images/logo.png" alt="Taronga Tracka" height="64" style="display:block;height:64px;width:auto;border:0;">
+                </td>
+                <td valign="middle" style="padding-left:14px;border-left:1px solid rgba(255,255,255,0.25);">
+                  <img src="https://tarongatracka.web.app/images/wildly-logo-white.png" alt="Wildly by Taronga" height="48" style="display:block;height:48px;width:auto;border:0;">
+                </td>
+              </tr></table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:28px 32px;">${bodyHtml}</td>
+    </tr>
+    <tr>
+      <td bgcolor="#0A2F1F" style="background-color:#0A2F1F;padding:16px 32px;">
+        <img src="https://tarongatracka.web.app/images/taronga-zoo-white.png" alt="Taronga Zoo — For the Wild" height="24" style="display:block;height:24px;width:auto;border:0;">
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
 function staffInviteHtml({ link, invitedBy }) {
-  // Table-based and inline-styled on purpose: Outlook ignores most modern CSS, and bgcolor
-  // attributes survive its dark-mode colour remapping. Same approach as the mentor report.
-  return `<!DOCTYPE html><html><head><meta charset="utf-8">
-<meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light">
-</head><body style="margin:0;padding:0;background:#F0EDE6;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#F0EDE6"><tr><td align="center" style="padding:28px 14px;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:540px;background:#FFFFFF;border-radius:16px;overflow:hidden;font-family:Helvetica,Arial,sans-serif;">
-  <tr><td bgcolor="#0A2F1F" style="padding:26px 30px;">
-    <div style="color:#E8B33C;font-size:11px;letter-spacing:3px;text-transform:uppercase;font-weight:bold;">Taronga Education</div>
-    <div style="color:#FFFFFF;font-size:25px;font-weight:bold;padding-top:6px;">Taronga Tracka</div>
-  </td></tr>
-  <tr><td style="padding:30px;">
-    <p style="margin:0 0 14px;font-size:19px;font-weight:bold;color:#0A2F1F;">You have been added as a staff administrator.</p>
-    <p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#3A4A3F;">
-      ${invitedBy} has given you administrator access to the Taronga Tracka staff portal.
-      Set a password to finish setting up your account.
-    </p>
-    <table role="presentation" cellpadding="0" cellspacing="0"><tr><td bgcolor="#1A5238" style="border-radius:999px;">
-      <a href="${link}" style="display:inline-block;padding:14px 30px;color:#FFFFFF;font-size:15px;font-weight:bold;text-decoration:none;">Set my password</a>
-    </td></tr></table>
-    <p style="margin:20px 0 0;font-size:13px;line-height:1.6;color:#6B6B62;">
-      This link can be used once and will expire. If it has, ask ${invitedBy} to send another.
-    </p>
-    <p style="margin:18px 0 0;font-size:12px;line-height:1.6;color:#9A9A92;">
-      The staff portal can read every class and school, so keep this password to yourself and do
-      not reuse one from another service. If you were not expecting this, tell ${invitedBy}.
-    </p>
-  </td></tr>
-  <tr><td bgcolor="#0A2F1F" style="padding:16px 30px;">
-    <div style="color:rgba(255,255,255,0.6);font-size:11px;letter-spacing:2px;text-transform:uppercase;">For the Wild</div>
-  </td></tr>
-</table></td></tr></table></body></html>`;
+  // Both logos on purpose: a staff administrator has access across Tracka AND Wildly, since the
+  // two share one Firebase project and one staff check.
+  const body = `
+        <p style="margin:0 0 16px;font-size:18px;font-weight:bold;color:#0A2F1F;">You have been added as a staff administrator.</p>
+        <p style="margin:0 0 20px;font-size:15px;line-height:1.6;color:#222222;">
+          ${invitedBy} has given you administrator access to the Taronga Tracka staff portal.
+          Set a password to finish setting up your account.
+        </p>
+        <table cellpadding="0" cellspacing="0"><tr>
+          <td bgcolor="#1A5238" style="background-color:#1A5238;border-radius:999px;">
+            <a href="${link}" style="display:inline-block;padding:14px 32px;color:#ffffff;font-size:15px;font-weight:bold;text-decoration:none;">Set my password</a>
+          </td>
+        </tr></table>
+        <p style="margin:22px 0 0;font-size:13px;line-height:1.6;color:#6B6B62;">
+          This link can be used once and will expire. If it has, ask ${invitedBy} to send another.
+        </p>
+        <p style="margin:16px 0 0;font-size:12px;line-height:1.6;color:#9A9A92;">
+          The staff portal can read every class and school, so keep this password to yourself and
+          do not reuse one from another service. If you were not expecting this, tell ${invitedBy}.
+        </p>`;
+  return brandedEmailShell({
+    title: 'Taronga Tracka &amp; Wildly',
+    subtitle: 'Staff portal invitation',
+    previewTitle: 'You have been added as a staff administrator',
+    bodyHtml: body,
+  });
 }
 
 exports.manageStaffAdmins = onRequest(
