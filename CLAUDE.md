@@ -292,12 +292,46 @@ no login at all**, returned: `classes` 10, `students` (collection group) 104, `z
 4. **No consent record.** Filming opt-out is a verbal arrangement with the teacher; nothing in the
    data marks a student as not-to-be-filmed, so moderation has nothing to filter on.
 5. Open writes on `accessCodes` (90 teacher invite codes), `settings`, `schools`, `prePostLinks`.
-6. **No real staff logins.** The portal is still one shared access code — now server-verified and
+6. ~~**No real staff logins.**~~ ✅ **DONE 2026-10-03** — see "Staff portal sign-in" below.
+   (was:) The portal is still one shared access code — now server-verified and
    rate-limited, but shared, so there is no accountability for who approved or deleted what, and
    no per-person revocation. 🟡 The groundwork landed 2026-10-03 (see the role-escalation fix
    below): `isWildlyStaff()` is now a trustworthy email allowlist. The remaining work is signing
    staff into the Tracka portal with Firebase Auth checked against that allowlist, then retiring
    the shared code and tightening the `if true` collections to `isWildlyStaff()`.
+
+#### Staff portal sign-in (2026-10-03) — a real account, not a shared code
+
+The Taronga staff portal now signs in with **Firebase Auth email + password**, checked against an
+email allowlist. The shared access code is gone from the portal entirely.
+
+**Why.** The portal can approve submissions, read every class and school, and **wipe all data**.
+With a shared code, "who did that?" had no answer, one person could not be revoked, and codes
+spread quietly by email.
+
+- `src/constants/tarongaStaff.js` — `TARONGA_STAFF_EMAILS`, used for the **UI only**.
+- `isWildlyStaff()` in `firestore.rules` — the **real** control, enforced server-side.
+- `TARONGA_STAFF_EMAILS` in `functions/index.js` — for the admin endpoints.
+
+⚠️ **All three lists must agree.** Appointing a staff member means editing all three and
+deploying rules + functions + client. `firestore.rules` is the one that actually protects data;
+adding an email to the client alone grants nothing and just produces a dashboard where every
+panel fails.
+
+**The admin Cloud Functions verify an ID token**, not a code. `getAdminTeacherRoster` and
+`adminWipeAllData` call `verifyStaff(req)`, which checks a `Bearer` token and the allowlist.
+Verified live: both return 403 with no token, with a junk token, **and with the old access code**.
+`adminWipeAllData` now logs the staff email that ran it, which is the entire point of the change.
+
+🚫 **Never add "or a valid access code" back as a fallback** to those endpoints.
+
+⚠️ The dashboard gate waits for `authLoading` before bouncing to the login screen — without that,
+a page refresh throws a signed-in staff member out while Firebase is still restoring the session.
+Sign Out now calls `auth.signOut()`; clearing local state alone would leave the account signed in
+on a shared Taronga machine.
+
+`verifyAdminCode` and the `adminAccess` collection still exist but are **no longer used by the
+portal**. Safe to remove once the new sign-in has been exercised in the field.
 
 #### ⚠️ Privilege escalation via self-assigned staff role — FIXED 2026-10-03
 

@@ -51,7 +51,7 @@ exports.sendMagicLink = onRequest(
   async (req, res) => {
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.set('Access-Control-Allow-Headers', 'Content-Type');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
     if (req.method === 'OPTIONS') {
       res.status(204).send('');
@@ -325,6 +325,38 @@ function buildMentorReportHtml(reportText) {
 // Firebase-authenticated staff (see firestore.rules) while this stays the only
 // way the code-based admin portal can still see the full roster.
 // ─────────────────────────────────────────────────────────────────────────────
+// Staff identity for the admin endpoints.
+//
+// ⚠️ The staff portal signs in with a REAL ACCOUNT (Firebase Auth) as of 2026-10-03, not a
+// shared access code. These endpoints therefore verify an ID TOKEN and check the email against
+// the same allowlist as `isWildlyStaff()` in firestore.rules.
+//
+// ⚠️ KEEP THIS LIST IN STEP with firestore.rules and src/constants/tarongaStaff.js. All three
+//    must agree, and firestore.rules is the one that actually protects the data.
+// 🚫 Never fall back to "or a valid access code" here. A shared secret is what these endpoints
+//    were moved off: it gave no accountability for who approved, deleted or wiped anything.
+const TARONGA_STAFF_EMAILS = ['thebiologybloke@gmail.com'];
+
+async function verifyStaff(req) {
+  const header = req.headers.authorization || '';
+  const idToken = header.startsWith('Bearer ') ? header.slice(7) : null;
+  if (!idToken) return { ok: false, status: 403, error: 'Staff sign-in required.' };
+  try {
+    const decoded = await admin.auth().verifyIdToken(idToken);
+    const email = (decoded.email || '').toLowerCase();
+    if (!decoded.email_verified && !TARONGA_STAFF_EMAILS.includes(email)) {
+      return { ok: false, status: 403, error: 'Staff sign-in required.' };
+    }
+    if (!TARONGA_STAFF_EMAILS.includes(email)) {
+      return { ok: false, status: 403, error: 'That account does not have staff access.' };
+    }
+    return { ok: true, email };
+  } catch {
+    return { ok: false, status: 403, error: 'Staff sign-in required.' };
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // verifyAdminCode — server-side check of the staff portal access code.
 //
 // ⚠️ WHY THIS EXISTS. The staff portal code used to be verified IN THE BROWSER by
@@ -398,35 +430,25 @@ exports.adminWipeAllData = onRequest(
   async (req, res) => {
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.set('Access-Control-Allow-Headers', 'Content-Type');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
     if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
     if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
 
-    const { code, confirm } = req.body || {};
+    const { confirm } = req.body || {};
     if (confirm !== 'WIPE') {
       res.status(400).json({ error: 'Confirmation text did not match.' });
       return;
     }
 
-    // Validate before touching Firestore: an empty/missing code produces an invalid document
-    // path and throws, which surfaced as a bare 500 with no body instead of a clean refusal.
-    if (!code || typeof code !== 'string' || !code.trim()) {
-      res.status(403).json({ error: 'Invalid or inactive access code.' });
-      return;
-    }
+    // ⚠️ The most destructive action in the system. It requires a signed-in STAFF ACCOUNT and
+    //    an explicit confirm string, and it logs the email that ran it — which is the whole
+    //    point of moving off a shared code: "who wiped the data?" now has an answer.
+    const staff = await verifyStaff(req);
+    if (!staff.ok) { res.status(staff.status).json({ error: staff.error }); return; }
 
     const db = admin.firestore();
     const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.ip;
-    try {
-      const { ok, locked } = await checkAdminCode(db, code, ip);
-      if (locked) { res.status(429).json({ error: 'Too many attempts. Try again in 15 minutes.' }); return; }
-      if (!ok)    { res.status(403).json({ error: 'Invalid or inactive access code.' }); return; }
-    } catch (err) {
-      console.error('adminWipeAllData code check failed:', err);
-      res.status(500).json({ error: 'Could not verify the access code.' });
-      return;
-    }
 
     try {
       let classes = 0, students = 0;
@@ -442,7 +464,7 @@ exports.adminWipeAllData = onRequest(
         batch.delete(classDoc.ref); classes++;
         await batch.commit();
       }
-      console.warn(`[adminWipeAllData] WIPED ${classes} classes and ${students} students from ip=${ip}`);
+      console.warn(`[adminWipeAllData] WIPED ${classes} classes and ${students} students by ${staff.email} (ip=${ip})`);
       res.json({ ok: true, classes, students });
     } catch (err) {
       console.error('adminWipeAllData failed:', err);
@@ -456,7 +478,7 @@ exports.verifyAdminCode = onRequest(
   async (req, res) => {
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.set('Access-Control-Allow-Headers', 'Content-Type');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
     if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
     if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
@@ -496,30 +518,16 @@ exports.getAdminTeacherRoster = onRequest(
   async (req, res) => {
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.set('Access-Control-Allow-Headers', 'Content-Type');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
     if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
     if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
 
-    const { code } = req.body || {};
-    if (!code || typeof code !== 'string') {
-      res.status(400).json({ error: 'An access code is required.' });
-      return;
-    }
+    // Staff identity, not a shared code (2026-10-03).
+    const staff = await verifyStaff(req);
+    if (!staff.ok) { res.status(staff.status).json({ error: staff.error }); return; }
 
     const db = admin.firestore();
-
-    try {
-      const codeSnap = await db.collection('adminAccess').doc(code.trim().toLowerCase()).get();
-      if (!codeSnap.exists || codeSnap.data().active !== true) {
-        res.status(403).json({ error: 'Invalid or inactive access code.' });
-        return;
-      }
-    } catch (err) {
-      console.error('Admin code verification failed:', err);
-      res.status(500).json({ error: 'Failed to verify access code.' });
-      return;
-    }
 
     try {
       const snap = await db.collection('teachers').get();
@@ -545,7 +553,7 @@ exports.sendMentorReport = onRequest(
   async (req, res) => {
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.set('Access-Control-Allow-Headers', 'Content-Type');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
     if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
     if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }

@@ -1,45 +1,76 @@
 import { useState } from 'react';
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
+import { auth } from '../firebase';
 import { useApp } from '../context/AppContext';
+import { isTarongaStaffEmail } from '../constants/tarongaStaff';
 
-// ⚠️ The access code is verified SERVER-SIDE and must stay that way. This screen used to
-// read `adminAccess/{code}` straight from Firestore, and that collection was world-readable
-// with the code as the document ID — so listing it returned the staff password. Confirmed
-// against the live project on 2026-10-02: read in 1.4s with no login. `adminAccess` is now
-// denied to clients in firestore.rules, so a direct read here would simply fail.
-// Do not "simplify" this back into a getDoc.
-const VERIFY_URL = 'https://australia-southeast1-tarongatracka.cloudfunctions.net/verifyAdminCode';
-
+// ⚠️ The staff portal signs in with a REAL ACCOUNT (Firebase Auth), not a shared code.
+//
+// It used to be a single access code shared between everyone. That gave no accountability (the
+// portal can approve submissions, read every class and school, and WIPE ALL DATA — "who did
+// that?" had no answer), no way to revoke one person, and codes spread quietly by email.
+//
+// ⚠️ The email allowlist checked here is for the UI only. The real control is `isWildlyStaff()`
+//    in firestore.rules, enforced server-side on every read and write. Without this check a
+//    non-staff account would reach the dashboard and watch every panel fail silently, which is
+//    a worse experience and a worse security signal than being told plainly.
+//
+// 🚫 Do not reintroduce a role-based check read from Firestore. `teachers/{email}.role` was
+//    writable by the user it described, so anyone who signed up could make themselves staff.
+//    Removed 2026-10-03.
 export default function AdminLoginScreen() {
-  const { setCurrentScreen, adminAccessCode, setAdminAccessCode } = useApp();
-  const [loading, setLoading] = useState(false);
+  const { setCurrentScreen } = useApp();
+  const [email, setEmail]       = useState('');
+  const [password, setPassword] = useState('');
+  const [status, setStatus]     = useState('idle');   // idle | loading | sent
+  const [error, setError]       = useState('');
+
+  const isValid = email.trim().includes('@') && password.length > 0;
 
   const handleLogin = async () => {
-    const code = adminAccessCode.trim().toLowerCase();
-    if (!code) return;
-    setLoading(true);
+    if (!isValid || status === 'loading') return;
+    setStatus('loading');
+    setError('');
     try {
-      const res = await fetch(VERIFY_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (res.ok && data.ok) {
-        setCurrentScreen('adminDashboard');
-      } else {
-        // The server repeats its own wording back, so a lockout reads as a lockout
-        // ("Too many attempts...") rather than as a wrong code.
-        alert(data.error || 'Invalid or inactive access code');
+      const cred = await signInWithEmailAndPassword(auth, email.trim(), password);
+      if (!isTarongaStaffEmail(cred.user.email)) {
+        // A real account, just not a staff one. Sign straight back out so a teacher who
+        // mistypes the portal URL is not left holding a half-privileged session.
+        await auth.signOut();
+        setError('That account does not have staff access.');
+        setStatus('idle');
+        return;
       }
+      setCurrentScreen('adminDashboard');
     } catch (err) {
-      console.error('Admin login error:', err);
-      alert('Could not reach the server to check that code. Check your connection and try again.');
-    } finally {
-      setLoading(false);
+      // Deliberately one message for both "no such account" and "wrong password": telling an
+      // attacker which of the two they got right halves their work.
+      const code = err?.code || '';
+      setError(code === 'auth/too-many-requests'
+        ? 'Too many attempts. Wait a few minutes and try again.'
+        : 'Incorrect email or password.');
+      setStatus('idle');
     }
   };
 
-  const isValid = adminAccessCode.trim().length > 0;
+  const handleReset = async () => {
+    const target = email.trim();
+    if (!target.includes('@')) { setError('Enter your email address first.'); return; }
+    try {
+      await sendPasswordResetEmail(auth, target);
+      // Same message whether or not the account exists, for the same reason as above.
+      setStatus('sent');
+      setError('');
+    } catch {
+      setStatus('sent');
+    }
+  };
+
+  const field = {
+    width:'100%', padding:'0.75rem 1rem', borderRadius:'var(--t-r-md)', border:'2px solid #E5E5E5',
+    fontSize:'1rem', fontFamily:'DM Sans, sans-serif', marginBottom:'1rem', boxSizing:'border-box',
+    transition:'border-color 0.2s', outline:'none',
+  };
 
   return (
     <div style={{ position:'fixed', inset:0, background:'linear-gradient(135deg, var(--t-deep) 0%, var(--t-mid) 100%)', display:'flex', alignItems:'center', justifyContent:'center', padding:'clamp(1rem, 5vw, 2rem)', overflow:'auto' }}>
@@ -47,31 +78,45 @@ export default function AdminLoginScreen() {
 
         <div style={{ textAlign:'center', marginBottom:'1.5rem' }}>
           <h2 className="taronga-title" style={{ fontSize:'clamp(1.6rem, 4vh, 2rem)', color:'var(--t-deep)', marginBottom:'0.3rem', letterSpacing:'0.04em' }}>Taronga Staff Portal</h2>
-          <p style={{ color:'#666', fontSize:'0.9rem' }}>Enter your access code to continue</p>
+          <p style={{ color:'#666', fontSize:'0.9rem' }}>Sign in with your Taronga account</p>
         </div>
 
-        <label style={{ display:'block', fontSize:'0.82rem', fontWeight:600, color:'var(--t-deep)', marginBottom:'0.35rem' }}>Staff Access Code</label>
-        <input
-          type="text"
-          value={adminAccessCode}
-          onChange={e => setAdminAccessCode(e.target.value)}
-          placeholder="Enter staff access code"
-          style={{ width:'100%', padding:'0.75rem 1rem', borderRadius:'var(--t-r-md)', border:'2px solid #E5E5E5', fontSize:'1rem', fontFamily:'DM Sans, sans-serif', marginBottom:'1.5rem', boxSizing:'border-box', transition:'border-color 0.2s', outline:'none' }}
+        <label style={{ display:'block', fontSize:'0.82rem', fontWeight:600, color:'var(--t-deep)', marginBottom:'0.35rem' }}>Email</label>
+        <input type="email" autoComplete="username" value={email}
+          onChange={e => { setEmail(e.target.value); setError(''); }}
+          placeholder="you@example.com" style={field}
+          onFocus={e => e.target.style.borderColor = 'var(--t-mid)'}
+          onBlur={e  => e.target.style.borderColor = '#E5E5E5'} />
+
+        <label style={{ display:'block', fontSize:'0.82rem', fontWeight:600, color:'var(--t-deep)', marginBottom:'0.35rem' }}>Password</label>
+        <input type="password" autoComplete="current-password" value={password}
+          onChange={e => { setPassword(e.target.value); setError(''); }}
+          placeholder="Your password" style={{ ...field, marginBottom:'1.2rem' }}
           onFocus={e => e.target.style.borderColor = 'var(--t-mid)'}
           onBlur={e  => e.target.style.borderColor = '#E5E5E5'}
-          onKeyDown={e => e.key === 'Enter' && isValid && !loading && handleLogin()}
-        />
+          onKeyDown={e => e.key === 'Enter' && handleLogin()} />
 
-        <button
-          onClick={handleLogin}
-          disabled={!isValid || loading}
-          style={{ width:'100%', padding:'0.85rem', borderRadius:'var(--t-r-pill)', border:'none', background: isValid ? 'linear-gradient(135deg, var(--sunset-orange), var(--earth-clay))' : '#CCC', color:'white', fontSize:'1.05rem', fontWeight:700, cursor: isValid && !loading ? 'pointer' : 'not-allowed', textTransform:'uppercase', letterSpacing:'0.08em', transition:'all 0.3s ease', opacity: loading ? 0.7 : 1 }}>
-          {loading ? 'Verifying…' : 'Enter Portal'}
+        {error && (
+          <p role="alert" style={{ color:'#DC2626', fontSize:'0.85rem', margin:'0 0 0.9rem' }}>{error}</p>
+        )}
+        {status === 'sent' && (
+          <p role="status" style={{ color:'var(--t-mid)', fontSize:'0.85rem', margin:'0 0 0.9rem' }}>
+            If that address has an account, a reset link is on its way.
+          </p>
+        )}
+
+        <button onClick={handleLogin} disabled={!isValid || status === 'loading'}
+          style={{ width:'100%', padding:'0.85rem', borderRadius:'var(--t-r-pill)', border:'none', background: isValid ? 'linear-gradient(135deg, var(--sunset-orange), var(--earth-clay))' : '#CCC', color:'white', fontSize:'1.05rem', fontWeight:700, cursor: isValid && status !== 'loading' ? 'pointer' : 'not-allowed', textTransform:'uppercase', letterSpacing:'0.08em', transition:'all 0.3s ease', opacity: status === 'loading' ? 0.7 : 1 }}>
+          {status === 'loading' ? 'Signing in…' : 'Enter Portal'}
         </button>
 
-        <button
-          onClick={() => { setAdminAccessCode(''); setCurrentScreen('home'); }}
-          style={{ display:'block', width:'100%', background:'none', border:'none', color:'#999', fontSize:'0.82rem', cursor:'pointer', marginTop:'1rem', padding:'0.4rem', transition:'color 0.18s' }}
+        <button onClick={handleReset}
+          style={{ display:'block', width:'100%', background:'none', border:'none', color:'var(--t-mid)', fontSize:'0.82rem', cursor:'pointer', marginTop:'0.9rem', padding:'0.3rem' }}>
+          Forgot your password?
+        </button>
+
+        <button onClick={() => setCurrentScreen('home')}
+          style={{ display:'block', width:'100%', background:'none', border:'none', color:'#999', fontSize:'0.82rem', cursor:'pointer', marginTop:'0.5rem', padding:'0.4rem', transition:'color 0.18s' }}
           onMouseEnter={e => e.currentTarget.style.color = '#666'}
           onMouseLeave={e => e.currentTarget.style.color = '#999'}>
           ← Back

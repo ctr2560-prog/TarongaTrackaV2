@@ -3,8 +3,9 @@ import {
   collection, doc, getDoc, getDocs, updateDoc, setDoc, deleteDoc, query, where,
   orderBy, limit, writeBatch, serverTimestamp, deleteField, onSnapshot, increment,
 } from 'firebase/firestore';
-import { db, storage } from '../firebase';
+import { db, storage, auth } from '../firebase';
 import { ref as storageRef, getDownloadURL } from 'firebase/storage';
+import { isTarongaStaffEmail } from '../constants/tarongaStaff';
 import { useApp } from '../context/AppContext';
 import { ZOOSNOOZ_ANIMALS } from '../data/zoosnoozAnimals';
 import { ZOOYARD_ANIMALS } from '../data/zooyardAnimals';
@@ -2412,7 +2413,7 @@ function OverviewTab({ classes, loading, onClassClick }) {
 }
 
 // ─── Tab: Control Room ────────────────────────────────────────────────────────
-function ControlRoomTab({ adminAccessCode }) {
+function ControlRoomTab() {
   const [unlocked,    setUnlocked]    = useState(false);
   const [input,       setInput]       = useState('');
   const [error,       setError]       = useState(false);
@@ -2450,7 +2451,7 @@ function ControlRoomTab({ adminAccessCode }) {
       await setDoc(doc(db, 'accessCodes', code), {
         active: true, sessionType: codeType,
         venue: 'Taronga Zoo', uses: 0, maxUses,
-        createdBy: adminAccessCode,
+        createdBy: auth.currentUser?.email || 'unknown',
         createdAt: serverTimestamp(), expiresAt: expires,
       });
       setCreatedCode(code);
@@ -2478,10 +2479,11 @@ function ControlRoomTab({ adminAccessCode }) {
     if (wipeConfirm.trim().toUpperCase() !== 'WIPE') return;
     setWiping(true);
     try {
+      const idToken = await auth.currentUser?.getIdToken();
       const res = await fetch('https://australia-southeast1-tarongatracka.cloudfunctions.net/adminWipeAllData', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: adminAccessCode, confirm: 'WIPE' }),
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+        body: JSON.stringify({ confirm: 'WIPE' }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) throw new Error(data?.error || 'Wipe failed');
@@ -2607,7 +2609,6 @@ function ControlRoomTab({ adminAccessCode }) {
 
 // ─── Tab: Users ──────────────────────────────────────────────────────────────
 function UsersTab({ classes }) {
-  const { adminAccessCode } = useApp();
   const [copied,          setCopied]          = useState(false);
   const [roster,          setRoster]          = useState([]);
   const [profLoading,     setProfLoading]     = useState(true);
@@ -2625,10 +2626,13 @@ function UsersTab({ classes }) {
     (async () => {
       setProfLoading(true);
       try {
+        // Staff identity, not a shared code (2026-10-03). The function verifies this token
+        // server-side and checks the email against the same allowlist as firestore.rules.
+        const idToken = await auth.currentUser?.getIdToken();
         const res = await fetch('https://australia-southeast1-tarongatracka.cloudfunctions.net/getAdminTeacherRoster', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code: adminAccessCode }),
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+          body: JSON.stringify({}),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data?.error || 'Failed to load teacher roster');
@@ -2641,7 +2645,7 @@ function UsersTab({ classes }) {
       }
     })();
     return () => { cancelled = true; };
-  }, [adminAccessCode]);
+  }, []);
 
   const registeredEmails = useMemo(
     () => roster.map(t => (t.email || '').toLowerCase()).filter(Boolean),
@@ -3198,14 +3202,22 @@ function ChallengesTab() {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function AdminDashboardScreen() {
-  const { setCurrentScreen, adminAccessCode, setAdminAccessCode, setSelectedAdminClass } = useApp();
+  const { setCurrentScreen, setSelectedAdminClass, teacher, authLoading } = useApp();
 
   const [tab, setTab] = useState('overview');
 
-  // No access code in memory (e.g. deep link or stale history entry) → back to login
+  // ⚠️ The portal is gated on a REAL SIGNED-IN STAFF ACCOUNT (2026-10-03), not a shared code.
+  //    `teacher` is the Firebase Auth user; the allowlist mirrors isWildlyStaff() in
+  //    firestore.rules, which is what actually enforces this server-side.
+  //    Wait for authLoading before bouncing, or a page refresh throws a signed-in staff member
+  //    back to the login screen while Firebase is still restoring the session.
+  const staffEmail = teacher?.email || null;
+  const isStaff = isTarongaStaffEmail(staffEmail);
+
   useEffect(() => {
-    if (!adminAccessCode) setCurrentScreen('adminLogin');
-  }, [adminAccessCode, setCurrentScreen]);
+    if (authLoading) return;
+    if (!isStaff) setCurrentScreen('adminLogin');
+  }, [authLoading, isStaff, setCurrentScreen]);
 
   // Classes data
   const [classes,  setClasses]  = useState([]);
@@ -3332,7 +3344,7 @@ export default function AdminDashboardScreen() {
       await setDoc(doc(db, 'accessCodes', code), {
         active: true, sessionType: 'zoosnooz',
         venue: 'Taronga Zoo', uses: 0, maxUses: 50,
-        createdBy: adminAccessCode, createdAt: serverTimestamp(), expiresAt: expires,
+        createdBy: auth.currentUser?.email || 'unknown', createdAt: serverTimestamp(), expiresAt: expires,
       });
       setNightCode(code);
     } catch (e) { alert('Failed to generate code: ' + e.message); }
@@ -3367,7 +3379,9 @@ export default function AdminDashboardScreen() {
           </div>
 
 
-          <button onClick={()=>{setAdminAccessCode('');setCurrentScreen('home');}}
+          {/* A real sign-out now: the session is a Firebase Auth session, so clearing local
+              state alone would leave the account signed in on a shared Taronga machine. */}
+          <button onClick={async ()=>{ try { await auth.signOut(); } catch (e) { console.warn('Sign out failed:', e); } setCurrentScreen('home'); }}
             style={{ background:'rgba(255,255,255,0.10)', border:'1px solid rgba(255,255,255,0.2)', color:'rgba(255,255,255,0.88)', padding:'0.4rem 0.85rem', borderRadius:'var(--t-r-pill)', cursor:'pointer', fontSize:'0.78rem', fontWeight:600 }}>
             Sign Out
           </button>
@@ -3399,7 +3413,7 @@ export default function AdminDashboardScreen() {
           {tab === 'programmes'  && <ProgrammesTab classes={classes} />}
           {tab === 'review'      && <ReviewTab classes={classes} />}
           {tab === 'manage'      && <ManageTab classes={classes} />}
-          {tab === 'controlRoom' && <ControlRoomTab adminAccessCode={adminAccessCode} />}
+          {tab === 'controlRoom' && <ControlRoomTab />}
         </div>
       </div>
     </div>
