@@ -21,10 +21,9 @@ region: `australia-southeast1`. ⚠️ See **Build & Deploy** — these two drif
 ## Where we left off (2026-09-28)
 
 ### ⚠️ Do these first
-1. **`firebase deploy --only storage` has NOT been run.** The `wildestDreams/` rule is committed
-   but not live, so every Wildest Dreams clip and film fails to upload with
-   `storage/unauthorized` — **silently**, because uploads are backgrounded. Must run under
-   **thebiologybloke@gmail.com**. This is the only thing actually blocking students.
+1. ~~**`firebase deploy --only storage` has NOT been run.**~~ ✅ **DONE 2026-10-02** — deployed
+   alongside the folder-listing fix, so the `wildestDreams/` rule is finally live and Wildest
+   Dreams uploads should now work. **Untested with a real clip** — worth one upload to confirm.
 2. **Decide whether Taronga actually wants a retention policy.** ⚠️ Until 2026-09-24 the ZooSnooz
    parent letter told families raw footage was "permanently deleted within 48 hours" and the
    documentary "hosted for up to 12 months, then deleted". **Neither was ever implemented** —
@@ -250,16 +249,20 @@ no login at all**, returned: `classes` 10, `students` (collection group) 104, `z
   `adminAuthAttempts` after 10 failures in 15 minutes — because moving the check server-side
   without throttling just converts "read the code" into "guess it fast".
   ⚠️ **Never reopen `read` on `adminAccess` to debug a login problem. That IS the vulnerability.**
+- **Storage folder listing closed.** See item 1 below.
 - **App Check scaffolding** in `src/firebase.js`, inert until `VITE_APPCHECK_SITE_KEY` is set.
   Read the rollout notes in that file before enabling — **Wildly shares this project and will go
   down if enforcement is switched on before Wildly sends tokens too.**
 
 #### 🔴 STILL OPEN — in rough priority order
-1. **Every student video and photo is listable and downloadable with no login.** Confirmed:
-   `listAll()` on `zoosnooz/`, `evolve/`, `zooyardHabitats/`, `citizenScienceEvidence/` all
-   succeed unauthenticated. This is **not** security-by-unguessable-URL as was assumed — the
-   folder tree can be walked, and it is organised by class code and student alias. These are
-   identifiable children's faces and voices. The same paths also allow unauthenticated **write**.
+1. **Student media is still downloadable by anyone who knows a filename** — but 🟡 **folder
+   browsing was closed 2026-10-02**, which was the serious half. `read` was split into `get`
+   (kept) and `list` (denied) on all five student paths plus the catch-all; verified
+   `storage/unauthorized` on all five from an unauthenticated client, while a real stored clip
+   still returns 206. Neither app ever calls `listAll()`, so this cost nothing.
+   ⚠️ Still only security-by-unguessable-URL, and the paths still allow unauthenticated
+   **write**. Real fix is short-lived signed URLs; that touches every media read path
+   (stitchers, DocumentaryViewer, admin tabs) so it is its own piece of work, not a quick one.
 2. **`classes` and `students` are `allow read, write: if true`** — 104 student records readable,
    alterable and deletable by anyone. Needs the Cloud Function write pattern.
 3. **No retention or deletion anywhere.** Every clip ever filmed is still stored, indefinitely.
