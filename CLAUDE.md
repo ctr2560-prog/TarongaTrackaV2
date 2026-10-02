@@ -292,6 +292,33 @@ no login at all**, returned: `classes` 10, `students` (collection group) 104, `z
 4. **No consent record.** Filming opt-out is a verbal arrangement with the teacher; nothing in the
    data marks a student as not-to-be-filmed, so moderation has nothing to filter on.
 5. Open writes on `accessCodes` (90 teacher invite codes), `settings`, `schools`, `prePostLinks`.
+6. **No real staff logins.** The portal is still one shared access code — now server-verified and
+   rate-limited, but shared, so there is no accountability for who approved or deleted what, and
+   no per-person revocation. 🟡 The groundwork landed 2026-10-03 (see the role-escalation fix
+   below); the remaining work is signing staff in with Firebase Auth and a staff role, then
+   retiring the code and tightening the `if true` collections to `isWildlyStaff()`.
+
+#### ⚠️ Privilege escalation via self-assigned staff role — FIXED 2026-10-03
+
+`teachers/{email}.role` is what `isWildlyStaff()` reads to decide who is Taronga staff, and
+**users write their own teacher document** (`allow write: if request.auth.token.email == email`).
+Wildly's "About you" page offered **"Education Staff", "Curriculum Leader" and "School Leader" in
+a self-select dropdown**, and saved it straight to that field.
+
+So **any teacher who signed up could promote themselves to Taronga staff** and then `list` every
+teacher's email, school and role; write `dashboardConfig`, `contentItems`, `professionalLearning`,
+`tarongaTvVideos`, `upcomingEvents`; and **delete other teachers' accounts**.
+
+The fix is in `firestore.rules`: a user may still write their own profile but may not *grant*
+itself a staff role, and may not change one once set. Existing staff can set anyone's role.
+⚠️ **Narrowing the dropdown is defence in depth, not the fix** — the rule is the control.
+
+**`setTeacherRole` Cloud Function** (admin-code gated, Admin SDK) is now the only way to appoint
+a staff member. It exists because the rule also means nothing in the client can appoint the
+*first* one — without it, a project with no staff account would be locked out of Wildly's staff
+console permanently. It logs every change.
+⚠️ **This must stay admin-code gated.** Make it callable by a signed-in teacher and the
+escalation is straight back.
 
 #### Privacy — what is genuinely good, and worth defending
 - **Students never enter real names**; they pick an animal alias. This is the single biggest

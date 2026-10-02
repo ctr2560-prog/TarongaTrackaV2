@@ -72,10 +72,27 @@ service cloud.firestore {
     // directly — it now goes through the server-verified `getAdminTeacherRoster`
     // Cloud Function instead (functions/index.js), which re-checks the admin
     // access code with the Admin SDK before returning the roster.
+    // ⚠️ PRIVILEGE ESCALATION, FIXED 2026-10-03. `role` on this document is what isWildlyStaff()
+    //    reads to decide who is Taronga staff — and users write their own document. Wildly's
+    //    "About you" page offered "Education Staff", "Curriculum Leader" and "School Leader" in
+    //    a self-select dropdown, so ANY teacher who signed up could promote themselves to staff
+    //    and then list every teacher's email and school, edit Wildly's content, and delete other
+    //    teachers' accounts.
+    //    A user may still write their own profile, but may NOT give themselves a staff role, and
+    //    may not change it once set. Existing staff (and the admin-code-gated setTeacherRole
+    //    Cloud Function) are the only things that can grant one.
+    // ⚠️ Client-side dropdown changes are NOT a fix for this. The rule is the control.
     match /teachers/{email} {
       allow get: if true;
       allow list: if isWildlyStaff();
-      allow write: if request.auth != null && request.auth.token.email == email;
+
+      allow create: if request.auth != null && request.auth.token.email == email
+                    && !grantsStaffRole(request.resource.data);
+      allow update: if request.auth != null && request.auth.token.email == email
+                    && (!grantsStaffRole(request.resource.data)
+                        || roleOf(request.resource.data) == roleOf(resource.data));
+      // Existing staff may set anyone's role, which is how a new staff member is appointed.
+      allow write: if isWildlyStaff();
       // Wildly staff can remove a teacher account from the roster (staff console
       // Control Room). Deletes the profile doc only; the Firebase Auth login is
       // unaffected. Additive to the self-write rule above.
@@ -226,6 +243,14 @@ service cloud.firestore {
     // above) rather than having its own — see taronga-tracka-vite CLAUDE.md,
     // "Taronga Education ecosystem" section. isWildlyStaff() mirrors Wildly's
     // former standalone isStaff() check, just against the shared teacher doc.
+    function roleOf(data) {
+      return ('role' in data) ? data.role : null;
+    }
+
+    function grantsStaffRole(data) {
+      return roleOf(data) in ['Education Staff', 'Curriculum Leader', 'School Leader'];
+    }
+
     function isWildlyStaff() {
       return request.auth != null
         && exists(/databases/$(database)/documents/teachers/$(request.auth.token.email))
