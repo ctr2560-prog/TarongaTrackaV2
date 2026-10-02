@@ -2428,6 +2428,33 @@ function ControlRoomTab() {
 
   // Wipe state
   const [wipeStep,    setWipeStep]    = useState(0); // 0=idle, 1=confirming
+
+  // Staff password resets — staff do not self-serve, the administrator issues the link.
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetLink,  setResetLink]  = useState('');
+  const [resetBusy,  setResetBusy]  = useState(false);
+  const [resetErr,   setResetErr]   = useState('');
+
+  const issueStaffReset = async () => {
+    const target = resetEmail.trim().toLowerCase();
+    if (!target.includes('@')) { setResetErr('Enter a staff email address.'); return; }
+    setResetBusy(true); setResetErr(''); setResetLink('');
+    try {
+      const idToken = await auth.currentUser?.getIdToken();
+      const res = await fetch('https://australia-southeast1-tarongatracka.cloudfunctions.net/generateStaffPasswordReset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+        body: JSON.stringify({ email: target }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data?.error || 'Could not generate a reset link.');
+      setResetLink(data.link);
+    } catch (e) {
+      setResetErr(e.message);
+    } finally {
+      setResetBusy(false);
+    }
+  };
   const [wipeConfirm, setWipeConfirm] = useState('');
   const [wiping,      setWiping]      = useState(false);
 
@@ -2561,6 +2588,47 @@ function ControlRoomTab() {
           style={{ flexShrink:0, padding:'0.55rem 1.1rem', borderRadius:'var(--t-r-pill)', border:'none', background: gpsOn ? GREEN : '#6B7280', color:'white', fontSize:'0.82rem', fontWeight:700, cursor: gpsLoading ? 'not-allowed' : 'pointer', whiteSpace:'nowrap', opacity: gpsLoading ? 0.7 : 1 }}>
           {gpsLoading ? '…' : gpsOn ? 'Turn GPS Off' : 'Turn GPS On'}
         </button>
+      </div>
+
+      {/* ── Staff accounts ──────────────────────────────────────────────────────────────
+          ⚠️ The staff login has NO self-service "forgot password" link. Self-service suits
+          teachers (many of them, and the account only reaches their own classes) and not staff
+          (very few, and the account reads every school and can wipe all data). A locked-out
+          staff member contacts the administrator, who issues a link here.
+          ⚠️ The server checks BOTH that the caller is staff and that the TARGET is on the staff
+          allowlist — without the second check this would be an account-takeover tool for any
+          teacher account in the project. */}
+      <div style={{ background:'white', borderRadius:'var(--t-r-lg)', padding:'1.5rem', boxShadow:'var(--t-shadow-sm)', marginBottom:'1rem', border:'1px solid var(--t-stone)' }}>
+        <h3 style={{ fontSize:'1rem', fontWeight:700, color:'var(--t-deep)', margin:'0 0 0.35rem' }}>Staff accounts</h3>
+        <p style={{ fontSize:'0.82rem', color:'var(--t-slate)', margin:'0 0 1rem', lineHeight:1.5 }}>
+          Issue a password reset link for a Taronga staff account. Only addresses on the staff
+          allowlist can be reset here.
+        </p>
+        <div style={{ display:'flex', gap:'0.5rem', flexWrap:'wrap', marginBottom:'0.75rem' }}>
+          <input type="email" value={resetEmail} placeholder="staff@example.com"
+            onChange={e => { setResetEmail(e.target.value); setResetErr(''); }}
+            style={{ flex:'1 1 220px', padding:'0.6rem 0.9rem', borderRadius:'var(--t-r-sm)', border:'1px solid var(--t-stone)', fontSize:'0.9rem', fontFamily:'inherit', boxSizing:'border-box' }} />
+          <button onClick={issueStaffReset} disabled={resetBusy}
+            style={{ padding:'0.6rem 1.2rem', borderRadius:'var(--t-r-pill)', border:'none', background: resetBusy ? '#CCC' : 'var(--t-mid)', color:'white', fontSize:'0.85rem', fontWeight:700, cursor: resetBusy ? 'not-allowed' : 'pointer', whiteSpace:'nowrap' }}>
+            {resetBusy ? 'Generating…' : 'Create reset link'}
+          </button>
+        </div>
+        {resetErr && <p style={{ color:'#DC2626', fontSize:'0.82rem', margin:'0 0 0.5rem' }}>{resetErr}</p>}
+        {resetLink && (
+          <div style={{ background:'var(--t-foam)', border:'1px solid var(--t-stone)', borderRadius:'var(--t-r-sm)', padding:'0.85rem' }}>
+            {/* Shown rather than emailed on purpose: mail to DoE and zoo.nsw.gov.au addresses has
+                been silently dropped by their gateways before, and a reset that fails silently is
+                worse than one you pass on yourself through a channel you know works. */}
+            <p style={{ fontSize:'0.78rem', color:'var(--t-deep)', margin:'0 0 0.5rem', fontWeight:600 }}>
+              Send this to them yourself. It can be used once and expires.
+            </p>
+            <p style={{ fontSize:'0.72rem', wordBreak:'break-all', color:'var(--t-slate)', margin:'0 0 0.6rem' }}>{resetLink}</p>
+            <button onClick={() => navigator.clipboard?.writeText(resetLink)}
+              style={{ padding:'0.45rem 1rem', borderRadius:'var(--t-r-pill)', border:'1px solid var(--t-stone)', background:'white', fontSize:'0.8rem', fontWeight:600, cursor:'pointer' }}>
+              Copy link
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Wipe All Data */}

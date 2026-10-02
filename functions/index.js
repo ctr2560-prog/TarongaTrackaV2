@@ -357,6 +357,57 @@ async function verifyStaff(req) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// generateStaffPasswordReset — Cameron resets staff passwords, staff do not self-serve.
+//
+// ⚠️ The staff login has NO "forgot password" link, on purpose. Self-service reset is right for
+// teachers (there are many of them, and their account only reaches their own classes) and wrong
+// for staff (there are very few, and the account can read every school and wipe all data).
+// A staff member who is locked out contacts the administrator, who generates a link here.
+//
+// ⚠️ TWO CHECKS, both necessary:
+//   1. the CALLER must be signed in as staff (verifyStaff), and
+//   2. the TARGET must itself be on the staff allowlist.
+// Without (2) this becomes an account-takeover tool for any teacher account in the project.
+//
+// Returns the link rather than emailing it. Email to DoE and zoo.nsw.gov.au addresses has been
+// silently dropped by their gateways before (see the mentor-report notes), and a reset that
+// fails silently is worse than one the administrator passes on themselves.
+exports.generateStaffPasswordReset = onRequest(
+  { region: 'australia-southeast1', invoker: 'public' },
+  async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    const staff = await verifyStaff(req);
+    if (!staff.ok) { res.status(staff.status).json({ error: staff.error }); return; }
+
+    const { email } = req.body || {};
+    const target = (email || '').trim().toLowerCase();
+    if (!target || !target.includes('@')) {
+      res.status(400).json({ error: 'A staff email is required.' });
+      return;
+    }
+    if (!TARONGA_STAFF_EMAILS.includes(target)) {
+      res.status(403).json({ error: 'That address is not a Taronga staff account.' });
+      return;
+    }
+
+    try {
+      const link = await admin.auth().generatePasswordResetLink(target);
+      console.warn(`[generateStaffPasswordReset] ${staff.email} generated a reset link for ${target}`);
+      res.json({ ok: true, email: target, link });
+    } catch (err) {
+      console.error('generateStaffPasswordReset failed:', err);
+      res.status(500).json({ error: 'Could not generate a reset link for that account.' });
+    }
+  }
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
 // verifyAdminCode — server-side check of the staff portal access code.
 //
 // ⚠️ WHY THIS EXISTS. The staff portal code used to be verified IN THE BROWSER by

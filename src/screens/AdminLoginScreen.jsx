@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebase';
 import { useApp } from '../context/AppContext';
 import { isTarongaStaffEmail } from '../constants/tarongaStaff';
@@ -22,7 +22,7 @@ export default function AdminLoginScreen() {
   const { setCurrentScreen } = useApp();
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
-  const [status, setStatus]     = useState('idle');   // idle | loading | sent
+  const [status, setStatus]     = useState('idle');   // idle | loading
   const [error, setError]       = useState('');
 
   const isValid = email.trim().includes('@') && password.length > 0;
@@ -50,19 +50,6 @@ export default function AdminLoginScreen() {
         ? 'Too many attempts. Wait a few minutes and try again.'
         : 'Incorrect email or password.');
       setStatus('idle');
-    }
-  };
-
-  const handleReset = async () => {
-    const target = email.trim();
-    if (!target.includes('@')) { setError('Enter your email address first.'); return; }
-    try {
-      await sendPasswordResetEmail(auth, target);
-      // Same message whether or not the account exists, for the same reason as above.
-      setStatus('sent');
-      setError('');
-    } catch {
-      setStatus('sent');
     }
   };
 
@@ -99,21 +86,19 @@ export default function AdminLoginScreen() {
         {error && (
           <p role="alert" style={{ color:'#DC2626', fontSize:'0.85rem', margin:'0 0 0.9rem' }}>{error}</p>
         )}
-        {status === 'sent' && (
-          <p role="status" style={{ color:'var(--t-mid)', fontSize:'0.85rem', margin:'0 0 0.9rem' }}>
-            If that address has an account, a reset link is on its way.
-          </p>
-        )}
-
         <button onClick={handleLogin} disabled={!isValid || status === 'loading'}
           style={{ width:'100%', padding:'0.85rem', borderRadius:'var(--t-r-pill)', border:'none', background: isValid ? 'linear-gradient(135deg, var(--sunset-orange), var(--earth-clay))' : '#CCC', color:'white', fontSize:'1.05rem', fontWeight:700, cursor: isValid && status !== 'loading' ? 'pointer' : 'not-allowed', textTransform:'uppercase', letterSpacing:'0.08em', transition:'all 0.3s ease', opacity: status === 'loading' ? 0.7 : 1 }}>
           {status === 'loading' ? 'Signing in…' : 'Enter Portal'}
         </button>
 
-        <button onClick={handleReset}
-          style={{ display:'block', width:'100%', background:'none', border:'none', color:'var(--t-mid)', fontSize:'0.82rem', cursor:'pointer', marginTop:'0.9rem', padding:'0.3rem' }}>
-          Forgot your password?
-        </button>
+        {/* ⚠️ NO self-service password reset here, on purpose. Self-service is right for teachers
+            (many of them, and the account only reaches their own classes) and wrong for staff
+            (very few, and the account reads every school and can wipe all data). A locked-out
+            staff member contacts the administrator, who issues a link from Control Room →
+            Staff accounts. Do not add a "Forgot password?" link back to this screen. */}
+        <p style={{ textAlign:'center', color:'#999', fontSize:'0.78rem', marginTop:'0.9rem', lineHeight:1.5 }}>
+          Locked out? Contact your Taronga administrator to have your password reset.
+        </p>
 
         <button onClick={() => setCurrentScreen('home')}
           style={{ display:'block', width:'100%', background:'none', border:'none', color:'#999', fontSize:'0.82rem', cursor:'pointer', marginTop:'0.5rem', padding:'0.4rem', transition:'color 0.18s' }}

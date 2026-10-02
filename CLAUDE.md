@@ -330,8 +330,31 @@ a page refresh throws a signed-in staff member out while Firebase is still resto
 Sign Out now calls `auth.signOut()`; clearing local state alone would leave the account signed in
 on a shared Taronga machine.
 
+**No self-service password reset on the staff login, on purpose.** Self-service suits teachers
+(many of them, and the account only reaches their own classes) and not staff (very few, and the
+account reads every school and can wipe all data). A locked-out staff member contacts the
+administrator, who issues a link from **Control Room → Staff accounts**.
+🚫 Do not add a "Forgot password?" link back to `AdminLoginScreen`.
+
+**`generateStaffPasswordReset`** does this, and makes **two** checks: the CALLER must be signed in
+as staff, *and* the TARGET must itself be on the staff allowlist. ⚠️ Without the second check this
+would be an account-takeover tool for every teacher account in the project. Verified live: 403
+with no token, a junk token, the old access code, and for a non-staff target.
+
+It **returns the link rather than emailing it**. Mail to DoE and zoo.nsw.gov.au addresses has been
+silently dropped by their gateways before (see the mentor-report notes), and a reset that fails
+silently is worse than one the administrator passes on through a channel they know works.
+
+⚠️ **A rotatable code as a second gate on destructive actions is still open as an idea** — the
+better version of "email + code", putting the second factor where the danger is rather than on the
+front door. Firebase also supports proper TOTP MFA, which is what Taronga IT would recognise.
+
 `verifyAdminCode` and the `adminAccess` collection still exist but are **no longer used by the
 portal**. Safe to remove once the new sign-in has been exercised in the field.
+
+⚠️ **The Control Room's own gate is still a hardcoded string in the client bundle.** It is a UI
+speed bump only — every action behind it is independently verified server-side against a staff
+token — but it should not be mistaken for a control.
 
 #### ⚠️ Privilege escalation via self-assigned staff role — FIXED 2026-10-03
 
