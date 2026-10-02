@@ -398,6 +398,18 @@ removing the others, can never lock Taronga out of its own project. Changing it 
 `manageStaffAdmins` creates the sign-in account if needed (with a long random password nobody
 ever learns, so no weak interim credential sits on it), writes the `staffAdmins` doc, generates a
 set-password link, and emails a branded invite via Resend.
+
+**The invite email reuses the Friday mentor-report look** via `brandedEmailShell()` in
+`functions/index.js`: deep green banner, white title, muted green subtitle, both product logos
+right-aligned, and the "For the Wild" lockup in the footer banner. Rendered and eyeballed in a
+browser before shipping.
+⚠️ The techniques in there are not decoration — tables not flexbox (Outlook renders with Word),
+inline styles (Gmail strips `<style>`), `bgcolor` attributes alongside `background-color` plus the
+`color-scheme` meta so Outlook's dark mode does not invert the banners, and absolute image URLs
+(a relative path is a broken image in every client).
+⚠️ `buildMentorReportHtml` deliberately keeps its own copy of the shell. It is the one email
+Cameron relies on weekly, and refactoring a working thing to remove duplication is not worth the
+risk. **If the brand changes, change both.**
 ⚠️ **The link is always shown in the UI too, even on a successful send.** Mail to DoE and
 zoo.nsw.gov.au addresses has been silently dropped by their gateways before, and an invite that
 failed looks exactly like one that worked.
