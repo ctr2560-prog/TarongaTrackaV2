@@ -335,8 +335,13 @@ function buildMentorReportHtml(reportText) {
 //    must agree, and firestore.rules is the one that actually protects the data.
 // 🚫 Never fall back to "or a valid access code" here. A shared secret is what these endpoints
 //    were moved off: it gave no accountability for who approved, deleted or wiped anything.
-const TARONGA_STAFF_EMAILS = ['thebiologybloke@gmail.com'];
+// ⚠️ ROOT ADMIN — mirrors isRootAdmin() in firestore.rules. Hard-coded and not removable
+//    through the app, so a mistake or a compromised account can never lock Taronga out.
+const ROOT_ADMIN_EMAILS = ['thebiologybloke@gmail.com'];
 
+// ⚠️ Mirrors isWildlyStaff() in firestore.rules: the hard-coded root admin, OR an entry in
+//    `staffAdmins` (which only existing staff can write). Both must stay in step — the rules are
+//    what protect the data, this is what protects the admin endpoints.
 async function verifyStaff(req) {
   const header = req.headers.authorization || '';
   const idToken = header.startsWith('Bearer ') ? header.slice(7) : null;
@@ -344,17 +349,167 @@ async function verifyStaff(req) {
   try {
     const decoded = await admin.auth().verifyIdToken(idToken);
     const email = (decoded.email || '').toLowerCase();
-    if (!decoded.email_verified && !TARONGA_STAFF_EMAILS.includes(email)) {
-      return { ok: false, status: 403, error: 'Staff sign-in required.' };
-    }
-    if (!TARONGA_STAFF_EMAILS.includes(email)) {
+    if (!email) return { ok: false, status: 403, error: 'Staff sign-in required.' };
+
+    if (ROOT_ADMIN_EMAILS.includes(email)) return { ok: true, email, root: true };
+
+    const snap = await admin.firestore().collection('staffAdmins').doc(email).get();
+    if (!snap.exists) {
       return { ok: false, status: 403, error: 'That account does not have staff access.' };
     }
-    return { ok: true, email };
+    return { ok: true, email, root: false };
   } catch {
     return { ok: false, status: 403, error: 'Staff sign-in required.' };
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Staff administrators — invite, list and remove.
+//
+// ⚠️ Staff access lives in the `staffAdmins` collection, writable ONLY by existing staff
+// (firestore.rules). The privilege-escalation bug fixed on 2026-10-03 existed because staff
+// status lived in `teachers/{email}.role`, a field on a document the SUBJECT could write. Here
+// the subject has no write access at all.
+//
+// ⚠️ The ROOT ADMIN is hard-coded in firestore.rules and cannot be removed through the app. It is
+// the guarantee that a mistake, or a compromised staff account removing the others, can never
+// lock Taronga out of its own project.
+
+function staffInviteHtml({ link, invitedBy }) {
+  // Table-based and inline-styled on purpose: Outlook ignores most modern CSS, and bgcolor
+  // attributes survive its dark-mode colour remapping. Same approach as the mentor report.
+  return `<!DOCTYPE html><html><head><meta charset="utf-8">
+<meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light">
+</head><body style="margin:0;padding:0;background:#F0EDE6;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#F0EDE6"><tr><td align="center" style="padding:28px 14px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:540px;background:#FFFFFF;border-radius:16px;overflow:hidden;font-family:Helvetica,Arial,sans-serif;">
+  <tr><td bgcolor="#0A2F1F" style="padding:26px 30px;">
+    <div style="color:#E8B33C;font-size:11px;letter-spacing:3px;text-transform:uppercase;font-weight:bold;">Taronga Education</div>
+    <div style="color:#FFFFFF;font-size:25px;font-weight:bold;padding-top:6px;">Taronga Tracka</div>
+  </td></tr>
+  <tr><td style="padding:30px;">
+    <p style="margin:0 0 14px;font-size:19px;font-weight:bold;color:#0A2F1F;">You have been added as a staff administrator.</p>
+    <p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:#3A4A3F;">
+      ${invitedBy} has given you administrator access to the Taronga Tracka staff portal.
+      Set a password to finish setting up your account.
+    </p>
+    <table role="presentation" cellpadding="0" cellspacing="0"><tr><td bgcolor="#1A5238" style="border-radius:999px;">
+      <a href="${link}" style="display:inline-block;padding:14px 30px;color:#FFFFFF;font-size:15px;font-weight:bold;text-decoration:none;">Set my password</a>
+    </td></tr></table>
+    <p style="margin:20px 0 0;font-size:13px;line-height:1.6;color:#6B6B62;">
+      This link can be used once and will expire. If it has, ask ${invitedBy} to send another.
+    </p>
+    <p style="margin:18px 0 0;font-size:12px;line-height:1.6;color:#9A9A92;">
+      The staff portal can read every class and school, so keep this password to yourself and do
+      not reuse one from another service. If you were not expecting this, tell ${invitedBy}.
+    </p>
+  </td></tr>
+  <tr><td bgcolor="#0A2F1F" style="padding:16px 30px;">
+    <div style="color:rgba(255,255,255,0.6);font-size:11px;letter-spacing:2px;text-transform:uppercase;">For the Wild</div>
+  </td></tr>
+</table></td></tr></table></body></html>`;
+}
+
+exports.manageStaffAdmins = onRequest(
+  { region: 'australia-southeast1', invoker: 'public' },
+  async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    const staff = await verifyStaff(req);
+    if (!staff.ok) { res.status(staff.status).json({ error: staff.error }); return; }
+
+    const db = admin.firestore();
+    const { action, email } = req.body || {};
+    const target = (email || '').trim().toLowerCase();
+
+    try {
+      if (action === 'list') {
+        const snap = await db.collection('staffAdmins').get();
+        const admins = snap.docs.map((d) => ({
+          email: d.id,
+          invitedBy: d.data().invitedBy || null,
+          addedAt: d.data().addedAt ? d.data().addedAt.toDate().toISOString() : null,
+          accepted: !!d.data().accepted,
+        }));
+        res.json({ ok: true, admins, rootAdmins: ROOT_ADMIN_EMAILS });
+        return;
+      }
+
+      if (action === 'remove') {
+        if (!target.includes('@')) { res.status(400).json({ error: 'An email is required.' }); return; }
+        // ⚠️ The root admin is not removable. Without this an administrator could remove every
+        //    other administrator including the owner and lock the project out of its own portal.
+        if (ROOT_ADMIN_EMAILS.includes(target)) {
+          res.status(403).json({ error: 'The root administrator cannot be removed.' });
+          return;
+        }
+        await db.collection('staffAdmins').doc(target).delete();
+        console.warn(`[manageStaffAdmins] ${staff.email} removed admin ${target}`);
+        res.json({ ok: true, removed: target });
+        return;
+      }
+
+      if (action === 'invite') {
+        if (!target.includes('@')) { res.status(400).json({ error: 'A valid email is required.' }); return; }
+
+        // Create the sign-in account if they do not have one yet. A long random password they
+        // never learn: the set-password link below is the only way in, so there is no weak
+        // interim credential sitting on the account.
+        let created = false;
+        try {
+          await admin.auth().getUserByEmail(target);
+        } catch {
+          await admin.auth().createUser({
+            email: target,
+            password: require('crypto').randomBytes(24).toString('base64url'),
+          });
+          created = true;
+        }
+
+        await db.collection('staffAdmins').doc(target).set({
+          invitedBy: staff.email,
+          addedAt: admin.firestore.FieldValue.serverTimestamp(),
+          accepted: false,
+        }, { merge: true });
+
+        const link = await admin.auth().generatePasswordResetLink(target);
+
+        // ⚠️ The link is ALWAYS returned, whether or not the email sends. Mail to DoE and
+        //    zoo.nsw.gov.au addresses has been silently dropped by their gateways before, and an
+        //    invite that fails silently looks identical to one that worked.
+        let emailed = false;
+        let emailError = null;
+        try {
+          const resend = new Resend(process.env.RESEND_API_KEY);
+          const sent = await resend.emails.send({
+            from: 'Taronga Tracka <noreply@tarongatracka.com.au>',
+            to: target,
+            subject: 'You have been added as a Taronga Tracka staff administrator',
+            html: staffInviteHtml({ link, invitedBy: staff.email }),
+          });
+          emailed = !sent?.error;
+          if (sent?.error) emailError = sent.error.message || 'Email provider rejected the message.';
+        } catch (err) {
+          emailError = err.message;
+        }
+
+        console.warn(`[manageStaffAdmins] ${staff.email} invited ${target} (newAccount=${created}, emailed=${emailed})`);
+        res.json({ ok: true, email: target, created, emailed, emailError, link });
+        return;
+      }
+
+      res.status(400).json({ error: 'Unknown action.' });
+    } catch (err) {
+      console.error('manageStaffAdmins failed:', err);
+      res.status(500).json({ error: err.message });
+    }
+  }
+);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // generateStaffPasswordReset — Cameron resets staff passwords, staff do not self-serve.

@@ -258,9 +258,38 @@ service cloud.firestore {
     //    UI in Wildly. It confers NO access. Never make it authoritative again.
     function isWildlyStaff() {
       return request.auth != null
+        && (isRootAdmin() || exists(/databases/$(database)/documents/staffAdmins/$(request.auth.token.email)));
+    }
+
+    // ⚠️ ROOT ADMIN — hard-coded, and deliberately NOT removable from the app. Everything else
+    //    about staff access can be changed from the Control Room; this cannot. It is the
+    //    guarantee that a mistake, or a compromised staff account deleting the others, can never
+    //    lock Taronga out of its own project. Changing it requires deploying this file.
+    function isRootAdmin() {
+      return request.auth != null
         && request.auth.token.email in [
           'thebiologybloke@gmail.com'
         ];
+    }
+
+    // ── Staff administrators ─────────────────────────────────────────────────
+    // Document ID is the lowercased email. Presence in here IS staff access.
+    //
+    // ⚠️ ONLY EXISTING STAFF MAY WRITE THIS. That is the whole design. The privilege-escalation
+    //    bug fixed on 2026-10-03 existed because staff status lived in `teachers/{email}.role` —
+    //    a field on a document the SUBJECT could write — so anyone who signed up could promote
+    //    themselves. Here the subject has no write access at all; only someone who is already an
+    //    administrator can appoint another.
+    //
+    // ⚠️ A signed-in user may read ONLY THEIR OWN entry, so the staff login can tell them whether
+    //    they have access without publishing the list of administrators to the world. Staff can
+    //    read the whole list.
+    // 🚫 Never grant `create` or `update` here to the account named by the document.
+    // 🚫 Never make the root admin removable from the client — see isRootAdmin().
+    match /staffAdmins/{email} {
+      allow get: if request.auth != null && (request.auth.token.email == email || isWildlyStaff());
+      allow list: if isWildlyStaff();
+      allow write: if isWildlyStaff();
     }
 
     match /dashboardConfig/{docId} {

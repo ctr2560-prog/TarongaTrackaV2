@@ -371,22 +371,39 @@ The fix is in `firestore.rules`: a user may still write their own profile but ma
 itself a staff role, and may not change one once set. Existing staff can set anyone's role.
 ⚠️ **Narrowing the dropdown is defence in depth, not the fix** — the rule is the control.
 
-**Then the role check was removed entirely.** Later the same day `isWildlyStaff()` was changed
-from "has one of these roles" to an **explicit email allowlist** in `firestore.rules`:
+**Then the role check was removed entirely**, and replaced with a **root admin + a protected
+collection**:
 
 ```
 function isWildlyStaff() {
   return request.auth != null
-    && request.auth.token.email in ['thebiologybloke@gmail.com'];
+    && (isRootAdmin() || exists(/databases/$(database)/documents/staffAdmins/$(request.auth.token.email)));
+}
+function isRootAdmin() {            // hard-coded, NOT removable through the app
+  return request.auth != null && request.auth.token.email in ['thebiologybloke@gmail.com'];
 }
 ```
 
-An allowlist cannot be escalated into. The role field lived in a document the user could write;
-this lives in a file only someone with Firebase project access can deploy.
+**The difference that matters:** the old bug put staff status on `teachers/{email}.role` — a
+field on a document **the subject could write**. `staffAdmins` can only be written by someone who
+is *already* staff. The subject has no write access at all, so self-promotion is impossible by
+construction.
 
-⚠️ **TO APPOINT A STAFF MEMBER:** add their email (lowercase) to that list and run
-`firebase deploy --only firestore:rules` from this repo. Deliberately slow, deliberately
-requires project access.
+⚠️ **The root admin cannot be removed through the app.** `manageStaffAdmins` refuses to delete it
+and the UI shows no button. It is the guarantee that a mistake, or a compromised staff account
+removing the others, can never lock Taronga out of its own project. Changing it means editing
+`firestore.rules`, `functions/index.js` and `src/constants/tarongaStaff.js`, then deploying.
+
+**Appointing a staff member** is now Control Room → Staff administrators → enter an email.
+`manageStaffAdmins` creates the sign-in account if needed (with a long random password nobody
+ever learns, so no weak interim credential sits on it), writes the `staffAdmins` doc, generates a
+set-password link, and emails a branded invite via Resend.
+⚠️ **The link is always shown in the UI too, even on a successful send.** Mail to DoE and
+zoo.nsw.gov.au addresses has been silently dropped by their gateways before, and an invite that
+failed looks exactly like one that worked.
+
+Verified live, unauthenticated: `list`, `invite`, and `remove` all 403; and a direct Firestore
+write to `staffAdmins` is BLOCKED, as is listing it.
 
 🚫 **`setTeacherRole` was built and then deleted the same day** (source removed, function deleted
 from the project, endpoint now 404s). An always-on endpoint whose only job is handing out

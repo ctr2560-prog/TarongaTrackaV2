@@ -1,11 +1,11 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   collection, doc, getDoc, getDocs, updateDoc, setDoc, deleteDoc, query, where,
   orderBy, limit, writeBatch, serverTimestamp, deleteField, onSnapshot, increment,
 } from 'firebase/firestore';
 import { db, storage, auth } from '../firebase';
 import { ref as storageRef, getDownloadURL } from 'firebase/storage';
-import { isTarongaStaffEmail } from '../constants/tarongaStaff';
+import { isTarongaStaff } from '../constants/tarongaStaff';
 import { useApp } from '../context/AppContext';
 import { ZOOSNOOZ_ANIMALS } from '../data/zoosnoozAnimals';
 import { ZOOYARD_ANIMALS } from '../data/zooyardAnimals';
@@ -2429,6 +2429,91 @@ function ControlRoomTab() {
   // Wipe state
   const [wipeStep,    setWipeStep]    = useState(0); // 0=idle, 1=confirming
 
+  // ── Staff administrators ────────────────────────────────────────────────────────────
+  // ⚠️ Staff access lives in the `staffAdmins` collection, writable ONLY by existing staff. The
+  //    privilege-escalation bug fixed on 2026-10-03 existed because it lived on a document the
+  //    SUBJECT could write. Never move it back onto one.
+  const [admins, setAdmins]         = useState([]);
+  const [rootAdmins, setRootAdmins] = useState([]);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteBusy, setInviteBusy] = useState(false);
+  const [inviteMsg,  setInviteMsg]  = useState(null);   // { ok, text, link }
+  const ADMIN_FN = 'https://australia-southeast1-tarongatracka.cloudfunctions.net/manageStaffAdmins';
+
+  const callAdminFn = async (body) => {
+    const idToken = await auth.currentUser?.getIdToken();
+    const res = await fetch(ADMIN_FN, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) throw new Error(data?.error || 'Request failed.');
+    return data;
+  };
+
+  const loadAdmins = useCallback(async () => {
+    try {
+      const d = await callAdminFn({ action: 'list' });
+      setAdmins(d.admins || []);
+      setRootAdmins(d.rootAdmins || []);
+    } catch (e) {
+      // The panel shows nothing rather than breaking the rest of Control Room.
+      console.warn('Could not load staff administrators:', e);
+    }
+  }, []);
+
+  // Inline rather than calling loadAdmins directly, so state is only ever set from inside the
+  // async continuation — and so a Control Room tab closed mid-request does not set state on an
+  // unmounted component.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const d = await callAdminFn({ action: 'list' });
+        if (cancelled) return;
+        setAdmins(d.admins || []);
+        setRootAdmins(d.rootAdmins || []);
+      } catch (e) {
+        console.warn('Could not load staff administrators:', e);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const inviteAdmin = async () => {
+    const target = inviteEmail.trim().toLowerCase();
+    if (!target.includes('@')) { setInviteMsg({ ok:false, text:'Enter a valid email address.' }); return; }
+    setInviteBusy(true); setInviteMsg(null);
+    try {
+      const d = await callAdminFn({ action: 'invite', email: target });
+      setInviteMsg({
+        ok: true,
+        // ⚠️ Always surface the link, even on a successful send. Mail to DoE and
+        //    zoo.nsw.gov.au addresses has been silently dropped by their gateways before, and an
+        //    invite that failed looks exactly like one that worked.
+        text: d.emailed
+          ? `Invite emailed to ${target}. If it does not arrive, send them this link yourself.`
+          : `Could not email ${target}${d.emailError ? ` (${d.emailError})` : ''}. Send them this link yourself.`,
+        link: d.link,
+      });
+      setInviteEmail('');
+      loadAdmins();
+    } catch (e) {
+      setInviteMsg({ ok:false, text: e.message });
+    } finally {
+      setInviteBusy(false);
+    }
+  };
+
+  const removeAdmin = async (email) => {
+    if (!window.confirm(`Remove ${email} as a staff administrator? They lose access to the portal immediately.`)) return;
+    try {
+      await callAdminFn({ action: 'remove', email });
+      loadAdmins();
+    } catch (e) { alert(e.message); }
+  };
+
   // Staff password resets — staff do not self-serve, the administrator issues the link.
   const [resetEmail, setResetEmail] = useState('');
   const [resetLink,  setResetLink]  = useState('');
@@ -2588,6 +2673,63 @@ function ControlRoomTab() {
           style={{ flexShrink:0, padding:'0.55rem 1.1rem', borderRadius:'var(--t-r-pill)', border:'none', background: gpsOn ? GREEN : '#6B7280', color:'white', fontSize:'0.82rem', fontWeight:700, cursor: gpsLoading ? 'not-allowed' : 'pointer', whiteSpace:'nowrap', opacity: gpsLoading ? 0.7 : 1 }}>
           {gpsLoading ? '…' : gpsOn ? 'Turn GPS Off' : 'Turn GPS On'}
         </button>
+      </div>
+
+      {/* ── Staff administrators ────────────────────────────────────────────────────── */}
+      <div style={{ background:'white', borderRadius:'var(--t-r-lg)', padding:'1.5rem', boxShadow:'var(--t-shadow-sm)', marginBottom:'1rem', border:'1px solid var(--t-stone)' }}>
+        <h3 style={{ fontSize:'1rem', fontWeight:700, color:'var(--t-deep)', margin:'0 0 0.35rem' }}>Staff administrators</h3>
+        <p style={{ fontSize:'0.82rem', color:'var(--t-slate)', margin:'0 0 1rem', lineHeight:1.5 }}>
+          Administrators can read every class and school, approve submissions and wipe all data.
+          Add people sparingly.
+        </p>
+
+        <div style={{ display:'flex', gap:'0.5rem', flexWrap:'wrap', marginBottom:'0.9rem' }}>
+          <input type="email" value={inviteEmail} placeholder="new.admin@example.com"
+            onChange={e => { setInviteEmail(e.target.value); setInviteMsg(null); }}
+            style={{ flex:'1 1 220px', padding:'0.6rem 0.9rem', borderRadius:'var(--t-r-sm)', border:'1px solid var(--t-stone)', fontSize:'0.9rem', fontFamily:'inherit', boxSizing:'border-box' }} />
+          <button onClick={inviteAdmin} disabled={inviteBusy}
+            style={{ padding:'0.6rem 1.2rem', borderRadius:'var(--t-r-pill)', border:'none', background: inviteBusy ? '#CCC' : 'var(--t-mid)', color:'white', fontSize:'0.85rem', fontWeight:700, cursor: inviteBusy ? 'not-allowed' : 'pointer', whiteSpace:'nowrap' }}>
+            {inviteBusy ? 'Sending…' : 'Add administrator'}
+          </button>
+        </div>
+
+        {inviteMsg && (
+          <div style={{ background: inviteMsg.ok ? 'var(--t-foam)' : '#FEF2F2', border:`1px solid ${inviteMsg.ok ? 'var(--t-stone)' : '#FCA5A5'}`, borderRadius:'var(--t-r-sm)', padding:'0.8rem', marginBottom:'0.9rem' }}>
+            <p style={{ margin:0, fontSize:'0.82rem', color: inviteMsg.ok ? 'var(--t-deep)' : '#B91C1C', lineHeight:1.5 }}>{inviteMsg.text}</p>
+            {inviteMsg.link && (
+              <>
+                <p style={{ fontSize:'0.72rem', wordBreak:'break-all', color:'var(--t-slate)', margin:'0.5rem 0 0.5rem' }}>{inviteMsg.link}</p>
+                <button onClick={() => navigator.clipboard?.writeText(inviteMsg.link)}
+                  style={{ padding:'0.4rem 0.9rem', borderRadius:'var(--t-r-pill)', border:'1px solid var(--t-stone)', background:'white', fontSize:'0.78rem', fontWeight:600, cursor:'pointer' }}>
+                  Copy link
+                </button>
+              </>
+            )}
+          </div>
+        )}
+
+        {rootAdmins.map(e => (
+          <div key={e} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'0.75rem', padding:'0.6rem 0', borderTop:'1px solid var(--t-mist)' }}>
+            <span style={{ fontSize:'0.85rem', color:'var(--t-deep)', wordBreak:'break-all' }}>{e}</span>
+            {/* ⚠️ No remove button. The root admin is fixed in firestore.rules and the server
+                refuses to delete it, so an administrator cannot lock Taronga out of its own
+                project — by accident or otherwise. */}
+            <span style={{ fontSize:'0.68rem', fontWeight:800, letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--t-mid)', background:'var(--t-foam)', padding:'0.2rem 0.6rem', borderRadius:'var(--t-r-pill)', whiteSpace:'nowrap' }}>Owner</span>
+          </div>
+        ))}
+
+        {admins.filter(a => !rootAdmins.includes(a.email)).map(a => (
+          <div key={a.email} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'0.75rem', padding:'0.6rem 0', borderTop:'1px solid var(--t-mist)' }}>
+            <div style={{ minWidth:0 }}>
+              <div style={{ fontSize:'0.85rem', color:'var(--t-deep)', wordBreak:'break-all' }}>{a.email}</div>
+              {a.invitedBy && <div style={{ fontSize:'0.72rem', color:'var(--t-slate)' }}>Added by {a.invitedBy}</div>}
+            </div>
+            <button onClick={() => removeAdmin(a.email)}
+              style={{ padding:'0.35rem 0.8rem', borderRadius:'var(--t-r-pill)', border:'1px solid #FCA5A5', background:'white', color:'#DC2626', fontSize:'0.75rem', fontWeight:600, cursor:'pointer', whiteSpace:'nowrap' }}>
+              Remove
+            </button>
+          </div>
+        ))}
       </div>
 
       {/* ── Staff accounts ──────────────────────────────────────────────────────────────
@@ -3280,12 +3422,23 @@ export default function AdminDashboardScreen() {
   //    Wait for authLoading before bouncing, or a page refresh throws a signed-in staff member
   //    back to the login screen while Firebase is still restoring the session.
   const staffEmail = teacher?.email || null;
-  const isStaff = isTarongaStaffEmail(staffEmail);
+  // null = still checking. Bouncing on `false` only, never on null, or a refresh throws a
+  // signed-in administrator out while the staffAdmins lookup is still in flight.
+  const [isStaff, setIsStaff] = useState(null);
 
   useEffect(() => {
+    let cancelled = false;
     if (authLoading) return;
-    if (!isStaff) setCurrentScreen('adminLogin');
-  }, [authLoading, isStaff, setCurrentScreen]);
+    // Resolved asynchronously even for the no-email case, so the effect never sets state
+    // synchronously in its own body.
+    Promise.resolve(staffEmail ? isTarongaStaff(staffEmail) : false)
+      .then(ok => { if (!cancelled) setIsStaff(ok); });
+    return () => { cancelled = true; };
+  }, [authLoading, staffEmail]);
+
+  useEffect(() => {
+    if (isStaff === false) setCurrentScreen('adminLogin');
+  }, [isStaff, setCurrentScreen]);
 
   // Classes data
   const [classes,  setClasses]  = useState([]);

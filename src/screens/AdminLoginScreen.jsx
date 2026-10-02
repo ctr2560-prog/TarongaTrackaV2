@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebase';
 import { useApp } from '../context/AppContext';
-import { isTarongaStaffEmail } from '../constants/tarongaStaff';
+import { isTarongaStaff } from '../constants/tarongaStaff';
 
 // ⚠️ The staff portal signs in with a REAL ACCOUNT (Firebase Auth), not a shared code.
 //
@@ -33,7 +33,8 @@ export default function AdminLoginScreen() {
     setError('');
     try {
       const cred = await signInWithEmailAndPassword(auth, email.trim(), password);
-      if (!isTarongaStaffEmail(cred.user.email)) {
+      // Root admin, or an entry in `staffAdmins` — the same test firestore.rules applies.
+      if (!(await isTarongaStaff(cred.user.email))) {
         // A real account, just not a staff one. Sign straight back out so a teacher who
         // mistypes the portal URL is not left holding a half-privileged session.
         await auth.signOut();
