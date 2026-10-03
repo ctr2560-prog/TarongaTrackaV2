@@ -3,6 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { doc, getDoc, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { makeSouvenirToken, wildestDreamsSouvenirLink } from '../../utils/evolveSouvenir';
+import { mintStudentMedia } from '../../utils/useSignedMedia';
 import { db, storage } from '../../firebase';
 import { normaliseCode, safeStudentId } from '../../utils/helpers';
 import { pickMimeType } from '../../utils/evolveFilm';
@@ -69,6 +70,17 @@ export default function WildestDreamsScreen() {
         });
         setClips(urls); setCaptions(caps);
         if (wd.filmURL) setFilmURL(wd.filmURL);
+
+        // ⚠️ Resume is the only time this mode reads Storage — mid-session the stitcher works
+        //    from local blob URLs. Stored URLs die once the permanent tokens are revoked, so
+        //    re-mint them. Set AFTER the stored values, so a failure leaves today's behaviour.
+        mintStudentMedia(code, sid, { ...urls, ...(wd.filmURL ? { __film: wd.filmURL } : {}) })
+          .then(minted => {
+            if (cancelled || !minted) return;
+            const { __film, ...clipMinted } = minted;
+            if (Object.keys(clipMinted).length) setClips(prev => ({ ...prev, ...clipMinted }));
+            if (__film) setFilmURL(__film);
+          });
       } catch { /* offline or blocked — start fresh rather than block the student */ }
     })();
     return () => { cancelled = true; };

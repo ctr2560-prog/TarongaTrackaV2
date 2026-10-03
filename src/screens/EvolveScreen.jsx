@@ -8,6 +8,7 @@ import { ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebas
 import { db, storage } from '../firebase';
 import { normaliseCode, safeStudentId } from '../utils/helpers';
 import { evolveSouvenirLink, canWriteNfcTag, writeNfcTag } from '../utils/evolveSouvenir';
+import { mintStudentMedia } from '../utils/useSignedMedia';
 
 const CLIP_SECONDS = 30;
 const WATCH_SECONDS = 60;
@@ -782,6 +783,19 @@ export default function EvolveScreen() {
         setDone(d); setClipURLs(urls); setRemoteDrafts(drafts);
         if (!Object.keys(d).length && !localStorage.getItem(INTRO_KEY)) setShowIntro(true);
         if (ev.filmURL) { setFilmURL(ev.filmURL); setFilmPhase('sent'); }
+
+        // ⚠️ RESUME IS THE ONLY TIME THIS MODE READS STORAGE. Mid-session the stitcher works from
+        //    local blob URLs; on resume the clips and the film come back as stored download URLs.
+        //    Those URLs die once the permanent tokens are revoked, so they are re-minted here.
+        //    Done AFTER the state is set, not instead of it: if minting fails the student still
+        //    has the stored URLs, which is exactly today's behaviour.
+        mintStudentMedia(normaliseCode(classCode), safeStudentId(studentName), { ...urls, ...(ev.filmURL ? { __film: ev.filmURL } : {}) })
+          .then(minted => {
+            if (cancelled || !minted) return;
+            const { __film, ...clipMinted } = minted;
+            if (Object.keys(clipMinted).length) setClipURLs(prev => ({ ...prev, ...clipMinted }));
+            if (__film) setFilmURL(__film);
+          });
         if (ev.souvenirToken) setSouvenirToken(ev.souvenirToken);
       } catch (e) { console.warn('Evolve resume failed:', e); }
       finally { if (!cancelled) setHydrating(false); }

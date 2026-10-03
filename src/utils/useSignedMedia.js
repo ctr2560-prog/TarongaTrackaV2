@@ -20,6 +20,52 @@ import { auth } from '../firebase';
 // omitting it means a teacher gets refused and silently falls back to the permanent URL.
 const MEDIA_FN = 'https://australia-southeast1-tarongatracka.cloudfunctions.net/getMediaUrl';
 
+// Imperative version, for click handlers that open or download media rather than render it.
+// ⚠️ Same fallback contract: returns the stored URL if minting fails, so a staff member clicking
+//    "Watch" never gets a dead tab.
+export async function mintMediaUrl(storedUrl, classCode) {
+  if (!storedUrl) return storedUrl;
+  try {
+    const idToken = await auth.currentUser?.getIdToken();
+    if (!idToken) return storedUrl;
+    const res = await fetch(MEDIA_FN, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+      body: JSON.stringify({ kind: 'educator', url: storedUrl, classCode }),
+    });
+    const d = await res.json().catch(() => ({}));
+    return (res.ok && d.ok && d.url) ? d.url : storedUrl;
+  } catch {
+    return storedUrl;
+  }
+}
+
+// Mints a whole map of a STUDENT's own media in one go, for the stitcher resume paths.
+// ⚠️ Returns null on any failure rather than a partial map — the caller keeps the stored URLs,
+//    which is today's behaviour. Half-minting would be worse than not minting.
+export async function mintStudentMedia(classCode, studentId, urlMap) {
+  const entries = Object.entries(urlMap || {}).filter(([, u]) => u && /firebasestorage\.googleapis\.com/.test(u));
+  if (!entries.length) return null;
+  try {
+    const idToken = await auth.currentUser?.getIdToken();
+    if (!idToken) return null;
+    const out = {};
+    await Promise.all(entries.map(async ([k, u]) => {
+      const res = await fetch(MEDIA_FN, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+        body: JSON.stringify({ kind: 'student', classCode, studentId, url: u }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (res.ok && d.ok && d.url) out[k] = d.url;
+    }));
+    return Object.keys(out).length ? out : null;
+  } catch (err) {
+    console.warn('[mintStudentMedia] keeping the stored URLs:', err);
+    return null;
+  }
+}
+
 export function useSignedMedia(storedUrl, classCode) {
   // Keyed by the stored url so a changed prop resets the signed value without setting state
   // inside the effect body.

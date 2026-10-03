@@ -327,7 +327,28 @@ grants there.**
 ⚠️ **Precondition for revocation:** a legacy record with no `deviceUid` cannot mint. Those are
 finished excursions; if one ever needs to resume, the teacher's "New device" flow re-claims it.
 
-**Remaining** — and still the risky half:
+**Everything is now converted, and `revokeDownloadTokens` is built but DELIBERATELY NOT RUN.**
+
+Converted: souvenir viewers, Class Details (Evolve film, ZooSnooz documentary + clips, ZooYard
+photos, citizen science thumbnails), staff watch/download handlers, and the **resume paths** in
+Evolve and Wildest Dreams. ZooSnooz needed none — it only ever uses local blob URLs in-session.
+
+🚫 **DO NOT RUN `revokeDownloadTokens` UNTIL A HUMAN HAS WATCHED A FILM PLAY FROM A RESUMED
+SESSION ON A REAL DEVICE.** It is irreversible: deleting the token kills every existing link for
+that object permanently, and a replacement token is a *different* token, so links already handed
+out stay dead. Automated testing cannot validate this — a driven tab reports itself hidden and
+manufactures the very failure being tested for.
+
+⚠️ **Scope excludes `challengeEvidence/`** — those photos feed the public Conservation Gallery,
+which anonymous visitors view with no way to mint a URL.
+
+⚠️ **WHAT REVOCATION DOES NOT FIX, and this matters for how it is described:** new uploads still
+receive a fresh token from Firebase automatically. Revoking closes the **legacy** leak — links
+that have already escaped. It does **not** stop new permanent URLs existing. Closing that
+properly means never calling `getDownloadURL()` and storing storage paths instead, which is a
+change to every upload site and a separate piece of work.
+
+**Previously listed as remaining:**
 
 
 **What is already closed:** enumeration, at both layers. The bucket cannot be browsed (Storage

@@ -1752,7 +1752,7 @@ export default function ClassDetailsScreen() {
                   <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))',gap:'0.75rem'}}>
                     {students.filter(s=>s.zzDocumentaryURL).map((s,i)=>(
                       <div key={i} style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(46,125,85,0.2)',borderRadius:'var(--t-r-md)',overflow:'hidden'}}>
-                        <video src={s.zzDocumentaryURL} style={{width:'100%',aspectRatio:'9/16',objectFit:'cover',display:'block'}} preload="none" playsInline controls />
+                        <SignedVideo url={s.zzDocumentaryURL} classCode={normaliseCode(selectedClass)} style={{width:'100%',aspectRatio:'9/16',objectFit:'cover',display:'block'}} preload="none" playsInline controls />
                         <div style={{padding:'0.55rem 0.65rem'}}>
                           <p style={{fontSize:'0.78rem',fontWeight:700,color:'#D4EDE0',margin:'0 0 0.15rem'}}>{s.name}</p>
                           <p style={{fontSize:'0.68rem',color:'rgba(184,212,192,0.55)',margin:0}}>{Object.keys(resolveZzData(s)).length} animals</p>
@@ -1996,7 +1996,7 @@ export default function ClassDetailsScreen() {
                         {done && zzModalClipUrls[animal.id] && (
                           <div style={{ paddingLeft:'1.6rem', marginTop:'0.25rem' }}>
                             <div style={{ fontSize:'0.6rem', fontWeight:700, color:'rgba(184,212,192,0.65)', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:'0.35rem' }}>Video</div>
-                            <video src={zzModalClipUrls[animal.id]} controls playsInline preload="none"
+                            <SignedVideo url={zzModalClipUrls[animal.id]} classCode={normaliseCode(selectedClass)} controls playsInline preload="none"
                               style={{ width:'100%', borderRadius:'8px', background:'#000', display:'block', aspectRatio:'16/9', objectFit:'contain' }} />
                           </div>
                         )}

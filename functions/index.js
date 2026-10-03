@@ -724,6 +724,80 @@ exports.getMediaUrl = onRequest(
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
+// revokeDownloadTokens — removes the permanent download token from student media.
+//
+// ⚠️⚠️ THIS IS THE IRREVERSIBLE STEP. Deleting the `firebaseStorageDownloadTokens` metadata kills
+// every existing `?alt=media&token=…` URL for that object, permanently. Anything still reading a
+// stored URL shows a broken video from that moment on. There is no undo: a new token can be
+// minted, but it is a DIFFERENT token, so links already handed out stay dead.
+//
+// 🚫 DO NOT RUN THIS until a human has watched a real film play from a RESUMED session on a real
+//    device. Automated testing cannot validate the video pipeline — a driven browser tab reports
+//    itself hidden and manufactures the very failure it is testing for. See the Video & media
+//    pipeline section.
+//
+// ⚠️ SCOPE IS STUDENT MEDIA ONLY. `challengeEvidence/` is deliberately excluded: those photos
+//    feed the public Conservation Gallery, which anonymous visitors view with no way to mint a
+//    URL. Revoking there would break the gallery.
+//
+// ⚠️ WHAT THIS DOES *NOT* FIX: new uploads still receive a fresh token from Firebase
+//    automatically. This closes the LEGACY leak — links that have already escaped — it does not
+//    stop new permanent URLs existing. Closing that properly means never calling
+//    getDownloadURL() and storing storage paths instead, which is a change to every upload site.
+const REVOKE_ROOTS = ['zoosnooz', 'evolve', 'wildestDreams', 'zooyardHabitats', 'citizenScienceEvidence'];
+
+exports.revokeDownloadTokens = onRequest(
+  { region: 'australia-southeast1', invoker: 'public', timeoutSeconds: 540 },
+  async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    const staff = await verifyStaff(req);
+    if (!staff.ok) { res.status(staff.status).json({ error: staff.error }); return; }
+
+    // ⚠️ Dry run is the default AND it additionally requires a typed confirmation to proceed,
+    //    because unlike the clip cleanup this cannot be undone by re-uploading.
+    const dryRun = req.body?.dryRun !== false;
+    if (!dryRun && req.body?.confirm !== 'REVOKE') {
+      res.status(400).json({ error: 'Confirmation text did not match.' });
+      return;
+    }
+
+    try {
+      const bucket = admin.storage().bucket();
+      const report = { dryRun, scanned: 0, withToken: 0, revoked: 0, byRoot: {} };
+
+      for (const root of REVOKE_ROOTS) {
+        const [files] = await bucket.getFiles({ prefix: `${root}/` });
+        report.byRoot[root] = { files: files.length, withToken: 0 };
+        for (const f of files) {
+          report.scanned += 1;
+          const tokens = f.metadata?.metadata?.firebaseStorageDownloadTokens;
+          if (!tokens) continue;
+          report.withToken += 1;
+          report.byRoot[root].withToken += 1;
+          if (!dryRun) {
+            await f.setMetadata({ metadata: { firebaseStorageDownloadTokens: null } });
+            report.revoked += 1;
+          }
+        }
+      }
+
+      console.warn(`[revokeDownloadTokens] ${staff.email} dryRun=${dryRun} ` +
+                   `scanned=${report.scanned} withToken=${report.withToken} revoked=${report.revoked}`);
+      res.json({ ok: true, ...report });
+    } catch (err) {
+      console.error('revokeDownloadTokens failed:', err);
+      res.status(500).json({ error: err.message });
+    }
+  }
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
 // cleanupRawClips — retention for the intermediate footage, NOT for the keepsakes.
 //
 // ⚠️⚠️ THIS IS AN AUTOMATED DELETER POINTED AT REAL CHILDREN'S MEDIA. Read all of this before
