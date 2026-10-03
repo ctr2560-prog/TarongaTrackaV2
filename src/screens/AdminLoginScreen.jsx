@@ -71,7 +71,11 @@ export default function AdminLoginScreen() {
             // ⚠️ clear() leaves the old markup behind; a second verifier on a dirty element throws
             //    a plain Error with no `.code`. Empty the host first. See the Control Room note.
             const host = document.getElementById('login-recaptcha');
-            if (!host) throw new Error('sign-in verifier host is missing');
+            if (!host) {
+              setError('This screen did not load correctly. Reload the page and sign in again.');
+              setStatus('idle');
+              return;
+            }
             host.innerHTML = '';
             verifierRef.current = new RecaptchaVerifier(auth, 'login-recaptcha', { size: 'invisible' });
             const id = await new PhoneAuthProvider(auth).verifyPhoneNumber(
