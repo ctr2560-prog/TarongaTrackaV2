@@ -267,7 +267,18 @@ Entitlement, two ways only:
   the exercise: the token currently protects the *page*; this makes it protect the *file*.
 - **staff** — a verified staff ID token.
 
-🚫 **BLOCKED: the Cloud Functions service account cannot sign.** Confirmed by direct test:
+✅ **UNBLOCKED and the souvenir path is live (2026-10-03).** The IAM grant was made and verified;
+both souvenir viewers (Evolve and Wildest Dreams) now play from a signed URL. Proven end to end
+on a real keepsake: `X-Goog-Expires=3600`, byte-range fetch returns **206**, and a wrong token
+still returns "Code not found".
+
+⚠️ **The viewers fall back to the stored permanent URL if minting fails.** A student opening their
+keepsake must never meet a broken player because a function was cold. That is the pre-existing
+behaviour, not a new hole — and it means the hole is not fully closed until the old download
+tokens are revoked (see below).
+
+**The blocker that was hit, for next time:**
+🚫 **The Cloud Functions service account could not sign.** Confirmed by direct test:
 `Permission 'iam.serviceAccounts.signBlob' denied`. This is **not a code bug** and no amount of
 rewriting will fix it.
 

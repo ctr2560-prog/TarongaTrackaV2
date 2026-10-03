@@ -61,6 +61,32 @@ const CONSERVATION_STATUS = {
   'sun-bear':{ label: 'Vulnerable',            color: '#D97706' },
 };
 
+// ⚠️ Souvenir media is fetched through a SHORT-LIVED SIGNED URL rather than the permanent
+//    download URL stored on the keepsake document.
+//    Why: a Firebase download URL never expires, so the souvenir token protected the PAGE while
+//    the file underneath stayed reachable forever to anyone who had ever been given the link.
+//    getMediaUrl re-checks the token server-side and returns a URL valid for 60 minutes, which
+//    finally makes the token protect the FILE.
+// ⚠️ It falls back to the stored URL if minting fails. A student opening their keepsake must
+//    never be met with a broken player because a function was cold or a network blipped —
+//    the fallback is the pre-existing behaviour, not a new hole.
+const MEDIA_FN = 'https://australia-southeast1-tarongatracka.cloudfunctions.net/getMediaUrl';
+
+async function mintSouvenirUrl({ mode, classCode, studentId, token, field = 'filmURL', fallback }) {
+  try {
+    const res = await fetch(MEDIA_FN, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ kind: 'souvenir', mode, classCode, studentId, token, field }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data.ok && data.url) return data.url;
+  } catch (err) {
+    console.warn('[souvenir] could not mint a signed URL, using the stored one:', err);
+  }
+  return fallback || null;
+}
+
 export default function DocumentaryViewer() {
   const { docViewCode, setDocViewCode } = useApp();
   const parsed = parseDocCode(docViewCode);
@@ -82,7 +108,12 @@ export default function DocumentaryViewer() {
         const code = normaliseCode(parsed.classCode);
         const snap = await getDoc(doc(db, 'wildestDreams_docs', `${code}_${parsed.studentId}`));
         if (snap.exists() && snap.data().souvenirToken && snap.data().souvenirToken === parsed.token) {
-          setWdData(snap.data());
+          const data = snap.data();
+          const signed = await mintSouvenirUrl({
+            mode: 'wildestDreams', classCode: code, studentId: parsed.studentId,
+            token: parsed.token, fallback: data.filmURL,
+          });
+          setWdData({ ...data, filmURL: signed });
         } else {
           setFetchError(true);
         }
@@ -105,7 +136,12 @@ export default function DocumentaryViewer() {
         // The token is what stops the URL being guessable — class codes are six characters and
         // aliases come from a short list, so without it anyone could walk a whole cohort.
         if (snap.exists() && snap.data().souvenirToken && snap.data().souvenirToken === parsed.token) {
-          setEvData(snap.data());
+          const data = snap.data();
+          const signed = await mintSouvenirUrl({
+            mode: 'evolve', classCode: code, studentId: parsed.studentId,
+            token: parsed.token, fallback: data.filmURL,
+          });
+          setEvData({ ...data, filmURL: signed });
         } else {
           setFetchError(true);
         }
