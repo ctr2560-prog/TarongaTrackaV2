@@ -1072,7 +1072,37 @@ run would record H.264/AAC in MP4, which is a code path no stored file has ever 
 **Treat iOS Safari capture as untested.** The tell is the stored file: an `.mp4` in the bucket is
 the first proof WebKit has ever completed a recording.
 
-**How to settle it, cheaply, next time iOS is touched:** the stored file is the evidence. Film one
+#### ⚠️⚠️ THREE "iOS" RUNS, ONE SIGNATURE — iOS CAPTURE IS STILL NOT EVIDENCED (2026-10-03)
+
+Cameron reported, in order: Chrome on iPhone works (alias **Orangutan**, 21:39 UTC), then Safari
+on iPhone works (alias **Red Panda**, 21:51 UTC). Both films are genuinely good — **1096 and 1112
+frames** (~36s), real footage, verified by frame count.
+
+**But all three runs carry the identical signature:**
+
+| Run | Reported device | Codecs | Resolution |
+|---|---|---|---|
+| laptop | laptop Chrome | VP9 / Opus WebM | 1920x1080 landscape |
+| Orangutan | Chrome on iPhone | VP9 / Opus WebM | 1920x1080 landscape |
+| Red Panda | **Safari** on iPhone | VP9 / Opus WebM | 1920x1080 landscape |
+
+**WebKit cannot encode VP9**, so the Safari run cannot have been recorded by iOS Safari, and
+**there is still no `.mp4` anywhere in the bucket** after three "iPhone" tests.
+
+⚠️ **The signature that fits all three is a desktop webcam in a Chromium browser** — which is also
+what Chrome DevTools device emulation ("iPhone" responsive mode) produces. That is a very easy
+thing to believe is a phone test, and it exercises none of the code paths that actually differ on
+a phone: WebKit's MediaRecorder, MP4 output, iOS memory limits during a ~45s stitch, and the
+screen locking mid-capture.
+
+🚫 **DO NOT mark iOS capture verified.** Nothing in the bucket has ever come from WebKit.
+
+**The check that needs no tooling and settles it in five seconds:** open the clip in the staff
+portal and look at its shape. **A phone held upright films PORTRAIT.** Four of five clips in every
+run are **landscape 1920x1080**, which is a laptop webcam that cannot honour the portrait `ideal`
+constraint. If a student's clip is landscape, it was not filmed on an upright phone.
+
+**How to settle it with tooling, next time iOS is touched:** the stored file is the evidence. Film one
 chapter, then check the newest object's codec:
 `ffprobe -v error -show_entries stream=codec_name,width,height -of csv=p=0 <file>`
 H.264/AAC means iOS captured it. VP9/Opus means a Chromium browser did, whatever device was in
