@@ -301,7 +301,28 @@ no login at all**, returned: `classes` 10, `students` (collection group) 104, `z
    🚫 Do not add a "force" or "delete everything" mode. There is no legitimate use for one.
 
    **Still missing:** nothing runs this on a schedule — it is manual, which is the safer place to
-   start. And there is still **no consent record** (see below).
+   start.
+
+   ⚠️ **THE PARENT LETTERS ARE NOT YET UPDATED, DELIBERATELY.** Both currently say footage is
+   *retained*, which is true today. Once this job has actually been run, they should say the
+   stronger and more accurate thing:
+
+   > *"The raw clips are deleted after 12 months. The finished film is kept as your child's
+   > keepsake, and you may ask for it to be deleted at any time."*
+
+   🚫 **Do not put that in the letters until the job has been run and verified on real data.**
+   The ZooSnooz letter once promised 48-hour deletion that was never built, and it had already
+   gone home to families. Built is not the same as proven.
+
+4. ~~**No consent record.**~~ **CLOSED BY DECISION, not by code (2026-10-03).** Filming consent
+   stays with the school, not with Tracka. Both parent letters already run an opt-out model and
+   already state what an opted-out student does instead. Cameron's position: a student who may not
+   be filmed becomes **the crew** — they operate the camera rather than appear on it — and
+   arranging that is the teacher's job on the day.
+   🚫 **Do not build a consent flag into the app.** It would duplicate a process the school already
+   owns, and "what does an opted-out student do" is a teaching decision, not a database field.
+   Wildest Dreams is entirely video and has no non-filming version, which is precisely why this
+   belongs with the teacher.
 4. **No consent record.** Filming opt-out is a verbal arrangement with the teacher; nothing in the
    data marks a student as not-to-be-filmed, so moderation has nothing to filter on.
 5. Open writes on `accessCodes` (90 teacher invite codes), `settings`, `schools`, `prePostLinks`.
