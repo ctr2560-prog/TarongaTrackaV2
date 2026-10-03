@@ -376,6 +376,15 @@ Changed everywhere:
 
 🚫 **Do not restore the silent fallback.** It now renders as data loss.
 
+**The souvenir viewer got the same treatment, and it matters most** — it is the page a student or
+family opens from an NFC tag, possibly years later. `mintSouvenirUrl` now **retries once** (a cold
+Cloud Function is the common transient failure, and it stops retrying on a 400/404 where the token
+is simply wrong), and returns **null** rather than a revoked Storage URL.
+⚠️ The Evolve souvenir's failure message said **"This film is no longer available"**, which is
+untrue and about the most alarming thing a keepsake page can say. The film is in Storage; the link
+expired. Both viewers now say the film is safe and the link needs renewing. 🚫 Never word a media
+failure as though the student's work is gone.
+
 ⚠️ **THIS IS ALSO THE LIKELY CAUSE OF THE CARDS-ONLY FILM**, which had been left as "cause
 unknown". The failing run was a RESUME: clip URLs were rehydrated from Firestore, `mintStudentMedia`
 failed (the `ensureStudentAuth` race meant the student's uid no longer matched `deviceUid`, so

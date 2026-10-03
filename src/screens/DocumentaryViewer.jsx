@@ -67,24 +67,38 @@ const CONSERVATION_STATUS = {
 //    the file underneath stayed reachable forever to anyone who had ever been given the link.
 //    getMediaUrl re-checks the token server-side and returns a URL valid for 60 minutes, which
 //    finally makes the token protect the FILE.
-// ⚠️ It falls back to the stored URL if minting fails. A student opening their keepsake must
-//    never be met with a broken player because a function was cold or a network blipped —
-//    the fallback is the pre-existing behaviour, not a new hole.
+// ⚠️⚠️ IT USED TO FALL BACK TO THE STORED URL. IT NO LONGER CAN, AND THAT IS NOT A REGRESSION.
+//    The reasoning was that a student opening their keepsake must never meet a broken player
+//    because a function was cold. True, and the fallback achieved it — until
+//    `revokeDownloadTokens` ran on 2026-10-03. The stored URL now returns **401**, so falling
+//    back guarantees exactly the broken player it was written to prevent, with no explanation.
+//    A retry costs a second and fixes a cold start, which is what the fallback was really for.
+// 🚫 This is a KEEPSAKE a family may open years later. It must never show a dead player and say
+//    nothing — if it cannot be loaded, it has to say the film is safe and the link needs renewing.
 const MEDIA_FN = 'https://australia-southeast1-tarongatracka.cloudfunctions.net/getMediaUrl';
 
 async function mintSouvenirUrl({ mode, classCode, studentId, token, field = 'filmURL', fallback }) {
-  try {
-    const res = await fetch(MEDIA_FN, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ kind: 'souvenir', mode, classCode, studentId, token, field }),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (res.ok && data.ok && data.url) return data.url;
-  } catch (err) {
-    console.warn('[souvenir] could not mint a signed URL, using the stored one:', err);
+  // Two attempts: a cold Cloud Function is the common, transient failure and a second try costs
+  // a second. Only a genuine refusal should reach the student.
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await fetch(MEDIA_FN, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ kind: 'souvenir', mode, classCode, studentId, token, field }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.ok && data.url) return data.url;
+      if (res.status === 404 || res.status === 400) break;   // wrong token, retrying cannot help
+    } catch (err) {
+      console.warn('[souvenir] could not mint a signed URL:', err);
+    }
+    if (attempt === 0) await new Promise(r => setTimeout(r, 1200));
   }
-  return fallback || null;
+  // ⚠️ Only a NON-Storage url is worth returning now. A stored Firebase url is a revoked, dead
+  //    link, and handing it to a <video> produces a black box with no explanation.
+  if (fallback && !/firebasestorage\.googleapis\.com/.test(fallback)) return fallback;
+  return null;
 }
 
 export default function DocumentaryViewer() {
@@ -211,9 +225,17 @@ export default function DocumentaryViewer() {
             )}
           </div>
 
-          {wdData.filmURL && (
+          {wdData.filmURL ? (
             <video src={wdData.filmURL} controls playsInline
               style={{ width:'100%', borderRadius:20, background:'#000', marginBottom:'1.1rem' }} />
+          ) : (
+            // ⚠️ Plain words, because this mode is built for diverse learners and this page may be
+            //    opened by a family. "Gone" would be untrue and frightening: the film is safe,
+            //    only the link needs renewing. See mintSouvenirUrl.
+            <div style={{ borderRadius:20, background:'rgba(0,0,0,0.25)', padding:'1.2rem', marginBottom:'1.1rem', textAlign:'center' }}>
+              <p style={{ margin:0, fontSize:'1rem', lineHeight:1.5 }}>We could not open your film right now.</p>
+              <p style={{ margin:'0.4rem 0 0', fontSize:'0.9rem', opacity:0.75, lineHeight:1.5 }}>Your film is safe. Please open this page again.</p>
+            </div>
           )}
 
           {wdData.filmURL && (
@@ -263,8 +285,12 @@ export default function DocumentaryViewer() {
             <video src={evData.filmURL} controls playsInline
               style={{ width:'100%', borderRadius:16, background:'#000', marginBottom:'1.1rem', boxShadow:'0 18px 50px rgba(0,0,0,0.45)' }} />
           ) : (
-            <p style={{ color:EV.textDim, textAlign:'center', marginBottom:'1.1rem' }}>
-              This film is no longer available.
+            // ⚠️ This said "This film is no longer available", which is NOT TRUE and is the worst
+            //    thing a keepsake page can tell someone. The film is in storage; what expired is
+            //    the link. Since revocation, a failed mint is the usual reason this branch runs.
+            <p style={{ color:EV.textDim, textAlign:'center', marginBottom:'1.1rem', lineHeight:1.6 }}>
+              We could not load your film just now. It is safe: the link to it simply needs
+              renewing. Reload this page to try again.
             </p>
           )}
 
