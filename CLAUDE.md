@@ -716,10 +716,39 @@ build that could not answer the challenge, would lock that person out of the por
 🚫 **TOTP, not SMS.** SIM-swap defeats SMS, it costs per message, and it needs a phone number on
 file for every staff member — personal data this project otherwise refuses to hold.
 
-⚠️ **IT IS INERT UNTIL MULTI-FACTOR IS ENABLED IN THE FIREBASE CONSOLE** (Authentication →
-Sign-in method → Advanced → Multi-factor), which requires upgrading the project to **Identity
-Platform**. Until then `generateSecret` throws and the panel says so in plain words rather than
-failing silently.
+✅ **TOTP IS ENABLED ON THE LIVE PROJECT (2026-10-03).** Verified:
+`mfa: { state: ENABLED, providerConfigs: [{ totpProviderConfig: { adjacentIntervals: 5 }, state:
+ENABLED }] }`.
+
+⚠️⚠️ **DO NOT GO LOOKING FOR THIS IN THE FIREBASE CONSOLE. IT IS NOT THERE.** Authentication →
+Sign-in method → Advanced offers **"SMS Multi-factor Authentication" ONLY**, and nothing on that
+page mentions authenticator apps. TOTP exists on the same project but is reachable only through
+the **Identity Platform admin API**. Cameron hit this and reasonably concluded SMS was the only
+option.
+
+Read the current state:
+```bash
+TOKEN=$(gcloud auth print-access-token)
+curl -s -H "Authorization: Bearer $TOKEN" -H "x-goog-user-project: tarongatracka" \
+  https://identitytoolkit.googleapis.com/admin/v2/projects/tarongatracka/config
+```
+Enable TOTP (this is the exact call that was run):
+```bash
+curl -s -X PATCH -H "Authorization: Bearer $TOKEN" -H "x-goog-user-project: tarongatracka" \
+  -H "Content-Type: application/json" \
+  "https://identitytoolkit.googleapis.com/admin/v2/projects/tarongatracka/config?updateMask=mfa" \
+  -d '{"mfa":{"state":"ENABLED","providerConfigs":[{"state":"ENABLED","totpProviderConfig":{"adjacentIntervals":5}}]}}'
+```
+⚠️ **`x-goog-user-project` is required** or the call fails with a confusing `SERVICE_DISABLED` /
+quota-project error that looks like the API is switched off. It is not; the header is missing.
+⚠️ **`updateMask=mfa` is what keeps this safe** — without it the PATCH would replace the whole
+auth config, including every sign-in provider.
+
+**`state: ENABLED` only PERMITS enrolment. It does not force anyone to use it**, and no existing
+sign-in changed. 🚫 Never set `MANDATORY` — teachers share this user pool, and it would lock out
+every teacher account that has not enrolled.
+
+**To undo:** the same PATCH with `{"mfa":{"state":"DISABLED"}}`.
 
 ⚠️⚠️ **RECOVERY, AND THIS MATTERS MOST FOR THE ROOT ADMIN.** There are **no backup codes**. A lost
 authenticator cannot be fixed by the account holder, by another staff member, or through this app.
