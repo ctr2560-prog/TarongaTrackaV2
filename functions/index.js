@@ -627,6 +627,48 @@ exports.getMediaUrl = onRequest(
           res.status(403).json({ error: 'Not found.' }); return;
         }
         storedUrl = data[field || 'filmURL'];
+      } else if (kind === 'student') {
+        // ── Student path ─────────────────────────────────────────────────────────────────
+        // A student minting for THEIR OWN media. Only possible because of the device identity
+        // added the same day: the student record carries `deviceUid`, so an anonymous caller can
+        // be matched to the record whose media they are asking for.
+        // ⚠️ Needed for RESUME. Mid-session the stitchers use local blob URLs and touch Storage
+        //    not at all; on resume they rehydrate from stored URLs, and once those are revoked a
+        //    student would lose their film. This is what keeps that working.
+        if (!classCode || !studentId || !req.body?.url) {
+          res.status(400).json({ error: 'Missing details.' }); return;
+        }
+        const code = String(classCode).toUpperCase();
+        const stuSnap = await db.collection('classes').doc(code)
+          .collection('students').doc(studentId).get();
+        if (!stuSnap.exists) { res.status(404).json({ error: 'Not found.' }); return; }
+
+        const authHeader = req.headers.authorization || '';
+        const idToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+        let uid = null;
+        try { uid = idToken ? (await admin.auth().verifyIdToken(idToken)).uid : null; } catch { uid = null; }
+
+        const claimed = stuSnap.data().deviceUid || null;
+        // ⚠️ THE CLAIM MUST MATCH. An earlier draft also allowed unclaimed records, mirroring the
+        //    back-compat arm in firestore.rules — that was WRONG here and was caught in testing:
+        //    it returned a signed URL to a caller with no authentication at all. The Firestore
+        //    rule's null arm permits writes to a legacy record, which is a pre-existing state;
+        //    this would have handed out READ access to a legacy student's film, and the paths are
+        //    guessable (class code + a short alias list + known animal ids).
+        // ⚠️ Consequence, and it is a precondition for revoking the old download tokens: a legacy
+        //    record with no `deviceUid` cannot mint. Those are finished excursions, but if one
+        //    ever needs to resume, the teacher's "New device" flow re-claims it on the next join.
+        if (!uid || !claimed || claimed !== uid) {
+          res.status(403).json({ error: 'Not your record.' }); return;
+        }
+        // ⚠️ The requested object must sit under this student's own folder. Without this check a
+        //    student could pass any URL and have it signed — including another student's film.
+        const wanted = storagePathFromUrl(req.body.url) || '';
+        if (!wanted.includes(`/${code}/${studentId}/`)) {
+          res.status(403).json({ error: 'Not your media.' }); return;
+        }
+        storedUrl = req.body.url;
+
       } else {
         // ── Educator path ────────────────────────────────────────────────────────────────
         // Staff can mint for anything. A TEACHER can mint only for a class they own — without

@@ -310,6 +310,23 @@ none of it closes the hole until the tokens are revoked.**
 started loading is unreliable — React reuses the node and the browser can keep the old stream.
 Same class of trap as the recorder/playback issue in the Video & media pipeline section.
 
+**Student minting path added (2026-10-03).** Students are anonymous, so they cannot use the
+educator path; `kind: 'student'` matches the caller's uid against `deviceUid` on their own student
+record, and additionally requires the requested object to sit under `/{classCode}/{studentId}/`.
+Needed for RESUME: mid-session the stitchers use local blob URLs and never touch Storage, but on
+resume they rehydrate from stored URLs.
+
+⚠️ **A bug was caught here in testing and is worth remembering.** The first version also allowed
+*unclaimed* records, mirroring the back-compat arm in `firestore.rules` — and it returned a signed
+URL to a caller **with no authentication at all**. The rule's null arm permits *writes* to a
+legacy record, which is a pre-existing state; copying it here would have handed out *read* access
+to a legacy student's film, and the paths are guessable (class code + a short alias list + known
+animal ids). **Do not mirror a permissive rule into a different context without asking what it
+grants there.**
+
+⚠️ **Precondition for revocation:** a legacy record with no `deviceUid` cannot mint. Those are
+finished excursions; if one ever needs to resume, the teacher's "New device" flow re-claims it.
+
 **Remaining** — and still the risky half:
 
 
