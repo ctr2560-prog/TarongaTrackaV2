@@ -1379,7 +1379,13 @@ function ZooSnoozAdminTab({ classes }) {
     const { docUrl } = await ensureUrls(entry);
     // Minted rather than opened directly, so the tab carries a link that expires in an hour
     // instead of a permanent one that could be copied out of the address bar.
-    if (docUrl) window.open(await mintMediaUrl(docUrl, entry.classCode), '_blank');
+// ⚠️ mintMediaUrl returns null when it cannot mint. Opening the stored URL instead would open
+    //    a dead tab — the permanent tokens were revoked on 2026-10-03 and those links 401 now.
+    if (docUrl) {
+      const u = await mintMediaUrl(docUrl, entry.classCode);
+      if (u) window.open(u, '_blank');
+      else window.alert('That file could not be opened. The video itself is safe; the link needs renewing.');
+    }
     else alert('No documentary file found in Storage for this student yet.');
   };
 
@@ -1629,7 +1635,11 @@ function EvolveFilmsTab({ classes }) {
 
   const handleWatch = async (entry) => {
     const { filmUrl } = await ensureUrls(entry);
-    if (filmUrl) window.open(await mintMediaUrl(filmUrl, entry.classCode), '_blank', 'noopener');
+    if (filmUrl) {
+      const u = await mintMediaUrl(filmUrl, entry.classCode);
+      if (u) window.open(u, '_blank', 'noopener');
+      else window.alert('That film could not be opened. The video itself is safe; the link needs renewing.');
+    }
     else window.alert('No film file in Storage for this student yet.');
   };
 
@@ -1656,8 +1666,10 @@ function EvolveFilmsTab({ classes }) {
     if (!url) return;
     setSaving(key);
     try {
-      // Minted first: after the permanent download tokens are revoked, a stored URL is dead.
+      // Minted first: the permanent download tokens were revoked on 2026-10-03, so a stored URL
+      // is a 401. mintMediaUrl returns null rather than handing back that dead link.
       const signed = await mintMediaUrl(url);
+      if (!signed) throw new Error('could not mint a link');
       const res = await fetch(signed);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const blob = await res.blob();
@@ -1668,7 +1680,9 @@ function EvolveFilmsTab({ classes }) {
       setTimeout(() => URL.revokeObjectURL(obj), 10000);
     } catch (e) {
       console.warn('[evolve] download failed, opening instead:', e);
-      window.open(await mintMediaUrl(url), '_blank', 'noopener');
+      const u = await mintMediaUrl(url);
+      if (u) window.open(u, '_blank', 'noopener');
+      else window.alert('That file could not be downloaded. The video itself is safe; the link needs renewing.');
     } finally { setSaving(null); }
   };
 

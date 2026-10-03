@@ -347,7 +347,42 @@ grants there.**
 ⚠️ **Precondition for revocation:** a legacy record with no `deviceUid` cannot mint. Those are
 finished excursions; if one ever needs to resume, the teacher's "New device" flow re-claims it.
 
-**Everything is now converted, and `revokeDownloadTokens` is built but DELIBERATELY NOT RUN.**
+#### ✅ `revokeDownloadTokens` HAS BEEN RUN (2026-10-03). The permanent links are gone.
+
+Cameron ran it. **Verified against the live bucket:** `evolve/LIF0AH/…` (the Ingleburn excursion)
+has **no `firebaseStorageDownloadTokens`** and its old-style download URL returns **401**. The
+media itself is untouched — this removes the key, not the file.
+
+⚠️ **Objects uploaded SINCE still carry a fresh token**, because Firebase mints one on
+`getDownloadURL()`. Revocation closed the legacy leak; it did not stop new permanent URLs
+existing. Closing that properly means storing storage *paths* and never calling
+`getDownloadURL()` — a change at every upload site, still not done.
+
+#### ⚠️⚠️ THE FALLBACK INVERTED ITS MEANING THE MOMENT THIS RAN — fixed the same day
+
+Every signed-URL helper was written to **fall back to the stored URL** if minting failed, on the
+reasoning that "media must never blank out because a function was cold". That was right **while
+the stored URL worked**. After revocation the stored URL is a guaranteed **401**, so the fallback
+stopped being a graceful degradation and became a promise of a broken black player with no
+message — the worst possible outcome, and indistinguishable from lost work.
+
+Changed everywhere:
+- `useSignedMedia` now returns **`{ url, failed }`**. `failed` means minting definitively failed.
+- `SignedVideo` / `SignedImage` / `SignedLink` render a plain "the link needs renewing, the video
+  itself is safe" note instead of a dead element.
+- `mintMediaUrl` returns **null** rather than the stored URL, and the three staff handlers that
+  used to `window.open(await mintMediaUrl(...))` now check it — otherwise they open a dead tab.
+- Non-Storage URLs are passed through untouched and never treated as failures.
+
+🚫 **Do not restore the silent fallback.** It now renders as data loss.
+
+⚠️ **THIS IS ALSO THE LIKELY CAUSE OF THE CARDS-ONLY FILM**, which had been left as "cause
+unknown". The failing run was a RESUME: clip URLs were rehydrated from Firestore, `mintStudentMedia`
+failed (the `ensureStudentAuth` race meant the student's uid no longer matched `deviceUid`, so
+`getMediaUrl` refused them), and the code then fell back to the stored URLs — which revocation had
+just killed. Every clip 401s, so no audio and no picture, and both failures were swallowed. Films
+built in-session worked throughout because they use local `blob:` URLs and never touch Storage.
+**Two separate bugs plus a deliberate change, combining into one symptom with no error message.**
 
 Converted: souvenir viewers, Class Details (Evolve film, ZooSnooz documentary + clips, ZooYard
 photos, citizen science thumbnails), staff watch/download handlers, and the **resume paths** in
