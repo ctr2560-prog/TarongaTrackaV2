@@ -104,6 +104,14 @@ the output was empty) and the screen shows it, with "Every clip you filmed is st
 beneath. Add a reason to any new failure path rather than letting it fall through to the generic
 line.
 
+**Evolve got the same treatment, and its contract changed:** `buildEvolveFilm` now resolves to
+`{blob, url}` **or `{error}`** and 🚫 **never a bare null**. Its three failure paths (no clips, the
+recorder refusing to start, an empty output) each carry a sentence, and the film screen shows it
+above "Every chapter you filmed is still saved." The caller must test `result?.blob`, not
+`result`. Evolve's screen used to say *"Your device could not stitch the film"* for every cause —
+blaming a student's phone for faults that were ours, and leaving nothing to act on when Cameron
+reported it failing on an iPhone.
+
 ⚠️ **The two camera steps remain unverified.** Automation cannot drive `getUserMedia`, so the
   habitat unlock photo and the build photo have never actually been captured and uploaded. That
   is the one path left to check by hand, and both are required to finish a habitat.
@@ -1039,10 +1047,22 @@ stitcher outputs", and it was not:
    `modes/wildest-dreams/film.js`), not the Evolve util. The note above claimed it imported it.
    It does not, so it never received the fix and every iPhone WD clip was mislabelled.
 
-🚫 **Do not trust "fixed everywhere" on this one. There are FIVE places** that label a recording:
-three clip recorders (ZooSnooz inline, Evolve util, **WD's own copy**) and two stitcher outputs
-(ZooSnooz inline, Evolve util — WD's stitcher output was already correct). Grep for
-`|| 'video/webm'` before believing it.
+3. **Evolve's FILM UPLOAD** — `submitFilm` in `EvolveScreen.jsx` did
+   `const { fileExt, contentType } = pickMimeType()`, i.e. it asked the browser what it *could*
+   record instead of asking the blob in hand what it *was*. On iOS that returned webm for an mp4
+   film. **This was the one that mattered**, because Evolve is the mode being tested. Now
+   `describeMime(filmBlobRef.current.type)` — the blob is already labelled correctly by
+   `buildEvolveFilm`, so read it from there.
+
+🚫 **Do not trust "fixed everywhere" on this one. There are SIX places** that label a recording:
+three clip recorders (ZooSnooz inline, Evolve util, **WD's own copy**), two stitcher outputs
+(ZooSnooz inline, Evolve util), and **the Evolve film upload**. Grep for `|| 'video/webm'` **and
+for `pickMimeType()` called anywhere near an upload** before believing it.
+
+⚠️ **The tell that a label is being guessed: a capability probe used at UPLOAD time.**
+`pickMimeType()` answers "what could this browser record?", which is a legitimate question when
+constructing a MediaRecorder and the wrong question for anything holding a finished blob. If a
+`Blob` is in scope, `blob.type` is the answer.
 
 The rule in every one of them: `chunks[0]?.type || mr.mimeType` first, the candidate only as a
 last resort.

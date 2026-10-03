@@ -98,12 +98,16 @@ const wait = ms => new Promise(res => setTimeout(res, ms));
  * @param {object}   theme     EVOLVE_THEME
  * @param {function} onProgress (pct, chapterIndex)
  * @param {function} isCancelled  () => boolean, checked throughout so unmount aborts cleanly
- * @returns {Promise<{blob: Blob, url: string}|null>}
+ * @returns {Promise<{blob: Blob, url: string}|{error: string}>}
+ *   ⚠️ ALWAYS resolves to one or the other, never a bare null. A null told the caller only that
+ *   something went wrong, and the screen then blamed the student's device for every cause. There
+ *   is no console on a phone, so the reason has to travel to the screen or an iPhone fault cannot
+ *   be investigated at all. Any new failure path must carry an `error` string.
  */
 export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, onProgress, isCancelled }) {
   const cancelled = () => (isCancelled ? isCancelled() : false);
   const clips = chapters.filter(c => clipURLs[c.id]);
-  if (!clips.length) return null;
+  if (!clips.length) return { error: 'None of your chapters have a clip saved against them yet.' };
 
   // Hold the screen awake for the duration. The stitch captures in real time, so if the
   // phone sleeps or the tab is backgrounded the draw loops get throttled to ~1fps and that
@@ -189,9 +193,12 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
     const opts = { videoBitsPerSecond: 2_500_000 };
     if (mimeType) opts.mimeType = mimeType;
     mr = new MediaRecorder(recordStream, opts);
-  } catch {
+  } catch (e) {
     releaseWakeLock();
-    return null;
+    // ⚠️ Carry the reason out. This used to return a bare null and the screen then told the
+    //    student their DEVICE could not stitch, which is a guess — the recorder refusing to
+    //    start is one of several causes and the only one that message actually describes.
+    return { error: `This browser would not start the recorder (${e?.name || 'error'}).` };
   }
 
   const finished = new Promise(resolve => {
@@ -199,7 +206,9 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
       // The finished film carries the same trap: label it from what the recorder actually
       // produced, not from the candidate we hoped for.
       const blob = new Blob(chunks, { type: chunks[0]?.type || mr?.mimeType || blobType });
-      resolve(blob.size > 1000 ? { blob, url: URL.createObjectURL(blob) } : null);
+      resolve(blob.size > 1000
+        ? { blob, url: URL.createObjectURL(blob) }
+        : { error: `The recorder produced almost nothing (${blob.size} bytes from ${chunks.length} chunks).` });
     };
   });
   mr.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };

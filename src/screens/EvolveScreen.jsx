@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
 import { useStudent } from '../context/StudentContext';
 import { EVOLVE_CHAPTERS, EVOLVE_STORY_ORDER, EVOLVE_CHAPTER_WORDS as WORDS, EVOLVE_THEME as T, EVOLVE_MIN_WORDS } from '../data/evolveAnimals';
-import { buildEvolveFilm, startChapterRecording, pickMimeType } from '../utils/evolveFilm';
+import { buildEvolveFilm, startChapterRecording, describeMime } from '../utils/evolveFilm';
 import { doc, getDoc, updateDoc, setDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
@@ -732,6 +732,10 @@ export default function EvolveScreen() {
   // buildEvolveFilm has always reported this as onProgress's second argument; nothing used it.
   const [filmStage, setFilmStage] = useState(-1);
   const [filmURL, setFilmURL] = useState(null);
+  // ⚠️ The reason the stitch failed, shown on the film screen. It used to say "your device could
+  //    not stitch the film" for EVERY cause, which blamed the student's phone for things that
+  //    were not its fault and made an iPhone report impossible to act on. See buildEvolveFilm.
+  const [filmError, setFilmError] = useState(null);
   const filmBlobRef = useRef(null);
 
   const videoRef = useRef(null);
@@ -1058,7 +1062,7 @@ export default function EvolveScreen() {
 
   // ── Film ──
   const startFilm = useCallback(() => {
-    setFilmPhase('building'); setFilmPct(0); setFilmStage(-1); setFilmURL(null);
+    setFilmPhase('building'); setFilmPct(0); setFilmStage(-1); setFilmURL(null); setFilmError(null);
     setEvScreen('film');
   }, [setEvScreen]);
 
@@ -1075,7 +1079,8 @@ export default function EvolveScreen() {
         isCancelled: () => cancelled,
       });
       if (cancelled) return;
-      if (result) { filmBlobRef.current = result.blob; setFilmURL(result.url); }
+      if (result?.blob) { filmBlobRef.current = result.blob; setFilmURL(result.url); }
+      setFilmError(result?.error || null);
       setFilmPhase('preview');
     })();
     return () => { cancelled = true; };
@@ -1089,7 +1094,15 @@ export default function EvolveScreen() {
       const sid = safeStudentId(studentName);
       let url = null;
       if (filmBlobRef.current) {
-        const { fileExt, contentType } = pickMimeType();
+        // ⚠️⚠️ THE iOS TRAP, and this was the LAST place it survived (fixed 2026-10-03, after
+        //    Cameron reported Evolve still would not stitch on an iPhone).
+        //    `pickMimeType()` returns what this browser SAID it supports. On iOS it says it
+        //    supports nothing, so that call returned fileExt 'webm' / contentType 'video/webm'
+        //    while the blob in hand was genuinely mp4. The film uploaded fine, downloaded fine,
+        //    and no browser would decode it: black and silent.
+        // 🚫 The blob KNOWS what it is. `buildEvolveFilm` already labels it from the recorder's
+        //    real output, so read it from there and never re-derive it from a capability probe.
+        const { fileExt, contentType } = describeMime(filmBlobRef.current.type);
         const path = `evolve/${code}/${sid}/film.${fileExt}`;
         const task = uploadBytesResumable(storageRef(storage, path), filmBlobRef.current, { contentType });
         await new Promise((res, rej) => task.on('state_changed', null, rej, res));
@@ -1221,9 +1234,14 @@ export default function EvolveScreen() {
               {filmURL ? (
                 <video src={filmURL} controls playsInline style={{ width:'100%', borderRadius:14, marginBottom:'1.25rem', background:'#000' }} />
               ) : (
-                <p style={{ color:T.textDim, marginBottom:'1.25rem' }}>
-                  Your device could not stitch the film, but every chapter clip has been saved.
-                </p>
+                <div style={{ marginBottom:'1.25rem' }}>
+                  <p style={{ color:T.text, margin:'0 0 0.4rem' }}>
+                    {filmError || 'The film could not be put together.'}
+                  </p>
+                  <p style={{ color:T.textDim, margin:0, fontSize:'0.85rem', lineHeight:1.5 }}>
+                    Every chapter you filmed is still saved. You can try again from the map.
+                  </p>
+                </div>
               )}
               <button onClick={submitFilm} disabled={filmPhase === 'submitting'}
                 style={{ width:'100%', padding:'0.95rem', borderRadius:999, border:'none', background:T.accent, color:'#241503', fontWeight:800, fontSize:'0.95rem', cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'0.7rem' }}>
