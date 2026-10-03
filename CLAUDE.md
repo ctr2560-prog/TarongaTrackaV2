@@ -1057,20 +1057,20 @@ Cameron ran a dedicated iPhone test (Evolve, class `547DGJ`, alias **Orangutan**
 audio** (`magic 1a45dfa3`), four clips at 1920x1080 landscape, one at 1080x1920 portrait, the film
 720x1280. There is **no `.mp4` anywhere in the bucket** in any mode.
 
-⚠️ **That contradicts the assumption this whole iOS investigation was built on** — that iOS
-Safari's MediaRecorder can only produce H.264/AAC in MP4, and that Chrome on iOS is the same
-engine so cannot differ. One of these must be true, and it is NOT currently known which:
+**✅ EXPLAINED: it was CHROME on the iPhone, and Chrome on iOS is no longer WebKit.**
 
-1. **Modern iOS Safari can record VP9/Opus WebM.** If so the "iOS trap" is narrower than this
-   document claims, and the earlier assertion that these codecs *prove* a file did not come from
-   an iPhone is simply wrong. 🚫 Do not repeat that inference as established fact.
-2. **The recording did not happen on the iPhone** — e.g. the phone used as a Continuity Camera on
-   the Mac, which would explain both the Chromium codecs and the single portrait clip among four
-   landscape ones.
+🚫 **The old rule "on iPhone, Safari and Chrome are the same engine, so trying both is ONE data
+point" is WRONG and must not be used as evidence again.** It was true for years and is not now:
+Chrome on Cameron's iPhone produced **VP9/Opus WebM**, which is a Chromium output. WebKit does not
+encode VP9. So the two browsers on iOS can and do behave differently, and "it fails in both"
+is genuine corroboration rather than a single observation.
 
-⚠️ **The 1920x1080 landscape clips are the odd part either way.** Capture asks for `ideal`
-1080x1920 **portrait**; an iPhone camera can do portrait natively, a Mac webcam cannot and
-degrades to landscape. Four of five came out landscape.
+⚠️⚠️ **THEREFORE SAFARI ON iOS IS STILL UNVERIFIED, and it is the one that matters most** — it is
+the default browser on every iPhone, so it is what a class will use. Cameron's report was *"it
+wasn't working yesterday"* in **both**, and today's successful test was **Chrome only**. A WebKit
+run would record H.264/AAC in MP4, which is a code path no stored file has ever exercised.
+**Treat iOS Safari capture as untested.** The tell is the stored file: an `.mp4` in the bucket is
+the first proof WebKit has ever completed a recording.
 
 **How to settle it, cheaply, next time iOS is touched:** the stored file is the evidence. Film one
 chapter, then check the newest object's codec:
@@ -1132,9 +1132,9 @@ Now: `MediaRecorder` and `captureStream` are **feature-checked up front** with a
 naming the laptop as the way through, the `captureStream` call is wrapped, and the caller catches
 anything thrown and turns it into `{error}`.
 
-⚠️ **On an iPhone, Safari and Chrome are the same engine** — Apple requires it. "I tried both
-browsers" is ONE data point, not two. Never treat it as evidence that the browser is not the
-factor.
+⚠️ **Do NOT assume Safari and Chrome on iOS are the same engine.** That was true historically and
+was used as a reasoning step here; it is wrong as of 2026 — Chrome on iOS recorded VP9/Opus WebM,
+which WebKit cannot encode. See the iOS capture section above.
 
 🚫 **Never leave the building screen reachable with no exit.** Any new failure must land on a
 screen that says something.

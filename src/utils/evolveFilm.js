@@ -134,9 +134,10 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
   // never ran, and the student sat watching the progress dial spin FOREVER with no message. That
   // is indistinguishable from a slow stitch, which is why it was reported as "it just didn't work".
   //
-  // ⚠️ On an iPhone, Safari and Chrome are the SAME ENGINE — Apple requires it. So "I tried both
-  //    browsers" is one data point, not two, and a capability gap looks like a total mystery
-  //    because there is nothing to compare against on the device.
+  // ⚠️ Do NOT assume Safari and Chrome on iOS share one engine. That was true for years and was
+  //    used as a reasoning step while chasing this; it is wrong as of 2026 — Chrome on iOS
+  //    recorded VP9/Opus WebM, which WebKit cannot encode. The two really can differ, so a
+  //    capability gap on one iOS browser says nothing about the other.
   if (typeof MediaRecorder === 'undefined') {
     releaseWakeLock();
     return { error: 'This browser cannot record video, so it cannot build the film.' };
