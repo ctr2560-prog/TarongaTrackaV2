@@ -314,9 +314,19 @@ from the 211 harvestable URLs this started as.
 Students now get an **anonymous Firebase Auth identity** on join, stamped onto their record as
 `deviceUid`. `utils/studentAuth.js` is the entry point.
 
-⚠️ **The rule has deliberately NOT been tightened yet.** Stage 1 (sign in, stamp, teacher escape
-hatch) is live with `students` still permissive, so nothing can break. Tighten only after
-confirming real joins are carrying a `deviceUid`. The rule to apply then:
+✅ **STAGE 2 SHIPPED 2026-10-03** — the rule is now tightened (below), after `deviceUid` was
+confirmed appearing on real records in Firestore.
+
+⚠️ **NOT YET VERIFIED END-TO-END BY A REAL STUDENT RUN.** Browser automation could not complete a
+join (keystrokes stopped reaching the page), so a human needs to join a class and confirm progress
+saves. What *is* established by inspection: **joining cannot break**, because `allow create: if
+true` is unchanged and a join writes a new document. The risk is confined to *updates* by a
+student whose `deviceUid` no longer matches.
+
+**Rollback if it misbehaves:** set `allow update: if true;` on `students` and redeploy rules. One
+line, no client change needed.
+
+The rule:
 
 ```
 allow update: if resource.data.deviceUid == null
