@@ -929,6 +929,25 @@ other — a fix in one needs applying to the other by hand.**
 
 Every rule below was learned by shipping something broken. None of it is stylistic.
 
+### 0a. ⚠️ A RESUME THAT FAILS MUST SAY SO (2026-10-03)
+
+Evolve raced its resume read against an **8 second** timeout and, on failure, logged to the
+console and showed the student an **empty map**. A tester with two completed chapters — clips,
+writing, `completed: true`, all present in Firestore — reloaded and saw nothing. The obvious
+conclusion is "my work is gone", and the next thing a student does is film it all again.
+
+**Cause:** App Check enforcement adds a mandatory reCAPTCHA round trip before the first Firestore
+read (~700ms on a desktop, far more on mobile data). The read follows that. 8s was already tight
+and enforcement pushed it over.
+
+**Fixed:** timeout 8s → 20s, one automatic retry, and a **blocking screen** that says the work is
+safe and offers Try again. Wildest Dreams had the same 8s race and was raised too.
+
+🚫 **Never swallow a resume failure.** An empty screen where work should be is indistinguishable
+from data loss, and it is worse than an error — it makes the student act on a false belief.
+⚠️ ZooYard's resume has no timeout but still swallows its error (`console.warn` only); habitats
+would silently re-lock. Worth the same treatment.
+
 ### 0. ⚠️⚠️ NEVER LABEL A RECORDING FROM A DEFAULT — the iOS trap (found 2026-10-03)
 
 **Every film made on an iPhone was black and silent, and had been for as long as the code

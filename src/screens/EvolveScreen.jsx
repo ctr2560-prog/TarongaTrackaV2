@@ -719,6 +719,7 @@ export default function EvolveScreen() {
   const [uploadPct, setUploadPct] = useState({});
   const [justLit, setJustLit] = useState(null);   // leg to animate after finishing a chapter
   const [showIntro, setShowIntro] = useState(false);
+  const [resumeFailed, setResumeFailed] = useState(false);
   const pendingClipRef = useRef({});   // { [chapterId]: { blob, fileExt, contentType } } for retries
 
   const [filmPhase, setFilmPhase] = useState('idle');      // idle | building | preview | submitting | sent
@@ -762,12 +763,27 @@ export default function EvolveScreen() {
       if (!studentName || !classCode) { setHydrating(false); return; }
       try {
         // getDoc never settles if the device is offline or Firestore is blocked, which would
-        // leave the student on the loading screen forever. Losing resumed progress is far
-        // better than a dead screen, so the read is raced against a timeout.
-        const snap = await Promise.race([
+        // leave the student on the loading screen forever, so the read is raced against a
+        // timeout.
+        // ⚠️ 8 SECONDS WAS TOO TIGHT and cost a real student their progress on 2026-10-03. App
+        //    Check enforcement adds a mandatory reCAPTCHA round trip before the first read
+        //    (~700ms on a desktop, far more on mobile data), and the read itself follows. When it
+        //    blew the budget the catch below swallowed it and the student was shown an EMPTY MAP
+        //    with no explanation — their chapters were saved and complete in Firestore the whole
+        //    time. Raised to 20s and retried once.
+        // 🚫 Never let this fail silently. See setResumeFailed below: a blank map that should
+        //    have work on it must say so, or a student redoes work they have already done.
+        const readStudent = () => Promise.race([
           getDoc(doc(db, 'classes', normaliseCode(classCode), 'students', safeStudentId(studentName))),
-          new Promise((_, rej) => setTimeout(() => rej(new Error('evolve-resume-timeout')), 8000)),
+          new Promise((_, rej) => setTimeout(() => rej(new Error('evolve-resume-timeout')), 20000)),
         ]);
+        let snap;
+        try {
+          snap = await readStudent();
+        } catch (first) {
+          console.warn('Evolve resume: first attempt failed, retrying once:', first);
+          snap = await readStudent();
+        }
         const ev = snap.exists() ? (snap.data().evolve || {}) : {};
         if (cancelled) return;
         const d = {}, urls = {}, drafts = {};
@@ -797,7 +813,12 @@ export default function EvolveScreen() {
             if (__film) setFilmURL(__film);
           });
         if (ev.souvenirToken) setSouvenirToken(ev.souvenirToken);
-      } catch (e) { console.warn('Evolve resume failed:', e); }
+      } catch (e) {
+        // ⚠️ The student's work is almost certainly fine — it is in Firestore. What failed is
+        //    reading it. Say so, rather than presenting an empty map that reads as "it is gone".
+        console.warn('Evolve resume failed:', e);
+        if (!cancelled) setResumeFailed(true);
+      }
       finally { if (!cancelled) setHydrating(false); }
     })();
     return () => { cancelled = true; };
@@ -1110,6 +1131,36 @@ export default function EvolveScreen() {
         <div style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'1.2rem' }}>
           <img src="/images/logo.png" alt="" style={{ height:60, opacity:0.85 }} onError={e => e.target.style.display='none'} />
           <p style={{ color:T.textDim, fontSize:'0.72rem', letterSpacing:'0.16em', textTransform:'uppercase', fontWeight:700 }}>Loading Evolve</p>
+        </div>
+      </Shell>
+    );
+  }
+
+  // ⚠️ Shown INSTEAD of the map when the resume read failed. The student's chapters are almost
+  //    certainly safe in Firestore — only reading them failed — and an empty map silently implies
+  //    the opposite. On 2026-10-03 a tester with two completed chapters saw a blank map and
+  //    reasonably concluded the work was gone.
+  // 🚫 Do not replace this with a toast or a console warning. It must block, because the next
+  //    thing a student does with an apparently-empty map is film everything again.
+  if (resumeFailed) {
+    return (
+      <Shell scroll={false}>
+        <div style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'1rem', padding:'2rem', textAlign:'center' }}>
+          <div style={{ fontSize:'2.4rem' }} aria-hidden="true">📡</div>
+          <h2 className="taronga-title" style={{ color:T.text, fontSize:'clamp(1.4rem,5vw,1.8rem)', margin:0 }}>
+            We could not load your chapters
+          </h2>
+          <p style={{ color:T.textDim, fontSize:'0.95rem', lineHeight:1.6, maxWidth:360, margin:0 }}>
+            <strong>Nothing is lost.</strong> Anything you have already filmed and written is saved.
+            This is a connection problem, not your work.
+          </p>
+          <button onClick={() => window.location.reload()}
+            style={{ marginTop:'0.4rem', padding:'0.9rem 2rem', borderRadius:999, border:'none', background:T.accent, color:"#1A1205", fontSize:'1rem', fontWeight:800, cursor:'pointer' }}>
+            Try again
+          </button>
+          <p style={{ color:T.textDim, fontSize:'0.8rem', margin:'0.2rem 0 0', opacity:0.8 }}>
+            If it keeps happening, move somewhere with better signal and reload.
+          </p>
         </div>
       </Shell>
     );

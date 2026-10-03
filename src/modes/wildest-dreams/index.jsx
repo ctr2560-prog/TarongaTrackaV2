@@ -59,7 +59,10 @@ export default function WildestDreamsScreen() {
       try {
         const snap = await Promise.race([
           getDoc(doc(db, 'classes', code, 'students', sid)),
-          new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 8000)),
+          // ⚠️ Was 8s, which cost a tester their Evolve progress on 2026-10-03: App Check adds a
+          //    mandatory reCAPTCHA round trip before the first read, and on mobile data the
+          //    budget was blown. Raised for the same reason here.
+          new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 20000)),
         ]);
         if (cancelled || !snap.exists()) return;
         const wd = snap.data().wildestDreams || {};
