@@ -1038,6 +1038,24 @@ between the failing run and the working one, any of which could have been the ca
 evidence it works, not evidence the cause is understood. If it recurs, the console now names the
 chapter and the error code, which is what was missing the first time.
 
+**✅ Verified by measurement, not by eye.** Two films made after the fixes:
+`Orangutan/film.webm` **1112 frames** and `Wedge-tailed Eagle/film.webm` **1111 frames** (~37s at
+30fps), against the broken one's **321 frames** (~10s, cards only).
+
+⚠️ **FRAME COUNT IS THE RELIABLE TEST FOR THIS BUG, and it costs one command.** A cards-only film
+still plays, still has audio cards, and still looks finished:
+`ffprobe -v error -count_frames -select_streams v:0 -show_entries stream=nb_read_frames -of csv=p=0 film.webm`
+Under ~400 frames for a five-chapter film means the clips did not contribute. Do not judge this by
+watching the first few seconds — the title card is the part that always works.
+
+⚠️ **STILL NO iPHONE RECORDING HAS EVER REACHED STORAGE** (re-checked after Cameron reported the
+iPhone working, 2026-10-03). Every clip and every film in `evolve/`, `zoosnooz/` and
+`wildestDreams/` is **VP9/Opus WebM**, and there is **no `.mp4` anywhere in the bucket**. iOS
+records H.264/AAC in MP4 and the label fix now names the file `.mp4`, so an iPhone clip would be
+unmistakable. So "the iPhone worked" is established for **playback and possibly stitching**, and
+**not** for recording. 🚫 Do not mark iOS capture as verified until an `.mp4` appears in the
+bucket — that file is the proof, and its absence is not ambiguous.
+
 **What changed:**
 - Every swallowed per-clip failure appends to an `issues` array and logs with `videoEl.error`'s
   code/message and the URL's **host** (which is what distinguishes a signed URL from a permanent
