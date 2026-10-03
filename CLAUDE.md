@@ -1127,8 +1127,18 @@ this one pipeline (audio-no-picture, canvas tainting, CORS-mistaken-for-a-stitch
 Every one cost hours, and every one was a swallowed error in code that was *trying* to be
 forgiving. Be forgiving AND loud.
 
-⚠️ **ZooSnooz's inline stitcher still has both empty catches.** It was not touched here. It will
-produce the same unexplainable cards-only documentary.
+✅ **ZooSnooz's inline stitcher got the same treatment 2026-10-03.** It carried both empty catches
+and the same `videoEl.onerror = finish`. It now records `issues`, counts `played`, logs
+`[zoosnooz] …` with the error code and the URL host, and the preview screen shows the reason above
+a documentary that rendered without footage.
+
+⚠️ **ZooSnooz still has the CROP half of the problem, and it was deliberately left alone.** Its
+capture asks for `1280x720` **landscape** while its stitcher composes a **720x1280 portrait**
+canvas, so it centre-crops exactly as Evolve did before 2026-10-03 — the "zoomed in" complaint
+applies to ZooSnooz documentaries too. Fixing it means the same two changes made to Evolve (drop
+the shape constraint at capture, contain-with-black in `drawFrame`) and it has not been done
+because ZooSnooz is live and was not what was asked for. 🚫 Do not half-do it: changing the
+capture without changing the crop makes the framing worse, not better.
 
 ### 0ab. ⚠️ NO iPHONE HAS EVER PRODUCED AN EVOLVE CLIP — measured 2026-10-03
 

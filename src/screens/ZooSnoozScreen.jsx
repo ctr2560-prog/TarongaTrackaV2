@@ -694,6 +694,16 @@ export default function ZooSnoozScreen() {
         ctx.fillStyle = bg; ctx.fillRect(0,0,W,H);
       }
 
+      // ⚠️ Every per-clip failure below is non-fatal on purpose — one bad clip must never cost a
+      //    student the rest of their documentary. The price is that the film can come out as CARDS
+      //    ONLY while reporting success. That happened in Evolve on 2026-10-03 and took two days
+      //    to find, because the picture and the sound fail for the SAME reasons (a 403, an expired
+      //    URL, a CORS miss, a container the browser will not decode) and BOTH were swallowed.
+      //    So every swallowed failure records a line here. See evolveFilm.js for the full story.
+      const issues = [];
+      const hostOf = u => { try { return new URL(u).host; } catch(e) { return String(u).slice(0, 24); } };
+      let played = 0;
+
       // Audio
       let audioCtx = zzAudioCtxRef.current;
       let audioDest = null;
@@ -714,7 +724,10 @@ export default function ZooSnoozScreen() {
               const resp = await fetch(videoURLs[a.id]);
               const ab = await resp.arrayBuffer();
               audioDecodedBuffers[a.id] = await audioCtx.decodeAudioData(ab);
-            } catch(e) {}
+            } catch(e) {
+              issues.push(`${a.id}: audio — ${e?.message || e?.name || 'decode failed'}`);
+              console.warn(`[zoosnooz] "${a.id}" audio unavailable:`, e, 'from', hostOf(videoURLs[a.id]));
+            }
           }));
         } catch(e) { audioDest = null; }
       }
@@ -755,8 +768,20 @@ export default function ZooSnoozScreen() {
         const actual = chunks[0]?.type || mr.mimeType || mimeType || 'video/webm';
         const blob = new Blob(chunks, { type: actual });
         zzStitchedBlobRef.current = blob;
-        if (blob.size > 1000) setZzStitchedURL(URL.createObjectURL(blob));
-        else setZzStitchError(`The recorder produced almost nothing (${blob.size} bytes from ${chunks.length} chunks).`);
+        if (issues.length) console.warn('[zoosnooz] finished with issues:', issues);
+        if (blob.size <= 1000) {
+          setZzStitchError(`The recorder produced almost nothing (${blob.size} bytes from ${chunks.length} chunks).`);
+        } else {
+          setZzStitchedURL(URL.createObjectURL(blob));
+          // ⚠️ A documentary with every card and no footage is NOT a success, and showing it as
+          //    one is how this goes unexplained: the student sees a film, nothing says otherwise,
+          //    and the evidence is gone. `played` counts clips that actually drew picture.
+          if (played === 0) {
+            setZzStitchError(`Your clips would not play, so the documentary has the cards but none of your footage. ${issues[0] || ''}`.trim());
+          } else if (played < videosToStitch.length) {
+            setZzStitchError(`${videosToStitch.length - played} of your ${videosToStitch.length} clips would not play and are missing from the documentary.`);
+          }
+        }
         setZzStitchProgress(100);
         setZzStitchPhase('preview');
       };
@@ -933,6 +958,14 @@ export default function ZooSnoozScreen() {
               // documentary. Before this warning existed the whole failure was invisible — a
               // student just got a film with sound and no picture and nobody knew why.
               const secs = (activeMs() - startedAt) / 1000;
+              if (!started) {
+                if (!issues.some(i => i.startsWith(`${animal.id}:`) && i.includes('video'))) {
+                  issues.push(`${animal.id}: video never became playable`);
+                  console.warn(`[zoosnooz] "${animal.id}" never became playable; src host ${hostOf(videoSrc)}`);
+                }
+              } else if (drawn > 0) {
+                played++;
+              }
               if (started && secs > 0.5 && drawn / secs < 5) {
                 console.warn(`[zoosnooz] "${animal.id}" drew only ${drawn} frames in ${secs.toFixed(1)}s (~${(drawn / secs).toFixed(1)}fps) - its footage will look frozen.`);
               }
@@ -1022,7 +1055,18 @@ export default function ZooSnoozScreen() {
               }
             }
             videoEl.onended = finish;
-            videoEl.onerror = finish;
+            // ⚠️ This used to be `videoEl.onerror = finish` — a clip that could not load went
+            //    straight to finish() with NO record of it. Worse, `started` stays false, so the
+            //    low-fps warning below skipped itself too, and the one diagnostic this pipeline
+            //    had never fired. A failed load is the likeliest cause of a cards-only
+            //    documentary and it was the one thing that produced no evidence at all.
+            videoEl.onerror = () => {
+              const err = videoEl.error;
+              const why = err ? `code ${err.code}${err.message ? ` (${err.message})` : ''}` : 'unknown';
+              issues.push(`${animal.id}: video would not load — ${why}`);
+              console.warn(`[zoosnooz] "${animal.id}" video failed to load: ${why}; src host ${hostOf(videoSrc)}`);
+              finish();
+            };
             videoEl.oncanplay = () => {
               if (started || done) return;
               started = true;
@@ -1259,6 +1303,14 @@ export default function ZooSnoozScreen() {
             <div style={{ fontSize:'0.6rem', fontWeight:800, color:'rgba(168,196,178,0.6)', textTransform:'uppercase', letterSpacing:'0.16em', marginBottom:'0.3rem' }}>Your ZooSnooz Documentary</div>
             <h2 className="taronga-title" style={{ fontSize:'1.7rem', color:'white', letterSpacing:'0.05em', margin:0 }}>Preview</h2>
           </div>
+          {zzStitchedURL && zzStitchError && (
+            <div style={{ background:'rgba(232,179,60,0.12)', border:'1px solid rgba(232,179,60,0.4)', borderRadius:12, padding:'0.8rem 0.9rem' }}>
+              <p style={{ color:'#F6E8D2', margin:0, fontSize:'0.88rem', lineHeight:1.5 }}>{zzStitchError}</p>
+              <p style={{ color:'rgba(168,196,178,0.7)', margin:'0.35rem 0 0', fontSize:'0.8rem', lineHeight:1.5 }}>
+                Every clip you filmed is still saved.
+              </p>
+            </div>
+          )}
           {zzStitchedURL ? (
             <div style={{ borderRadius:'18px', overflow:'hidden', background:'#000', boxShadow:'0 16px 48px rgba(0,0,0,0.7), 0 0 0 1px rgba(46,125,85,0.3)', aspectRatio:'9/16', maxHeight:'55vh' }}>
               <video src={zzStitchedURL} controls playsInline autoPlay
