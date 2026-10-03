@@ -994,6 +994,51 @@ other — a fix in one needs applying to the other by hand.**
 
 Every rule below was learned by shipping something broken. None of it is stylistic.
 
+### 0aa. ⚠️⚠️ THE CARDS-ONLY FILM, AND THE FOURTH SILENT FAILURE (2026-10-03)
+
+**Symptom:** the film builds, plays, and contains the title card and every chapter card — and
+**none of the footage and none of the audio**. Reported on both an iPhone and a laptop.
+
+**Measured, so this is not a guess.** The stored film (`evolve/547DGJ/Little Penguin/film.webm`,
+2.4MB) holds **321 video frames ≈ 10 seconds** at 30fps. Five chapters of real footage would be
+45s+. So the clips were not *played badly* — they were **skipped entirely**. The source clips are
+fine: `kangaroo.webm` is genuine VP9/opus (magic `1a45dfa3`), 1920x1080, 144 frames, with audio.
+The stored download URL returns **200** with `access-control-allow-origin` for the live domain,
+and a CORS preflight on **both** `firebasestorage.googleapis.com` and `storage.googleapis.com`
+(the signed-URL host) passes. **So it is not the iOS label trap, not CORS, and not a dead token.**
+
+**Why neither of us could see the cause — and this is the real lesson.** Two failure paths were
+swallowed, and they mask each other:
+
+1. `videoEl.onerror = finish;` — a clip that cannot load went **straight to finish() with no
+   record of it**. Worse, `started` stays false, so the low-fps warning (the one diagnostic this
+   pipeline had) was skipped by its own `if (started && …)` guard.
+2. The `decodeAudioData` catch was **empty** — `/* clip keeps its vision, loses its sound */`.
+
+The picture and the sound fail for the **same** reasons (a 403, an expired signed URL, a CORS
+miss, a container the browser will not decode), so one cause tripped both, and both were silent.
+A whole film of cards, a clean console, and nothing to investigate.
+
+⚠️ **And the screen called it a success.** The film rendered, so the student saw a finished film
+and no warning. That is how this reached "I don't know why that is".
+
+**What changed:**
+- Every swallowed per-clip failure appends to an `issues` array and logs with `videoEl.error`'s
+  code/message and the URL's **host** (which is what distinguishes a signed URL from a permanent
+  one at a glance).
+- `buildEvolveFilm` now returns **`played`** — how many chapters actually contributed picture —
+  alongside `total` and `issues`. 🚫 **A blob is not success.** `played === 0` is a cards-only
+  film and the caller must treat it as a failure; `played < total` means chapters are missing.
+- The film screen says so, above the film that did render.
+
+🚫 **Do not add an empty catch anywhere in this file.** Four silent failures are now on record in
+this one pipeline (audio-no-picture, canvas tainting, CORS-mistaken-for-a-stitcher-bug, and this).
+Every one cost hours, and every one was a swallowed error in code that was *trying* to be
+forgiving. Be forgiving AND loud.
+
+⚠️ **ZooSnooz's inline stitcher still has both empty catches.** It was not touched here. It will
+produce the same unexplainable cards-only documentary.
+
 ### 0a. ⚠️ A RESUME THAT FAILS MUST SAY SO (2026-10-03)
 
 Evolve raced its resume read against an **8 second** timeout and, on failure, logged to the

@@ -98,7 +98,10 @@ const wait = ms => new Promise(res => setTimeout(res, ms));
  * @param {object}   theme     EVOLVE_THEME
  * @param {function} onProgress (pct, chapterIndex)
  * @param {function} isCancelled  () => boolean, checked throughout so unmount aborts cleanly
- * @returns {Promise<{blob: Blob, url: string}|{error: string}>}
+ * @returns {Promise<{blob, url, played, total, issues}|{error: string}>}
+ *   `played` is how many chapters actually contributed PICTURE. ⚠️ It can be 0 with a perfectly
+ *   valid film object — cards only — so a caller must check it rather than treating any blob as
+ *   success.
  *   ⚠️ ALWAYS resolves to one or the other, never a bare null. A null told the caller only that
  *   something went wrong, and the screen then blamed the student's device for every cause. There
  *   is no console on a phone, so the reason has to travel to the screen or an iPhone fault cannot
@@ -158,6 +161,14 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
     ctx.restore();
   }
 
+  // ⚠️ Every per-clip failure in this function is non-fatal by design — one bad clip must never
+  //    cost a student the rest of their film. The cost of that is that the film can come out as
+  //    CARDS ONLY while reporting success, which is exactly what happened on 2026-10-03. So every
+  //    swallowed failure now appends a line here, and the caller is told when nothing played.
+  const issues = [];
+  const hostOf = u => { try { return new URL(u).host; } catch { return String(u).slice(0, 24); } };
+  let played = 0;
+
   // ── Audio: decode every clip up front, keep the destination alive with a silent loop ──
   let audioCtx = null, audioDest = null;
   const audioBuffers = {};
@@ -175,9 +186,17 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
       await Promise.all(clips.map(async c => {
         try {
           const resp = await fetch(clipURLs[c.id]);
+          if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
           const ab = await resp.arrayBuffer();
           audioBuffers[c.id] = await audioCtx.decodeAudioData(ab);
-        } catch { /* clip keeps its vision, loses its sound */ }
+        } catch (e) {
+          // ⚠️ This used to be an empty catch. The clip then lost its sound silently, and because
+          //    the picture fails for the SAME reasons (a 403, an expired signed URL, a CORS miss,
+          //    a mislabelled container) a whole film could come out as cards only with a
+          //    completely clean console. Two silent failures masking one cause.
+          issues.push(`${c.id}: audio — ${e?.message || e?.name || 'decode failed'}`);
+          console.warn(`[evolveFilm] "${c.id}" audio unavailable:`, e, 'from', hostOf(clipURLs[c.id]));
+        }
       }));
     } catch { audioDest = null; }
   }
@@ -206,9 +225,15 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
       // The finished film carries the same trap: label it from what the recorder actually
       // produced, not from the candidate we hoped for.
       const blob = new Blob(chunks, { type: chunks[0]?.type || mr?.mimeType || blobType });
-      resolve(blob.size > 1000
-        ? { blob, url: URL.createObjectURL(blob) }
-        : { error: `The recorder produced almost nothing (${blob.size} bytes from ${chunks.length} chunks).` });
+      if (blob.size <= 1000) {
+        resolve({ error: `The recorder produced almost nothing (${blob.size} bytes from ${chunks.length} chunks).` });
+        return;
+      }
+      // ⚠️ A film with every card and no footage is NOT a success, and presenting it as one is how
+      //    this went unexplained: the student sees a film, the screen says nothing is wrong, and
+      //    the only evidence is gone. Report how many chapters actually contributed picture.
+      if (issues.length) console.warn('[evolveFilm] finished with issues:', issues);
+      resolve({ blob, url: URL.createObjectURL(blob), played, total: clips.length, issues });
     };
   });
   mr.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
@@ -376,6 +401,17 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
         // look frozen in the finished film. Almost always the screen slept or the tab was
         // backgrounded mid-stitch.
         const __secs = (activeMs() - startedAt) / 1000;
+        if (!started) {
+          // Never reached `canplay`. Covers a 403, an expired signed URL, a CORS refusal and a
+          // container the browser will not decode — all of which look identical from here, which
+          // is precisely why the reason has to be carried out rather than guessed at.
+          if (!issues.some(i => i.startsWith(`${c.id}:`) && i.includes('video'))) {
+            issues.push(`${c.id}: video never became playable`);
+            console.warn(`[evolveFilm] "${c.id}" never became playable; src host ${hostOf(src)}`);
+          }
+        } else if (drawn > 0) {
+          played++;
+        }
         if (started && __secs > 0.5 && drawn / __secs < 5) {
           console.warn(`[evolveFilm] "${c.id}" drew only ${drawn} frames in ${__secs.toFixed(1)}s (~${(drawn / __secs).toFixed(1)}fps) - its footage will look frozen. The screen most likely slept or the tab was backgrounded.`);
         }
@@ -451,7 +487,17 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
       }
 
       videoEl.onended = finish;
-      videoEl.onerror = finish;
+      // ⚠️ A clip that cannot load used to go straight to finish() with no record of it at all.
+      //    `started` stays false, so even the low-framerate warning below was skipped — the one
+      //    diagnostic this pipeline had. A failed load is the single most likely cause of a
+      //    cards-only film, and it was the one thing that produced no evidence whatsoever.
+      videoEl.onerror = () => {
+        const err = videoEl.error;
+        const why = err ? `code ${err.code}${err.message ? ` (${err.message})` : ''}` : 'unknown';
+        issues.push(`${c.id}: video would not load — ${why}`);
+        console.warn(`[evolveFilm] "${c.id}" video failed to load: ${why}; src host ${hostOf(src)}`);
+        finish();
+      };
       videoEl.oncanplay = () => {
         if (started || done) return;
         started = true;

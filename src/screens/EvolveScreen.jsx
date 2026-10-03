@@ -1080,7 +1080,17 @@ export default function EvolveScreen() {
       });
       if (cancelled) return;
       if (result?.blob) { filmBlobRef.current = result.blob; setFilmURL(result.url); }
-      setFilmError(result?.error || null);
+      // ⚠️ A film can come back valid and contain NO FOOTAGE — every card, none of the clips. On
+      //    2026-10-03 that is exactly what happened and the screen presented it as finished, so
+      //    there was nothing to report and nothing to investigate. `played` is the only honest
+      //    test of success here, not the presence of a blob.
+      if (result?.blob && result.played === 0) {
+        setFilmError(`Your chapters would not play, so the film has the cards but none of your footage. ${(result.issues || [])[0] || ''}`.trim());
+      } else if (result?.blob && result.played < result.total) {
+        setFilmError(`${result.total - result.played} of your ${result.total} chapters would not play and are missing from the film.`);
+      } else {
+        setFilmError(result?.error || null);
+      }
       setFilmPhase('preview');
     })();
     return () => { cancelled = true; };
@@ -1231,6 +1241,14 @@ export default function EvolveScreen() {
           {(filmPhase === 'preview' || filmPhase === 'submitting') && (
             <>
               <h2 className="taronga-title" style={{ color:T.text, fontSize:'1.8rem', marginBottom:'1rem' }}>Your film</h2>
+              {filmURL && filmError && (
+                <div style={{ background:'rgba(232,179,60,0.12)', border:'1px solid rgba(232,179,60,0.4)', borderRadius:12, padding:'0.8rem 0.9rem', marginBottom:'0.9rem' }}>
+                  <p style={{ color:T.text, margin:0, fontSize:'0.88rem', lineHeight:1.5 }}>{filmError}</p>
+                  <p style={{ color:T.textDim, margin:'0.35rem 0 0', fontSize:'0.8rem', lineHeight:1.5 }}>
+                    Every chapter you filmed is still saved. Try making it again from the map.
+                  </p>
+                </div>
+              )}
               {filmURL ? (
                 <video src={filmURL} controls playsInline style={{ width:'100%', borderRadius:14, marginBottom:'1.25rem', background:'#000' }} />
               ) : (
