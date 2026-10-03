@@ -2488,14 +2488,14 @@ function StaffMfaPanel() {
     return `+61${d}`;
   };
 
-  // ⚠️ ONE invisible reCAPTCHA, reused. Firebase requires a verifier for every phone step; making
-  //    a new one each time leaves orphaned widgets that silently stop solving, which presents as
-  //    "the text never arrives".
+  // ⚠️⚠️ A reCAPTCHA TOKEN IS SINGLE USE. Reusing one verifier across attempts hands Firebase an
+  //    already-spent token and it answers `auth/invalid-app-credential` — which reads like a
+  //    project misconfiguration and sends you hunting through the console for an hour. Clear the
+  //    old widget and build a fresh one for every send.
   const verifierRef = useRef(null);
-  const getVerifier = () => {
-    if (!verifierRef.current) {
-      verifierRef.current = new RecaptchaVerifier(auth, 'mfa-recaptcha', { size: 'invisible' });
-    }
+  const freshVerifier = () => {
+    try { verifierRef.current?.clear(); } catch { /* nothing rendered yet */ }
+    verifierRef.current = new RecaptchaVerifier(auth, 'mfa-recaptcha', { size: 'invisible' });
     return verifierRef.current;
   };
 
@@ -2505,7 +2505,7 @@ function StaffMfaPanel() {
     try {
       const session = await multiFactor(auth.currentUser).getSession();
       const id = await new PhoneAuthProvider(auth).verifyPhoneNumber(
-        { phoneNumber: toE164(phone), session }, getVerifier());
+        { phoneNumber: toE164(phone), session }, freshVerifier());
       setVerifId(id); setPhase('enrolling');
       setMsg({ ok: true, text: `Code sent to ${toE164(phone)}.` });
     } catch (err) {

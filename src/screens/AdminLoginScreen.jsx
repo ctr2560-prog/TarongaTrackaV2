@@ -65,9 +65,10 @@ export default function AdminLoginScreen() {
         // A phone factor cannot show a box and wait — the text has to be sent first.
         if (r.hints[0]?.factorId === PAP.PROVIDER_ID) {
           try {
-            if (!verifierRef.current) {
-              verifierRef.current = new RecaptchaVerifier(auth, 'login-recaptcha', { size: 'invisible' });
-            }
+            // ⚠️ A reCAPTCHA token is single use — clear and rebuild, or a second sign-in attempt
+            //    fails with `auth/invalid-app-credential`. See the same note in the Control Room.
+            try { verifierRef.current?.clear(); } catch { /* nothing rendered yet */ }
+            verifierRef.current = new RecaptchaVerifier(auth, 'login-recaptcha', { size: 'invisible' });
             const id = await new PhoneAuthProvider(auth).verifyPhoneNumber(
               { multiFactorHint: r.hints[0], session: r.session }, verifierRef.current);
             setSmsId(id);

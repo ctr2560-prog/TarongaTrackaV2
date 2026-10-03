@@ -736,9 +736,20 @@ arrived. An email second factor would lock staff out of the portal with no error
 🚫 **Never put an authentication step on a mail path this project has already watched fail.**
 
 **Implementation notes that cost time if rediscovered:**
-- ⚠️ **ONE `RecaptchaVerifier`, held in a ref and reused.** Firebase needs a verifier for every
-  phone step; constructing a new one per attempt leaves orphaned widgets that quietly stop
-  solving, and the symptom is "the text never arrives".
+- ⚠️⚠️ **`auth/invalid-app-credential` HAS TWO CAUSES AND BOTH BIT ON THE FIRST ATTEMPT.** The
+  message sounds like a broken project and sends you into the console; it is not what it sounds
+  like.
+  1. **The phone provider was not enabled.** `signIn.phoneNumber` was `{}`. Enabling SMS as a
+     second factor via `mfa.enabledProviders` is **not enough** — the phone sign-in provider has
+     to be on as well, and it is in a different part of the config:
+     `?updateMask=signIn.phoneNumber` with `{"signIn":{"phoneNumber":{"enabled":true}}}`.
+  2. **A reCAPTCHA token is SINGLE USE.** Holding one `RecaptchaVerifier` in a ref and reusing it
+     hands Firebase a spent token on the second attempt. 🚫 Never reuse a verifier — `clear()` the
+     old widget and construct a fresh one for every send, on **both** screens.
+- ⚠️ **SMS is allow-listed to `AU` only** (`smsRegionConfig.allowlistOnly.allowedRegions: ["AU"]`).
+  Enabling phone verification opens the door to **SMS pumping fraud** — an attacker triggers
+  thousands of texts to premium numbers abroad and the project owner pays. 🚫 Do not widen this
+  without a reason; every staff member is in Australia.
 - ⚠️ Both screens need a host element for it (`#mfa-recaptcha`, `#login-recaptcha`). Invisible, so
   it only ever shows a challenge if the request looks automated.
 - ⚠️ **Phone numbers are converted to E.164 for the user** (`0412…` → `+61412…`). Without it a
