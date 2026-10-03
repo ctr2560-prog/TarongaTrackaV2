@@ -1048,13 +1048,40 @@ still plays, still has audio cards, and still looks finished:
 Under ~400 frames for a five-chapter film means the clips did not contribute. Do not judge this by
 watching the first few seconds — the title card is the part that always works.
 
-⚠️ **STILL NO iPHONE RECORDING HAS EVER REACHED STORAGE** (re-checked after Cameron reported the
-iPhone working, 2026-10-03). Every clip and every film in `evolve/`, `zoosnooz/` and
-`wildestDreams/` is **VP9/Opus WebM**, and there is **no `.mp4` anywhere in the bucket**. iOS
-records H.264/AAC in MP4 and the label fix now names the file `.mp4`, so an iPhone clip would be
-unmistakable. So "the iPhone worked" is established for **playback and possibly stitching**, and
-**not** for recording. 🚫 Do not mark iOS capture as verified until an `.mp4` appears in the
-bucket — that file is the proof, and its absence is not ambiguous.
+#### ⚠️ iOS CAPTURE: WORKS IN THE FIELD, AND THE STORED CODECS DO NOT MATCH THE THEORY
+
+Cameron ran a dedicated iPhone test (Evolve, class `547DGJ`, alias **Orangutan**, 2026-10-03
+~21:39–21:43 UTC) and reported the whole flow working: record, upload, stitch, play.
+
+**What the stored files actually say.** All five clips and the film are **WebM, VP9 video, Opus
+audio** (`magic 1a45dfa3`), four clips at 1920x1080 landscape, one at 1080x1920 portrait, the film
+720x1280. There is **no `.mp4` anywhere in the bucket** in any mode.
+
+⚠️ **That contradicts the assumption this whole iOS investigation was built on** — that iOS
+Safari's MediaRecorder can only produce H.264/AAC in MP4, and that Chrome on iOS is the same
+engine so cannot differ. One of these must be true, and it is NOT currently known which:
+
+1. **Modern iOS Safari can record VP9/Opus WebM.** If so the "iOS trap" is narrower than this
+   document claims, and the earlier assertion that these codecs *prove* a file did not come from
+   an iPhone is simply wrong. 🚫 Do not repeat that inference as established fact.
+2. **The recording did not happen on the iPhone** — e.g. the phone used as a Continuity Camera on
+   the Mac, which would explain both the Chromium codecs and the single portrait clip among four
+   landscape ones.
+
+⚠️ **The 1920x1080 landscape clips are the odd part either way.** Capture asks for `ideal`
+1080x1920 **portrait**; an iPhone camera can do portrait natively, a Mac webcam cannot and
+degrades to landscape. Four of five came out landscape.
+
+**How to settle it, cheaply, next time iOS is touched:** the stored file is the evidence. Film one
+chapter, then check the newest object's codec:
+`ffprobe -v error -show_entries stream=codec_name,width,height -of csv=p=0 <file>`
+H.264/AAC means iOS captured it. VP9/Opus means a Chromium browser did, whatever device was in
+your hand.
+
+🚫 **Do not "fix" the label-derivation code on the strength of this.** Deriving the extension and
+content type from `chunks[0].type` is correct regardless of which browser is recording — it is
+right precisely because it makes no assumption about what the device produces. That is the whole
+point of it.
 
 **What changed:**
 - Every swallowed per-clip failure appends to an `issues` array and logs with `videoEl.error`'s
