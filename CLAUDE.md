@@ -929,6 +929,34 @@ other — a fix in one needs applying to the other by hand.**
 
 Every rule below was learned by shipping something broken. None of it is stylistic.
 
+### 0. ⚠️⚠️ NEVER LABEL A RECORDING FROM A DEFAULT — the iOS trap (found 2026-10-03)
+
+**Every film made on an iPhone was black and silent, and had been for as long as the code
+existed.** It was found by accident while testing signed URLs.
+
+`pickMimeType()` ended with `fileExt: isMP4 ? 'mp4' : 'webm'`. When `MediaRecorder.isTypeSupported`
+returns false for **every** candidate — which is exactly what iOS does — `mimeType` is `''`, so it
+fell through to **webm**. `MediaRecorder` was then constructed with no `mimeType`, so iOS recorded
+**mp4**. The result: mp4 bytes stored and served as `video/webm`.
+
+The file uploads fine. It downloads fine. It fetches 200. The browser simply refuses to decode it,
+so every clip plays zero frames and contributes no audio, and the finished film is **black and
+silent**.
+
+⚠️ **That symptom is listed in this very document as pointing at CORS** ("no sound *and* no
+picture points at CORS"). It can also mean this. Check the stored file's extension against the
+recording device before chasing CORS: a `.webm` from an iPhone is impossible and is the tell.
+
+**The rule:** derive the extension and content type from what the recorder ACTUALLY produced —
+`chunks[0].type` first, then `MediaRecorder.mimeType` — never from a candidate you hoped for and
+never from a default. `describeMime()` in `utils/evolveFilm.js` is the shared helper.
+
+Fixed in all three recorders **and both stitcher outputs** (the finished film carries the same
+trap). Wildest Dreams' recorder imports the Evolve util, so it was fixed by the same change.
+
+🚫 Old `.webm` clips recorded on iOS are still mislabelled in Storage. They will stay broken
+unless their content type is corrected — the bytes are fine, only the label is wrong.
+
 ### 1. Capture must match the film's aspect ratio
 
 Evolve films are **720×1280 portrait**, so capture asks for portrait:

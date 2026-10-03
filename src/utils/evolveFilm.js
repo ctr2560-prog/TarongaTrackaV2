@@ -24,22 +24,40 @@ const MIME_CANDIDATES = [
   'video/mp4',
 ];
 
-export function pickMimeType(candidates = MIME_CANDIDATES) {
-  const mimeType = candidates.find(t => {
-    try { return MediaRecorder.isTypeSupported(t); } catch { return false; }
-  }) || '';
-  const isMP4 = mimeType.includes('mp4');
+// ⚠️ `describeMime` exists because guessing is what broke iOS. Derive the labels from a REAL
+//    mime string — either one the browser confirmed, or the one MediaRecorder reports after it
+//    starts — never from a default.
+export function describeMime(mimeType) {
+  const isMP4 = String(mimeType || '').includes('mp4');
   return {
-    mimeType,
+    mimeType: mimeType || '',
     blobType: mimeType || 'video/webm',
     fileExt: isMP4 ? 'mp4' : 'webm',
     contentType: isMP4 ? 'video/mp4' : 'video/webm',
   };
 }
 
+// ⚠️⚠️ THE iOS TRAP. This used to end `fileExt: isMP4 ? 'mp4' : 'webm'` with no supported
+// candidate found — so when `isTypeSupported` returned false for EVERYTHING, which is exactly
+// what iOS does, it fell through to **webm**. MediaRecorder was then constructed with no
+// mimeType, so iOS recorded **mp4**. The result was mp4 bytes stored and served as
+// `video/webm`: the file uploads fine, downloads fine, and the browser refuses to decode it.
+// Every clip plays zero frames and contributes no audio, so the finished film is BLACK AND
+// SILENT — which reads exactly like the CORS failure documented in CLAUDE.md, and is not.
+//
+// 🚫 NEVER derive the extension or content type from a default. Read what the recorder actually
+//    produced — `MediaRecorder.mimeType` after construction is authoritative, and the blob's own
+//    `type` is the final word.
+export function pickMimeType(candidates = MIME_CANDIDATES) {
+  const mimeType = candidates.find(t => {
+    try { return MediaRecorder.isTypeSupported(t); } catch { return false; }
+  }) || '';
+  return describeMime(mimeType);
+}
+
 // Records the given live stream. Returns a stop() handle; the blob arrives via onComplete.
 export function startChapterRecording(stream, { onComplete, onError }) {
-  const { mimeType, blobType, fileExt, contentType } = pickMimeType();
+  const { mimeType } = pickMimeType();
   const chunks = [];
   const opts = { videoBitsPerSecond: 2_000_000 };
   if (mimeType) opts.mimeType = mimeType;
@@ -53,6 +71,11 @@ export function startChapterRecording(stream, { onComplete, onError }) {
   }
   mr.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
   mr.onstop = () => {
+    // ⚠️ Ask the RECORDER what it produced, then prefer the chunk's own type. On iOS neither
+    //    `isTypeSupported` nor our candidate list knows the answer, and only these do. Labelling
+    //    a file by guesswork is what made every iPhone film black and silent.
+    const actual = chunks[0]?.type || mr.mimeType || mimeType;
+    const { blobType, fileExt, contentType } = describeMime(actual);
     const blob = new Blob(chunks, { type: blobType });
     if (blob.size < 500) { onError?.(new Error('empty-recording')); return; }
     onComplete?.({ blob, url: URL.createObjectURL(blob), fileExt, contentType });
@@ -173,7 +196,9 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
 
   const finished = new Promise(resolve => {
     mr.onstop = () => {
-      const blob = new Blob(chunks, { type: blobType });
+      // The finished film carries the same trap: label it from what the recorder actually
+      // produced, not from the candidate we hoped for.
+      const blob = new Blob(chunks, { type: chunks[0]?.type || mr?.mimeType || blobType });
       resolve(blob.size > 1000 ? { blob, url: URL.createObjectURL(blob) } : null);
     };
   });

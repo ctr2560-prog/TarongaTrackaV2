@@ -427,11 +427,15 @@ export default function ZooSnoozScreen() {
       'video/mp4;codecs=h264',
       'video/mp4',
     ];
-    const mimeType    = MIME_CANDIDATES.find(t => { try { return MediaRecorder.isTypeSupported(t); } catch(e) { return false; } }) || '';
-    const isMP4       = mimeType.includes('mp4');
-    const blobType    = mimeType || 'video/webm';
-    const fileExt     = isMP4 ? 'mp4' : 'webm';
-    const contentType = isMP4 ? 'video/mp4' : 'video/webm';
+    // ⚠️⚠️ THE iOS TRAP — see describeMime in utils/evolveFilm.js. When `isTypeSupported` returns
+    // false for EVERY candidate, which is exactly what iOS does, `mimeType` is empty. The old code
+    // then defaulted the label to **webm**, while MediaRecorder (given no mimeType) recorded
+    // **mp4**. The file uploaded and downloaded fine and the browser refused to decode it, so
+    // every iPhone documentary came out BLACK AND SILENT — which looks exactly like the CORS
+    // failure documented in this file, and is not.
+    // 🚫 Never label a recording from a default. The labels below are now derived from what the
+    //    recorder actually produced, read at onstop.
+    const mimeType = MIME_CANDIDATES.find(t => { try { return MediaRecorder.isTypeSupported(t); } catch(e) { return false; } }) || '';
 
     const recordStream = videoEl.srcObject;
     const mrOptions = { videoBitsPerSecond: 2000000 };
@@ -446,6 +450,12 @@ export default function ZooSnoozScreen() {
     }
     mr.ondataavailable = e => { if (e.data.size > 0) zzChunksRef.current.push(e.data); };
     mr.onstop = () => {
+      // Ask the recorder and the chunk what was really produced; only these know on iOS.
+      const actual      = zzChunksRef.current[0]?.type || mr.mimeType || mimeType;
+      const isMP4       = String(actual).includes('mp4');
+      const blobType    = actual || 'video/webm';
+      const fileExt     = isMP4 ? 'mp4' : 'webm';
+      const contentType = isMP4 ? 'video/mp4' : 'video/webm';
       const blob = new Blob(zzChunksRef.current, { type: blobType });
       if (blob.size < 500) {
         alert('Recording failed - no video was captured. Please try again.');

@@ -31,11 +31,13 @@ const MIME_CANDIDATES = [
   'video/mp4',
 ];
 
+// ⚠️ See the iOS trap note in utils/evolveFilm.js. Never default the label to webm — iOS reports
+// nothing as supported and then records mp4, and the mismatch makes the film undecodable.
 export function pickMimeType(candidates = MIME_CANDIDATES) {
   const mimeType = candidates.find(t => {
     try { return MediaRecorder.isTypeSupported(t); } catch { return false; }
   }) || '';
-  const isMP4 = mimeType.includes('mp4');
+  const isMP4 = String(mimeType).includes('mp4');
   return {
     mimeType,
     blobType: mimeType || 'video/webm',
@@ -181,7 +183,9 @@ export async function buildWildestDreamsFilm({ stops, clipURLs, studentName, cap
 
   const finished = new Promise(resolve => {
     mr.onstop = () => {
-      const blob = new Blob(chunks, { type: blobType });
+      // The finished film carries the same trap: label it from what the recorder actually
+      // produced, not from the candidate we hoped for.
+      const blob = new Blob(chunks, { type: chunks[0]?.type || mr?.mimeType || blobType });
       resolve(blob.size > 1000 ? { blob, url: URL.createObjectURL(blob) } : null);
     };
   });
