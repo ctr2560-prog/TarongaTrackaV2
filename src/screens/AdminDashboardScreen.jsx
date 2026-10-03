@@ -4,6 +4,9 @@ import {
   orderBy, limit, writeBatch, serverTimestamp, deleteField, onSnapshot, increment,
 } from 'firebase/firestore';
 import { db, storage, auth } from '../firebase';
+import {
+  EmailAuthProvider, reauthenticateWithCredential, multiFactor, TotpMultiFactorGenerator,
+} from 'firebase/auth';
 import { ref as storageRef, getDownloadURL } from 'firebase/storage';
 import { isTarongaStaff } from '../constants/tarongaStaff';
 import { SignedImage } from '../components/SignedMedia';
@@ -2433,10 +2436,174 @@ function OverviewTab({ classes, loading, onClassClick }) {
 }
 
 // ─── Tab: Control Room ────────────────────────────────────────────────────────
+// ⚠️ TWO-STEP SIGN-IN FOR STAFF ACCOUNTS (TOTP, i.e. an authenticator app).
+//
+// A staff account reads every school's data and can wipe all of it. A password alone means one
+// phished or reused credential is a total compromise, and Taronga IT will ask about this.
+//
+// 🚫 NOT SMS. SIM-swap defeats it, it costs money per message, and it needs a phone number on
+//    file for every staff member — which is personal data this project otherwise avoids holding.
+//    TOTP is a shared secret in an app on the person's own phone, with nothing stored about them.
+//
+// ⚠️ THIS PANEL IS INERT UNTIL MULTI-FACTOR IS SWITCHED ON IN THE FIREBASE CONSOLE
+//    (Authentication → Sign-in method → Advanced → Multi-factor, which requires upgrading the
+//    project to Identity Platform). Until then `generateSecret` fails and the panel says so.
+//    Shipping the code first is deliberate: the sign-in challenge in AdminLoginScreen can be in
+//    place BEFORE anyone enrols, so nobody can enrol and then be unable to get back in.
+//
+// ⚠️ RECOVERY IF AN AUTHENTICATOR IS LOST. There are no backup codes. The account holder cannot
+//    fix it themselves and neither can another staff member through this app. The recovery path
+//    is the Firebase Console (Authentication → Users → the user → remove the second factor) as
+//    the project owner, thebiologybloke@gmail.com. 🚫 Do not enrol the root admin without being
+//    sure that console access works — it is the only way back in.
+function StaffMfaPanel() {
+  // Read straight from the SDK at first render — enrolled factors are already on the local user
+  // object, so there is nothing to fetch and no effect to run.
+  const listFactors = () => {
+    const u = auth.currentUser;
+    return u ? (multiFactor(u).enrolledFactors || []) : [];
+  };
+  const [factors, setFactors] = useState(listFactors);
+  const [phase,   setPhase]   = useState('idle');   // idle | starting | enrolling | busy
+  const [secret,  setSecret]  = useState(null);
+  const [uri,     setUri]     = useState('');
+  const [code,    setCode]    = useState('');
+  const [msg,     setMsg]     = useState(null);     // { ok, text }
+
+  const refresh = () => setFactors(listFactors());
+
+  const begin = async () => {
+    setPhase('starting'); setMsg(null);
+    try {
+      const u = auth.currentUser;
+      const session = await multiFactor(u).getSession();
+      const s = await TotpMultiFactorGenerator.generateSecret(session);
+      setSecret(s);
+      setUri(s.generateQrCodeUrl(u.email || 'Taronga staff', 'Taronga Tracka'));
+      setPhase('enrolling');
+    } catch (err) {
+      const code2 = err?.code || '';
+      setPhase('idle');
+      setMsg({ ok: false, text: code2.includes('operation-not-allowed') || code2.includes('unsupported')
+        ? 'Two-step sign-in is not switched on for this project yet. Turn on multi-factor authentication in the Firebase Console first.'
+        : `Could not start setup (${code2 || 'error'}).` });
+    }
+  };
+
+  const finish = async () => {
+    if (!secret || code.trim().length < 6) return;
+    setPhase('busy'); setMsg(null);
+    try {
+      const assertion = TotpMultiFactorGenerator.assertionForEnrollment(secret, code.trim());
+      await multiFactor(auth.currentUser).enroll(assertion, 'Authenticator app');
+      setSecret(null); setUri(''); setCode(''); setPhase('idle');
+      setMsg({ ok: true, text: 'Two-step sign-in is on. You will be asked for a code next time you sign in.' });
+      refresh();
+    } catch (err) {
+      setPhase('enrolling');
+      setMsg({ ok: false, text: err?.code === 'auth/invalid-verification-code'
+        ? 'That code was not accepted. Codes change every 30 seconds, so try the current one.'
+        : `Could not turn it on (${err?.code || 'error'}).` });
+    }
+  };
+
+  const remove = async (f) => {
+    if (!window.confirm('Turn off two-step sign-in for your account?')) return;
+    setPhase('busy');
+    try {
+      await multiFactor(auth.currentUser).unenroll(f);
+      setMsg({ ok: true, text: 'Two-step sign-in is off for your account.' });
+      refresh();
+    } catch (err) {
+      setMsg({ ok: false, text: `Could not turn it off (${err?.code || 'error'}).` });
+    } finally { setPhase('idle'); }
+  };
+
+  const box = { background:'var(--t-chalk)', borderRadius:'var(--t-r-lg)', padding:'1.5rem', boxShadow:'var(--t-shadow-sm)', marginBottom:'1rem', border:'1px solid var(--t-stone)' };
+  return (
+    <div style={box}>
+      <h3 style={{ fontSize:'1rem', fontWeight:700, color:'var(--t-deep)', margin:'0 0 0.35rem' }}>Two-step sign-in</h3>
+      <p style={{ fontSize:'0.8rem', color:'var(--t-slate)', margin:'0 0 1rem', lineHeight:1.6 }}>
+        Adds a 6-digit code from an authenticator app on your phone, on top of your password. It
+        applies to your own account only.
+      </p>
+
+      {factors.length > 0 ? (
+        factors.map(f => (
+          <div key={f.uid} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'0.75rem', padding:'0.6rem 0.8rem', background:'rgba(46,125,85,0.08)', border:'1px solid rgba(46,125,85,0.25)', borderRadius:'var(--t-r-sm)', marginBottom:'0.6rem' }}>
+            <span style={{ fontSize:'0.85rem', color:'var(--t-deep)', fontWeight:600 }}>✓ On — {f.displayName || 'Authenticator app'}</span>
+            <button onClick={() => remove(f)} disabled={phase==='busy'}
+              style={{ fontSize:'0.75rem', color:'#B91C1C', background:'none', border:'1px solid rgba(185,28,28,0.35)', padding:'0.3rem 0.65rem', borderRadius:'var(--t-r-pill)', cursor:'pointer', fontWeight:600 }}>
+              Turn off
+            </button>
+          </div>
+        ))
+      ) : phase === 'idle' || phase === 'starting' ? (
+        <button onClick={begin} disabled={phase==='starting'}
+          style={{ padding:'0.65rem 1.1rem', borderRadius:'var(--t-r-pill)', border:'none', background: phase==='starting' ? '#CCC' : 'linear-gradient(135deg,var(--t-mid),var(--t-eucalyptus))', color:'white', fontSize:'0.85rem', fontWeight:700, cursor: phase==='starting' ? 'not-allowed' : 'pointer' }}>
+          {phase==='starting' ? 'Starting…' : 'Turn on two-step sign-in'}
+        </button>
+      ) : null}
+
+      {(phase === 'enrolling' || (phase === 'busy' && secret)) && (
+        <div style={{ marginTop:'0.4rem' }}>
+          <ol style={{ fontSize:'0.82rem', color:'var(--t-deep)', lineHeight:1.7, paddingLeft:'1.1rem', margin:'0 0 0.8rem' }}>
+            <li>Open your authenticator app (Google Authenticator, Microsoft Authenticator, 1Password).</li>
+            <li>Add an account and choose to enter a key by hand.</li>
+            <li>Paste the key below, then type the 6-digit code it shows.</li>
+          </ol>
+          {/* ⚠️ A key to copy rather than a QR code, deliberately: a QR needs a rendering library,
+              and this page may not load anything from outside. On a phone the link below opens
+              the authenticator app directly, which is the same convenience without the
+              dependency. */}
+          <label style={{ display:'block', fontSize:'0.72rem', fontWeight:700, color:'var(--t-deep)', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:'0.25rem' }}>Setup key</label>
+          <code style={{ display:'block', padding:'0.6rem 0.75rem', background:'white', border:'1px solid var(--t-stone)', borderRadius:'var(--t-r-sm)', fontSize:'0.85rem', wordBreak:'break-all', marginBottom:'0.5rem' }}>{secret?.secretKey}</code>
+          <div style={{ display:'flex', gap:'0.5rem', marginBottom:'0.8rem' }}>
+            <button onClick={() => navigator.clipboard?.writeText(secret?.secretKey || '')}
+              style={{ fontSize:'0.75rem', background:'var(--t-foam)', border:'1px solid var(--t-mist)', padding:'0.3rem 0.7rem', borderRadius:'var(--t-r-pill)', cursor:'pointer', fontWeight:600, color:'var(--t-deep)' }}>Copy key</button>
+            {uri && <a href={uri} style={{ fontSize:'0.75rem', background:'var(--t-foam)', border:'1px solid var(--t-mist)', padding:'0.3rem 0.7rem', borderRadius:'var(--t-r-pill)', fontWeight:600, color:'var(--t-deep)', textDecoration:'none' }}>Open in my authenticator app</a>}
+          </div>
+          <input value={code} onChange={e=>setCode(e.target.value.replace(/\D/g,'').slice(0,6))}
+            inputMode="numeric" placeholder="6-digit code"
+            style={{ width:'100%', maxWidth:'180px', padding:'0.6rem 0.8rem', borderRadius:'var(--t-r-sm)', border:'1.5px solid var(--t-stone)', fontSize:'1rem', letterSpacing:'0.18em', marginRight:'0.6rem', boxSizing:'border-box' }} />
+          <button onClick={finish} disabled={phase==='busy' || code.length < 6}
+            style={{ padding:'0.6rem 1.1rem', borderRadius:'var(--t-r-pill)', border:'none', background: (phase==='busy'||code.length<6) ? '#CCC' : 'var(--t-mid)', color:'white', fontSize:'0.85rem', fontWeight:700, cursor: (phase==='busy'||code.length<6) ? 'not-allowed' : 'pointer' }}>
+            {phase==='busy' ? 'Checking…' : 'Confirm'}
+          </button>
+          <p style={{ fontSize:'0.76rem', color:'#B45309', margin:'0.8rem 0 0', lineHeight:1.6 }}>
+            ⚠️ Keep the authenticator app safe. If you lose it there is no backup code, and the
+            only way back in is removing the second factor from the Firebase Console.
+          </p>
+        </div>
+      )}
+
+      {msg && (
+        <p role="alert" style={{ fontSize:'0.8rem', margin:'0.8rem 0 0', lineHeight:1.6, color: msg.ok ? 'var(--t-mid)' : '#B91C1C' }}>{msg.text}</p>
+      )}
+    </div>
+  );
+}
+
+// ⚠️⚠️ THE CONTROL ROOM GATE IS A RE-AUTHENTICATION, NOT A PASSWORD.
+//
+// It used to be `if (input === 'Bowie')` — a literal string in the client bundle, readable by
+// anyone who opened the JavaScript, identical for every staff member and impossible to revoke.
+// It was documented as "a UI speed bump, not a security control", which was honest but is not a
+// thing to leave in front of wipe-all-data.
+//
+// Now the signed-in staff member re-enters THEIR OWN password and Firebase verifies it. That is a
+// real control with a real job: it proves the person at the keyboard is the account holder, not
+// someone who sat down at an unlocked laptop in a staff room. It is per-person, revocable with
+// the account, and there is nothing in the bundle to read.
+//
+// 🚫 Never put a shared secret in front of a destructive action. Every action in here is also
+//    verified server-side against a staff token — that is the real protection and this is the
+//    second gate, placed where the danger is rather than on the front door.
 function ControlRoomTab() {
   const [unlocked,    setUnlocked]    = useState(false);
   const [input,       setInput]       = useState('');
-  const [error,       setError]       = useState(false);
+  const [error,       setError]       = useState('');
+  const [checking,    setChecking]    = useState(false);
   const [creating,    setCreating]    = useState(false);
   const [createdCode, setCreatedCode] = useState('');
   const [codeType,    setCodeType]    = useState('standard');
@@ -2477,6 +2644,32 @@ function ControlRoomTab() {
     if (!res.ok || !data.ok) throw new Error(data?.error || 'Request failed.');
     return data;
   };
+
+  // ⚠️ `reauthenticateWithCredential` is the whole point: Firebase checks the password, not us.
+  //    It also satisfies Firebase's "recent login" requirement, which is what lets the
+  //    authenticator-app panel below enrol a factor without a second prompt.
+  const confirmIdentity = async () => {
+    const user = auth.currentUser;
+    if (!user?.email || !input || checking) return;
+    setChecking(true); setError('');
+    try {
+      await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, input));
+      setUnlocked(true); setInput('');
+    } catch (err) {
+      const code = err?.code || '';
+      setError(code === 'auth/too-many-requests'
+        ? 'Too many attempts. Wait a few minutes and try again.'
+        : 'That password is not correct.');
+    } finally { setChecking(false); }
+  };
+
+  // ⚠️ Re-lock after 15 minutes. The danger here is a staff laptop left open on a zoo desk, and an
+  //    unlock that lasts as long as the tab does defeats the point of asking at all.
+  useEffect(() => {
+    if (!unlocked) return;
+    const t = setTimeout(() => setUnlocked(false), 15 * 60 * 1000);
+    return () => clearTimeout(t);
+  }, [unlocked]);
 
   const loadAdmins = useCallback(async () => {
     try {
@@ -2717,16 +2910,21 @@ function ControlRoomTab() {
     <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'3rem 1rem', textAlign:'center' }}>
       <div style={{ fontSize:'3.5rem', marginBottom:'1rem' }}>🔒</div>
       <h2 style={{ fontSize:'1.4rem', fontWeight:700, color:'var(--t-deep)', marginBottom:'0.4rem' }}>Control Room</h2>
-      <p style={{ fontSize:'0.85rem', color:'var(--t-slate)', marginBottom:'1.75rem', maxWidth:'320px', lineHeight:1.6 }}>This area contains powerful controls. Enter the password to continue.</p>
+      <p style={{ fontSize:'0.85rem', color:'var(--t-slate)', marginBottom:'1.75rem', maxWidth:'340px', lineHeight:1.6 }}>
+        These controls can change or delete data for every school. Confirm it is you by entering
+        your own password again.
+      </p>
       <div style={{ width:'100%', maxWidth:'300px' }}>
-        <input type="password" value={input} onChange={e=>{setInput(e.target.value);setError(false);}}
-          onKeyDown={e => { if(e.key==='Enter') { if(input==='Bowie'){setUnlocked(true);setInput('');}else{setError(true);setInput('');} } }}
-          placeholder="Password" autoFocus
-          style={{ width:'100%', padding:'0.75rem 1rem', borderRadius:'var(--t-r-md)', border:`2px solid ${error?'#ef4444':'var(--t-stone)'}`, fontSize:'1rem', fontFamily:'DM Sans, sans-serif', outline:'none', marginBottom:'0.5rem', boxSizing:'border-box', textAlign:'center', letterSpacing:'0.1em' }}/>
-        {error && <p style={{ color:'#ef4444', fontSize:'0.8rem', marginBottom:'0.5rem' }}>Incorrect password. Try again.</p>}
-        <button onClick={()=>{if(input==='Bowie'){setUnlocked(true);setInput('');}else{setError(true);setInput('');}}}
-          style={{ width:'100%', padding:'0.75rem', borderRadius:'var(--t-r-pill)', border:'none', background:'linear-gradient(135deg,var(--t-mid),#5B21B6)', color:'white', fontSize:'0.9rem', fontWeight:700, cursor:'pointer' }}>
-          Unlock
+        <p style={{ fontSize:'0.8rem', color:'var(--t-deep)', fontWeight:600, margin:'0 0 0.5rem' }}>{auth.currentUser?.email || ''}</p>
+        <input type="password" autoComplete="current-password" value={input}
+          onChange={e=>{setInput(e.target.value);setError('');}}
+          onKeyDown={e => { if (e.key==='Enter') confirmIdentity(); }}
+          placeholder="Your password" autoFocus
+          style={{ width:'100%', padding:'0.75rem 1rem', borderRadius:'var(--t-r-md)', border:`2px solid ${error?'#ef4444':'var(--t-stone)'}`, fontSize:'1rem', fontFamily:'DM Sans, sans-serif', outline:'none', marginBottom:'0.5rem', boxSizing:'border-box' }}/>
+        {error && <p role="alert" style={{ color:'#ef4444', fontSize:'0.8rem', marginBottom:'0.5rem' }}>{error}</p>}
+        <button onClick={confirmIdentity} disabled={checking || !input}
+          style={{ width:'100%', padding:'0.75rem', borderRadius:'var(--t-r-pill)', border:'none', background: (checking||!input) ? '#CCC' : 'linear-gradient(135deg,var(--t-mid),#5B21B6)', color:'white', fontSize:'0.9rem', fontWeight:700, cursor: (checking||!input) ? 'not-allowed' : 'pointer' }}>
+          {checking ? 'Checking…' : 'Unlock'}
         </button>
       </div>
     </div>
@@ -2781,6 +2979,8 @@ function ControlRoomTab() {
           {gpsLoading ? '…' : gpsOn ? 'Turn GPS Off' : 'Turn GPS On'}
         </button>
       </div>
+
+      <StaffMfaPanel />
 
       {/* ── Staff administrators ────────────────────────────────────────────────────── */}
       <div style={{ background:'white', borderRadius:'var(--t-r-lg)', padding:'1.5rem', boxShadow:'var(--t-shadow-sm)', marginBottom:'1rem', border:'1px solid var(--t-stone)' }}>

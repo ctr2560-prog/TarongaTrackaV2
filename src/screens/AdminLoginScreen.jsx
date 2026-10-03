@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import {
+  signInWithEmailAndPassword, getMultiFactorResolver, TotpMultiFactorGenerator,
+} from 'firebase/auth';
 import { auth } from '../firebase';
 import { useApp } from '../context/AppContext';
 import { isTarongaStaff } from '../constants/tarongaStaff';
@@ -24,6 +26,11 @@ export default function AdminLoginScreen() {
   const [password, setPassword] = useState('');
   const [status, setStatus]     = useState('idle');   // idle | loading
   const [error, setError]       = useState('');
+  // ⚠️ The second-step challenge. This is shipped BEFORE anyone enrols on purpose — enrolling
+  //    first would lock that person out until this existed. See StaffMfaPanel in
+  //    AdminDashboardScreen.jsx for the enrolment side and the recovery path.
+  const [resolver, setResolver] = useState(null);     // Firebase MultiFactorResolver | null
+  const [mfaCode,  setMfaCode]  = useState('');
 
   const isValid = email.trim().includes('@') && password.length > 0;
 
@@ -44,12 +51,43 @@ export default function AdminLoginScreen() {
       }
       setCurrentScreen('adminDashboard');
     } catch (err) {
+      const code = err?.code || '';
+      // A correct password on an account with two-step sign-in lands here, not in the success
+      // path. The resolver carries the half-finished sign-in; it is completed by the code below.
+      if (code === 'auth/multi-factor-auth-required') {
+        setResolver(getMultiFactorResolver(auth, err));
+        setStatus('idle');
+        return;
+      }
       // Deliberately one message for both "no such account" and "wrong password": telling an
       // attacker which of the two they got right halves their work.
-      const code = err?.code || '';
       setError(code === 'auth/too-many-requests'
         ? 'Too many attempts. Wait a few minutes and try again.'
         : 'Incorrect email or password.');
+      setStatus('idle');
+    }
+  };
+
+  const submitMfa = async () => {
+    if (!resolver || mfaCode.trim().length < 6 || status === 'loading') return;
+    setStatus('loading'); setError('');
+    try {
+      // The first enrolled factor: this project only ever enrols one (an authenticator app).
+      const hint = resolver.hints[0];
+      const assertion = TotpMultiFactorGenerator.assertionForSignIn(hint.uid, mfaCode.trim());
+      const cred = await resolver.resolveSignIn(assertion);
+      if (!(await isTarongaStaff(cred.user.email))) {
+        await auth.signOut();
+        setResolver(null); setMfaCode('');
+        setError('That account does not have staff access.');
+        setStatus('idle');
+        return;
+      }
+      setCurrentScreen('adminDashboard');
+    } catch (err) {
+      setError(err?.code === 'auth/invalid-verification-code'
+        ? 'That code was not accepted. Codes change every 30 seconds, so try the current one.'
+        : 'Could not complete sign-in. Try again.');
       setStatus('idle');
     }
   };
@@ -69,6 +107,26 @@ export default function AdminLoginScreen() {
           <p style={{ color:'#666', fontSize:'0.9rem' }}>Sign in with your Taronga account</p>
         </div>
 
+        {resolver ? (
+          <>
+            <p style={{ fontSize:'0.85rem', color:'#666', lineHeight:1.6, marginBottom:'1rem' }}>
+              Enter the 6-digit code from your authenticator app.
+            </p>
+            <input value={mfaCode} onChange={e => { setMfaCode(e.target.value.replace(/\D/g,'').slice(0,6)); setError(''); }}
+              inputMode="numeric" autoComplete="one-time-code" autoFocus placeholder="000000"
+              onKeyDown={e => e.key === 'Enter' && submitMfa()}
+              style={{ ...field, textAlign:'center', letterSpacing:'0.3em', fontSize:'1.3rem' }} />
+            {error && <p role="alert" style={{ color:'#DC2626', fontSize:'0.85rem', margin:'0 0 0.9rem' }}>{error}</p>}
+            <button onClick={submitMfa} disabled={mfaCode.length < 6 || status === 'loading'}
+              style={{ width:'100%', padding:'0.85rem', borderRadius:'var(--t-r-pill)', border:'none', background: mfaCode.length === 6 ? 'linear-gradient(135deg, var(--sunset-orange), var(--earth-clay))' : '#CCC', color:'white', fontSize:'1.05rem', fontWeight:700, cursor: mfaCode.length === 6 ? 'pointer' : 'not-allowed', textTransform:'uppercase', letterSpacing:'0.08em' }}>
+              {status === 'loading' ? 'Checking…' : 'Continue'}
+            </button>
+            <p style={{ textAlign:'center', color:'#999', fontSize:'0.78rem', marginTop:'0.9rem', lineHeight:1.5 }}>
+              Lost your authenticator? Contact your Taronga administrator.
+            </p>
+          </>
+        ) : (
+        <>
         <label style={{ display:'block', fontSize:'0.82rem', fontWeight:600, color:'var(--t-deep)', marginBottom:'0.35rem' }}>Email</label>
         <input type="email" autoComplete="username" value={email}
           onChange={e => { setEmail(e.target.value); setError(''); }}
@@ -100,6 +158,8 @@ export default function AdminLoginScreen() {
         <p style={{ textAlign:'center', color:'#999', fontSize:'0.78rem', marginTop:'0.9rem', lineHeight:1.5 }}>
           Locked out? Contact your Taronga administrator to have your password reset.
         </p>
+        </>
+        )}
 
         <button onClick={() => setCurrentScreen('home')}
           style={{ display:'block', width:'100%', background:'none', border:'none', color:'#999', fontSize:'0.82rem', cursor:'pointer', marginTop:'0.5rem', padding:'0.4rem', transition:'color 0.18s' }}

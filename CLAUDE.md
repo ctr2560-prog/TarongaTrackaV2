@@ -688,9 +688,48 @@ front door. Firebase also supports proper TOTP MFA, which is what Taronga IT wou
 `verifyAdminCode` and the `adminAccess` collection still exist but are **no longer used by the
 portal**. Safe to remove once the new sign-in has been exercised in the field.
 
-⚠️ **The Control Room's own gate is still a hardcoded string in the client bundle.** It is a UI
-speed bump only — every action behind it is independently verified server-side against a staff
-token — but it should not be mistaken for a control.
+#### ✅ The Control Room gate is a RE-AUTHENTICATION now (2026-10-03)
+
+It was `if (input === 'Bowie')` — a literal string in the client bundle, readable by anyone who
+opened the JavaScript, the same for every staff member, and impossible to revoke. It sat in front
+of wipe-all-data.
+
+Now the signed-in staff member re-enters **their own password** and Firebase verifies it
+(`reauthenticateWithCredential`). That proves the person at the keyboard is the account holder
+rather than someone who sat down at an unlocked laptop, it is per-person, it dies with the
+account, and there is nothing in the bundle to read. **It re-locks after 15 minutes** — an unlock
+that lasts as long as the tab defeats the point.
+
+It also conveniently satisfies Firebase's "recent login" requirement, which is what lets the
+two-step panel enrol a factor without prompting again.
+
+🚫 **Never put a shared secret in front of a destructive action.**
+
+#### ✅ Two-step sign-in for staff (TOTP) — SHIPPED 2026-10-03, NEEDS ONE CONSOLE SWITCH
+
+**Control Room → Two-step sign-in** enrols an authenticator app against the staff member's own
+account; `AdminLoginScreen` handles the `auth/multi-factor-auth-required` challenge on sign-in.
+
+⚠️ **The CHALLENGE was shipped before anyone can enrol, deliberately.** Enrolling first, on a
+build that could not answer the challenge, would lock that person out of the portal entirely.
+
+🚫 **TOTP, not SMS.** SIM-swap defeats SMS, it costs per message, and it needs a phone number on
+file for every staff member — personal data this project otherwise refuses to hold.
+
+⚠️ **IT IS INERT UNTIL MULTI-FACTOR IS ENABLED IN THE FIREBASE CONSOLE** (Authentication →
+Sign-in method → Advanced → Multi-factor), which requires upgrading the project to **Identity
+Platform**. Until then `generateSecret` throws and the panel says so in plain words rather than
+failing silently.
+
+⚠️⚠️ **RECOVERY, AND THIS MATTERS MOST FOR THE ROOT ADMIN.** There are **no backup codes**. A lost
+authenticator cannot be fixed by the account holder, by another staff member, or through this app.
+The only way back is the **Firebase Console → Authentication → Users → remove the second factor**,
+as the project owner **thebiologybloke@gmail.com**. 🚫 Do not enrol the root admin until that
+console access has been confirmed to work — it is the single point of recovery.
+
+⚠️ No QR code, on purpose: rendering one needs a library, and the setup key plus an
+`otpauth://` link (which opens the authenticator directly on a phone) achieves the same thing with
+no dependency.
 
 #### ⚠️ Privilege escalation via self-assigned staff role — FIXED 2026-10-03
 
