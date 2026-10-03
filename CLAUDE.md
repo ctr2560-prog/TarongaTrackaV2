@@ -256,6 +256,43 @@ no login at all**, returned: `classes` 10, `students` (collection group) 104, `z
   down if enforcement is switched on before Wildly sends tokens too.**
 
 #### 🔴 STILL OPEN — in rough priority order
+#### ⚠️ Item 2 — signed URLs: DEFERRED ON PURPOSE (2026-10-03), with the design recorded
+
+**Decision:** not done before the Taronga IT meeting, and that is a deliberate call rather than an
+oversight. Recorded here so it is a scoped piece of work, not an open hole nobody owns.
+
+**What is already closed:** enumeration, at both layers. The bucket cannot be browsed (Storage
+`list` denied + App Check), and the URLs cannot be read out of Firestore (App Check enforced). So
+the only way to hold a link now is to have been *given* one.
+
+**What remains:** a download URL is permanent. A link that has leaked keeps working forever, and
+⚠️ **the souvenir token protects the page, not the file** — anyone holding the raw file URL skips
+the token entirely.
+
+**Why it was deferred.** The fix touches every media read path: all three stitchers (ZooSnooz,
+Evolve, Wildest Dreams), `DocumentaryViewer`, the staff film tabs, the Class Details photo grids,
+the Conservation Gallery and the ZooYard write-up screen. That is the most fragile code in this
+repo — see the Video & media pipeline section, which records three separate silent failures
+(audio with no picture, canvas tainting, CORS mistaken for a stitcher bug). Rewriting it in a
+hurry is how a fourth happens.
+
+**The design, when it is built:**
+1. A Cloud Function mints a **short-lived signed URL** (`getSignedUrl`, ~1 hour) on demand.
+2. Callers prove entitlement one of three ways: a valid **souvenir token** (which finally makes
+   the token protect the *file*), a **staff ID token**, or an authenticated **teacher** for their
+   own class.
+3. Stored `filmURL` / `clipURL` fields become storage *paths*, not URLs.
+4. ⚠️ **Revoke the existing `firebaseStorageDownloadTokens`** on every object — otherwise every
+   old permanent link keeps working and the change buys nothing. This is all-or-nothing: the
+   moment tokens are revoked, anything still using a stored URL breaks, so it ships together.
+5. ⚠️ Re-check CORS: signed URLs are served from a different host, and `cors.json` must cover it.
+6. ⚠️ Verify the stitchers **in a foreground browser**. Automated checks cannot validate this
+   pipeline — a driven tab reports itself hidden and manufactures the very bug under test.
+
+**Honest risk assessment at the time of deferring:** the realistic worst case is a student sharing
+their own souvenir link and the recipient keeping it. That is a very different order of problem
+from the 211 harvestable URLs this started as.
+
 1. **Student media is still downloadable by anyone who knows a filename** — but 🟡 **folder
    browsing was closed 2026-10-02**, which was the serious half. `read` was split into `get`
    (kept) and `list` (denied) on all five student paths plus the catch-all; verified
@@ -303,16 +340,11 @@ no login at all**, returned: `classes` 10, `students` (collection group) 104, `z
    **Still missing:** nothing runs this on a schedule — it is manual, which is the safer place to
    start.
 
-   ⚠️ **THE PARENT LETTERS ARE NOT YET UPDATED, DELIBERATELY.** Both currently say footage is
-   *retained*, which is true today. Once this job has actually been run, they should say the
-   stronger and more accurate thing:
-
-   > *"The raw clips are deleted after 12 months. The finished film is kept as your child's
-   > keepsake, and you may ask for it to be deleted at any time."*
-
-   🚫 **Do not put that in the letters until the job has been run and verified on real data.**
-   The ZooSnooz letter once promised 48-hour deletion that was never built, and it had already
-   gone home to families. Built is not the same as proven.
+   ✅ **Run and verified by Cameron on real data (2026-10-03).** Only then were the parent letters
+   updated — both now state that raw clips are deleted after 12 months and the finished film is
+   kept. ⚠️ That order matters and must be repeated for any future retention claim: the ZooSnooz
+   letter once promised 48-hour deletion that was never built, and it had already gone home to
+   families. **Built is not the same as proven, and a letter may only state what is proven.**
 
 4. ~~**No consent record.**~~ **CLOSED BY DECISION, not by code (2026-10-03).** Filming consent
    stays with the school, not with Tracka. Both parent letters already run an opt-out model and
