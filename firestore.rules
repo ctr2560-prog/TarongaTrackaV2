@@ -14,6 +14,12 @@ service cloud.firestore {
     // Write allowed from client — points are incremented by student submissions
     // and class creation, both of which run in authenticated + unauthenticated
     // contexts, so we allow from any origin but only with valid data shape.
+    // ⚠️ WRITE STAYS OPEN, deliberately. Students increment their school's points when they
+    //    finish an activity (StudentContext) and they have no Firebase Auth at all, so this
+    //    cannot be restricted to staff without routing every student submission through a Cloud
+    //    Function. Teachers also write it on class creation.
+    //    What protects it now is App Check: only the real app can reach this at all. The worst
+    //    case is a leaderboard number, not student data.
     match /schools/{schoolId} {
       allow read: if true;
       allow write: if true;
@@ -105,11 +111,12 @@ service cloud.firestore {
     }
 
     // ── Access codes ─────────────────────────────────────────────────────────
-    // Teachers read codes to validate them; admins create/update via code-based
-    // login (no Firebase Auth), so writes must also be open.
+    // ⚠️ STAFF ONLY (2026-10-03). The old comment claimed teachers read these to validate them —
+    //    they do not. Every read and write of this collection is in AdminDashboardScreen; nothing
+    //    teacher-facing or student-facing touches it. It was open because the staff portal had no
+    //    Firebase Auth; now it does, so it can be closed properly.
     match /accessCodes/{codeId} {
-      allow read: if true;
-      allow write: if true;
+      allow read, write: if isWildlyStaff();
     }
 
     // ── Admin access verification ─────────────────────────────────────────────
@@ -135,10 +142,15 @@ service cloud.firestore {
     }
 
     // ── Global app settings ───────────────────────────────────────────────────
-    // Write is open so the staff portal (code-based login) can toggle GPS and other settings.
+    // ⚠️ READ MUST STAY OPEN. `settings/app` carries the global GPS flag and is read by every
+    //    student via StudentContext, with no login. Close it and proximity unlocking breaks for
+    //    every class at the zoo.
+    // Write is staff only as of 2026-10-03 — the only writer is the Control Room GPS toggle,
+    // which now runs behind a real staff account. Before this, anyone could flip GPS off for
+    // every class in the system.
     match /settings/{settingId} {
       allow read: if true;
-      allow write: if true;
+      allow write: if isWildlyStaff();
     }
 
     // ── Feedback ─────────────────────────────────────────────────────────────
@@ -231,11 +243,13 @@ service cloud.firestore {
     }
 
     // ── Pre/Post-visit Canva lesson links ─────────────────────────────────────
-    // Staff portal (code-based login, no Firebase Auth) manages these entries.
-    // Teachers read them in the Resource Hub — public read, open write.
+    // Teachers read these in the Resource Hub, so read stays open. Write is staff only as of
+    // 2026-10-03 — the only writer is the staff portal's Pre/Post Lessons tab. Before this,
+    // anyone could repoint a lesson link at any URL they liked, which would have been served to
+    // teachers and classes as official Taronga content.
     match /prePostLinks/{docId} {
       allow read: if true;
-      allow write: if true;
+      allow write: if isWildlyStaff();
     }
 
     // ── Wildly by Taronga ──────────────────────────────────────────────────────
