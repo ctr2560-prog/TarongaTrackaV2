@@ -286,9 +286,22 @@ no login at all**, returned: `classes` 10, `students` (collection group) 104, `z
    ⚠️ **The Control Room's own password is HARDCODED IN THE CLIENT BUNDLE in plain text.** It is
    a UI speed bump, not a security control. Never let it be the only gate on a destructive
    action — which is why the function re-checks the real access code regardless.
-3. **No retention or deletion anywhere.** Every clip ever filmed is still stored, indefinitely.
-   ⚠️ The ZooSnooz parent letter once promised 48-hour deletion that was never built; wording has
-   been corrected, but there is still no deletion job.
+3. 🟡 **Retention: half built 2026-10-03.** `cleanupRawClips` removes the RAW PER-CHAPTER CLIPS
+   once they have been stitched into a film. **Stitched films are kept indefinitely** — they are
+   the keepsake, and the Year 7 → Year 12 comparison depends on them surviving six years.
+   Control Room → Old footage cleanup. **Preview first; the delete button only appears after one.**
+
+   ⚠️⚠️ **THIS IS AN AUTOMATED DELETER POINTED AT CHILDREN'S MEDIA.** Four safety rules, all
+   load-bearing, all in the function:
+   1. **Dry run is the default.** Deleting needs an explicit `dryRun: false`.
+   2. **Nothing is deleted from a folder with no film in it** — if the stitch failed, the clips
+      are all the student has.
+   3. **The film is never a candidate** (`KEEP_PATTERNS` = `film.*`, `documentary.*`).
+   4. **Age threshold**, floored at 30 days, so a class mid-excursion is never affected.
+   🚫 Do not add a "force" or "delete everything" mode. There is no legitimate use for one.
+
+   **Still missing:** nothing runs this on a schedule — it is manual, which is the safer place to
+   start. And there is still **no consent record** (see below).
 4. **No consent record.** Filming opt-out is a verbal arrangement with the teacher; nothing in the
    data marks a student as not-to-be-filmed, so moderation has nothing to filter on.
 5. Open writes on `accessCodes` (90 teacher invite codes), `settings`, `schools`, `prePostLinks`.

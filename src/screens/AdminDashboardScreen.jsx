@@ -2543,6 +2543,36 @@ function ControlRoomTab() {
     } catch (e) { alert(e.message); }
   };
 
+  // ── Storage retention ───────────────────────────────────────────────────────────────
+  // ⚠️ Preview is ALWAYS run first and the delete button only appears once a preview exists.
+  //    The function defaults to a dry run; this UI makes that the only reachable first step.
+  const [retainDays, setRetainDays] = useState(365);
+  const [cleanupReport, setCleanupReport] = useState(null);
+  const [cleanupBusy, setCleanupBusy] = useState(false);
+  const CLEANUP_FN = 'https://australia-southeast1-tarongatracka.cloudfunctions.net/cleanupRawClips';
+
+  const runCleanup = async (dryRun) => {
+    if (!dryRun && !window.confirm(
+      `Permanently delete ${cleanupReport?.eligible ?? 0} raw clips older than ${retainDays} days?\n\n` +
+      `Stitched films are NOT touched. This cannot be undone.`)) return;
+    setCleanupBusy(true);
+    try {
+      const idToken = await auth.currentUser?.getIdToken();
+      const res = await fetch(CLEANUP_FN, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+        body: JSON.stringify({ dryRun, retainDays: Number(retainDays) }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok || !d.ok) throw new Error(d?.error || 'Cleanup failed.');
+      setCleanupReport(d);
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setCleanupBusy(false);
+    }
+  };
+
   // Staff password resets — staff do not self-serve, the administrator issues the link.
   const [resetEmail, setResetEmail] = useState('');
   const [resetLink,  setResetLink]  = useState('');
@@ -2819,6 +2849,64 @@ function ControlRoomTab() {
               style={{ padding:'0.45rem 1rem', borderRadius:'var(--t-r-pill)', border:'1px solid var(--t-stone)', background:'white', fontSize:'0.8rem', fontWeight:600, cursor:'pointer' }}>
               Copy link
             </button>
+          </div>
+        )}
+      </div>
+
+      {/* ── Storage retention ───────────────────────────────────────────────────────────
+          Keeps the keepsake, removes the working files. See cleanupRawClips in
+          functions/index.js for the four safety rules this depends on. */}
+      <div style={{ background:'white', borderRadius:'var(--t-r-lg)', padding:'1.5rem', boxShadow:'var(--t-shadow-sm)', marginBottom:'1rem', border:'1px solid var(--t-stone)' }}>
+        <h3 style={{ fontSize:'1rem', fontWeight:700, color:'var(--t-deep)', margin:'0 0 0.35rem' }}>Old footage cleanup</h3>
+        <p style={{ fontSize:'0.82rem', color:'var(--t-slate)', margin:'0 0 1rem', lineHeight:1.5 }}>
+          Removes the raw clips that were stitched into a film. <strong>Films are never deleted</strong>,
+          and nothing is removed from a student who has no finished film.
+        </p>
+
+        <div style={{ display:'flex', gap:'0.5rem', alignItems:'center', flexWrap:'wrap', marginBottom:'0.9rem' }}>
+          <label style={{ fontSize:'0.82rem', color:'var(--t-deep)' }}>Keep clips for</label>
+          <input type="number" min="30" value={retainDays}
+            onChange={e => { setRetainDays(e.target.value); setCleanupReport(null); }}
+            style={{ width:90, padding:'0.5rem 0.7rem', borderRadius:'var(--t-r-sm)', border:'1px solid var(--t-stone)', fontSize:'0.9rem', fontFamily:'inherit' }} />
+          <span style={{ fontSize:'0.82rem', color:'var(--t-slate)' }}>days</span>
+          <button onClick={() => runCleanup(true)} disabled={cleanupBusy}
+            style={{ padding:'0.55rem 1.2rem', borderRadius:'var(--t-r-pill)', border:'none', background: cleanupBusy ? '#CCC' : 'var(--t-mid)', color:'white', fontSize:'0.85rem', fontWeight:700, cursor: cleanupBusy ? 'not-allowed' : 'pointer' }}>
+            {cleanupBusy ? 'Checking…' : 'Preview'}
+          </button>
+        </div>
+
+        {cleanupReport && (
+          <div style={{ background:'var(--t-foam)', border:'1px solid var(--t-stone)', borderRadius:'var(--t-r-sm)', padding:'0.9rem' }}>
+            <p style={{ margin:'0 0 0.5rem', fontSize:'0.85rem', color:'var(--t-deep)', fontWeight:600 }}>
+              {cleanupReport.deleted > 0
+                ? `Deleted ${cleanupReport.deleted} clips.`
+                : `${cleanupReport.eligible} clips could be removed (${(cleanupReport.bytes/1048576).toFixed(1)} MB).`}
+            </p>
+            <p style={{ margin:'0 0 0.6rem', fontSize:'0.78rem', color:'var(--t-slate)', lineHeight:1.6 }}>
+              Scanned {cleanupReport.scanned} files · {cleanupReport.keptFilms} finished films kept ·{' '}
+              {cleanupReport.skippedNoFilm} left alone because there is no film ·{' '}
+              {cleanupReport.skippedTooRecent} too recent
+            </p>
+            {cleanupReport.folders?.length > 0 && (
+              <details>
+                <summary style={{ fontSize:'0.78rem', color:'var(--t-slate)', cursor:'pointer' }}>
+                  Show the {cleanupReport.folders.length} affected students
+                </summary>
+                <div style={{ maxHeight:200, overflow:'auto', marginTop:'0.5rem' }}>
+                  {cleanupReport.folders.map(f => (
+                    <div key={f.folder} style={{ fontSize:'0.72rem', color:'var(--t-slate)', padding:'0.25rem 0', borderTop:'1px solid var(--t-mist)' }}>
+                      <strong style={{ color:'var(--t-deep)' }}>{f.folder}</strong> — keeping {f.film}, removing {f.clips.length}
+                    </div>
+                  ))}
+                </div>
+              </details>
+            )}
+            {cleanupReport.eligible > 0 && cleanupReport.deleted === 0 && (
+              <button onClick={() => runCleanup(false)} disabled={cleanupBusy}
+                style={{ marginTop:'0.8rem', padding:'0.55rem 1.2rem', borderRadius:'var(--t-r-sm)', border:'none', background:'#DC2626', color:'white', fontSize:'0.82rem', fontWeight:700, cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.05em' }}>
+                Delete these {cleanupReport.eligible} clips
+              </button>
+            )}
           </div>
         )}
       </div>

@@ -604,6 +604,129 @@ exports.manageStaffAdmins = onRequest(
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
+// cleanupRawClips — retention for the intermediate footage, NOT for the keepsakes.
+//
+// ⚠️⚠️ THIS IS AN AUTOMATED DELETER POINTED AT REAL CHILDREN'S MEDIA. Read all of this before
+// changing a single line of it. Getting the filter wrong destroys the thing it exists to protect.
+//
+// THE POLICY it implements (agreed 2026-10-03):
+//   · The STITCHED FILM is the keepsake and is kept indefinitely. Students are meant to have it
+//     forever, and the Year 7 → Year 12 comparison depends on it still being there in six years.
+//   · The RAW PER-CHAPTER CLIPS are intermediate working files. Once they have been stitched into
+//     a film nobody ever opens them again. Those are what this removes.
+//
+// FOUR SAFETY RULES, every one of them load-bearing:
+//   1. DRY RUN IS THE DEFAULT. Deleting requires an explicit `dryRun: false`. A caller who forgets
+//      the flag gets a report and nothing else.
+//   2. NOTHING IS DELETED FROM A FOLDER WITH NO FILM IN IT. If the stitch failed, or is still in
+//      progress, the clips are all the student has and they must survive.
+//   3. THE FILM ITSELF IS NEVER A CANDIDATE. KEEP_PATTERNS is checked before anything else.
+//   4. AGE THRESHOLD. Nothing recent is touched, so a class mid-excursion is never affected.
+//
+// 🚫 Do NOT add a "delete everything" or "force" mode. There is no legitimate use for one, and
+//    its existence is the risk.
+const KEEP_PATTERNS = [/^film\./i, /^documentary\./i];
+const CLIP_ROOTS = ['zoosnooz', 'evolve', 'wildestDreams'];
+const DEFAULT_RETAIN_DAYS = 365;
+
+function isKeeper(fileName) {
+  return KEEP_PATTERNS.some((re) => re.test(fileName));
+}
+
+exports.cleanupRawClips = onRequest(
+  { region: 'australia-southeast1', invoker: 'public', timeoutSeconds: 540 },
+  async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    const staff = await verifyStaff(req);
+    if (!staff.ok) { res.status(staff.status).json({ error: staff.error }); return; }
+
+    // ⚠️ Default TRUE. Only an explicit `false` deletes anything.
+    const dryRun = req.body?.dryRun !== false;
+    const retainDays = Number(req.body?.retainDays) > 0
+      ? Math.floor(Number(req.body.retainDays))
+      : DEFAULT_RETAIN_DAYS;
+    // ⚠️ Floor of 30 days so a typo (or a 0) can never mean "delete everything from today".
+    const effectiveDays = Math.max(30, retainDays);
+    const cutoff = Date.now() - effectiveDays * 24 * 60 * 60 * 1000;
+
+    try {
+      const bucket = admin.storage().bucket();
+      const report = {
+        dryRun, retainDays: effectiveDays,
+        scanned: 0, keptFilms: 0, eligible: 0, deleted: 0, bytes: 0,
+        skippedNoFilm: 0, skippedTooRecent: 0,
+        folders: [],
+      };
+
+      for (const root of CLIP_ROOTS) {
+        const [files] = await bucket.getFiles({ prefix: `${root}/` });
+        // Group by the student folder: {root}/{classCode}/{studentId}/
+        const folders = new Map();
+        for (const f of files) {
+          const parts = f.name.split('/');
+          if (parts.length < 4) continue;              // not a student-level file
+          const folder = parts.slice(0, 3).join('/');
+          if (!folders.has(folder)) folders.set(folder, []);
+          folders.get(folder).push(f);
+        }
+
+        for (const [folder, items] of folders) {
+          report.scanned += items.length;
+          const film = items.find((f) => isKeeper(f.name.split('/').pop()));
+          if (!film) {
+            // ⚠️ Rule 2. No film means the clips are all the student has.
+            report.skippedNoFilm += items.length;
+            continue;
+          }
+          report.keptFilms += 1;
+
+          const candidates = [];
+          for (const f of items) {
+            const name = f.name.split('/').pop();
+            if (isKeeper(name)) continue;              // ⚠️ Rule 3.
+            const created = Date.parse(f.metadata?.timeCreated || '') || 0;
+            if (!created || created > cutoff) {        // ⚠️ Rule 4.
+              report.skippedTooRecent += 1;
+              continue;
+            }
+            candidates.push({ name: f.name, size: Number(f.metadata?.size || 0), file: f });
+          }
+          if (!candidates.length) continue;
+
+          report.eligible += candidates.length;
+          report.bytes += candidates.reduce((n, c) => n + c.size, 0);
+          report.folders.push({
+            folder,
+            film: film.name.split('/').pop(),
+            clips: candidates.map((c) => c.name.split('/').pop()),
+          });
+
+          if (!dryRun) {
+            for (const c of candidates) {
+              await c.file.delete();
+              report.deleted += 1;
+            }
+          }
+        }
+      }
+
+      console.warn(`[cleanupRawClips] ${staff.email} dryRun=${dryRun} retainDays=${effectiveDays} ` +
+                   `scanned=${report.scanned} eligible=${report.eligible} deleted=${report.deleted}`);
+      res.json({ ok: true, ...report });
+    } catch (err) {
+      console.error('cleanupRawClips failed:', err);
+      res.status(500).json({ error: err.message });
+    }
+  }
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
 // generateStaffPasswordReset — Cameron resets staff passwords, staff do not self-serve.
 //
 // ⚠️ The staff login has NO "forgot password" link, on purpose. Self-service reset is right for
