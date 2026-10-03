@@ -3,6 +3,7 @@ import { auth } from '../firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
+import { ensureStudentAuth } from '../utils/studentAuth';
 
 const AppContext = createContext(null);
 
@@ -109,6 +110,14 @@ export function AppProvider({ children }) {
 
   // ── Student identity ──────────────────────────────────────────────────────
   const [studentName,   setStudentName]   = useState(_savedName);
+
+  // ⚠️ A RESUMING student needs an auth identity too, not just one who joins. Firebase persists
+  //    the anonymous session in browser storage, so this is normally a no-op that returns the
+  //    same uid. It matters when that storage was cleared but the student session in
+  //    localStorage survived — without it their writes would carry no identity and, once the
+  //    rules require one, would be refused mid-excursion.
+  //    Fire-and-forget and non-fatal: see utils/studentAuth.js for why a failure must never
+  //    block a student from taking part.
   const [classCode,     setClassCode]     = useState(_savedCode);
 
   // ── Teacher / Admin identity ─────────────────────────────────────────────
@@ -124,6 +133,11 @@ export function AppProvider({ children }) {
   const [authLoading, setAuthLoading] = useState(true);   // true until first auth state known
   const [demoMode,    setDemoMode]    = useState(false);
   const [teacherProfile, setTeacherProfile] = useState(null);
+
+  useEffect(() => {
+    if (_hasSavedSession) { void ensureStudentAuth(); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {

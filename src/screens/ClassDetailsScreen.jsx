@@ -174,6 +174,26 @@ export default function ClassDetailsScreen() {
     setStudentActionBusy(p => ({ ...p, [s.id]: null }));
   };
 
+  // ⚠️ THE ESCAPE HATCH for student device identity. Each student record is claimed by the
+  //    device that joined on it (see utils/studentAuth.js), so once the rules require that claim
+  //    to match, a student on a DIFFERENT device cannot save their work. That happens for real:
+  //    a flat tablet swapped mid-excursion, a shared iPad, or a class resumed after the anonymous
+  //    id has been auto-cleaned at 30 days.
+  //    Clearing the claim lets the next device that signs in take it. Teachers can do this
+  //    because they can see who is actually holding the tablet; nothing else can.
+  const releaseStudentDevice = async (s) => {
+    if (!window.confirm(
+      `Let ${s.name} continue on a different device?\n\n` +
+      `Use this if they have swapped tablets and can no longer save their work. ` +
+      `Their badges and progress are kept.`)) return;
+    setStudentActionBusy(p => ({ ...p, [s.id]: 'releasing' }));
+    try {
+      await setDoc(doc(db, 'classes', normaliseCode(selectedClass), 'students', s.id),
+        { deviceUid: null }, { merge: true });
+    } catch (e) { alert('Could not release that student: ' + e.message); }
+    setStudentActionBusy(p => ({ ...p, [s.id]: null }));
+  };
+
   const resetStudent = async (s) => {
     if (!window.confirm(`Restore ${s.name} to the animal list? Their existing badges and progress will be kept.`)) return;
     setStudentActionBusy(p => ({ ...p, [s.id]: 'resetting' }));
@@ -1480,6 +1500,19 @@ export default function ClassDetailsScreen() {
                                   onMouseLeave={e=>{ e.currentTarget.style.background='none';e.currentTarget.style.color='#D97706'; }}>
                                   {busy==='resetting' ? <span style={{ fontSize:'0.85rem' }}>…</span> : <><span style={{ fontSize:'0.9rem', lineHeight:1 }}>↺</span> <span>Restore</span></>}
                                 </button>
+                                {/* Only offered when the record is actually claimed — otherwise it
+                                    is a button that does nothing and invites a confused click. */}
+                                {s.deviceUid && (
+                                  <button
+                                    onClick={() => releaseStudentDevice(s)}
+                                    disabled={!!busy}
+                                    title="Let this student continue on a different device"
+                                    style={{ display:'flex', alignItems:'center', gap:'0.25rem', background:'none', color:'var(--t-mid)', border:'1.5px solid var(--t-stone)', padding:'0.28rem 0.55rem', borderRadius:'7px', fontSize:'0.72rem', fontWeight:700, cursor:busy?'not-allowed':'pointer', opacity:busy?0.4:1, transition:'background 0.15s', whiteSpace:'nowrap' }}
+                                    onMouseEnter={e=>{ if(!busy){e.currentTarget.style.background='var(--t-foam)';} }}
+                                    onMouseLeave={e=>{ e.currentTarget.style.background='none'; }}>
+                                    {busy==='releasing' ? <span style={{ fontSize:'0.85rem' }}>…</span> : <><span style={{ fontSize:'0.85rem', lineHeight:1 }}>📱</span> <span>New device</span></>}
+                                  </button>
+                                )}
                                 <button
                                   onClick={() => deleteStudent(s)}
                                   disabled={!!busy}

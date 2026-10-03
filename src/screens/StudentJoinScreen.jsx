@@ -5,6 +5,7 @@ import { useApp } from '../context/AppContext';
 import { useStudent } from '../context/StudentContext';
 import { normaliseCode, safeStudentId } from '../utils/helpers';
 import { ANIMAL_ALIASES } from '../constants/animals';
+import { ensureStudentAuth, STUDENT_UID_FIELD } from '../utils/studentAuth';
 
 export default function StudentJoinScreen() {
   const {
@@ -128,13 +129,21 @@ export default function StudentJoinScreen() {
       }
 
       const safeId = safeStudentId(selectedAnimal);
+
+      // Claim this record for this device. See utils/studentAuth.js — the rules use it to tell
+      // this student's own writes apart from anyone else's. Non-fatal if it cannot be obtained.
+      const deviceUid = await ensureStudentAuth();
+
       if (isRestored) {
-        // Rejoin — preserve all badges/progress, just clear the restored flag
+        // Rejoin — preserve all badges/progress, just clear the restored flag.
+        // ⚠️ Re-stamps the uid, because a restored student is often on a different device from
+        // the one that first joined.
         await setDoc(doc(db, 'classes', code, 'students', safeId), {
           completed:   false,
           status:      'incomplete',
           restored:    false,
           completedAt: null,
+          ...(deviceUid ? { [STUDENT_UID_FIELD]: deviceUid } : {}),
         }, { merge: true });
       } else {
         // Fresh join
@@ -146,6 +155,7 @@ export default function StudentJoinScreen() {
           completed:   false,
           status:      'incomplete',
           createdAt:   serverTimestamp(),
+          ...(deviceUid ? { [STUDENT_UID_FIELD]: deviceUid } : {}),
         });
       }
 

@@ -309,6 +309,43 @@ from the 211 harvestable URLs this started as.
    ⚠️ A mitigation, not a cure — an attacker can still declare `video/mp4` and upload bytes. What
    it buys is that the file is then *served* as video, so it cannot work as a phishing page.
    ⚠️ Any new student upload MUST set `contentType` or it will fail **silently**.
+#### Student device identity (2026-10-03) — STAGE 1 SHIPPED, RULE NOT YET TIGHTENED
+
+Students now get an **anonymous Firebase Auth identity** on join, stamped onto their record as
+`deviceUid`. `utils/studentAuth.js` is the entry point.
+
+⚠️ **The rule has deliberately NOT been tightened yet.** Stage 1 (sign in, stamp, teacher escape
+hatch) is live with `students` still permissive, so nothing can break. Tighten only after
+confirming real joins are carrying a `deviceUid`. The rule to apply then:
+
+```
+allow update: if resource.data.deviceUid == null
+              || request.auth.uid == resource.data.deviceUid;
+```
+
+The `== null` arm is required for back-compat: every record created before today has no
+`deviceUid`, and those classes must keep working. Protection applies to new classes; old ones age
+out.
+
+**Why anonymous auth and NOT a Cloud Function proxy** (considered and rejected):
+- ⚠️ The Firestore SDK **queues writes while offline** and sends them when signal returns. Most of
+  Taronga has no reception. An HTTP call to a function does **not** queue — it fails. The "safer"
+  option would have cost students their work on a real excursion.
+- It was ~45 call sites across every mode, against ~4 files here.
+
+⚠️ **Never sign in anonymously over an existing session.** A teacher demonstrating the student
+flow on their own device is signed in as themselves; replacing that would silently sign them out
+of the teacher portal. `ensureStudentAuth()` returns the existing user if there is one.
+
+⚠️ **Anonymous sign-in failing must never block a student.** It is caught and ignored — a locked
+down school network or a browser blocking storage would otherwise strand a whole class at the
+gate. They write without a uid, exactly as before.
+
+**The escape hatch is not optional.** A student's record is claimed by the device that joined on
+it, so a swapped tablet, a shared iPad, or a class resumed after Firebase's 30-day anonymous
+auto-cleanup leaves them unable to save. **Class Details → "New device"** clears the claim.
+🚫 Do not tighten the rule without that button in place.
+
 2. **`students` create/update is still open** — 104 student records readable and *alterable* by
    anyone with no login. 🟡 **Deletion was closed 2026-10-02**: `classes` create/update/delete
    and `students` delete now require Firebase Auth, so the one irreversible action is gone.
