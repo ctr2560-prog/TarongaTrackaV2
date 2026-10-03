@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   signInWithEmailAndPassword, getMultiFactorResolver, TotpMultiFactorGenerator,
+  RecaptchaVerifier, PhoneAuthProvider, PhoneMultiFactorGenerator, PhoneAuthProvider as PAP,
 } from 'firebase/auth';
 import { auth } from '../firebase';
 import { useApp } from '../context/AppContext';
@@ -31,6 +32,10 @@ export default function AdminLoginScreen() {
   //    AdminDashboardScreen.jsx for the enrolment side and the recovery path.
   const [resolver, setResolver] = useState(null);     // Firebase MultiFactorResolver | null
   const [mfaCode,  setMfaCode]  = useState('');
+  // ⚠️ A phone factor needs a code SENT before it can be entered, and a text costs money — so it
+  //    is requested once, here, rather than on every keystroke or re-render.
+  const [smsId,    setSmsId]    = useState('');
+  const verifierRef = useRef(null);
 
   const isValid = email.trim().includes('@') && password.length > 0;
 
@@ -55,7 +60,22 @@ export default function AdminLoginScreen() {
       // A correct password on an account with two-step sign-in lands here, not in the success
       // path. The resolver carries the half-finished sign-in; it is completed by the code below.
       if (code === 'auth/multi-factor-auth-required') {
-        setResolver(getMultiFactorResolver(auth, err));
+        const r = getMultiFactorResolver(auth, err);
+        setResolver(r);
+        // A phone factor cannot show a box and wait — the text has to be sent first.
+        if (r.hints[0]?.factorId === PAP.PROVIDER_ID) {
+          try {
+            if (!verifierRef.current) {
+              verifierRef.current = new RecaptchaVerifier(auth, 'login-recaptcha', { size: 'invisible' });
+            }
+            const id = await new PhoneAuthProvider(auth).verifyPhoneNumber(
+              { multiFactorHint: r.hints[0], session: r.session }, verifierRef.current);
+            setSmsId(id);
+          } catch (e) {
+            setError('We could not send your code. Check your signal and try again.');
+            console.warn('[mfa] could not send the sign-in code:', e);
+          }
+        }
         setStatus('idle');
         return;
       }
@@ -72,9 +92,12 @@ export default function AdminLoginScreen() {
     if (!resolver || mfaCode.trim().length < 6 || status === 'loading') return;
     setStatus('loading'); setError('');
     try {
-      // The first enrolled factor: this project only ever enrols one (an authenticator app).
+      // The first enrolled factor. It may be a phone or an authenticator app — both are offered,
+      // and the completion differs, so never assume which one this account used.
       const hint = resolver.hints[0];
-      const assertion = TotpMultiFactorGenerator.assertionForSignIn(hint.uid, mfaCode.trim());
+      const assertion = hint.factorId === PAP.PROVIDER_ID
+        ? PhoneMultiFactorGenerator.assertion(PhoneAuthProvider.credential(smsId, mfaCode.trim()))
+        : TotpMultiFactorGenerator.assertionForSignIn(hint.uid, mfaCode.trim());
       const cred = await resolver.resolveSignIn(assertion);
       if (!(await isTarongaStaff(cred.user.email))) {
         await auth.signOut();
@@ -110,7 +133,9 @@ export default function AdminLoginScreen() {
         {resolver ? (
           <>
             <p style={{ fontSize:'0.85rem', color:'#666', lineHeight:1.6, marginBottom:'1rem' }}>
-              Enter the 6-digit code from your authenticator app.
+              {resolver.hints[0]?.factorId === PAP.PROVIDER_ID
+                ? `We sent a 6-digit code by text${resolver.hints[0]?.phoneNumber ? ` to ${resolver.hints[0].phoneNumber}` : ''}.`
+                : 'Enter the 6-digit code from your authenticator app.'}
             </p>
             <input value={mfaCode} onChange={e => { setMfaCode(e.target.value.replace(/\D/g,'').slice(0,6)); setError(''); }}
               inputMode="numeric" autoComplete="one-time-code" autoFocus placeholder="000000"
@@ -122,8 +147,9 @@ export default function AdminLoginScreen() {
               {status === 'loading' ? 'Checking…' : 'Continue'}
             </button>
             <p style={{ textAlign:'center', color:'#999', fontSize:'0.78rem', marginTop:'0.9rem', lineHeight:1.5 }}>
-              Lost your authenticator? Contact your Taronga administrator.
+              No code? Contact your Taronga administrator.
             </p>
+            <div id="login-recaptcha" />
           </>
         ) : (
         <>

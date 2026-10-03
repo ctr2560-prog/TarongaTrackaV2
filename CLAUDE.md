@@ -713,12 +713,45 @@ account; `AdminLoginScreen` handles the `auth/multi-factor-auth-required` challe
 ⚠️ **The CHALLENGE was shipped before anyone can enrol, deliberately.** Enrolling first, on a
 build that could not answer the challenge, would lock that person out of the portal entirely.
 
-🚫 **TOTP, not SMS.** SIM-swap defeats SMS, it costs per message, and it needs a phone number on
-file for every staff member — personal data this project otherwise refuses to hold.
+**BOTH SMS and an authenticator app are offered. SMS is the default, and that was a deliberate
+reversal (2026-10-03).**
 
-✅ **TOTP IS ENABLED ON THE LIVE PROJECT (2026-10-03).** Verified:
-`mfa: { state: ENABLED, providerConfigs: [{ totpProviderConfig: { adjacentIntervals: 5 }, state:
-ENABLED }] }`.
+The first version was TOTP only, on the reasoning that SIM-swap defeats SMS, SMS costs per
+message, and it means holding a mobile number for every staff member in a project whose main
+privacy claim is that it stores almost nothing personal. **All of that is still true.** It was
+overruled by a better argument from Cameron: *"if it's confusing me it's gonna confuse my other
+staff members."*
+
+⚠️ **A control nobody turns on protects nothing.** The staff here are zoo educators, not security
+engineers, and the realistic threat is a reused or phished password — which SMS stops just as well
+as TOTP. SIM-swap is a targeted attack on a named individual; it is not what this portal faces.
+🚫 Do not re-argue this back to TOTP-only on the strength of the theoretical ranking. The
+authenticator app is still offered, one click away, for anyone who wants it.
+
+**He asked for EMAIL codes first, and that is the one option that must never be built:**
+Firebase supports only SMS and TOTP as second factors, so it would have to be hand-rolled — but
+the decisive reason is that **mail to `@det.nsw.edu.au` and `@zoo.nsw.gov.au` is silently dropped
+by their gateways**, confirmed on 2026-10-03 when a staff invite logged `emailed=true` and never
+arrived. An email second factor would lock staff out of the portal with no error anywhere.
+🚫 **Never put an authentication step on a mail path this project has already watched fail.**
+
+**Implementation notes that cost time if rediscovered:**
+- ⚠️ **ONE `RecaptchaVerifier`, held in a ref and reused.** Firebase needs a verifier for every
+  phone step; constructing a new one per attempt leaves orphaned widgets that quietly stop
+  solving, and the symptom is "the text never arrives".
+- ⚠️ Both screens need a host element for it (`#mfa-recaptcha`, `#login-recaptcha`). Invisible, so
+  it only ever shows a challenge if the request looks automated.
+- ⚠️ **Phone numbers are converted to E.164 for the user** (`0412…` → `+61412…`). Without it a
+  staff member meets `auth/invalid-phone-number` with no idea why.
+- ⚠️ **The sign-in challenge must branch on `hints[0].factorId`.** A phone factor needs the code
+  SENT before the box is any use; a TOTP factor must not send anything. Assuming one shape breaks
+  the other, and a text costs money so it is requested once, not per render.
+
+✅ **BOTH FACTORS ARE ENABLED ON THE LIVE PROJECT (2026-10-03).** Verified:
+`mfa: { state: ENABLED, enabledProviders: ["PHONE_SMS"], providerConfigs: [{ totpProviderConfig:
+{ adjacentIntervals: 5 }, state: ENABLED }] }`.
+⚠️ SMS and TOTP are configured in **two different fields** — `enabledProviders` for phone,
+`providerConfigs` for TOTP. Setting one and expecting the other to appear is an easy half-hour.
 
 ⚠️⚠️ **DO NOT GO LOOKING FOR THIS IN THE FIREBASE CONSOLE. IT IS NOT THERE.** Authentication →
 Sign-in method → Advanced offers **"SMS Multi-factor Authentication" ONLY**, and nothing on that
