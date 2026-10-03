@@ -1,4 +1,4 @@
-import { signInAnonymously } from 'firebase/auth';
+import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../firebase';
 
 // studentAuth.js — gives each student device an identity, so the security rules can tell
@@ -20,6 +20,28 @@ import { auth } from '../firebase';
 //    silently sign them out of the teacher portal. If someone is already signed in, their uid is
 //    used and that is correct — they own what they create.
 export async function ensureStudentAuth() {
+  // ⚠️⚠️ WAIT FOR FIREBASE TO RESTORE THE PERSISTED SESSION FIRST. This is not optional.
+  //
+  // `auth.currentUser` is NULL for the first moments of every page load — Firebase restores the
+  // saved session asynchronously. Checking it immediately therefore looks like "nobody is signed
+  // in", and the code below would mint a BRAND NEW anonymous user on EVERY RELOAD.
+  //
+  // That is exactly what happened on 2026-10-03, and the damage was not obvious: the student's
+  // record still carried the uid stamped at join, the new uid did not match it, and the security
+  // rule then refused every write. Drafts stopped saving. Clips stopped saving. Silently, because
+  // writes are backgrounded. It also quietly created a new anonymous account per reload.
+  //
+  // 🚫 Never call signInAnonymously() without awaiting the auth state first.
+  try {
+    if (typeof auth.authStateReady === 'function') {
+      await auth.authStateReady();
+    } else {
+      await new Promise(resolve => {
+        const un = onAuthStateChanged(auth, () => { un(); resolve(); });
+      });
+    }
+  } catch { /* fall through and sign in below */ }
+
   if (auth.currentUser) return auth.currentUser.uid;
   try {
     const cred = await signInAnonymously(auth);
