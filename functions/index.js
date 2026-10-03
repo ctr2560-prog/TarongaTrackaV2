@@ -392,18 +392,11 @@ async function verifyStaff(req) {
 // ⚠️ buildMentorReportHtml deliberately still has its own copy. It is the one email Cameron
 //    relies on weekly, and refactoring a working thing to save duplication is not worth the risk
 //    of breaking it. If the brand changes, change both.
-function brandedEmailShell({ title, subtitle, bodyHtml, previewTitle }) {
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<meta name="color-scheme" content="light">
-<meta name="supported-color-schemes" content="light">
-<title>${previewTitle || title}</title>
-</head>
-<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background:#ffffff;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;">
+// Returns JUST the table. This is what gets copied to the clipboard as `text/html` so it can be
+// pasted straight into Gmail or Outlook with the banners intact — mail clients strip <html>,
+// <head> and <body> anyway, so a fragment is what actually survives a paste.
+function brandedEmailTable({ title, subtitle, bodyHtml }) {
+  return `  <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;font-family:Arial,Helvetica,sans-serif;">
     <tr>
       <td bgcolor="#0A2F1F" style="background-color:#0A2F1F;padding:28px 32px;">
         <table width="100%" cellpadding="0" cellspacing="0">
@@ -434,12 +427,26 @@ function brandedEmailShell({ title, subtitle, bodyHtml, previewTitle }) {
         <img src="https://tarongatracka.web.app/images/taronga-zoo-white.png" alt="Taronga Zoo — For the Wild" height="24" style="display:block;height:24px;width:auto;border:0;">
       </td>
     </tr>
-  </table>
+  </table>`;
+}
+
+function brandedEmailShell({ title, subtitle, bodyHtml, previewTitle }) {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="color-scheme" content="light">
+<meta name="supported-color-schemes" content="light">
+<title>${previewTitle || title}</title>
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background:#ffffff;">
+${brandedEmailTable({ title, subtitle, bodyHtml })}
 </body>
 </html>`;
 }
 
-function staffInviteHtml({ link, invitedBy }) {
+function staffInviteParts({ link, invitedBy }) {
   // Both logos on purpose: a staff administrator has access across Tracka AND Wildly, since the
   // two share one Firebase project and one staff check.
   const body = `
@@ -460,12 +467,30 @@ function staffInviteHtml({ link, invitedBy }) {
           The staff portal can read every class and school, so keep this password to yourself and
           do not reuse one from another service. If you were not expecting this, tell ${invitedBy}.
         </p>`;
-  return brandedEmailShell({
+  const meta = {
     title: 'Taronga Tracka &amp; Wildly',
     subtitle: 'Staff portal invitation',
     previewTitle: 'You have been added as a staff administrator',
     bodyHtml: body,
-  });
+  };
+  // Plain text companion. Always paired with the HTML on the clipboard, because some mail
+  // clients and some recipients' settings take the text/plain flavour instead.
+  const text = [
+    'You have been added as a staff administrator.',
+    '',
+    `${invitedBy} has given you administrator access to the Taronga Tracka staff portal.`,
+    'Set a password to finish setting up your account:',
+    '',
+    link,
+    '',
+    'This link can be used once and will expire.',
+    'The staff portal can read every class and school, so keep this password to yourself.',
+  ].join('\n');
+  return { html: brandedEmailShell(meta), table: brandedEmailTable(meta), text };
+}
+
+function staffInviteHtml(args) {
+  return staffInviteParts(args).html;
 }
 
 exports.manageStaffAdmins = onRequest(
@@ -482,7 +507,7 @@ exports.manageStaffAdmins = onRequest(
     if (!staff.ok) { res.status(staff.status).json({ error: staff.error }); return; }
 
     const db = admin.firestore();
-    const { action, email } = req.body || {};
+    const { action, email, sendEmail } = req.body || {};
     const target = (email || '').trim().toLowerCase();
 
     try {
@@ -536,28 +561,37 @@ exports.manageStaffAdmins = onRequest(
         }, { merge: true });
 
         const link = await admin.auth().generatePasswordResetLink(target);
+        const parts = staffInviteParts({ link, invitedBy: staff.email });
 
-        // ⚠️ The link is ALWAYS returned, whether or not the email sends. Mail to DoE and
-        //    zoo.nsw.gov.au addresses has been silently dropped by their gateways before, and an
-        //    invite that fails silently looks identical to one that worked.
+        // ⚠️ SENDING IS OPT-IN and OFF by default. Resend reports success and the message is then
+        //    silently dropped by DoE and zoo.nsw.gov.au gateways — confirmed again on 2026-10-03,
+        //    when an invite to a @det.nsw.edu.au address logged emailed=true and never arrived.
+        //    The default path is therefore: the administrator copies the email and sends it from
+        //    their own address, which the recipient's gateway already trusts.
         let emailed = false;
         let emailError = null;
-        try {
-          const resend = new Resend(process.env.RESEND_API_KEY);
-          const sent = await resend.emails.send({
-            from: 'Taronga Tracka <noreply@tarongatracka.com.au>',
-            to: target,
-            subject: 'You have been added as a Taronga Tracka staff administrator',
-            html: staffInviteHtml({ link, invitedBy: staff.email }),
-          });
-          emailed = !sent?.error;
-          if (sent?.error) emailError = sent.error.message || 'Email provider rejected the message.';
-        } catch (err) {
-          emailError = err.message;
+        if (sendEmail) {
+          try {
+            const resend = new Resend(process.env.RESEND_API_KEY);
+            const sent = await resend.emails.send({
+              from: 'Taronga Tracka <noreply@tarongatracka.com.au>',
+              to: target,
+              subject: 'You have been added as a Taronga Tracka staff administrator',
+              html: parts.html,
+            });
+            emailed = !sent?.error;
+            if (sent?.error) emailError = sent.error.message || 'Email provider rejected the message.';
+          } catch (err) {
+            emailError = err.message;
+          }
         }
 
-        console.warn(`[manageStaffAdmins] ${staff.email} invited ${target} (newAccount=${created}, emailed=${emailed})`);
-        res.json({ ok: true, email: target, created, emailed, emailError, link });
+        console.warn(`[manageStaffAdmins] ${staff.email} invited ${target} (newAccount=${created}, sendEmail=${sendEmail}, emailed=${emailed})`);
+        // `table` is the fragment the client puts on the clipboard as text/html; `text` is its
+        // plain-text companion. Both always returned, send or no send.
+        res.json({ ok: true, email: target, created, emailed, emailError, link,
+                   emailTable: parts.table, emailText: parts.text,
+                   subject: 'You have been added as a Taronga Tracka staff administrator' });
         return;
       }
 

@@ -2437,7 +2437,13 @@ function ControlRoomTab() {
   const [rootAdmins, setRootAdmins] = useState([]);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteBusy, setInviteBusy] = useState(false);
-  const [inviteMsg,  setInviteMsg]  = useState(null);   // { ok, text, link }
+  const [inviteMsg,  setInviteMsg]  = useState(null);   // { ok, text, link, table, textVersion }
+  const [copyNote,   setCopyNote]   = useState('');
+  // ⚠️ OFF by default. Resend reports success and department/government gateways then drop the
+  //    message silently — confirmed 2026-10-03 with a @det.nsw.edu.au invite that logged
+  //    emailed=true and never arrived. Sending it yourself comes from an address the recipient's
+  //    gateway already trusts.
+  const [autoSend,   setAutoSend]   = useState(false);
   const ADMIN_FN = 'https://australia-southeast1-tarongatracka.cloudfunctions.net/manageStaffAdmins';
 
   const callAdminFn = async (body) => {
@@ -2486,16 +2492,15 @@ function ControlRoomTab() {
     if (!target.includes('@')) { setInviteMsg({ ok:false, text:'Enter a valid email address.' }); return; }
     setInviteBusy(true); setInviteMsg(null);
     try {
-      const d = await callAdminFn({ action: 'invite', email: target });
+      const d = await callAdminFn({ action: 'invite', email: target, sendEmail: autoSend });
       setInviteMsg({
         ok: true,
-        // ⚠️ Always surface the link, even on a successful send. Mail to DoE and
-        //    zoo.nsw.gov.au addresses has been silently dropped by their gateways before, and an
-        //    invite that failed looks exactly like one that worked.
-        text: d.emailed
-          ? `Invite emailed to ${target}. If it does not arrive, send them this link yourself.`
-          : `Could not email ${target}${d.emailError ? ` (${d.emailError})` : ''}. Send them this link yourself.`,
-        link: d.link,
+        text: autoSend
+          ? (d.emailed
+              ? `${target} added, and an invite was emailed. ⚠️ If they are on a department or government address it may be silently dropped — copy the email below and send it yourself to be sure.`
+              : `${target} added, but the email failed${d.emailError ? ` (${d.emailError})` : ''}. Copy it below and send it yourself.`)
+          : `${target} added. Copy the invite below and send it from your own email.`,
+        link: d.link, table: d.emailTable, textVersion: d.emailText, subject: d.subject,
       });
       setInviteEmail('');
       loadAdmins();
@@ -2503,6 +2508,30 @@ function ControlRoomTab() {
       setInviteMsg({ ok:false, text: e.message });
     } finally {
       setInviteBusy(false);
+    }
+  };
+
+  // ⚠️ Copies the email as RICH HTML so it pastes into Gmail or Outlook with the banners intact.
+  //    Writing a text/html flavour alongside text/plain is what makes that work — a plain
+  //    clipboard write would paste the raw markup as visible code.
+  //    ClipboardItem is unavailable in some browsers and in non-secure contexts, hence the
+  //    fallback to the plain-text version rather than silently copying nothing.
+  const copyInviteEmail = async (msg) => {
+    try {
+      if (typeof ClipboardItem === 'undefined' || !navigator.clipboard?.write) {
+        await navigator.clipboard.writeText(msg.textVersion);
+        setCopyNote('Copied as plain text (this browser cannot copy formatted email).');
+        return;
+      }
+      await navigator.clipboard.write([new ClipboardItem({
+        'text/html':  new Blob([msg.table], { type: 'text/html' }),
+        'text/plain': new Blob([msg.textVersion], { type: 'text/plain' }),
+      })]);
+      setCopyNote('Email copied. Paste it into a new message.');
+    } catch (e) {
+      console.warn('Rich copy failed:', e);
+      try { await navigator.clipboard.writeText(msg.textVersion); setCopyNote('Copied as plain text.'); }
+      catch { setCopyNote('Could not copy. Select the link below manually.'); }
     }
   };
 
@@ -2693,16 +2722,37 @@ function ControlRoomTab() {
           </button>
         </div>
 
+        <label style={{ display:'flex', alignItems:'center', gap:'0.5rem', fontSize:'0.8rem', color:'var(--t-slate)', marginBottom:'0.9rem', cursor:'pointer' }}>
+          <input type="checkbox" checked={autoSend} onChange={e => setAutoSend(e.target.checked)} />
+          Also email it from Taronga Tracka (unreliable to department and government addresses)
+        </label>
+
         {inviteMsg && (
           <div style={{ background: inviteMsg.ok ? 'var(--t-foam)' : '#FEF2F2', border:`1px solid ${inviteMsg.ok ? 'var(--t-stone)' : '#FCA5A5'}`, borderRadius:'var(--t-r-sm)', padding:'0.8rem', marginBottom:'0.9rem' }}>
             <p style={{ margin:0, fontSize:'0.82rem', color: inviteMsg.ok ? 'var(--t-deep)' : '#B91C1C', lineHeight:1.5 }}>{inviteMsg.text}</p>
-            {inviteMsg.link && (
+
+            {inviteMsg.table && (
               <>
-                <p style={{ fontSize:'0.72rem', wordBreak:'break-all', color:'var(--t-slate)', margin:'0.5rem 0 0.5rem' }}>{inviteMsg.link}</p>
-                <button onClick={() => navigator.clipboard?.writeText(inviteMsg.link)}
-                  style={{ padding:'0.4rem 0.9rem', borderRadius:'var(--t-r-pill)', border:'1px solid var(--t-stone)', background:'white', fontSize:'0.78rem', fontWeight:600, cursor:'pointer' }}>
-                  Copy link
-                </button>
+                <p style={{ fontSize:'0.76rem', color:'var(--t-slate)', margin:'0.7rem 0 0.4rem' }}>
+                  <strong style={{ color:'var(--t-deep)' }}>Subject:</strong> {inviteMsg.subject}
+                </p>
+                <div style={{ display:'flex', gap:'0.5rem', flexWrap:'wrap' }}>
+                  <button onClick={() => copyInviteEmail(inviteMsg)}
+                    style={{ padding:'0.5rem 1.1rem', borderRadius:'var(--t-r-pill)', border:'none', background:'var(--t-mid)', color:'white', fontSize:'0.8rem', fontWeight:700, cursor:'pointer' }}>
+                    Copy the email
+                  </button>
+                  <button onClick={() => { navigator.clipboard?.writeText(inviteMsg.link); setCopyNote('Link copied.'); }}
+                    style={{ padding:'0.5rem 1.1rem', borderRadius:'var(--t-r-pill)', border:'1px solid var(--t-stone)', background:'white', fontSize:'0.8rem', fontWeight:600, cursor:'pointer' }}>
+                    Copy just the link
+                  </button>
+                </div>
+                {copyNote && <p style={{ margin:'0.5rem 0 0', fontSize:'0.76rem', color:'var(--t-mid)' }}>{copyNote}</p>}
+                {/* A live preview of exactly what will be pasted, so there is no guessing. */}
+                <details style={{ marginTop:'0.7rem' }}>
+                  <summary style={{ fontSize:'0.76rem', color:'var(--t-slate)', cursor:'pointer' }}>Preview</summary>
+                  <div style={{ marginTop:'0.5rem', border:'1px solid var(--t-stone)', borderRadius:'var(--t-r-sm)', overflow:'auto', background:'white' }}
+                       dangerouslySetInnerHTML={{ __html: inviteMsg.table }} />
+                </details>
               </>
             )}
           </div>
