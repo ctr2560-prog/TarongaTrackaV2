@@ -300,6 +300,29 @@ no login at all**, returned: `classes` 10, `students` (collection group) 104, `z
    staff into the Tracka portal with Firebase Auth checked against that allowlist, then retiring
    the shared code and tightening the `if true` collections to `isWildlyStaff()`.
 
+#### ⚠️ What App Check on Storage does and does NOT cover (verified 2026-10-03)
+
+Enforcement was switched on for Cloud Storage. Measured against the live project:
+
+| Unauthenticated, no App Check token | |
+|---|---|
+| Browse folders (`listAll`) | 🚫 blocked |
+| Upload (`uploadBytes`) | 🚫 blocked — `storage/unauthenticated` |
+| Read metadata / get a download URL via the SDK | 🚫 blocked |
+| **Plain `fetch()` of an existing `?alt=media&token=…` download URL** | ✅ **still returns 200** |
+
+⚠️ **App Check protects the Firebase Storage SDK, not the tokenised download URLs.** Those are
+designed to be shareable — they are what goes in an `<img src>` and in every souvenir link — so
+they keep working, which is exactly why nothing broke.
+
+**The security consequence, and it matters:** harvesting is closed (you cannot browse the bucket,
+and you cannot read the URLs out of Firestore any more because Firestore is enforced), but **a URL
+that has already leaked still works forever.** Only short-lived signed URLs fix that, which is why
+item 2 of the security list stays open even with App Check fully enforced.
+
+⚠️ Enforcement took about **one minute to propagate**. A single test immediately after flipping the
+switch will wrongly report that it did not work.
+
 #### Staff portal sign-in (2026-10-03) — a real account, not a shared code
 ✅ **Verified in the field by Cameron**: real password set, sign-in works, portal functions.
 
