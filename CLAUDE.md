@@ -407,6 +407,51 @@ Students now get an **anonymous Firebase Auth identity** on join, stamped onto t
 ✅ **STAGE 2 SHIPPED 2026-10-03** — the rule is now tightened (below), after `deviceUid` was
 confirmed appearing on real records in Firestore.
 
+#### 🔴 STAGE 2 WAS ROLLED BACK THE SAME DAY — the auth-restore race. Read this before re-tightening.
+
+**Symptom as reported:** "the stitching on my phone didn't work and I tried separately on my
+laptop and I did the reload after the two. None of the videos will save, the draft won't save."
+
+**Cause:** `ensureStudentAuth()` checked `auth.currentUser` *immediately*. That value is **null for
+the first moments of every page load** — Firebase restores a persisted session asynchronously — so
+it looked like nobody was signed in and called `signInAnonymously()`, minting a **brand new
+anonymous user with a new uid on every single reload**.
+
+`deviceUid` is stamped at JOIN and only at join, so the record kept the uid from the original
+join while the device moved on to a throwaway one. The tightened rule then refused **every student
+write**. Drafts stopped saving, clips stopped saving, and **silently**, because student writes are
+backgrounded and nothing surfaces a rejection. It also created an orphaned anonymous account per
+reload (Firebase's 30-day auto-cleanup is on, so those age out).
+
+⚠️ **This is the second time in one day that a correct-looking tightening produced a silent
+failure** (the other: a permissive rule mirrored into `getMediaUrl`). **A denied student write has
+no user-visible symptom.** Anything that narrows a student write must be tested across a RELOAD on
+a real device, not just on a fresh join — a fresh join passed every time, because `allow create`
+was never touched.
+
+**Fixed:** `ensureStudentAuth()` now awaits `auth.authStateReady()` (falling back to a one-shot
+`onAuthStateChanged`) before deciding whether to sign in.
+
+**Also added, and it is the precondition for re-tightening:** `claimStudentRecord()` in
+`utils/studentAuth.js`, called on resume from `AppContext`. It stamps the current uid onto a record
+that has **no uid yet**, which is what finally lets an unclaimed record become claimed — before
+this, the uid was written at join and nowhere else, so a released or legacy record stayed unclaimed
+for life.
+🚫 **It never overwrites an existing claim.** Doing so would let any device that knew a class code
+and an alias steal a record off the device holding it, which is the whole thing the uid prevents.
+Releasing a claim stays a teacher action (Class Details → "New device").
+
+**Current state: the rule is RELAXED to `allow update: if true`**, with the intended rule commented
+directly beneath it in `firestore.rules`. Service was restored first on purpose — a student losing
+their film is worse than a window of exposure that is no wider than it was that morning.
+
+**To re-tighten (do these in order):**
+1. On a real device: join, save something, **reload**, save again, and confirm it persists.
+2. Any record joined while the bug was live holds a stale uid. **That is only test records** — the
+   feature shipped the same day it broke, so no class had run. Repair is Class Details → "New
+   device", after which the resume-time claim re-stamps it.
+3. Swap the two lines in `firestore.rules` and `firebase deploy --only firestore:rules`.
+
 ⚠️ **NOT YET VERIFIED END-TO-END BY A REAL STUDENT RUN.** Browser automation could not complete a
 join (keystrokes stopped reaching the page), so a human needs to join a class and confirm progress
 saves. What *is* established by inspection: **joining cannot break**, because `allow create: if

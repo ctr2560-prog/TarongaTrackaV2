@@ -1,5 +1,6 @@
 import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../firebase';
+import { auth, db } from '../firebase';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 
 // studentAuth.js — gives each student device an identity, so the security rules can tell
 // "this student changing their own work" apart from "anyone changing anyone's work".
@@ -54,6 +55,38 @@ export async function ensureStudentAuth() {
     // whole class at the gate.
     console.warn('[studentAuth] anonymous sign-in unavailable, continuing without:', err?.code || err);
     return null;
+  }
+}
+
+// claimStudentRecord — stamps THIS device's uid onto a student record that has no uid yet.
+//
+// ⚠️ WHY THIS IS NEEDED AT ALL. `deviceUid` is written at JOIN, and only at join. That is fine
+// until a record exists with no uid on it, which happens three ways: it predates this mechanism,
+// a teacher pressed "New device" to release it, or the 2026-10-03 auth race left a stale uid that
+// had to be cleared. Without a resume-time claim those records stay unclaimed forever and the
+// tightened rule protects nothing on them.
+//
+// ⚠️ IT ONLY EVER CLAIMS AN UNCLAIMED RECORD. If a uid is already there it is left completely
+// alone — overwriting would mean any device that knew a class code and an alias could steal a
+// record off the device holding it, which is the exact thing the uid exists to prevent. Releasing
+// a claim is a teacher action ("New device"), never something the client decides for itself.
+//
+// Returns true only if it actually wrote a claim. Failure is silent and harmless: the record
+// stays unclaimed, which is a state the rules already permit.
+export async function claimStudentRecord(classCode, studentId) {
+  if (!classCode || !studentId) return false;
+  const uid = await ensureStudentAuth();
+  if (!uid) return false;
+  try {
+    const ref = doc(db, 'classes', classCode, 'students', studentId);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return false;
+    if (snap.data()?.[STUDENT_UID_FIELD]) return false;     // already claimed — never touch it
+    await updateDoc(ref, { [STUDENT_UID_FIELD]: uid });
+    return true;
+  } catch (err) {
+    console.warn('[studentAuth] could not claim this record, continuing:', err?.code || err);
+    return false;
   }
 }
 

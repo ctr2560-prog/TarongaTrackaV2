@@ -3,7 +3,8 @@ import { auth } from '../firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
-import { ensureStudentAuth } from '../utils/studentAuth';
+import { ensureStudentAuth, claimStudentRecord } from '../utils/studentAuth';
+import { safeStudentId } from '../utils/helpers';
 
 const AppContext = createContext(null);
 
@@ -135,7 +136,15 @@ export function AppProvider({ children }) {
   const [teacherProfile, setTeacherProfile] = useState(null);
 
   useEffect(() => {
-    if (_hasSavedSession) { void ensureStudentAuth(); }
+    // ⚠️ Claim as well as sign in. An unclaimed record would otherwise stay unclaimed for its
+    //    whole life, because the uid is stamped at join and these students have already joined.
+    //    See claimStudentRecord — it never overwrites an existing claim.
+    if (_hasSavedSession) {
+      const code = readLocal('tarongaClassCode', '');
+      const name = readLocal('tarongaStudentName', '');
+      if (code && name) void claimStudentRecord(code, safeStudentId(name));
+      else void ensureStudentAuth();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
