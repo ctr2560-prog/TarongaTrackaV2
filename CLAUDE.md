@@ -778,6 +778,11 @@ self-grant guard on it is kept as defence in depth.
   which is why its writing scores read 1.0–1.5/5.
 - `zz-*.mjs` in the repo root are untracked throwaway Firestore/Storage inspection scripts.
   They embed the public web API key, which is fine. Handy templates for reading live data.
+  ⚠️ **They no longer work unauthenticated** — App Check is enforced on Firestore, so a plain Node
+  script gets `permission-denied`. Use `gcloud storage` as the project owner
+  (**thebiologybloke@gmail.com**) to inspect Storage instead; that is how the codec, token and
+  frame checks of 2026-10-03 were done.
+- ~~Two 1-byte probe files at `zoosnooz/_t/`.~~ **Deleted 2026-10-03.**
 
 ### Working practices that proved out
 - **Build-check per change** (`npm run build`), and compare the lint count against
