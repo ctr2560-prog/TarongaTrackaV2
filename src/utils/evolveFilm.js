@@ -126,7 +126,32 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
   cvs.width = W; cvs.height = H;
   const ctx = cvs.getContext('2d');
   ctx.fillStyle = theme.deep; ctx.fillRect(0, 0, W, H);
-  const canvasStream = cvs.captureStream(30);
+
+  // ⚠️⚠️ CHECK THE TWO CAPABILITIES THIS WHOLE FUNCTION RESTS ON, BEFORE USING EITHER.
+  //
+  // `captureStream` used to be called bare, outside every try, and the caller had no try/catch
+  // either. So on a browser without it the promise REJECTED, the caller's `setFilmPhase('preview')`
+  // never ran, and the student sat watching the progress dial spin FOREVER with no message. That
+  // is indistinguishable from a slow stitch, which is why it was reported as "it just didn't work".
+  //
+  // ⚠️ On an iPhone, Safari and Chrome are the SAME ENGINE — Apple requires it. So "I tried both
+  //    browsers" is one data point, not two, and a capability gap looks like a total mystery
+  //    because there is nothing to compare against on the device.
+  if (typeof MediaRecorder === 'undefined') {
+    releaseWakeLock();
+    return { error: 'This browser cannot record video, so it cannot build the film.' };
+  }
+  if (typeof cvs.captureStream !== 'function') {
+    releaseWakeLock();
+    return { error: 'This browser cannot record from a canvas, which is how the film is assembled. Try making the film on a laptop.' };
+  }
+  let canvasStream;
+  try {
+    canvasStream = cvs.captureStream(30);
+  } catch (e) {
+    releaseWakeLock();
+    return { error: `This browser refused to record from a canvas (${e?.name || 'error'}). Try making the film on a laptop.` };
+  }
 
   const logoImg = await new Promise(res => {
     const img = new Image();

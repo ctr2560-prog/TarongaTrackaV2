@@ -1039,6 +1039,45 @@ forgiving. Be forgiving AND loud.
 ⚠️ **ZooSnooz's inline stitcher still has both empty catches.** It was not touched here. It will
 produce the same unexplainable cards-only documentary.
 
+### 0ab. ⚠️ NO iPHONE HAS EVER PRODUCED AN EVOLVE CLIP — measured 2026-10-03
+
+Cameron reported the iPhone stitcher failing in **both Safari and Chrome**, while being able to
+play the individual clips in the staff portal. Checked against the live bucket:
+
+- **All 119 Evolve clips are VP9 video / Opus audio in WebM.** iOS Safari's MediaRecorder cannot
+  produce either codec — it records **H.264/AAC in MP4**.
+- **There is not a single `.mp4` in the bucket**, in `evolve/`, `zoosnooz/` or `wildestDreams/`.
+  So the iOS label trap left no mislabelled file behind either.
+
+⚠️ **Therefore the clips visible in the portal were filmed on a laptop, not the iPhone**, and no
+iPhone recording has ever reached Storage. The iPhone fault is upstream of the stitcher, or the
+iPhone run never got past recording. 🚫 Do not debug the iPhone stitcher against clips that a
+laptop produced — the whole premise was wrong, and checking the codecs is what showed it.
+
+**Useful identification trick:** the stored codec names tell you the device. VP9/Opus means
+Chromium (desktop or Android). H.264/AAC in MP4 means Safari or iOS. Resolution helps too —
+1920x1080 landscape is a laptop webcam ignoring the portrait `ideal` constraint.
+
+### 0ac. ⚠️⚠️ A STITCH THAT THROWS USED TO SPIN FOREVER (fixed 2026-10-03)
+
+`cvs.captureStream(30)` was called **bare, outside every `try`**, and the caller in
+`EvolveScreen.jsx` had **no `try/catch`** around `buildEvolveFilm`. So anything thrown became an
+unhandled rejection, `setFilmPhase('preview')` never ran, and the student was left on the building
+screen with the dial spinning **indefinitely, with no message**. That is indistinguishable from a
+slow stitch, which is exactly how it was reported: *"the stitcher for some reason in iPhone both
+Safari and Chrome didn't work."*
+
+Now: `MediaRecorder` and `captureStream` are **feature-checked up front** with a plain message
+naming the laptop as the way through, the `captureStream` call is wrapped, and the caller catches
+anything thrown and turns it into `{error}`.
+
+⚠️ **On an iPhone, Safari and Chrome are the same engine** — Apple requires it. "I tried both
+browsers" is ONE data point, not two. Never treat it as evidence that the browser is not the
+factor.
+
+🚫 **Never leave the building screen reachable with no exit.** Any new failure must land on a
+screen that says something.
+
 ### 0a. ⚠️ A RESUME THAT FAILS MUST SAY SO (2026-10-03)
 
 Evolve raced its resume read against an **8 second** timeout and, on failure, logged to the

@@ -1070,14 +1070,24 @@ export default function EvolveScreen() {
     if (evScreen !== 'film' || filmPhase !== 'building') return;
     let cancelled = false;
     (async () => {
-      const result = await buildEvolveFilm({
-        chapters: EVOLVE_STORY_ORDER,
-        clipURLs,
-        studentName,
-        theme: T,
-        onProgress: (pct, idx) => { if (!cancelled) { setFilmPct(pct); setFilmStage(idx); } },
-        isCancelled: () => cancelled,
-      });
+      // ⚠️ THIS try/catch IS LOAD-BEARING. Without it, anything buildEvolveFilm throws became an
+      //    unhandled rejection, so `setFilmPhase('preview')` below never ran and the student was
+      //    left on the building screen with the dial spinning indefinitely. A stitch that dies
+      //    must always land on a screen that says something.
+      let result;
+      try {
+        result = await buildEvolveFilm({
+          chapters: EVOLVE_STORY_ORDER,
+          clipURLs,
+          studentName,
+          theme: T,
+          onProgress: (pct, idx) => { if (!cancelled) { setFilmPct(pct); setFilmStage(idx); } },
+          isCancelled: () => cancelled,
+        });
+      } catch (e) {
+        console.warn('[evolveFilm] threw while building:', e);
+        result = { error: `The film stopped while being put together (${e?.name || 'error'}: ${e?.message || 'no detail'}).` };
+      }
       if (cancelled) return;
       if (result?.blob) { filmBlobRef.current = result.blob; setFilmURL(result.url); }
       // ⚠️ A film can come back valid and contain NO FOOTAGE — every card, none of the clips. On
