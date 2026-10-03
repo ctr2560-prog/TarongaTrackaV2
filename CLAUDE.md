@@ -441,16 +441,16 @@ for life.
 and an alias steal a record off the device holding it, which is the whole thing the uid prevents.
 Releasing a claim stays a teacher action (Class Details → "New device").
 
-**Current state: the rule is RELAXED to `allow update: if true`**, with the intended rule commented
-directly beneath it in `firestore.rules`. Service was restored first on purpose — a student losing
-their film is worse than a window of exposure that is no wider than it was that morning.
+✅ **RE-TIGHTENED AND DEPLOYED 2026-10-03**, after Cameron verified a save across a reload on a
+laptop. The rule is back to `unclaimedStudentRecord() || ownsStudentRecord() || isEducator()`.
+The relaxation to `allow update: if true` lasted about an hour — service was restored first on
+purpose, since a student losing their film is worse than a window of exposure no wider than it had
+been that morning.
 
-**To re-tighten (do these in order):**
-1. On a real device: join, save something, **reload**, save again, and confirm it persists.
-2. Any record joined while the bug was live holds a stale uid. **That is only test records** — the
-   feature shipped the same day it broke, so no class had run. Repair is Class Details → "New
-   device", after which the resume-time claim re-stamps it.
-3. Swap the two lines in `firestore.rules` and `firebase deploy --only firestore:rules`.
+⚠️ **If a student who joined during that window cannot save**, their record holds a uid that
+device no longer uses. Repair is Class Details → **"New device"**, after which the resume-time
+claim re-stamps it. Only test records should be affected: the feature shipped and broke the same
+day, so no class had run on it.
 
 ⚠️ **NOT YET VERIFIED END-TO-END BY A REAL STUDENT RUN.** Browser automation could not complete a
 join (keystrokes stopped reaching the page), so a human needs to join a class and confirm progress

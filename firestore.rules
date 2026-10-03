@@ -69,12 +69,15 @@ service cloud.firestore {
         // ⚠️ `deviceUid in resource.data` is checked before reading it — reading a field that
         //    does not exist errors, and an erroring rule denies, which would lock out every
         //    pre-existing student.
-        // 🔴 TEMPORARILY RELAXED 2026-10-03 — see the ensureStudentAuth race below. Students were
-        //    being issued a NEW anonymous uid on every reload, so their own writes were refused
-        //    and drafts and clips silently stopped saving. Service restored first; re-tighten to
-        //    the line beneath once the auth race fix is verified in the field.
-        allow update: if true;
-        // allow update: if unclaimedStudentRecord() || ownsStudentRecord() || isEducator();
+        // ⚠️ THIS RULE WAS ROLLED BACK ONCE, ON THE DAY IT SHIPPED. `ensureStudentAuth()` was
+        //    issuing a NEW anonymous uid on every page load, so a student's uid stopped matching
+        //    the one on their record and this rule refused all their writes — drafts and clips
+        //    stopped saving, SILENTLY, because student writes are backgrounded. Fixed by awaiting
+        //    the auth-state restore; re-tightened after a human verified a save across a reload.
+        // 🚫 Never narrow a student write and test it with a fresh JOIN only. A join writes a new
+        //    document and passes `allow create` above, so it looks fine while every subsequent
+        //    update is denied. TEST ACROSS A RELOAD.
+        allow update: if unclaimedStudentRecord() || ownsStudentRecord() || isEducator();
 
         allow delete: if request.auth != null;
       }
