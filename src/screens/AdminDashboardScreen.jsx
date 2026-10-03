@@ -2495,6 +2495,12 @@ function StaffMfaPanel() {
   const verifierRef = useRef(null);
   const freshVerifier = () => {
     try { verifierRef.current?.clear(); } catch { /* nothing rendered yet */ }
+    // ⚠️ `clear()` is NOT enough. It detaches the widget but leaves its markup in the container,
+    //    and constructing a second verifier on a dirty element throws a plain Error —
+    //    "reCAPTCHA has already been rendered in this element" — with **no `.code`**, which is
+    //    why the failure first surfaced as a bare "(error)" with nothing to go on.
+    const host = document.getElementById('mfa-recaptcha');
+    if (host) host.innerHTML = '';
     verifierRef.current = new RecaptchaVerifier(auth, 'mfa-recaptcha', { size: 'invisible' });
     return verifierRef.current;
   };
@@ -2510,9 +2516,12 @@ function StaffMfaPanel() {
       setMsg({ ok: true, text: `Code sent to ${toE164(phone)}.` });
     } catch (err) {
       setPhase('idle'); setMethod('sms');
+      // ⚠️ Show the real reason. `err.code || 'error'` hid a plain Error's message entirely and
+      //    produced "(error)", which is useless to whoever is standing there trying to sign in.
+      console.warn('[mfa] could not send the code:', err);
       setMsg({ ok: false, text: err?.code === 'auth/invalid-phone-number'
         ? 'That does not look like a mobile number. Try 0412 345 678.'
-        : `Could not send the code (${err?.code || 'error'}).` });
+        : `Could not send the code: ${err?.code || err?.message || 'unknown error'}` });
     }
   };
 

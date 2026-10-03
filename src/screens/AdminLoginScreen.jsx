@@ -68,12 +68,16 @@ export default function AdminLoginScreen() {
             // ⚠️ A reCAPTCHA token is single use — clear and rebuild, or a second sign-in attempt
             //    fails with `auth/invalid-app-credential`. See the same note in the Control Room.
             try { verifierRef.current?.clear(); } catch { /* nothing rendered yet */ }
+            // ⚠️ clear() leaves the old markup behind; a second verifier on a dirty element throws
+            //    a plain Error with no `.code`. Empty the host first. See the Control Room note.
+            const host = document.getElementById('login-recaptcha');
+            if (host) host.innerHTML = '';
             verifierRef.current = new RecaptchaVerifier(auth, 'login-recaptcha', { size: 'invisible' });
             const id = await new PhoneAuthProvider(auth).verifyPhoneNumber(
               { multiFactorHint: r.hints[0], session: r.session }, verifierRef.current);
             setSmsId(id);
           } catch (e) {
-            setError('We could not send your code. Check your signal and try again.');
+            setError(`We could not send your code: ${e?.code || e?.message || 'unknown error'}`);
             console.warn('[mfa] could not send the sign-in code:', e);
           }
         }

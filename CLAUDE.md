@@ -746,6 +746,22 @@ arrived. An email second factor would lock staff out of the portal with no error
   2. **A reCAPTCHA token is SINGLE USE.** Holding one `RecaptchaVerifier` in a ref and reusing it
      hands Firebase a spent token on the second attempt. 🚫 Never reuse a verifier — `clear()` the
      old widget and construct a fresh one for every send, on **both** screens.
+- ⚠️⚠️ **A BARE "(error)" WITH NO CODE MEANS THE reCAPTCHA CONTAINER IS DIRTY.** `clear()`
+  detaches the widget but **leaves its markup in the host element**, and constructing a second
+  verifier on it throws a plain `Error` — "reCAPTCHA has already been rendered in this element" —
+  with **no `.code`**. Every message in this flow was written as `err.code || 'error'`, so the
+  only clue was the word "error". Empty the host (`host.innerHTML = ''`) before constructing, and
+  🚫 **never format an auth error as `code || 'error'`** — fall through to `err.message`, or the
+  person standing there has nothing to tell you.
+- **App Check enforcement by service, checked 2026-10-03** (it is NOT the cause of phone failures,
+  which was worth ruling out):
+  `firebasestorage` ENFORCED · `firestore` ENFORCED · **`identitytoolkit` UNENFORCED**.
+  Read it with:
+  `curl -s -H "Authorization: Bearer $(gcloud auth print-access-token)" -H "x-goog-user-project: tarongatracka" https://firebaseappcheck.googleapis.com/v1/projects/tarongatracka/services`
+  ⚠️ Enforcing App Check on `identitytoolkit` is a genuine hardening step still open — it would
+  stop the sign-in API being hammered from outside the app. 🚫 Do not switch it on casually:
+  **Wildly shares this project and this user pool**, and any client that does not send App Check
+  tokens loses sign-in the moment it is enforced.
 - ⚠️ **SMS is allow-listed to `AU` only** (`smsRegionConfig.allowlistOnly.allowedRegions: ["AU"]`).
   Enabling phone verification opens the door to **SMS pumping fraud** — an attacker triggers
   thousands of texts to premium numbers abroad and the project owner pays. 🚫 Do not widen this
