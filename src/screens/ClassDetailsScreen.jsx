@@ -7,6 +7,7 @@ import {
 import { db, storage } from '../firebase';
 import { ref as storageRef, getDownloadURL } from 'firebase/storage';
 import { normaliseCode, safeStudentId, averageQuizPercent } from '../utils/helpers';
+import { SignedVideo, SignedImage, SignedLink } from '../components/SignedMedia';
 import { useApp } from '../context/AppContext';
 import { ZOOSNOOZ_ANIMALS } from '../data/zoosnoozAnimals';
 import { ZOOYARD_ANIMALS } from '../data/zooyardAnimals';
@@ -1330,7 +1331,7 @@ export default function ClassDetailsScreen() {
                     <div style={{ display:'flex', flexDirection:'column', gap:'0.6rem' }}>
                       {zySubmissions.map(sub => (
                         <div key={sub.id} style={{ display:'grid', gridTemplateColumns:'auto 1fr auto', gap:'0.9rem', alignItems:'center', background:'white', border:'1px solid var(--t-mist)', borderRadius:'var(--t-r-sm)', padding:'0.7rem 0.9rem' }}>
-                          {sub.photoUrl && <img src={sub.photoUrl} alt="" style={{ width:52, height:52, objectFit:'cover', borderRadius:8 }} />}
+                          {sub.photoUrl && <SignedImage url={sub.photoUrl} classCode={normaliseCode(selectedClass)} alt="" style={{ width:52, height:52, objectFit:'cover', borderRadius:8 }} />}
                           <div style={{ minWidth:0 }}>
                             <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', flexWrap:'wrap' }}>
                               <span style={{ fontWeight:700, fontSize:'0.84rem', color:'var(--t-deep)' }}>{sub.studentName}</span>
@@ -1894,11 +1895,11 @@ export default function ClassDetailsScreen() {
 
               {evModal.view === 'film' ? (
                 <div style={{ padding:'1.1rem 1.3rem 1.4rem' }}>
-                  <video src={ev.filmURL} controls playsInline style={{ width:'100%', borderRadius:12, background:'#000', display:'block' }} />
-                  <a href={ev.filmURL} target="_blank" rel="noopener noreferrer"
+                  <SignedVideo url={ev.filmURL} classCode={normaliseCode(selectedClass)} controls playsInline style={{ width:'100%', borderRadius:12, background:'#000', display:'block' }} />
+                  <SignedLink url={ev.filmURL} classCode={normaliseCode(selectedClass)} target="_blank" rel="noopener noreferrer"
                     style={{ display:'inline-block', marginTop:'0.9rem', fontSize:'0.78rem', color:'#E8B33C', textDecoration:'none', borderBottom:'1px solid rgba(232,179,60,0.4)' }}>
                     Open in a new tab ↗
-                  </a>
+                  </SignedLink>
                 </div>
               ) : (
                 <div style={{ padding:'1.1rem 1.3rem 1.4rem', display:'flex', flexDirection:'column', gap:'0.9rem' }}>
@@ -2041,9 +2042,9 @@ export default function ClassDetailsScreen() {
                             {d.habitatPhotoUrl && (
                               <div style={{ marginBottom:'0.7rem' }}>
                                 <div style={{ fontSize:'0.6rem', fontWeight:700, color:'var(--t-slate)', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:'0.25rem' }}>Their spot</div>
-                                <a href={d.habitatPhotoUrl} target="_blank" rel="noopener noreferrer">
-                                  <img src={d.habitatPhotoUrl} alt="" style={{ width:'100%', maxHeight:170, objectFit:'cover', borderRadius:10, display:'block' }} />
-                                </a>
+                                <SignedLink url={d.habitatPhotoUrl} classCode={normaliseCode(selectedClass)} target="_blank" rel="noopener noreferrer">
+                                  <SignedImage url={d.habitatPhotoUrl} classCode={normaliseCode(selectedClass)} alt="" style={{ width:'100%', maxHeight:170, objectFit:'cover', borderRadius:10, display:'block' }} />
+                                </SignedLink>
                               </div>
                             )}
                             <div style={{ fontSize:'0.6rem', fontWeight:700, color:'var(--t-slate)', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:'0.25rem' }}>Written response</div>

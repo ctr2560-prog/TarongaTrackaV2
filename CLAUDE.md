@@ -291,7 +291,26 @@ read path would mean unpicking the most fragile code in the repo. The guards wer
 working before this was found: missing token → 400, wrong token → 404, staff path unauthenticated
 → 403.
 
-**Remaining after the grant** — and still the risky half:
+**Teacher and staff views converted too (2026-10-03).** `components/SignedMedia.jsx` provides
+`SignedVideo` / `SignedImage` / `SignedLink`, backed by `utils/useSignedMedia.js`. Used in Class
+Details (Evolve film modal, ZooYard habitat photos, citizen science thumbnails) and the staff
+submissions list.
+
+⚠️ **Teachers are scoped to classes they own.** `getMediaUrl`'s educator path checks
+`classes/{code}.teacherEmail` against the caller; staff bypass that. Without the scoping any
+signed-in teacher could mint a URL for any media in any school. Pass `classCode` or a teacher is
+refused.
+
+⚠️ **Every one of these falls back to the stored permanent URL** while minting and if minting
+fails. Media must never blank out because a function was cold — a teacher staring at an empty
+photo grid would reasonably conclude the app had lost their students' work. **This is also why
+none of it closes the hole until the tokens are revoked.**
+
+⚠️ `SignedVideo` re-keys the element on the signed URL. Swapping a `<video>` src after it has
+started loading is unreliable — React reuses the node and the browser can keep the old stream.
+Same class of trap as the recorder/playback issue in the Video & media pipeline section.
+
+**Remaining** — and still the risky half:
 
 
 **What is already closed:** enumeration, at both layers. The bucket cannot be browsed (Storage

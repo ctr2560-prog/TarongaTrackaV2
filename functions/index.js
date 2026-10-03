@@ -628,8 +628,32 @@ exports.getMediaUrl = onRequest(
         }
         storedUrl = data[field || 'filmURL'];
       } else {
-        const staff = await verifyStaff(req);
-        if (!staff.ok) { res.status(staff.status).json({ error: staff.error }); return; }
+        // ── Educator path ────────────────────────────────────────────────────────────────
+        // Staff can mint for anything. A TEACHER can mint only for a class they own — without
+        // that scoping, any signed-in teacher could mint a URL for any media in any school.
+        // ⚠️ Anonymous students have no email claim, so they can never reach this branch.
+        const authHeader = req.headers.authorization || '';
+        const idToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+        if (!idToken) { res.status(403).json({ error: 'Sign-in required.' }); return; }
+
+        let decoded;
+        try { decoded = await admin.auth().verifyIdToken(idToken); }
+        catch { res.status(403).json({ error: 'Sign-in required.' }); return; }
+
+        const email = (decoded.email || '').toLowerCase();
+        if (!email) { res.status(403).json({ error: 'Sign-in required.' }); return; }
+
+        const isStaff = ROOT_ADMIN_EMAILS.includes(email)
+          || (await db.collection('staffAdmins').doc(email).get()).exists;
+
+        if (!isStaff) {
+          if (!classCode) { res.status(403).json({ error: 'Not your class.' }); return; }
+          const clsSnap = await db.collection('classes').doc(String(classCode).toUpperCase()).get();
+          const owner = clsSnap.exists ? (clsSnap.data().teacherEmail || '').toLowerCase() : null;
+          if (!owner || owner !== email) {
+            res.status(403).json({ error: 'Not your class.' }); return;
+          }
+        }
         storedUrl = req.body?.url;
       }
     } catch (err) {

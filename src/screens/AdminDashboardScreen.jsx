@@ -6,6 +6,7 @@ import {
 import { db, storage, auth } from '../firebase';
 import { ref as storageRef, getDownloadURL } from 'firebase/storage';
 import { isTarongaStaff } from '../constants/tarongaStaff';
+import { SignedImage } from '../components/SignedMedia';
 import { useApp } from '../context/AppContext';
 import { ZOOSNOOZ_ANIMALS } from '../data/zoosnoozAnimals';
 import { ZOOYARD_ANIMALS } from '../data/zooyardAnimals';
@@ -2178,7 +2179,7 @@ function ZooYardAdminTab({ classes }) {
               <div key={sub.id} style={{ border:'1px solid var(--t-stone)', borderRadius:'var(--t-r-md)', overflow:'hidden' }}>
                 <div style={{ display:'grid', gridTemplateColumns:'auto 1fr auto', gap:'1rem', padding:'0.9rem 1rem', alignItems:'center' }}>
                   {sub.photoUrl && (
-                    <img src={sub.photoUrl} alt="" onClick={() => setLightbox(sub.photoUrl)}
+                    <SignedImage url={sub.photoUrl} alt="" onClick={() => setLightbox(sub.photoUrl)}
                       style={{ width:64, height:64, objectFit:'cover', borderRadius:8, cursor:'pointer', flexShrink:0 }} />
                   )}
                   <div style={{ minWidth:0 }}>
