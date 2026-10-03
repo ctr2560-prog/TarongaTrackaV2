@@ -442,9 +442,10 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
 
     const topH = EVOLVE_FILM_TOP, botH = EVOLVE_FILM_BOT, vidY = topH, vidH = H - topH - botH, botY = topH + vidH;
     const dStr = new Date().toLocaleDateString('en-AU', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
-    // Only the pledge chapter carries its writing into the film. Every chapter's reflection would
-    // be four lines of text under four of the five chapters, which turns a film into a document.
-    const footerText = c.isPledge ? (reflections?.[c.id] || '') : '';
+    // ⚠️ EVERY chapter prints its OWN writing, not just the pledge. It was pledge-only first, and
+    //    that left the enlarged footer empty under four of the five chapters. The student wrote
+    //    something at every stop; the film is the only place all five are seen together.
+    const footerText = reflections?.[c.id] || '';
 
     await new Promise(resolve => {
       const videoEl = document.createElement('video');
@@ -573,9 +574,19 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
           ctx.strokeStyle = 'rgba(232,179,60,0.3)'; ctx.lineWidth = 1;
           ctx.beginPath(); ctx.moveTo(24, botY + 150); ctx.lineTo(W - 24, botY + 150); ctx.stroke();
           ctx.fillStyle = 'rgba(246,232,210,0.9)';
-          ctx.font = 'italic 25px "DM Sans", sans-serif';
-          wrapLines(ctx, footerText, W - 48, 4).forEach((ln, i) => {
-            ctx.fillText(ln, 24, botY + 190 + i * 34);
+          // ⚠️ Shrink to fit before truncating. These are the student's own words and cutting them
+          //    off with an ellipsis is the last resort, not the first — EVOLVE_MIN_WORDS is only
+          //    10 but nothing stops a student writing far more, and they often do.
+          let fSize = 25, fLines = [];
+          for (const size of [25, 22, 19, 17]) {
+            fSize = size;
+            ctx.font = `italic ${size}px "DM Sans", sans-serif`;
+            const maxLines = Math.floor(130 / (size + 9));
+            fLines = wrapLines(ctx, footerText, W - 48, maxLines);
+            if (!fLines[fLines.length - 1]?.endsWith('...')) break;
+          }
+          fLines.forEach((ln, i) => {
+            ctx.fillText(ln, 24, botY + 184 + i * (fSize + 9));
           });
           ctx.restore();
         }

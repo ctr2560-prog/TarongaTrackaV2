@@ -1308,12 +1308,16 @@ bars for the background now are the actual video"*.
 - **The strips grew to carry that space instead of the bars**: top 80 → **120**, bottom 180 →
   **320**. ⚠️ These drive `EVOLVE_VIDEO_ASPECT`, which the capture preview reads, so the preview
   follows automatically — that is exactly why it is derived rather than written twice.
-- **The footer carries the pledge**, on the pledge chapter only. Every chapter's reflection would
-  put four lines of text under four of the five chapters and turn a film into a document.
+- **The footer carries each chapter's OWN writing.** It was pledge-only for one round, on the
+  reasoning that five reflections would turn a film into a document — wrong: it left the enlarged
+  footer **empty under four of the five chapters**. The student wrote something at every stop, and
+  the film is the only place all five are ever seen together.
   ⚠️ A stored reflection **already includes its sentence lead** ("I will ..."), so nothing prints a
   lead in front of it — the certificates shipped with exactly that bug and read "I will / I will
-  plant something". `wrapLines` caps it at four lines with an ellipsis so a long answer cannot
-  push the layout off the card.
+  plant something".
+  ⚠️ **The text shrinks to fit before it truncates** (25 → 22 → 19 → 17px, then an ellipsis).
+  `EVOLVE_MIN_WORDS` is only 10 but nothing caps the upper end and students write far more; cutting
+  a student's own words off is the last resort, not the first.
 
 ### 1. Capture must match the film's aspect ratio
 
