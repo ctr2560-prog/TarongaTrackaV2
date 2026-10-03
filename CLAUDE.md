@@ -1022,6 +1022,22 @@ A whole film of cards, a clean console, and nothing to investigate.
 ⚠️ **And the screen called it a success.** The film rendered, so the student saw a finished film
 and no warning. That is how this reached "I don't know why that is".
 
+✅ **RESOLVED ON LAPTOP 2026-10-03** — Cameron: *"the laptop stitched film worked well"*, with a
+**completely clean console** (no `[evolveFilm]` line at all, so no chapter failed to load).
+
+⚠️ **WHICH CHANGE FIXED IT IS NOT KNOWN, and that is worth being honest about** rather than
+claiming the instrumentation did it — instrumentation cannot fix anything. Several things moved
+between the failing run and the working one, any of which could have been the cause:
+- the `ensureStudentAuth` race (so the student's own writes, including `clipURL`, were being
+  **denied** during the failing run — a chapter with no stored `clipURL` cannot contribute footage
+  on a resume, and this is the leading candidate)
+- the signed-URL minting on the resume path
+- the Evolve film-upload label fix
+
+🚫 **Do not record this as "the cards-only bug is fixed".** One successful run on one machine is
+evidence it works, not evidence the cause is understood. If it recurs, the console now names the
+chapter and the error code, which is what was missing the first time.
+
 **What changed:**
 - Every swallowed per-clip failure appends to an `issues` array and logs with `videoEl.error`'s
   code/message and the URL's **host** (which is what distinguishes a signed URL from a permanent
