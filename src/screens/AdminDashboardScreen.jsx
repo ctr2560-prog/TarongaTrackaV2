@@ -2579,6 +2579,34 @@ function ControlRoomTab() {
     }
   };
 
+  // ── Revoke permanent media links ────────────────────────────────────────────────────
+  // ⚠️ IRREVERSIBLE. Deleting a file's download token kills every existing link to it, forever.
+  //    A replacement token is a DIFFERENT token, so links already handed out stay dead.
+  //    Preview is forced first, and the destructive call additionally needs the typed word.
+  const [revokeReport, setRevokeReport] = useState(null);
+  const [revokeBusy, setRevokeBusy] = useState(false);
+  const REVOKE_FN = 'https://australia-southeast1-tarongatracka.cloudfunctions.net/revokeDownloadTokens';
+
+  const runRevoke = async (dryRun) => {
+    if (!dryRun && !window.confirm(
+      `Permanently kill ${revokeReport?.withToken ?? 0} old media links?\n\n` +
+      `Films and photos keep working inside the app. Any link previously copied or shared will ` +
+      `stop working forever. This cannot be undone.`)) return;
+    setRevokeBusy(true);
+    try {
+      const idToken = await auth.currentUser?.getIdToken();
+      const res = await fetch(REVOKE_FN, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+        body: JSON.stringify(dryRun ? { dryRun: true } : { dryRun: false, confirm: 'REVOKE' }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok || !d.ok) throw new Error(d?.error || 'Request failed.');
+      setRevokeReport(d);
+    } catch (e) { alert(e.message); }
+    finally { setRevokeBusy(false); }
+  };
+
   // Staff password resets — staff do not self-serve, the administrator issues the link.
   const [resetEmail, setResetEmail] = useState('');
   const [resetLink,  setResetLink]  = useState('');
@@ -2855,6 +2883,55 @@ function ControlRoomTab() {
               style={{ padding:'0.45rem 1rem', borderRadius:'var(--t-r-pill)', border:'1px solid var(--t-stone)', background:'white', fontSize:'0.8rem', fontWeight:600, cursor:'pointer' }}>
               Copy link
             </button>
+          </div>
+        )}
+      </div>
+
+      {/* ── Revoke old media links ─────────────────────────────────────────────────────── */}
+      <div style={{ background:'#FFF5F5', borderRadius:'var(--t-r-lg)', padding:'1.5rem', boxShadow:'var(--t-shadow-sm)', marginBottom:'1rem', border:'1px solid #FCA5A5' }}>
+        <h3 style={{ fontSize:'1rem', fontWeight:700, color:'#B91C1C', margin:'0 0 0.35rem' }}>Revoke old media links</h3>
+        <p style={{ fontSize:'0.82rem', color:'#B91C1C', margin:'0 0 0.6rem', lineHeight:1.5 }}>
+          Every film and photo has a permanent web link that never expires. This kills those links,
+          so anything previously copied or shared stops working.
+        </p>
+        <p style={{ fontSize:'0.8rem', color:'var(--t-slate)', margin:'0 0 1rem', lineHeight:1.5 }}>
+          Films and photos keep working normally inside the app, for students, teachers and staff.
+          Souvenir links keep working. Public gallery photos are not touched.
+          <strong style={{ color:'#B91C1C' }}> This cannot be undone.</strong>
+        </p>
+        {/* 🚫 Run the resume test on a real device first — see revokeDownloadTokens in
+            functions/index.js. Automated testing cannot validate the video pipeline. */}
+        <p style={{ fontSize:'0.78rem', color:'#B91C1C', margin:'0 0 1rem', lineHeight:1.5, fontWeight:600 }}>
+          Before running this: film a clip, fully close the app, reopen and resume, finish the film
+          and check it plays.
+        </p>
+
+        <button onClick={() => runRevoke(true)} disabled={revokeBusy}
+          style={{ padding:'0.6rem 1.3rem', borderRadius:'var(--t-r-sm)', border:'none', background: revokeBusy ? '#CCC' : 'var(--t-mid)', color:'white', fontSize:'0.85rem', fontWeight:700, cursor: revokeBusy ? 'not-allowed' : 'pointer' }}>
+          {revokeBusy ? 'Checking…' : 'Preview'}
+        </button>
+
+        {revokeReport && (
+          <div style={{ marginTop:'0.9rem', background:'white', border:'1px solid var(--t-stone)', borderRadius:'var(--t-r-sm)', padding:'0.9rem' }}>
+            <p style={{ margin:'0 0 0.5rem', fontSize:'0.85rem', fontWeight:700, color:'var(--t-deep)' }}>
+              {revokeReport.revoked > 0
+                ? `Done — ${revokeReport.revoked} old links killed.`
+                : `${revokeReport.withToken} files still have a permanent link.`}
+            </p>
+            <p style={{ margin:'0 0 0.6rem', fontSize:'0.78rem', color:'var(--t-slate)' }}>
+              Scanned {revokeReport.scanned} files across student media.
+            </p>
+            {Object.entries(revokeReport.byRoot || {}).map(([root, v]) => (
+              <div key={root} style={{ fontSize:'0.74rem', color:'var(--t-slate)', padding:'0.2rem 0', borderTop:'1px solid var(--t-mist)' }}>
+                <strong style={{ color:'var(--t-deep)' }}>{root}</strong> — {v.withToken} of {v.files} files
+              </div>
+            ))}
+            {revokeReport.withToken > 0 && revokeReport.revoked === 0 && (
+              <button onClick={() => runRevoke(false)} disabled={revokeBusy}
+                style={{ marginTop:'0.9rem', padding:'0.6rem 1.3rem', borderRadius:'var(--t-r-sm)', border:'none', background:'#DC2626', color:'white', fontSize:'0.82rem', fontWeight:700, cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.05em' }}>
+                Kill these {revokeReport.withToken} links
+              </button>
+            )}
           </div>
         )}
       </div>
