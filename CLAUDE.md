@@ -1278,10 +1278,42 @@ because the degraded form is acceptable and a branch would be a second thing to 
 
 **The preview is now `object-fit: contain`** on the same aspect, which is what the stitcher does.
 
-⚠️ **The capture constraints were NOT changed.** They ask for portrait with `ideal`, and that is
-right. The evidence says phones return something wider anyway, and the lesson is that the pipeline
-must handle whatever arrives rather than assume the request was honoured. 🚫 Do not "fix" this by
-tightening constraints to `exact` — that fails the camera outright on a device that cannot comply.
+#### ⚠️⚠️ THE REAL CAUSE WAS THE CAPTURE CONSTRAINTS (found 2026-10-03 by looking at a frame)
+
+The crop above made it worse, but it was not the cause. **A frame pulled out of a RAW stored clip
+— before any stitching — was already an extreme close-up, forehead to mouth, in a 1920x1080
+landscape frame.** The camera was handed `width 1080 / height 1920 / aspectRatio 9:16` to match the
+portrait film; a phone sensor is natively landscape, so the browser satisfied that request by
+**digitally cropping the sensor**. The zoom was baked in at capture.
+
+🚫 **NEVER constrain the SHAPE of the camera.** Ask for a sensible `width` ideal and nothing else,
+and let the camera give its natural field of view. Fixed in **both** `EvolveScreen.jsx` and
+`modes/wildest-dreams/components/Recorder.jsx`, which carried an identical copy of the constraint.
+🚫 And do not reach for `exact` instead — that fails the camera outright on a device that cannot
+comply, which is worse than a bad shape.
+
+⚠️ **THE LESSON ABOUT METHOD, which is the valuable part.** Three rounds of reasoning about crop
+arithmetic were spent on this, all of it correct and all of it aimed at the wrong layer. **One
+`ffmpeg` frame grab from the stored clip answered it immediately:**
+`ffmpeg -ss 2 -i clip.webm -frames:v 1 out.png` — then look at it. When a complaint is about how
+something LOOKS, extract the pixels before theorising about the code that produced them.
+
+#### The card layout (2026-10-03, Cameron's direction)
+
+Once the camera gave a proper wide shot, the blurred-video fill had to go: *"I don't like how the
+bars for the background now are the actual video"*.
+
+- The video is **contained, never cropped**, and the leftover space is **plain black**. Quiet,
+  deliberate, and it never competes with the footage.
+- **The strips grew to carry that space instead of the bars**: top 80 → **120**, bottom 180 →
+  **320**. ⚠️ These drive `EVOLVE_VIDEO_ASPECT`, which the capture preview reads, so the preview
+  follows automatically — that is exactly why it is derived rather than written twice.
+- **The footer carries the pledge**, on the pledge chapter only. Every chapter's reflection would
+  put four lines of text under four of the five chapters and turn a film into a document.
+  ⚠️ A stored reflection **already includes its sentence lead** ("I will ..."), so nothing prints a
+  lead in front of it — the certificates shipped with exactly that bug and read "I will / I will
+  plant something". `wrapLines` caps it at four lines with an ellipsis so a long answer cannot
+  push the layout off the card.
 
 ### 1. Capture must match the film's aspect ratio
 

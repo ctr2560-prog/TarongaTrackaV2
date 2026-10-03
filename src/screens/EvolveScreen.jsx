@@ -714,6 +714,10 @@ export default function EvolveScreen() {
   const [chapter, setChapter] = useState(null);
   const [phase, setPhase] = useState('insight');          // insight | watch | write | record | preview
   const [done, setDone] = useState({});                    // { [id]: { reflection } }
+  // ⚠️ Read by the stitch effect, which must NOT list `done` as a dependency — `done` changes
+  //    whenever a chapter is saved, and a dependency on it would restart a film mid-build.
+  const doneRef = useRef(done);
+  useEffect(() => { doneRef.current = done; }, [done]);
   const [clipURLs, setClipURLs] = useState({});            // { [id]: objectURL | remote URL }
 
   const [watchLeft, setWatchLeft] = useState(WATCH_SECONDS);
@@ -848,14 +852,24 @@ export default function EvolveScreen() {
     if (phase !== 'record') { stopCam(); return; }
     let dead = false;
     navigator.mediaDevices.getUserMedia({
-      // Portrait to match the 720x1280 film. Without this the clip is captured landscape and
-      // the stitcher throws the sides away. `ideal` rather than `exact` so a desktop webcam
-      // that cannot do portrait still works — the preview box crops it the same way the
-      // stitcher will, so what the student frames is what ends up in the film either way.
+      // ⚠️⚠️ DO NOT CONSTRAIN THE SHAPE OF THE CAMERA. THAT IS WHAT CAUSED THE "ZOOMED IN" FILMS.
+      //
+      // This asked for `width 1080 / height 1920 / aspectRatio 9:16` to match the portrait film.
+      // A phone sensor is natively landscape, so the browser satisfied that request by DIGITALLY
+      // CROPPING THE SENSOR — and the clip arrived as an extreme close-up, forehead to mouth,
+      // before any stitching happened at all. Confirmed 2026-10-03 by pulling a frame out of a
+      // raw stored clip: the source itself was already cropped that tight.
+      //
+      // Students at the first Evolve run (Ingleburn HS) reported exactly this and it was wrongly
+      // assumed to be the stitcher's centre crop. The crop made it worse; the camera request made
+      // it happen.
+      //
+      // 🚫 Never ask for an aspect ratio or a portrait resolution here. Ask for a sensible WIDTH
+      //    and let the camera give its own natural field of view. The stitcher fits whatever
+      //    shape arrives (see drawFrame in utils/evolveFilm.js) so nothing downstream needs it.
       video: {
         facingMode: frontCam ? 'user' : 'environment',
-        width: { ideal: 1080 }, height: { ideal: 1920 },
-        aspectRatio: { ideal: 9 / 16 },
+        width: { ideal: 1280 },
       },
       audio: true,
     }).then(stream => {
@@ -1090,6 +1104,9 @@ export default function EvolveScreen() {
           clipURLs,
           studentName,
           theme: T,
+          // The pledge is printed under its own chapter in the film. `done` holds the saved
+          // reflection, which already includes its sentence lead.
+          reflections: Object.fromEntries(Object.entries(doneRef.current).map(([k, v]) => [k, v?.reflection || ''])),
           onProgress: (pct, idx) => { if (!cancelled) { setFilmPct(pct); setFilmStage(idx); } },
           isCancelled: () => cancelled,
         });

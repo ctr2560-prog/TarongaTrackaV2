@@ -36,7 +36,10 @@ export default function Recorder({ onKeep, onSkip, skipLabel, extraAction = null
       // in the documentary. `ideal` not `exact`, so a device that cannot do portrait still works.
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: facing ? 'user' : 'environment',
-                 width: { ideal: 1080 }, height: { ideal: 1920 }, aspectRatio: { ideal: 9 / 16 } },
+                 // ⚠️ No aspect/portrait constraint, deliberately. Asking for 9:16 makes a phone
+                 //    browser digitally CROP the sensor, and the clip arrives as an extreme
+                 //    close-up before any stitching. See the long note in EvolveScreen.jsx.
+                 width: { ideal: 1280 } },
         audio: true,
       });
       streamRef.current = stream;

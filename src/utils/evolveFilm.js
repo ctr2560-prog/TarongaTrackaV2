@@ -36,8 +36,12 @@ const MIME_CANDIDATES = [
 // what would survive. Import EVOLVE_VIDEO_ASPECT rather than writing a ratio by hand.
 export const EVOLVE_FILM_W = 720;
 export const EVOLVE_FILM_H = 1280;
-export const EVOLVE_FILM_TOP = 80;    // branding strip
-export const EVOLVE_FILM_BOT = 180;   // chapter caption panel
+// ⚠️ The strips are deliberately LARGE. A phone films landscape, so a clip fitted to the full
+//    width leaves a lot of empty frame; giving that space to the card is better than giving it to
+//    black bars, and the footer is where the student's own words go. Changing these changes
+//    EVOLVE_VIDEO_ASPECT, which the capture preview reads — that is the point of it.
+export const EVOLVE_FILM_TOP = 120;   // branding strip
+export const EVOLVE_FILM_BOT = 320;   // chapter caption panel, and the pledge
 export const EVOLVE_VIDEO_ASPECT = EVOLVE_FILM_W / (EVOLVE_FILM_H - EVOLVE_FILM_TOP - EVOLVE_FILM_BOT);
 
 export function describeMime(mimeType) {
@@ -102,6 +106,31 @@ export function startChapterRecording(stream, { onComplete, onError }) {
 
 const wait = ms => new Promise(res => setTimeout(res, ms));
 
+// Greedy word wrap for canvas text. Returns at most `maxLines`, the last one ellipsised, so a
+// student who wrote far more than the pledge prompt asked for cannot push the layout off the card.
+function wrapLines(ctx, text, maxWidth, maxLines) {
+  const words = String(text || '').trim().split(/\s+/).filter(Boolean);
+  const lines = [];
+  let line = '';
+  for (const w of words) {
+    const next = line ? `${line} ${w}` : w;
+    if (ctx.measureText(next).width <= maxWidth || !line) { line = next; continue; }
+    lines.push(line);
+    line = w;
+    if (lines.length === maxLines) break;
+  }
+  if (lines.length < maxLines && line) lines.push(line);
+  if (lines.length === maxLines) {
+    const consumed = lines.join(' ').split(/\s+/).length;
+    if (consumed < words.length) {
+      let last = lines[maxLines - 1];
+      while (last && ctx.measureText(`${last}...`).width > maxWidth) last = last.replace(/\s*\S+$/, '');
+      lines[maxLines - 1] = `${last}...`;
+    }
+  }
+  return lines;
+}
+
 /**
  * Stitches the recorded chapter clips into one portrait film with title, chapter and credit cards.
  *
@@ -120,7 +149,7 @@ const wait = ms => new Promise(res => setTimeout(res, ms));
  *   is no console on a phone, so the reason has to travel to the screen or an iPhone fault cannot
  *   be investigated at all. Any new failure path must carry an `error` string.
  */
-export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, onProgress, isCancelled }) {
+export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, reflections, onProgress, isCancelled }) {
   const cancelled = () => (isCancelled ? isCancelled() : false);
   const clips = chapters.filter(c => clipURLs[c.id]);
   if (!clips.length) return { error: 'None of your chapters have a clip saved against them yet.' };
@@ -413,6 +442,9 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
 
     const topH = EVOLVE_FILM_TOP, botH = EVOLVE_FILM_BOT, vidY = topH, vidH = H - topH - botH, botY = topH + vidH;
     const dStr = new Date().toLocaleDateString('en-AU', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
+    // Only the pledge chapter carries its writing into the film. Every chapter's reflection would
+    // be four lines of text under four of the five chapters, which turns a film into a document.
+    const footerText = c.isPledge ? (reflections?.[c.id] || '') : '';
 
     await new Promise(resolve => {
       const videoEl = document.createElement('video');
@@ -494,41 +526,20 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
         drawBg();
         try {
           const vW = videoEl.videoWidth || W, vH2 = videoEl.videoHeight || vidH;
-          const tgtA = W / vidH, srcA = vW / vH2;
-          if (srcA > tgtA * 1.05) {
-            // ⚠️ THE CLIP IS WIDER THAN THE FILM'S WINDOW — DO NOT CROP IT TO FIT.
-            //
-            // This used to centre-crop to `tgtA`, which on a 1920x1080 clip kept a 762px strip
-            // out of 1920: **40% of the width thrown away**. Students at the first Evolve run
-            // (Ingleburn HS, 2026-09-22) reported the camera being "zoomed in", and that crop is
-            // what they were describing. It is not a capture fault — the sides were discarded
-            // after the fact.
-            //
-            // Instead: the WHOLE frame, fitted to the full width, with the space above and below
-            // filled by a blurred enlargement of the same frame. Nothing is lost and there are no
-            // black bars in a keepsake film. Cameron's call, 2026-10-03.
-            const fitH = W / srcA;
-            const padY = vidY + (vidH - fitH) / 2;
-            ctx.save();
-            ctx.beginPath(); ctx.rect(0, vidY, W, vidH); ctx.clip();
-            // Blurred backdrop: the same frame, cover-cropped to fill, blurred heavily.
-            // ⚠️ `ctx.filter` is not available everywhere. Where it is missing this degrades to an
-            //    unblurred enlargement, which still reads as a soft backdrop rather than a bug —
-            //    so there is deliberately no feature branch beyond letting it be ignored.
-            const cvH = vH2, cvW = cvH * tgtA;
-            try { ctx.filter = 'blur(26px) brightness(0.55)'; } catch { /* unsupported */ }
-            ctx.drawImage(videoEl, (vW - cvW) / 2, 0, cvW, cvH, -20, vidY - 20, W + 40, vidH + 40);
-            try { ctx.filter = 'none'; } catch { /* unsupported */ }
-            ctx.drawImage(videoEl, 0, 0, vW, vH2, 0, padY, W, fitH);
-            ctx.restore();
-          } else {
-            // Portrait or near-square: a mild centre crop loses almost nothing, and filling the
-            // window edge to edge is better than padding a frame that nearly fits.
-            let sx, sy, sw, sh;
-            if (srcA > tgtA) { sh = vH2; sw = sh * tgtA; sx = (vW - sw) / 2; sy = 0; }
-            else { sw = vW; sh = sw / tgtA; sx = 0; sy = (vH2 - sh) / 2; }
-            ctx.drawImage(videoEl, sx, sy, sw, sh, 0, vidY, W, vidH);
-          }
+          const srcA = vW / vH2;
+          // ⚠️ CONTAIN, NEVER CROP, AND FILL WITH BLACK.
+          //
+          // Two earlier versions were wrong in different ways. A centre crop threw ~60% of the
+          // width away on a landscape clip, which is what students meant by "zoomed in". Then the
+          // leftover space was filled with a blurred enlargement of the frame itself — Cameron:
+          // "I don't like how the bars for the background now are the actual video". Black is
+          // quieter, reads as deliberate, and never competes with the footage.
+          const fitW = Math.min(W, vidH * srcA);
+          const fitH = fitW / srcA;
+          ctx.fillStyle = '#000';
+          ctx.fillRect(0, vidY, W, vidH);
+          ctx.drawImage(videoEl, 0, 0, vW, vH2,
+                        (W - fitW) / 2, vidY + (vidH - fitH) / 2, fitW, fitH);
           drawn++;
         } catch { /* frame not ready */ }
 
@@ -547,11 +558,26 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
         ctx.fillStyle = '#F6E8D2'; ctx.font = 'bold 40px "Taronga Headline", sans-serif';
         ctx.fillText(c.chapter, 24, botY + 88);
         ctx.fillStyle = 'rgba(246,232,210,0.5)'; ctx.font = 'italic 20px "DM Sans", sans-serif';
-        ctx.fillText(c.animalName, 24, botY + 124);
+        ctx.fillText(c.animalName, 24, botY + 122);
         if (logoImg) {
           const lH = 46, lW = logoImg.naturalWidth ? Math.round(logoImg.naturalWidth * (lH / logoImg.naturalHeight)) : lH;
           ctx.save(); ctx.filter = 'brightness(0) invert(1)'; ctx.globalAlpha = 0.75;
           ctx.drawImage(logoImg, W - lW - 24, botY + 34, lW, lH); ctx.restore();
+        }
+        // The student's own words, on the chapter that asked for a commitment. ⚠️ The stored
+        // reflection already carries its sentence lead ("I will ..."), so it reads as a whole
+        // sentence and must NOT have a lead printed in front of it — the certificate had exactly
+        // that bug and printed "I will / I will plant something".
+        if (footerText) {
+          ctx.save();
+          ctx.strokeStyle = 'rgba(232,179,60,0.3)'; ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.moveTo(24, botY + 150); ctx.lineTo(W - 24, botY + 150); ctx.stroke();
+          ctx.fillStyle = 'rgba(246,232,210,0.9)';
+          ctx.font = 'italic 25px "DM Sans", sans-serif';
+          wrapLines(ctx, footerText, W - 48, 4).forEach((ln, i) => {
+            ctx.fillText(ln, 24, botY + 190 + i * 34);
+          });
+          ctx.restore();
         }
       }
 
