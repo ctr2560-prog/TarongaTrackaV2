@@ -92,7 +92,19 @@ in the app's filming guidance or the teacher info sheet — it should be.
   watch (timer counts down, skip works) → build screen. No app errors in the console. The timer
   was validated in a *driven* tab, which Chrome reports as hidden — a rAF-based countdown would
   have frozen there, and the timestamp one did not.
-- ⚠️ **The two camera steps remain unverified.** Automation cannot drive `getUserMedia`, so the
+- #### ⚠️ The stitch screen now reports WHY it failed (2026-10-03)
+
+Every failure path in ZooSnooz's stitch used to end on the same screen reading **"Video stitching
+is not supported on this device"** — a guess presented as a diagnosis, which blamed the device
+even when the real cause was an empty recording or a recorder that would not start. On a phone
+there is no console, so that message made an iPhone fault impossible to investigate.
+
+`zzStitchError` now carries a reason (recorder would not start, or the byte and chunk count when
+the output was empty) and the screen shows it, with "Every clip you filmed is still saved."
+beneath. Add a reason to any new failure path rather than letting it fall through to the generic
+line.
+
+⚠️ **The two camera steps remain unverified.** Automation cannot drive `getUserMedia`, so the
   habitat unlock photo and the build photo have never actually been captured and uploaded. That
   is the one path left to check by hand, and both are required to finish a habitat.
 
@@ -1015,8 +1027,25 @@ recording device before chasing CORS: a `.webm` from an iPhone is impossible and
 `chunks[0].type` first, then `MediaRecorder.mimeType` — never from a candidate you hoped for and
 never from a default. `describeMime()` in `utils/evolveFilm.js` is the shared helper.
 
-Fixed in all three recorders **and both stitcher outputs** (the finished film carries the same
-trap). Wildest Dreams' recorder imports the Evolve util, so it was fixed by the same change.
+⚠️ **THE FIRST PASS AT THIS FIX MISSED TWO PLACES, found 2026-10-03 when Cameron reported the
+iPhone still would not stitch.** It was recorded here as "fixed in all three recorders and both
+stitcher outputs", and it was not:
+
+1. **ZooSnooz's STITCHER OUTPUT** still did `const blobType = mimeType || 'video/webm'`. So the
+   finished iPhone **documentary** was mp4 bytes labelled webm — and the upload a few hundred
+   lines later derives its extension and `contentType` from `blob.type`, so the stored file was
+   mislabelled too. The individual clips were fine by then; the film was not.
+2. **Wildest Dreams keeps its OWN copy of the recorder** (`startChapterRecording` in
+   `modes/wildest-dreams/film.js`), not the Evolve util. The note above claimed it imported it.
+   It does not, so it never received the fix and every iPhone WD clip was mislabelled.
+
+🚫 **Do not trust "fixed everywhere" on this one. There are FIVE places** that label a recording:
+three clip recorders (ZooSnooz inline, Evolve util, **WD's own copy**) and two stitcher outputs
+(ZooSnooz inline, Evolve util — WD's stitcher output was already correct). Grep for
+`|| 'video/webm'` before believing it.
+
+The rule in every one of them: `chunks[0]?.type || mr.mimeType` first, the candidate only as a
+last resort.
 
 🚫 Old `.webm` clips recorded on iOS are still mislabelled in Storage. They will stay broken
 unless their content type is corrected — the bytes are fine, only the label is wrong.

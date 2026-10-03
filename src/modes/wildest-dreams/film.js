@@ -62,9 +62,23 @@ export function startChapterRecording(stream, { onComplete, onError }) {
   }
   mr.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
   mr.onstop = () => {
-    const blob = new Blob(chunks, { type: blobType });
+    // ⚠️⚠️ Derive the labels from what the recorder ACTUALLY produced. The values returned by
+    //    pickMimeType() above are only a hope: on iOS `isTypeSupported` says false to every
+    //    candidate, so `mimeType` is empty, MediaRecorder records mp4 anyway, and those
+    //    defaults would label it webm. The clip then uploads and downloads perfectly and no
+    //    browser will decode it, so the film comes out black and silent. See the iOS trap note
+    //    in utils/evolveFilm.js — this mode keeps its own copy of the recorder, which is why
+    //    the fix there did not reach it.
+    const actual = chunks[0]?.type || mr.mimeType || mimeType || '';
+    const isMP4  = actual.includes('mp4');
+    const blob = new Blob(chunks, { type: actual || blobType });
     if (blob.size < 500) { onError?.(new Error('empty-recording')); return; }
-    onComplete?.({ blob, url: URL.createObjectURL(blob), fileExt, contentType });
+    onComplete?.({
+      blob,
+      url: URL.createObjectURL(blob),
+      fileExt:     actual ? (isMP4 ? 'mp4' : 'webm') : fileExt,
+      contentType: actual ? (isMP4 ? 'video/mp4' : 'video/webm') : contentType,
+    });
   };
   mr.start();
   return {

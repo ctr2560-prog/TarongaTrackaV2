@@ -144,6 +144,12 @@ export default function ZooSnoozScreen() {
   const [zzStitchProgress, setZzStitchProgress] = useState(0);
   const [zzStitchAnimalIdx,setZzStitchAnimalIdx]= useState(-1);
   const [zzStitchedURL,    setZzStitchedURL]    = useState(null);
+  // ⚠️ Why a reason string and not just a boolean. Every way this stitch can fail used to end at
+  //    the SAME screen saying "not supported on this device", which is a guess dressed up as a
+  //    diagnosis — it says the device is at fault even when the real cause was an empty recording
+  //    or a MediaRecorder that would not start. On a phone there is no console to check, so the
+  //    screen has to carry the reason or iPhone faults cannot be investigated at all.
+  const [zzStitchError,    setZzStitchError]    = useState(null);
   const zzStitchedBlobRef = useRef(null);
   const zzAudioCtxRef     = useRef(null);
   const zzStitchDataRef   = useRef({ videoURLs: {}, completed: {} });
@@ -645,6 +651,8 @@ export default function ZooSnoozScreen() {
       try { wakeLock = await navigator.wakeLock?.request('screen'); } catch { /* unsupported or denied */ }
       releaseWakeLock = () => { try { wakeLock?.release(); } catch { /* already gone */ } wakeLock = null; };
 
+      if (!cancelled) setZzStitchError(null);
+
       const W = 720, H = 1280;
       const cvs = document.createElement('canvas');
       cvs.width = W; cvs.height = H;
@@ -726,15 +734,29 @@ export default function ZooSnoozScreen() {
         if (mimeType) opts.mimeType = mimeType;
         mr = new MediaRecorder(recordStream, opts);
       } catch(e) {
-        if (!cancelled) setZzStitchPhase('preview');
+        if (!cancelled) {
+          setZzStitchError(`This browser would not start the recorder (${e?.name || 'error'}).`);
+          setZzStitchPhase('preview');
+        }
         return;
       }
       mr.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
       mr.onstop = () => {
         if (cancelled) return;
-        const blob = new Blob(chunks, { type: blobType });
+        // ⚠️⚠️ THE iOS TRAP, AND IT WAS STILL LIVE HERE until 2026-10-03. The recorders were fixed
+        //    and this stitcher output was not, so an iPhone's finished DOCUMENTARY was still mp4
+        //    bytes labelled `video/webm` — it uploaded fine, downloaded fine, and no browser
+        //    would decode it. `blobType` came from `mimeType || 'video/webm'`, and on iOS
+        //    `isTypeSupported` says false to EVERY candidate, so `mimeType` is empty and the
+        //    label fell through to webm while MediaRecorder recorded mp4.
+        // 🚫 Label the film from what the recorder ACTUALLY produced. The upload a few hundred
+        //    lines below derives its extension and contentType from `blob.type`, so getting this
+        //    right is what makes the stored file playable.
+        const actual = chunks[0]?.type || mr.mimeType || mimeType || 'video/webm';
+        const blob = new Blob(chunks, { type: actual });
         zzStitchedBlobRef.current = blob;
         if (blob.size > 1000) setZzStitchedURL(URL.createObjectURL(blob));
+        else setZzStitchError(`The recorder produced almost nothing (${blob.size} bytes from ${chunks.length} chunks).`);
         setZzStitchProgress(100);
         setZzStitchPhase('preview');
       };
@@ -1246,8 +1268,15 @@ export default function ZooSnoozScreen() {
             <div style={{ borderRadius:'18px', background:'rgba(46,125,85,0.08)', border:'1px solid rgba(46,125,85,0.25)', padding:'2rem', textAlign:'center' }}>
               <div style={{ fontSize:'2rem', marginBottom:'0.75rem' }}>🎬</div>
               <p style={{ color:'#4A9E6B', fontSize:'0.88rem', margin:0, lineHeight:1.5 }}>
-                {vidsToStitch.length === 0 ? 'No videos were recorded this session.' : 'Video stitching is not supported on this device. Your individual clips have been saved.'}
+                {vidsToStitch.length === 0
+                  ? 'No videos were recorded this session.'
+                  : (zzStitchError || 'Video stitching is not supported on this device.')}
               </p>
+              {vidsToStitch.length > 0 && (
+                <p style={{ color:'rgba(168,196,178,0.6)', fontSize:'0.78rem', margin:'0.6rem 0 0', lineHeight:1.5 }}>
+                  Every clip you filmed is still saved.
+                </p>
+              )}
             </div>
           )}
           <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'0.6rem' }}>
