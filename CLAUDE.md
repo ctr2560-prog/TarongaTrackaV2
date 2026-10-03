@@ -256,10 +256,32 @@ no login at all**, returned: `classes` 10, `students` (collection group) 104, `z
   down if enforcement is switched on before Wildly sends tokens too.**
 
 #### 🔴 STILL OPEN — in rough priority order
-#### ⚠️ Item 2 — signed URLs: DEFERRED ON PURPOSE (2026-10-03), with the design recorded
+#### ⚠️ Item 2 — signed URLs: STARTED 2026-10-03, BLOCKED ON AN IAM GRANT
 
-**Decision:** not done before the Taronga IT meeting, and that is a deliberate call rather than an
-oversight. Recorded here so it is a scoped piece of work, not an open hole nobody owns.
+`getMediaUrl` is built and deployed. It mints a **v4 signed URL valid for 60 minutes**, and takes
+the storage path **out of the already-stored URL** rather than requiring a migration — so it can
+be proven before anything in the database is rewritten.
+
+Entitlement, two ways only:
+- **souvenir** — verifies `souvenirToken` against the keepsake document. ⚠️ This is the point of
+  the exercise: the token currently protects the *page*; this makes it protect the *file*.
+- **staff** — a verified staff ID token.
+
+🚫 **BLOCKED: the Cloud Functions service account cannot sign.** Confirmed by direct test:
+`Permission 'iam.serviceAccounts.signBlob' denied`. This is **not a code bug** and no amount of
+rewriting will fix it.
+
+**The grant required** (Google Cloud Console → IAM & Admin → Service Accounts):
+give `925190436532-compute@developer.gserviceaccount.com` the role
+**Service Account Token Creator** *on itself*.
+
+⚠️ Test signing FIRST on any future signed-URL work. Discovering this after rewiring every media
+read path would mean unpicking the most fragile code in the repo. The guards were verified
+working before this was found: missing token → 400, wrong token → 404, staff path unauthenticated
+→ 403.
+
+**Remaining after the grant** — and still the risky half:
+
 
 **What is already closed:** enumeration, at both layers. The bucket cannot be browsed (Storage
 `list` denied + App Check), and the URLs cannot be read out of Firestore (App Check enforced). So

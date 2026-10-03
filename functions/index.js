@@ -565,6 +565,99 @@ exports.manageStaffAdmins = onRequest(
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
+// getMediaUrl — mints a SHORT-LIVED signed URL for one piece of student media.
+//
+// ⚠️ WHY. Firebase download URLs (`?alt=media&token=…`) never expire. App Check closed
+// *enumeration* — you cannot browse the bucket or read the links out of Firestore — but a link
+// that has already leaked works forever, and crucially **the souvenir token protects the page,
+// not the file**. Anyone holding the raw URL skips the token entirely. A signed URL expires.
+//
+// ⚠️ IT TAKES THE STORAGE PATH OUT OF THE STORED URL rather than requiring a data migration.
+// Existing documents keep their `filmURL` exactly as-is; this reads the doc, extracts the object
+// path from it, and signs that. That means this can ship and be proven BEFORE anything is
+// rewritten — which matters, because the alternative is a migration of every media reference in
+// the database as step one.
+//
+// ⚠️ SIGNING NEEDS AN IAM PERMISSION that is NOT granted by default. The Cloud Functions service
+// account must hold `roles/iam.serviceAccountTokenCreator` on itself, or getSignedUrl fails with
+// "Permission 'iam.serviceAccounts.signBlob' denied". If this function returns that error, it is
+// a Cloud Console grant, not a code bug.
+const SIGNED_URL_MINUTES = 60;
+
+function storagePathFromUrl(url) {
+  // https://firebasestorage.googleapis.com/v0/b/{bucket}/o/{ENCODED_PATH}?alt=media&token=…
+  const m = String(url || '').match(/\/o\/([^?]+)/);
+  return m ? decodeURIComponent(m[1]) : null;
+}
+
+exports.getMediaUrl = onRequest(
+  { region: 'australia-southeast1', invoker: 'public' },
+  async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    const { kind, classCode, studentId, token, field } = req.body || {};
+    const db = admin.firestore();
+
+    // ── Entitlement ──────────────────────────────────────────────────────────────────────
+    // Exactly two ways in, and the souvenir one is the point of the whole exercise: the token
+    // now gates the FILE, not just the page that displays it.
+    let storedUrl = null;
+    try {
+      if (kind === 'souvenir') {
+        const COLLECTIONS = {
+          evolve: 'evolve_docs',
+          wildestDreams: 'wildestDreams_docs',
+          zoosnooz: 'zoosnooz_docs',
+        };
+        const col = COLLECTIONS[req.body?.mode];
+        if (!col || !classCode || !studentId || !token) {
+          res.status(400).json({ error: 'Missing souvenir details.' }); return;
+        }
+        const snap = await db.collection(col).doc(`${String(classCode).toUpperCase()}_${studentId}`).get();
+        if (!snap.exists) { res.status(404).json({ error: 'Not found.' }); return; }
+        const data = snap.data();
+        // ⚠️ Constant shape of refusal: a wrong token and a missing token look identical, and
+        //    neither reveals whether the record exists.
+        if (!data.souvenirToken || data.souvenirToken !== token) {
+          res.status(403).json({ error: 'Not found.' }); return;
+        }
+        storedUrl = data[field || 'filmURL'];
+      } else {
+        const staff = await verifyStaff(req);
+        if (!staff.ok) { res.status(staff.status).json({ error: staff.error }); return; }
+        storedUrl = req.body?.url;
+      }
+    } catch (err) {
+      console.error('getMediaUrl entitlement check failed:', err);
+      res.status(500).json({ error: 'Could not check that request.' });
+      return;
+    }
+
+    const path = storagePathFromUrl(storedUrl);
+    if (!path) { res.status(404).json({ error: 'No media for that record.' }); return; }
+
+    try {
+      const [signed] = await admin.storage().bucket().file(path).getSignedUrl({
+        version: 'v4',
+        action: 'read',
+        expires: Date.now() + SIGNED_URL_MINUTES * 60 * 1000,
+      });
+      res.json({ ok: true, url: signed, expiresInMinutes: SIGNED_URL_MINUTES });
+    } catch (err) {
+      console.error('getMediaUrl signing failed:', err);
+      // Surfaced rather than swallowed: the overwhelmingly likely cause is the missing IAM role
+      // above, and a generic "failed" would send someone hunting in the wrong place.
+      res.status(500).json({ error: 'Could not sign that media URL: ' + err.message });
+    }
+  }
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
 // cleanupRawClips — retention for the intermediate footage, NOT for the keepsakes.
 //
 // ⚠️⚠️ THIS IS AN AUTOMATED DELETER POINTED AT REAL CHILDREN'S MEDIA. Read all of this before
