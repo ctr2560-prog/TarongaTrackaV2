@@ -71,7 +71,8 @@ export default function AdminLoginScreen() {
             // ⚠️ clear() leaves the old markup behind; a second verifier on a dirty element throws
             //    a plain Error with no `.code`. Empty the host first. See the Control Room note.
             const host = document.getElementById('login-recaptcha');
-            if (host) host.innerHTML = '';
+            if (!host) throw new Error('sign-in verifier host is missing');
+            host.innerHTML = '';
             verifierRef.current = new RecaptchaVerifier(auth, 'login-recaptcha', { size: 'invisible' });
             const id = await new PhoneAuthProvider(auth).verifyPhoneNumber(
               { multiFactorHint: r.hints[0], session: r.session }, verifierRef.current);
@@ -130,6 +131,15 @@ export default function AdminLoginScreen() {
     <div style={{ position:'fixed', inset:0, background:'linear-gradient(135deg, var(--t-deep) 0%, var(--t-mid) 100%)', display:'flex', alignItems:'center', justifyContent:'center', padding:'clamp(1rem, 5vw, 2rem)', overflow:'auto' }}>
       <div className="animate-scale-in" style={{ background:'white', borderRadius:'24px', padding:'clamp(1.5rem, 4vh, 2.5rem)', maxWidth:'420px', width:'100%', boxShadow:'0 20px 60px rgba(0,0,0,0.3)' }}>
 
+        {/* ⚠️⚠️ THIS MUST RENDER UNCONDITIONALLY, AND IT MUST EXIST BEFORE THE CODE IS REQUESTED.
+            It was inside the `resolver ? …` branch, i.e. it only appeared AFTER React re-rendered
+            with the resolver set — but the verifier is constructed synchronously in the catch
+            block that sets it. So `getElementById` returned null and Firebase threw
+            `auth/argument-error`, which says nothing about a missing element, on a screen a
+            staff member cannot get past. 🚫 Never put a reCAPTCHA host behind a condition that
+            the code requesting it has not yet triggered. */}
+        <div id="login-recaptcha" />
+
         <div style={{ textAlign:'center', marginBottom:'1.5rem' }}>
           <h2 className="taronga-title" style={{ fontSize:'clamp(1.6rem, 4vh, 2rem)', color:'var(--t-deep)', marginBottom:'0.3rem', letterSpacing:'0.04em' }}>Taronga Staff Portal</h2>
           <p style={{ color:'#666', fontSize:'0.9rem' }}>Sign in with your Taronga account</p>
@@ -154,7 +164,6 @@ export default function AdminLoginScreen() {
             <p style={{ textAlign:'center', color:'#999', fontSize:'0.78rem', marginTop:'0.9rem', lineHeight:1.5 }}>
               No code? Contact your Taronga administrator.
             </p>
-            <div id="login-recaptcha" />
           </>
         ) : (
         <>
