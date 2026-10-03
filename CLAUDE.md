@@ -756,9 +756,28 @@ The only way back is the **Firebase Console → Authentication → Users → rem
 as the project owner **thebiologybloke@gmail.com**. 🚫 Do not enrol the root admin until that
 console access has been confirmed to work — it is the single point of recovery.
 
-⚠️ No QR code, on purpose: rendering one needs a library, and the setup key plus an
-`otpauth://` link (which opens the authenticator directly on a phone) achieves the same thing with
-no dependency.
+#### ⚠️ THE SETUP SCREEN NEEDS A QR CODE, AND SHIPPING WITHOUT ONE NEARLY COST THE FEATURE
+
+The first version offered only a 32-character **setup key to copy by hand** — the reasoning being
+that a QR needs a library and the `otpauth://` link covers phones. That reasoning ignored the
+actual situation: the portal is open on a **laptop** and the authenticator is on a **phone**, so
+the link is useless and the only path is retyping a long secret across devices. Cameron's response
+was *"it's very confusing. I don't like it"* and a reasonable proposal to **switch to SMS instead**.
+
+🚫 **Do not accept a weaker security control because the setup screen is unpleasant. Fix the
+screen.** `qrcode` (1.5.x) is now a dependency, **dynamically imported** so the ~50KB encoder never
+reaches a student's phone — same reasoning as model-viewer in ZooYard. The key is still there under
+a "Can't scan it?" disclosure for anyone who needs it.
+
+⚠️ **The QR is generated LOCALLY, in the browser.** 🚫 Never render an MFA secret through an
+external QR service (api.qrserver.com, Google Charts and friends): that hands the second factor to
+a third party and defeats the whole exercise. If the encoder ever fails to load, the panel falls
+back to the manual key rather than showing a broken image.
+
+**Why not SMS, when asked** — worth being able to answer this again: SIM-swap defeats it, it costs
+per message forever, and it means holding a mobile number for every staff member, in a project
+whose main privacy claim is that it stores almost nothing personal (students do not even give real
+names). An authenticator app has none of those problems.
 
 #### ⚠️ Privilege escalation via self-assigned staff role — FIXED 2026-10-03
 

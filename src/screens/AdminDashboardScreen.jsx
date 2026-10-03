@@ -2469,6 +2469,7 @@ function StaffMfaPanel() {
   const [uri,     setUri]     = useState('');
   const [code,    setCode]    = useState('');
   const [msg,     setMsg]     = useState(null);     // { ok, text }
+  const [qr,      setQr]      = useState('');       // data: URL of the scannable code
 
   const refresh = () => setFactors(listFactors());
 
@@ -2479,7 +2480,19 @@ function StaffMfaPanel() {
       const session = await multiFactor(u).getSession();
       const s = await TotpMultiFactorGenerator.generateSecret(session);
       setSecret(s);
-      setUri(s.generateQrCodeUrl(u.email || 'Taronga staff', 'Taronga Tracka'));
+      const otpauth = s.generateQrCodeUrl(u.email || 'Taronga staff', 'Taronga Tracka');
+      setUri(otpauth);
+      // ⚠️ Dynamically imported so the ~50KB encoder never reaches a student's phone — this panel
+      //    is staff-only and loads once in a blue moon. Same reasoning as model-viewer in ZooYard.
+      // ⚠️ Generated LOCALLY. 🚫 Never send an MFA secret to a QR-rendering web service: that
+      //    hands the second factor to a third party and defeats the entire exercise.
+      try {
+        const QR = await import('qrcode');
+        setQr(await QR.toDataURL(otpauth, { width: 220, margin: 1 }));
+      } catch (e) {
+        setQr('');   // the setup key below still works by hand
+        console.warn('[mfa] could not draw the QR code:', e);
+      }
       setPhase('enrolling');
     } catch (err) {
       const code2 = err?.code || '';
@@ -2496,7 +2509,7 @@ function StaffMfaPanel() {
     try {
       const assertion = TotpMultiFactorGenerator.assertionForEnrollment(secret, code.trim());
       await multiFactor(auth.currentUser).enroll(assertion, 'Authenticator app');
-      setSecret(null); setUri(''); setCode(''); setPhase('idle');
+      setSecret(null); setUri(''); setCode(''); setQr(''); setPhase('idle');
       setMsg({ ok: true, text: 'Two-step sign-in is on. You will be asked for a code next time you sign in.' });
       refresh();
     } catch (err) {
@@ -2547,22 +2560,34 @@ function StaffMfaPanel() {
 
       {(phase === 'enrolling' || (phase === 'busy' && secret)) && (
         <div style={{ marginTop:'0.4rem' }}>
-          <ol style={{ fontSize:'0.82rem', color:'var(--t-deep)', lineHeight:1.7, paddingLeft:'1.1rem', margin:'0 0 0.8rem' }}>
-            <li>Open your authenticator app (Google Authenticator, Microsoft Authenticator, 1Password).</li>
-            <li>Add an account and choose to enter a key by hand.</li>
-            <li>Paste the key below, then type the 6-digit code it shows.</li>
-          </ol>
-          {/* ⚠️ A key to copy rather than a QR code, deliberately: a QR needs a rendering library,
-              and this page may not load anything from outside. On a phone the link below opens
-              the authenticator app directly, which is the same convenience without the
-              dependency. */}
-          <label style={{ display:'block', fontSize:'0.72rem', fontWeight:700, color:'var(--t-deep)', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:'0.25rem' }}>Setup key</label>
-          <code style={{ display:'block', padding:'0.6rem 0.75rem', background:'white', border:'1px solid var(--t-stone)', borderRadius:'var(--t-r-sm)', fontSize:'0.85rem', wordBreak:'break-all', marginBottom:'0.5rem' }}>{secret?.secretKey}</code>
-          <div style={{ display:'flex', gap:'0.5rem', marginBottom:'0.8rem' }}>
-            <button onClick={() => navigator.clipboard?.writeText(secret?.secretKey || '')}
-              style={{ fontSize:'0.75rem', background:'var(--t-foam)', border:'1px solid var(--t-mist)', padding:'0.3rem 0.7rem', borderRadius:'var(--t-r-pill)', cursor:'pointer', fontWeight:600, color:'var(--t-deep)' }}>Copy key</button>
-            {uri && <a href={uri} style={{ fontSize:'0.75rem', background:'var(--t-foam)', border:'1px solid var(--t-mist)', padding:'0.3rem 0.7rem', borderRadius:'var(--t-r-pill)', fontWeight:600, color:'var(--t-deep)', textDecoration:'none' }}>Open in my authenticator app</a>}
-          </div>
+          {/* ⚠️ SCANNING IS THE WHOLE POINT. The first version offered only a key to copy by hand,
+              and copying a 32-character secret from a laptop to a phone is miserable enough that
+              Cameron reasonably asked to switch to SMS instead. A worse second factor because the
+              setup screen was unpleasant is a bad trade: fix the screen. */}
+          {qr ? (
+            <>
+              <p style={{ fontSize:'0.85rem', color:'var(--t-deep)', lineHeight:1.7, margin:'0 0 0.7rem' }}>
+                Open your authenticator app, choose to add an account, and point your phone at this:
+              </p>
+              <img src={qr} alt="Scan this with your authenticator app" width={220} height={220}
+                style={{ display:'block', borderRadius:'var(--t-r-sm)', border:'1px solid var(--t-stone)', background:'white', padding:6, marginBottom:'0.8rem' }} />
+            </>
+          ) : (
+            <p style={{ fontSize:'0.85rem', color:'var(--t-deep)', lineHeight:1.7, margin:'0 0 0.7rem' }}>
+              Open your authenticator app, add an account, and enter this key by hand:
+            </p>
+          )}
+
+          <details style={{ marginBottom:'0.8rem' }}>
+            <summary style={{ fontSize:'0.78rem', color:'var(--t-slate)', cursor:'pointer' }}>Can&rsquo;t scan it?</summary>
+            <code style={{ display:'block', padding:'0.6rem 0.75rem', background:'white', border:'1px solid var(--t-stone)', borderRadius:'var(--t-r-sm)', fontSize:'0.85rem', wordBreak:'break-all', margin:'0.5rem 0' }}>{secret?.secretKey}</code>
+            <div style={{ display:'flex', gap:'0.5rem', flexWrap:'wrap' }}>
+              <button onClick={() => navigator.clipboard?.writeText(secret?.secretKey || '')}
+                style={{ fontSize:'0.75rem', background:'var(--t-foam)', border:'1px solid var(--t-mist)', padding:'0.3rem 0.7rem', borderRadius:'var(--t-r-pill)', cursor:'pointer', fontWeight:600, color:'var(--t-deep)' }}>Copy key</button>
+              {uri && <a href={uri} style={{ fontSize:'0.75rem', background:'var(--t-foam)', border:'1px solid var(--t-mist)', padding:'0.3rem 0.7rem', borderRadius:'var(--t-r-pill)', fontWeight:600, color:'var(--t-deep)', textDecoration:'none' }}>Open on this device</a>}
+            </div>
+          </details>
+          <p style={{ fontSize:'0.85rem', color:'var(--t-deep)', margin:'0 0 0.5rem' }}>Then type the 6-digit code it shows:</p>
           <input value={code} onChange={e=>setCode(e.target.value.replace(/\D/g,'').slice(0,6))}
             inputMode="numeric" placeholder="6-digit code"
             style={{ width:'100%', maxWidth:'180px', padding:'0.6rem 0.8rem', borderRadius:'var(--t-r-sm)', border:'1.5px solid var(--t-stone)', fontSize:'1rem', letterSpacing:'0.18em', marginRight:'0.6rem', boxSizing:'border-box' }} />
