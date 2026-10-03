@@ -46,63 +46,24 @@ function buildEmailHtml(link) {
 </html>`;
 }
 
-exports.sendMagicLink = onRequest(
-  { region: 'australia-southeast1', invoker: 'public' },
-  async (req, res) => {
-    res.set('Access-Control-Allow-Origin', '*');
-    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+// 🚫 `sendMagicLink` was DELETED on 2026-10-03 during a security review. It was dead code —
+// teacher auth moved to email+password long ago and nothing in src/ called it — but it was still
+// deployed and PUBLIC, and it returned 200 to an anonymous caller.
+//
+// What it actually was: an OPEN EMAIL RELAY. Anyone could make it send a genuine, DKIM-signed
+// email from noreply@tarongatracka.com.au, containing a real Firebase sign-in link, to any
+// address they chose. That is a ready-made phishing instrument wearing Taronga's branding, a way
+// to flood a teacher's inbox with sign-in emails, and a way to burn the Resend quota and the
+// domain's sending reputation — which matters here, because delivery to DoE addresses is already
+// fragile.
+//
+// It was NOT account takeover: the caller-supplied redirectUrl is checked against Firebase's
+// authorised-domains list, so it cannot be pointed at an attacker's site. Verified at the time.
+//
+// ⚠️ THE LESSON, which is the bit worth keeping: dead code that is still DEPLOYED is not dead.
+//    "Nothing calls it" is not the same as "nobody can call it". Delete the deployment, not just
+//    the call site.
 
-    if (req.method === 'OPTIONS') {
-      res.status(204).send('');
-      return;
-    }
-
-    if (req.method !== 'POST') {
-      res.status(405).json({ error: 'Method not allowed' });
-      return;
-    }
-
-    const { email, redirectUrl } = req.body;
-
-    if (!email || typeof email !== 'string' || !email.includes('@')) {
-      res.status(400).json({ error: 'A valid email address is required.' });
-      return;
-    }
-
-    const actionCodeSettings = {
-      url: redirectUrl || 'https://ctr2560-prog.github.io/TarongaTrackaV2/',
-      handleCodeInApp: true,
-    };
-
-    // Generate the sign-in link server-side via Admin SDK
-    let link;
-    try {
-      link = await admin.auth().generateSignInWithEmailLink(email, actionCodeSettings);
-    } catch (err) {
-      console.error('generateSignInWithEmailLink error:', err);
-      res.status(500).json({ error: 'Failed to generate sign-in link.' });
-      return;
-    }
-
-    // Send branded email via Resend
-    const resend = new Resend(process.env.RESEND_API_KEY);
-    try {
-      await resend.emails.send({
-        from: 'Taronga Tracka <noreply@tarongatracka.com.au>',
-        to: email,
-        subject: 'Your Taronga Tracka sign-in link',
-        html: buildEmailHtml(link),
-      });
-    } catch (err) {
-      console.error('Email send error:', err);
-      res.status(500).json({ error: 'Failed to send email. Please try again.' });
-      return;
-    }
-
-    res.json({ success: true });
-  }
-);
 
 // ── Device booking notification ───────────────────────────────────────────────
 const { onDocumentCreated } = require('firebase-functions/v2/firestore');
@@ -777,162 +738,11 @@ exports.generateStaffPasswordReset = onRequest(
   }
 );
 
-// ─────────────────────────────────────────────────────────────────────────────
-// verifyAdminCode — server-side check of the staff portal access code.
-//
-// ⚠️ WHY THIS EXISTS. The staff portal code used to be verified IN THE BROWSER by
-// reading `adminAccess/{code}` directly, and that collection was world-readable. The
-// document ID *is* the code, so listing the collection returned the password. Verified
-// against the live project on 2026-10-02: an unauthenticated 15-line script read it in
-// 1.4 seconds. That was a complete authentication bypass for the staff portal.
-//
-// The client now posts the code here and never reads the collection; `adminAccess` is
-// denied to clients entirely in firestore.rules. The Admin SDK bypasses rules, so only
-// this function (and getAdminTeacherRoster, which does the same check) can see it.
-//
-// ⚠️ Moving the check server-side is NOT sufficient on its own — without throttling it
-// just converts "read the code" into "guess the code a thousand times a second". Hence
-// the lockout below. Attempts are tracked per IP in `adminAuthAttempts`, which clients
-// cannot read or write.
-const ADMIN_MAX_ATTEMPTS = 10;
-const ADMIN_WINDOW_MS = 15 * 60 * 1000;
+// 🚫 `verifyAdminCode` was DELETED on 2026-10-03. It verified the old shared staff access code.
+// The staff portal now signs in with a real account, so nothing called it — and an endpoint that
+// validates a shared secret is exactly the pattern being retired. The `adminAccess` collection it
+// read is also unused; its rules already deny all client access.
 
-async function checkAdminCode(db, rawCode, ip) {
-  const key = String(ip || 'unknown').replace(/[^a-zA-Z0-9.:_-]/g, '_').slice(0, 120) || 'unknown';
-  const attemptRef = db.collection('adminAuthAttempts').doc(key);
-  const now = Date.now();
-
-  const snap = await attemptRef.get();
-  const rec = snap.exists ? snap.data() : null;
-  const fresh = rec && (now - (rec.windowStart || 0)) < ADMIN_WINDOW_MS;
-  const count = fresh ? (rec.count || 0) : 0;
-  if (count >= ADMIN_MAX_ATTEMPTS) return { ok: false, locked: true };
-
-  const code = String(rawCode || '').trim().toLowerCase();
-  const codeSnap = await db.collection('adminAccess').doc(code).get();
-  const ok = codeSnap.exists && codeSnap.data().active === true;
-
-  if (ok) {
-    if (snap.exists) await attemptRef.delete();
-  } else {
-    await attemptRef.set({ count: count + 1, windowStart: fresh ? rec.windowStart : now, lastAt: now }, { merge: true });
-  }
-  return { ok, locked: false };
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// adminWipeAllData — the staff Control Room "wipe all data" button.
-//
-// ⚠️ WHY THIS MOVED SERVER-SIDE (2026-10-02). This used to run in the browser, deleting
-// every class and every student document directly, and it worked because `classes` and
-// `students` were `allow write: if true` — i.e. ANYONE could run the same deletion, with or
-// without the staff portal. firestore.rules now requires Firebase Auth to delete, and the
-// staff portal has no Firebase Auth, so the operation lives here instead and is gated on the
-// access code verified with the Admin SDK.
-//
-// ⚠️ The Control Room's own password is HARDCODED IN THE CLIENT as a plain string. Anyone
-// reading the JS bundle can see it. It is a UI speed bump, NOT a security control, and must
-// never be the only thing standing in front of a destructive action — which is exactly why
-// this function re-checks the real access code server-side regardless of what the UI did.
-//
-// This is the most destructive operation in the system. It requires the access code AND an
-// explicit confirm string, and it logs who ran it.
-// ⚠️ `setTeacherRole` was added and then REMOVED on 2026-10-03, deliberately. It granted
-// Taronga staff roles behind the shared admin access code. It is gone because staff is now an
-// explicit EMAIL ALLOWLIST inside firestore.rules (`isWildlyStaff()`), which cannot be
-// escalated into: changing who is staff requires deploying the rules, which requires access to
-// the Firebase project. An always-on endpoint whose only job is handing out privilege, gated by
-// a shared secret, is exactly the pattern being retired.
-// 🚫 Do not reintroduce an "appoint staff" endpoint. To appoint someone, add their email to the
-//    allowlist in firestore.rules and deploy. Slow on purpose.
-
-exports.adminWipeAllData = onRequest(
-  { region: 'australia-southeast1', invoker: 'public' },
-  async (req, res) => {
-    res.set('Access-Control-Allow-Origin', '*');
-    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-
-    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
-    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
-
-    const { confirm } = req.body || {};
-    if (confirm !== 'WIPE') {
-      res.status(400).json({ error: 'Confirmation text did not match.' });
-      return;
-    }
-
-    // ⚠️ The most destructive action in the system. It requires a signed-in STAFF ACCOUNT and
-    //    an explicit confirm string, and it logs the email that ran it — which is the whole
-    //    point of moving off a shared code: "who wiped the data?" now has an answer.
-    const staff = await verifyStaff(req);
-    if (!staff.ok) { res.status(staff.status).json({ error: staff.error }); return; }
-
-    const db = admin.firestore();
-    const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.ip;
-
-    try {
-      let classes = 0, students = 0;
-      const classesSnap = await db.collection('classes').get();
-      for (const classDoc of classesSnap.docs) {
-        const studentsSnap = await db.collection('classes').doc(classDoc.id).collection('students').get();
-        // Firestore caps a batch at 500 writes.
-        let batch = db.batch(), n = 0;
-        for (const s of studentsSnap.docs) {
-          batch.delete(s.ref); students++;
-          if (++n >= 450) { await batch.commit(); batch = db.batch(); n = 0; }
-        }
-        batch.delete(classDoc.ref); classes++;
-        await batch.commit();
-      }
-      console.warn(`[adminWipeAllData] WIPED ${classes} classes and ${students} students by ${staff.email} (ip=${ip})`);
-      res.json({ ok: true, classes, students });
-    } catch (err) {
-      console.error('adminWipeAllData failed:', err);
-      res.status(500).json({ error: 'Wipe failed: ' + err.message });
-    }
-  }
-);
-
-exports.verifyAdminCode = onRequest(
-  { region: 'australia-southeast1', invoker: 'public' },
-  async (req, res) => {
-    res.set('Access-Control-Allow-Origin', '*');
-    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-
-    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
-    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
-
-    const { code } = req.body || {};
-    if (!code || typeof code !== 'string') {
-      res.status(400).json({ error: 'An access code is required.' });
-      return;
-    }
-
-    try {
-      const db = admin.firestore();
-      const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.ip;
-      const { ok, locked } = await checkAdminCode(db, code, ip);
-
-      if (locked) {
-        res.status(429).json({ error: 'Too many attempts. Try again in 15 minutes.' });
-        return;
-      }
-      if (!ok) {
-        // Deliberately slow and deliberately vague: no hint about whether the code
-        // exists but is inactive, which would halve an attacker's search.
-        await new Promise((r) => setTimeout(r, 600));
-        res.status(403).json({ error: 'Invalid or inactive access code.' });
-        return;
-      }
-      res.json({ ok: true });
-    } catch (err) {
-      console.error('Admin code verification failed:', err);
-      res.status(500).json({ error: 'Failed to verify access code.' });
-    }
-  }
-);
 
 exports.getAdminTeacherRoster = onRequest(
   { region: 'australia-southeast1', invoker: 'public' },
