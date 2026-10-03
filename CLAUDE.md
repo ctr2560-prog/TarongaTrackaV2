@@ -762,6 +762,34 @@ arrived. An email second factor would lock staff out of the portal with no error
   stop the sign-in API being hammered from outside the app. 🚫 Do not switch it on casually:
   **Wildly shares this project and this user pool**, and any client that does not send App Check
   tokens loses sign-in the moment it is enforced.
+- 🔴 **SMS SECOND-FACTOR DOES NOT WORK YET, AND IT IS A CONSOLE-PROVISIONING PROBLEM, NOT CODE.**
+  The console says `auth/invalid-app-credential`; the browser console says what is actually wrong:
+  `Failed to initialize reCAPTCHA Enterprise config. Triggering the reCAPTCHA v2 verification.`
+  then `mfaEnrollment:start` → **400**.
+
+  **What that means:** Firebase Auth protects phone verification with reCAPTCHA. The project has
+  `recaptchaConfig.recaptchaKeys` **empty**, so the SDK falls back to the legacy v2 flow, and the
+  backend rejects that token too. Enabling the phone provider **through the admin API does not
+  provision the reCAPTCHA key** — the Firebase console does that as a side effect, and nothing
+  tells you it is missing.
+
+  **What was tried and failed, so nobody repeats it:**
+  - `recaptchaConfig.phoneEnforcementState: AUDIT` + `useSmsBotScore` + `useSmsTollFraudProtection`
+    — accepted, but **no key is provisioned** by setting it.
+  - Creating a reCAPTCHA Enterprise key by hand and attaching it:
+    `type: "PHONE_PROVIDER"` → invalid enum; `type: "WEB"` → **`INVALID_SITE_KEY`**. Identity
+    Platform only accepts a key its own provisioning created. The hand-made key was deleted again.
+  - 🚫 **Do not attach the App Check key ("Tracka") to auth.** Different purpose and settings;
+    breaking App Check would take down Firestore and Storage for every user.
+
+  **The remaining path is the Firebase console**, which must provision the key itself: re-save the
+  **Phone** provider under Authentication → Sign-in method, and/or enable reCAPTCHA protection
+  under Authentication → Settings.
+
+  ⚠️ **TOTP needs none of this.** `generateSecret` takes a session and nothing else — no
+  verifier, no reCAPTCHA, no console provisioning. It works today, and it now has a QR code to
+  scan. **If SMS stalls again, the authenticator app is the working option, not the fallback.**
+
 - ⚠️ **SMS is allow-listed to `AU` only** (`smsRegionConfig.allowlistOnly.allowedRegions: ["AU"]`).
   Enabling phone verification opens the door to **SMS pumping fraud** — an attacker triggers
   thousands of texts to premium numbers abroad and the project owner pays. 🚫 Do not widen this
