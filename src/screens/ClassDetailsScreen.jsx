@@ -204,6 +204,11 @@ export default function ClassDetailsScreen() {
         completedAt: null,
         conservationStatement: '',
         restored: true,
+        // ⚠️ Clearing the device claim is part of restoring, not an extra. A restored student
+        //    rejoins — very often on a different tablet from the one that first claimed the
+        //    record — and without this the rules would refuse their writes the moment they
+        //    picked their animal again.
+        deviceUid: null,
       }, { merge: true });
     } catch (e) { alert('Restore failed: ' + e.message); }
     setStudentActionBusy(p => ({ ...p, [s.id]: null }));

@@ -52,9 +52,43 @@ service cloud.firestore {
       //    ⚠️ If a staff delete ever "stops working", fix the function — do NOT reopen this.
       match /students/{studentId} {
         allow read: if true;
-        allow create, update: if true;
+        allow create: if true;
+
+        // ⚠️ A student may only change THEIR OWN record (2026-10-03). Three arms, each needed:
+        //
+        //   1. `ownsStudentRecord()` — the anonymous device id stamped at join. This is the
+        //      actual protection: before it, anyone could rewrite any student's scores.
+        //   2. `unclaimedStudentRecord()` — BACK-COMPAT. Every record created before today has
+        //      no `deviceUid`, and those classes must keep working. Protection applies to new
+        //      classes; old ones age out. Also covers a record the teacher has released.
+        //   3. `isEducator()` — teachers and staff. ⚠️ WITHOUT THIS, "Restore" and "New device"
+        //      on Class Details both fail: a teacher's uid is not the student's deviceUid.
+        //      It tests for an EMAIL on the token, because `request.auth != null` is true for
+        //      anonymous students too and would grant everyone everything.
+        //
+        // ⚠️ `deviceUid in resource.data` is checked before reading it — reading a field that
+        //    does not exist errors, and an erroring rule denies, which would lock out every
+        //    pre-existing student.
+        allow update: if unclaimedStudentRecord() || ownsStudentRecord() || isEducator();
+
         allow delete: if request.auth != null;
       }
+    }
+
+    function unclaimedStudentRecord() {
+      return !('deviceUid' in resource.data) || resource.data.deviceUid == null;
+    }
+
+    function ownsStudentRecord() {
+      return request.auth != null
+        && 'deviceUid' in resource.data
+        && request.auth.uid == resource.data.deviceUid;
+    }
+
+    // Anonymous students have NO email claim; teachers and staff sign in with email+password and
+    // therefore do. That is what separates "an educator" from "any signed-in session".
+    function isEducator() {
+      return request.auth != null && request.auth.token.email != null;
     }
 
     // Collection-group read for `students`, so staff dashboards (e.g. Wildly's
