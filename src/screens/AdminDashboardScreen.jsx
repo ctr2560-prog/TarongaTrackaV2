@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   collection, doc, getDoc, getDocs, updateDoc, setDoc, deleteDoc, query, where,
   orderBy, limit, writeBatch, serverTimestamp, deleteField, onSnapshot, increment,
@@ -6,7 +6,6 @@ import {
 import { db, storage, auth } from '../firebase';
 import {
   EmailAuthProvider, reauthenticateWithCredential, multiFactor, TotpMultiFactorGenerator,
-  RecaptchaVerifier, PhoneAuthProvider, PhoneMultiFactorGenerator,
 } from 'firebase/auth';
 import { ref as storageRef, getDownloadURL } from 'firebase/storage';
 import { isTarongaStaff } from '../constants/tarongaStaff';
@@ -2472,75 +2471,8 @@ function StaffMfaPanel() {
   const [msg,     setMsg]     = useState(null);     // { ok, text }
   const [qr,      setQr]      = useState('');       // data: URL of the scannable code
   const [method,  setMethod]  = useState(null);    // null | 'sms' | 'totp'
-  const [phone,   setPhone]   = useState('');
-  const [verifId, setVerifId] = useState('');
 
   const refresh = () => setFactors(listFactors());
-
-  // ⚠️ Australian mobiles get typed as "0412 345 678" and Firebase requires E.164. Converting it
-  //    here is the difference between "it just works" and a staff member staring at
-  //    `auth/invalid-phone-number` with no idea what is wrong.
-  const toE164 = (raw) => {
-    const d = String(raw).replace(/[^\d+]/g, '');
-    if (d.startsWith('+')) return d;
-    if (d.startsWith('0')) return `+61${d.slice(1)}`;
-    if (d.startsWith('61')) return `+${d}`;
-    return `+61${d}`;
-  };
-
-  // ⚠️⚠️ A reCAPTCHA TOKEN IS SINGLE USE. Reusing one verifier across attempts hands Firebase an
-  //    already-spent token and it answers `auth/invalid-app-credential` — which reads like a
-  //    project misconfiguration and sends you hunting through the console for an hour. Clear the
-  //    old widget and build a fresh one for every send.
-  const verifierRef = useRef(null);
-  const freshVerifier = () => {
-    try { verifierRef.current?.clear(); } catch { /* nothing rendered yet */ }
-    // ⚠️ `clear()` is NOT enough. It detaches the widget but leaves its markup in the container,
-    //    and constructing a second verifier on a dirty element throws a plain Error —
-    //    "reCAPTCHA has already been rendered in this element" — with **no `.code`**, which is
-    //    why the failure first surfaced as a bare "(error)" with nothing to go on.
-    const host = document.getElementById('mfa-recaptcha');
-    if (host) host.innerHTML = '';
-    verifierRef.current = new RecaptchaVerifier(auth, 'mfa-recaptcha', { size: 'invisible' });
-    return verifierRef.current;
-  };
-
-  const sendSms = async () => {
-    if (!phone.trim()) return;
-    setPhase('busy'); setMsg(null);
-    try {
-      const session = await multiFactor(auth.currentUser).getSession();
-      const id = await new PhoneAuthProvider(auth).verifyPhoneNumber(
-        { phoneNumber: toE164(phone), session }, freshVerifier());
-      setVerifId(id); setPhase('enrolling');
-      setMsg({ ok: true, text: `Code sent to ${toE164(phone)}.` });
-    } catch (err) {
-      setPhase('idle'); setMethod('sms');
-      // ⚠️ Show the real reason. `err.code || 'error'` hid a plain Error's message entirely and
-      //    produced "(error)", which is useless to whoever is standing there trying to sign in.
-      console.warn('[mfa] could not send the code:', err);
-      setMsg({ ok: false, text: err?.code === 'auth/invalid-phone-number'
-        ? 'That does not look like a mobile number. Try 0412 345 678.'
-        : `Could not send the code: ${err?.code || err?.message || 'unknown error'}` });
-    }
-  };
-
-  const finishSms = async () => {
-    if (!verifId || code.trim().length < 6) return;
-    setPhase('busy'); setMsg(null);
-    try {
-      const cred = PhoneAuthProvider.credential(verifId, code.trim());
-      await multiFactor(auth.currentUser).enroll(PhoneMultiFactorGenerator.assertion(cred), 'Mobile');
-      setVerifId(''); setCode(''); setPhone(''); setMethod(null); setPhase('idle');
-      setMsg({ ok: true, text: 'Two-step sign-in is on. You will get a text with a code each time you sign in.' });
-      refresh();
-    } catch (err) {
-      setPhase('enrolling');
-      setMsg({ ok: false, text: err?.code === 'auth/invalid-verification-code'
-        ? 'That code was not accepted. Check the text and try again.'
-        : `Could not turn it on (${err?.code || 'error'}).` });
-    }
-  };
 
   const begin = async () => {
     setPhase('starting'); setMsg(null);
@@ -2621,54 +2553,13 @@ function StaffMfaPanel() {
           </div>
         ))
       ) : (phase === 'idle' || phase === 'starting') && !method ? (
-        <div style={{ display:'flex', gap:'0.6rem', flexWrap:'wrap' }}>
-          <button onClick={() => { setMethod('sms'); setMsg(null); }}
-            style={{ padding:'0.65rem 1.1rem', borderRadius:'var(--t-r-pill)', border:'none', background:'linear-gradient(135deg,var(--t-mid),var(--t-eucalyptus))', color:'white', fontSize:'0.85rem', fontWeight:700, cursor:'pointer' }}>
-            Text me a code
-          </button>
-          {/* ⚠️ Still offered, and still the stronger option — see the note above the panel. It is
-              second because staff adoption matters more than the margin between them, and a
-              control nobody turns on protects nothing. */}
-          <button onClick={() => { setMethod('totp'); begin(); }} disabled={phase==='starting'}
-            style={{ padding:'0.65rem 1.1rem', borderRadius:'var(--t-r-pill)', border:'1px solid var(--t-stone)', background:'white', color:'var(--t-deep)', fontSize:'0.85rem', fontWeight:600, cursor:'pointer' }}>
-            {phase==='starting' ? 'Starting…' : 'Use an authenticator app instead'}
-          </button>
-        </div>
+        <button onClick={() => { setMethod('totp'); begin(); }} disabled={phase==='starting'}
+          style={{ padding:'0.65rem 1.1rem', borderRadius:'var(--t-r-pill)', border:'none', background: phase==='starting' ? '#CCC' : 'linear-gradient(135deg,var(--t-mid),var(--t-eucalyptus))', color:'white', fontSize:'0.85rem', fontWeight:700, cursor: phase==='starting' ? 'not-allowed' : 'pointer' }}>
+          {phase==='starting' ? 'Starting…' : 'Turn on two-step sign-in'}
+        </button>
       ) : null}
 
-      {method === 'sms' && !verifId && phase !== 'enrolling' && (
-        <div style={{ marginTop:'0.2rem' }}>
-          <label style={{ display:'block', fontSize:'0.78rem', fontWeight:700, color:'var(--t-deep)', marginBottom:'0.3rem' }}>Your mobile number</label>
-          <input value={phone} onChange={e=>setPhone(e.target.value)} placeholder="0412 345 678"
-            inputMode="tel" autoComplete="tel"
-            onKeyDown={e => e.key === 'Enter' && sendSms()}
-            style={{ width:'100%', maxWidth:'220px', padding:'0.6rem 0.8rem', borderRadius:'var(--t-r-sm)', border:'1.5px solid var(--t-stone)', fontSize:'0.95rem', marginRight:'0.6rem', boxSizing:'border-box' }} />
-          <button onClick={sendSms} disabled={phase==='busy' || !phone.trim()}
-            style={{ padding:'0.6rem 1.1rem', borderRadius:'var(--t-r-pill)', border:'none', background:(phase==='busy'||!phone.trim())?'#CCC':'var(--t-mid)', color:'white', fontSize:'0.85rem', fontWeight:700, cursor:(phase==='busy'||!phone.trim())?'not-allowed':'pointer' }}>
-            {phase==='busy' ? 'Sending…' : 'Send code'}
-          </button>
-          <button onClick={() => { setMethod(null); setMsg(null); }}
-            style={{ marginLeft:'0.5rem', background:'none', border:'none', color:'var(--t-slate)', fontSize:'0.78rem', cursor:'pointer' }}>Cancel</button>
-        </div>
-      )}
 
-      {method === 'sms' && verifId && (
-        <div style={{ marginTop:'0.2rem' }}>
-          <p style={{ fontSize:'0.85rem', color:'var(--t-deep)', margin:'0 0 0.5rem' }}>Enter the 6-digit code from the text:</p>
-          <input value={code} onChange={e=>setCode(e.target.value.replace(/\D/g,'').slice(0,6))}
-            inputMode="numeric" autoComplete="one-time-code" autoFocus placeholder="000000"
-            onKeyDown={e => e.key === 'Enter' && finishSms()}
-            style={{ width:'100%', maxWidth:'180px', padding:'0.6rem 0.8rem', borderRadius:'var(--t-r-sm)', border:'1.5px solid var(--t-stone)', fontSize:'1rem', letterSpacing:'0.18em', marginRight:'0.6rem', boxSizing:'border-box' }} />
-          <button onClick={finishSms} disabled={phase==='busy' || code.length < 6}
-            style={{ padding:'0.6rem 1.1rem', borderRadius:'var(--t-r-pill)', border:'none', background:(phase==='busy'||code.length<6)?'#CCC':'var(--t-mid)', color:'white', fontSize:'0.85rem', fontWeight:700, cursor:(phase==='busy'||code.length<6)?'not-allowed':'pointer' }}>
-            {phase==='busy' ? 'Checking…' : 'Confirm'}
-          </button>
-        </div>
-      )}
-
-      {/* Firebase requires a reCAPTCHA host element for every phone step. Invisible: it only ever
-          shows a challenge if Google thinks the request looks automated. */}
-      <div id="mfa-recaptcha" />
 
       {method === 'totp' && (phase === 'enrolling' || (phase === 'busy' && secret)) && (
         <div style={{ marginTop:'0.4rem' }}>

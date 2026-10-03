@@ -713,8 +713,21 @@ account; `AdminLoginScreen` handles the `auth/multi-factor-auth-required` challe
 ⚠️ **The CHALLENGE was shipped before anyone can enrol, deliberately.** Enrolling first, on a
 build that could not answer the challenge, would lock that person out of the portal entirely.
 
-**BOTH SMS and an authenticator app are offered. SMS is the default, and that was a deliberate
-reversal (2026-10-03).**
+**AUTHENTICATOR APP ONLY. SMS was built, hit a wall, and was removed the same day (2026-10-03).**
+
+🚫 **DO NOT REBUILD SMS WITHOUT READING THE BLOCKER BELOW.** The client code worked; the project
+could not be provisioned for it from the API, the enrolment succeeded while **sign-in could not
+send a code**, and the net effect was Cameron **locked out of his own portal** with a phone factor
+on his account. It was removed by clearing the factor through the Admin API (see Recovery), and
+`signIn.phoneNumber` is switched back off so the SMS-fraud surface is closed again.
+
+The usability argument for SMS was real and correct — *"if it's confusing me it's gonna confuse my
+other staff members"*. It was defeated by the thing not working, not by the security ranking. What
+removed the usability problem instead was the **QR code**: scan, six digits, done.
+
+*(Historical: the original reasoning, still true, was that SIM-swap defeats SMS, it costs per
+message, and it means holding a mobile number for every staff member in a project whose main
+privacy claim is that it stores almost nothing personal.)*
 
 The first version was TOTP only, on the reasoning that SIM-swap defeats SMS, SMS costs per
 message, and it means holding a mobile number for every staff member in a project whose main
@@ -782,9 +795,12 @@ arrived. An email second factor would lock staff out of the portal with no error
   - 🚫 **Do not attach the App Check key ("Tracka") to auth.** Different purpose and settings;
     breaking App Check would take down Firestore and Storage for every user.
 
-  **The remaining path is the Firebase console**, which must provision the key itself: re-save the
-  **Phone** provider under Authentication → Sign-in method, and/or enable reCAPTCHA protection
-  under Authentication → Settings.
+  **The remaining path would be the Firebase console**, which must provision the key itself. Not
+  pursued — see the removal note above.
+
+  ⚠️ **Enrolment succeeded while sign-in did not**, which is the dangerous combination: a staff
+  member can turn on a second factor and then be unable to get back in. 🚫 **Never ship a second
+  factor without testing the SIGN-IN half on a real account first.**
 
   ⚠️ **TOTP needs none of this.** `generateSecret` takes a session and nothing else — no
   verifier, no reCAPTCHA, no console provisioning. It works today, and it now has a QR code to
@@ -840,9 +856,26 @@ every teacher account that has not enrolled.
 
 ⚠️⚠️ **RECOVERY, AND THIS MATTERS MOST FOR THE ROOT ADMIN.** There are **no backup codes**. A lost
 authenticator cannot be fixed by the account holder, by another staff member, or through this app.
-The only way back is the **Firebase Console → Authentication → Users → remove the second factor**,
-as the project owner **thebiologybloke@gmail.com**. 🚫 Do not enrol the root admin until that
-console access has been confirmed to work — it is the single point of recovery.
+
+**It was needed for real on 2026-10-03** and the console is not the only way. As project owner:
+
+```bash
+TOKEN=$(gcloud auth print-access-token)
+# find the uid and see what is enrolled
+curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "x-goog-user-project: tarongatracka" \
+  -H "Content-Type: application/json" \
+  https://identitytoolkit.googleapis.com/v1/projects/tarongatracka/accounts:lookup \
+  -d '{"email":["someone@example.com"]}'
+# clear every second factor on that account
+curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "x-goog-user-project: tarongatracka" \
+  -H "Content-Type: application/json" \
+  https://identitytoolkit.googleapis.com/v1/projects/tarongatracka/accounts:update \
+  -d '{"localId":"<uid>","mfa":{"enrollments":[]}}'
+```
+
+The console equivalent is **Authentication → Users → the user → remove the second factor**.
+⚠️ Either way it needs the **project owner** (`thebiologybloke@gmail.com`), which is the single
+point of recovery for the root admin — there is nobody above them.
 
 #### ⚠️ THE SETUP SCREEN NEEDS A QR CODE, AND SHIPPING WITHOUT ONE NEARLY COST THE FEATURE
 
