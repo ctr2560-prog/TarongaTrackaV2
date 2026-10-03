@@ -1245,6 +1245,44 @@ last resort.
 🚫 Old `.webm` clips recorded on iOS are still mislabelled in Storage. They will stay broken
 unless their content type is corrected — the bytes are fine, only the label is wrong.
 
+### 0b. ⚠️⚠️ "THE CAMERA IS ZOOMED IN" — IT WAS THE CROP, NOT THE CAMERA (fixed 2026-10-03)
+
+Students at the first Evolve run (Ingleburn HS, 2026-09-22) reported the camera being **zoomed
+in**, and Cameron confirmed it on his own phone. **Nothing was wrong with the camera.** Two
+separate crops were discarding most of the picture after the fact.
+
+**The numbers, which are the whole story:**
+
+| | aspect | of a 1920x1080 clip, width kept |
+|---|---|---|
+| Capture preview (`aspect-ratio: 9/16` + `object-fit: cover`) | 0.563 | **32%** |
+| Film's video area (720 wide, 1280-80-180 = 1020 tall) | 0.706 | **40%** |
+
+So a landscape clip lost ~60% of its width in the film, and the preview was **tighter still** —
+the most zoomed-in view in the system was the one the student framed themselves in.
+
+⚠️ **And the comments asserted the opposite.** Both the capture constraints and the preview CSS
+carried a note saying `object-fit: cover` meant "the preview shows exactly the crop the stitcher
+will take". It never did: 0.563 is not 0.706. 🚫 **Never state that two geometries match. Derive
+one from the other.** `EVOLVE_VIDEO_ASPECT` is now exported from `utils/evolveFilm.js` and the
+preview reads it through a CSS variable, so they cannot drift again.
+
+**The fix to the film (Cameron's choice, 2026-10-03): a wide clip is no longer cropped.** When a
+source is more than 5% wider than the window, the WHOLE frame is fitted to the full width and the
+space above and below is filled with a **blurred, darkened enlargement of the same frame** — no
+crop, and no black bars in a keepsake. Portrait and near-square sources keep the mild centre crop,
+which loses almost nothing and fills the window properly.
+⚠️ `ctx.filter` is not available in every engine. Where it is missing this degrades to an
+unblurred enlargement, which still reads as a soft backdrop — **deliberately no feature branch**,
+because the degraded form is acceptable and a branch would be a second thing to keep in step.
+
+**The preview is now `object-fit: contain`** on the same aspect, which is what the stitcher does.
+
+⚠️ **The capture constraints were NOT changed.** They ask for portrait with `ideal`, and that is
+right. The evidence says phones return something wider anyway, and the lesson is that the pipeline
+must handle whatever arrives rather than assume the request was honoured. 🚫 Do not "fix" this by
+tightening constraints to `exact` — that fails the camera outright on a device that cannot comply.
+
 ### 1. Capture must match the film's aspect ratio
 
 Evolve films are **720×1280 portrait**, so capture asks for portrait:

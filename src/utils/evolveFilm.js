@@ -27,6 +27,19 @@ const MIME_CANDIDATES = [
 // ⚠️ `describeMime` exists because guessing is what broke iOS. Derive the labels from a REAL
 //    mime string — either one the browser confirmed, or the one MediaRecorder reports after it
 //    starts — never from a default.
+// ⚠️ THE FILM'S GEOMETRY LIVES HERE SO THE PREVIEW CANNOT DRIFT FROM IT.
+//
+// The capture preview used to be hard-coded `aspect-ratio: 9/16` with a comment claiming it
+// "crops it the same way the stitcher will". It did not: the film's video area is 720 wide by
+// (1280 - 80 - 180) = 1020 tall, an aspect of 0.706, against the preview's 0.563. So a student
+// framed themselves in a TIGHTER box than the film actually used, and the two disagreed about
+// what would survive. Import EVOLVE_VIDEO_ASPECT rather than writing a ratio by hand.
+export const EVOLVE_FILM_W = 720;
+export const EVOLVE_FILM_H = 1280;
+export const EVOLVE_FILM_TOP = 80;    // branding strip
+export const EVOLVE_FILM_BOT = 180;   // chapter caption panel
+export const EVOLVE_VIDEO_ASPECT = EVOLVE_FILM_W / (EVOLVE_FILM_H - EVOLVE_FILM_TOP - EVOLVE_FILM_BOT);
+
 export function describeMime(mimeType) {
   const isMP4 = String(mimeType || '').includes('mp4');
   return {
@@ -121,7 +134,7 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
   try { wakeLock = await navigator.wakeLock?.request('screen'); } catch { /* unsupported or denied */ }
   const releaseWakeLock = () => { try { wakeLock?.release(); } catch { /* already gone */ } wakeLock = null; };
 
-  const W = 720, H = 1280;
+  const W = EVOLVE_FILM_W, H = EVOLVE_FILM_H;
   const cvs = document.createElement('canvas');
   cvs.width = W; cvs.height = H;
   const ctx = cvs.getContext('2d');
@@ -398,7 +411,7 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
     const src = clipURLs[c.id];
     if (!src) continue;
 
-    const topH = 80, botH = 180, vidY = topH, vidH = H - topH - botH, botY = topH + vidH;
+    const topH = EVOLVE_FILM_TOP, botH = EVOLVE_FILM_BOT, vidY = topH, vidH = H - topH - botH, botY = topH + vidH;
     const dStr = new Date().toLocaleDateString('en-AU', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
 
     await new Promise(resolve => {
@@ -482,10 +495,40 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
         try {
           const vW = videoEl.videoWidth || W, vH2 = videoEl.videoHeight || vidH;
           const tgtA = W / vidH, srcA = vW / vH2;
-          let sx, sy, sw, sh;
-          if (srcA > tgtA) { sh = vH2; sw = sh * tgtA; sx = (vW - sw) / 2; sy = 0; }
-          else { sw = vW; sh = sw / tgtA; sx = 0; sy = (vH2 - sh) / 2; }
-          ctx.drawImage(videoEl, sx, sy, sw, sh, 0, vidY, W, vidH);
+          if (srcA > tgtA * 1.05) {
+            // ⚠️ THE CLIP IS WIDER THAN THE FILM'S WINDOW — DO NOT CROP IT TO FIT.
+            //
+            // This used to centre-crop to `tgtA`, which on a 1920x1080 clip kept a 762px strip
+            // out of 1920: **40% of the width thrown away**. Students at the first Evolve run
+            // (Ingleburn HS, 2026-09-22) reported the camera being "zoomed in", and that crop is
+            // what they were describing. It is not a capture fault — the sides were discarded
+            // after the fact.
+            //
+            // Instead: the WHOLE frame, fitted to the full width, with the space above and below
+            // filled by a blurred enlargement of the same frame. Nothing is lost and there are no
+            // black bars in a keepsake film. Cameron's call, 2026-10-03.
+            const fitH = W / srcA;
+            const padY = vidY + (vidH - fitH) / 2;
+            ctx.save();
+            ctx.beginPath(); ctx.rect(0, vidY, W, vidH); ctx.clip();
+            // Blurred backdrop: the same frame, cover-cropped to fill, blurred heavily.
+            // ⚠️ `ctx.filter` is not available everywhere. Where it is missing this degrades to an
+            //    unblurred enlargement, which still reads as a soft backdrop rather than a bug —
+            //    so there is deliberately no feature branch beyond letting it be ignored.
+            const cvH = vH2, cvW = cvH * tgtA;
+            try { ctx.filter = 'blur(26px) brightness(0.55)'; } catch { /* unsupported */ }
+            ctx.drawImage(videoEl, (vW - cvW) / 2, 0, cvW, cvH, -20, vidY - 20, W + 40, vidH + 40);
+            try { ctx.filter = 'none'; } catch { /* unsupported */ }
+            ctx.drawImage(videoEl, 0, 0, vW, vH2, 0, padY, W, fitH);
+            ctx.restore();
+          } else {
+            // Portrait or near-square: a mild centre crop loses almost nothing, and filling the
+            // window edge to edge is better than padding a frame that nearly fits.
+            let sx, sy, sw, sh;
+            if (srcA > tgtA) { sh = vH2; sw = sh * tgtA; sx = (vW - sw) / 2; sy = 0; }
+            else { sw = vW; sh = sw / tgtA; sx = 0; sy = (vH2 - sh) / 2; }
+            ctx.drawImage(videoEl, sx, sy, sw, sh, 0, vidY, W, vidH);
+          }
           drawn++;
         } catch { /* frame not ready */ }
 

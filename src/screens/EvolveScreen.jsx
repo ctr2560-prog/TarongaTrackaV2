@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
 import { useStudent } from '../context/StudentContext';
 import { EVOLVE_CHAPTERS, EVOLVE_STORY_ORDER, EVOLVE_CHAPTER_WORDS as WORDS, EVOLVE_THEME as T, EVOLVE_MIN_WORDS } from '../data/evolveAnimals';
-import { buildEvolveFilm, startChapterRecording, describeMime } from '../utils/evolveFilm';
+import { buildEvolveFilm, startChapterRecording, describeMime, EVOLVE_VIDEO_ASPECT } from '../utils/evolveFilm';
 import { doc, getDoc, updateDoc, setDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
@@ -80,6 +80,9 @@ function Shell({ children, onHome, scroll = true }) {
       )}
       {children}
       <style>{`
+        /* ⚠️ Driven from the film's own geometry (see EVOLVE_VIDEO_ASPECT) so the preview can never
+           disagree with what the film shows. It was hard-coded 9/16 while the film used 0.706. */
+        :root { --ev-video-aspect: ${EVOLVE_VIDEO_ASPECT}; }
         .ev-horizon {
           position: fixed; left: 0; right: 0; bottom: 0; height: 55vh; pointer-events: none; z-index: 0;
           background: radial-gradient(135% 78% at 50% 100%, rgba(255,183,77,0.42) 0%, rgba(216,110,64,0.20) 34%, rgba(120,60,90,0.10) 58%, transparent 78%);
@@ -259,8 +262,14 @@ function Shell({ children, onHome, scroll = true }) {
         }
         .ev-prompt-body:last-child { margin-bottom: 0; }
 
-        /* Portrait, because the finished film is 720x1280. object-fit: cover means the
-           preview shows exactly the crop the stitcher will take. */
+        /* ⚠️ THE PREVIEW MUST SHOW WHAT THE FILM WILL SHOW, AND TWICE NOW IT HAS NOT.
+           It was aspect-ratio 9/16 with a comment claiming it matched the stitcher; the film's
+           video area is actually 0.706, not 0.563. And it was object-fit cover, which crops the
+           sides off a landscape stream, so a student framed themselves inside a window far
+           tighter than the film used and what they saw while filming was the most zoomed-in view
+           in the whole system. The aspect now comes from EVOLVE_VIDEO_ASPECT, and contain matches
+           the stitcher's fit-the-whole-frame behaviour for wide clips.
+           Do not change either back without changing drawFrame in evolveFilm.js to match. */
         .ev-say {
           background: rgba(232,179,60,0.08); border: 1px solid rgba(232,179,60,0.24);
           border-radius: 12px; padding: 0.9rem 1.1rem; margin-bottom: 1rem;
@@ -278,11 +287,11 @@ function Shell({ children, onHome, scroll = true }) {
         }
 
         .ev-cam {
-          position: relative; aspect-ratio: 9 / 16; max-height: 58vh; width: auto; margin: 0 auto 0.9rem;
+          position: relative; aspect-ratio: var(--ev-video-aspect); max-height: 58vh; width: auto; margin: 0 auto 0.9rem;
           border-radius: 16px; overflow: hidden; background: #000;
           box-shadow: 0 14px 40px rgba(0,0,0,0.45);
         }
-        .ev-cam video { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .ev-cam video { width: 100%; height: 100%; object-fit: contain; display: block; background: #0B0A12; }
         .ev-cam-play { max-height: 62vh; }
 
         .ev-write {
