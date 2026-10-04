@@ -4,9 +4,7 @@ import {
   orderBy, limit, writeBatch, serverTimestamp, deleteField, onSnapshot, increment,
 } from 'firebase/firestore';
 import { db, storage, auth } from '../firebase';
-import {
-  EmailAuthProvider, reauthenticateWithCredential, multiFactor, TotpMultiFactorGenerator,
-} from 'firebase/auth';
+import { EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { ref as storageRef, getDownloadURL } from 'firebase/storage';
 import { isTarongaStaff } from '../constants/tarongaStaff';
 import { SignedImage } from '../components/SignedMedia';
@@ -2436,189 +2434,6 @@ function OverviewTab({ classes, loading, onClassClick }) {
 }
 
 // ─── Tab: Control Room ────────────────────────────────────────────────────────
-// ⚠️ TWO-STEP SIGN-IN FOR STAFF ACCOUNTS (TOTP, i.e. an authenticator app).
-//
-// A staff account reads every school's data and can wipe all of it. A password alone means one
-// phished or reused credential is a total compromise, and Taronga IT will ask about this.
-//
-// 🚫 NOT SMS. SIM-swap defeats it, it costs money per message, and it needs a phone number on
-//    file for every staff member — which is personal data this project otherwise avoids holding.
-//    TOTP is a shared secret in an app on the person's own phone, with nothing stored about them.
-//
-// ⚠️ THIS PANEL IS INERT UNTIL MULTI-FACTOR IS SWITCHED ON IN THE FIREBASE CONSOLE
-//    (Authentication → Sign-in method → Advanced → Multi-factor, which requires upgrading the
-//    project to Identity Platform). Until then `generateSecret` fails and the panel says so.
-//    Shipping the code first is deliberate: the sign-in challenge in AdminLoginScreen can be in
-//    place BEFORE anyone enrols, so nobody can enrol and then be unable to get back in.
-//
-// ⚠️ RECOVERY IF AN AUTHENTICATOR IS LOST. There are no backup codes. The account holder cannot
-//    fix it themselves and neither can another staff member through this app. The recovery path
-//    is the Firebase Console (Authentication → Users → the user → remove the second factor) as
-//    the project owner, thebiologybloke@gmail.com. 🚫 Do not enrol the root admin without being
-//    sure that console access works — it is the only way back in.
-function StaffMfaPanel() {
-  // Read straight from the SDK at first render — enrolled factors are already on the local user
-  // object, so there is nothing to fetch and no effect to run.
-  const listFactors = () => {
-    const u = auth.currentUser;
-    return u ? (multiFactor(u).enrolledFactors || []) : [];
-  };
-  const [factors, setFactors] = useState(listFactors);
-  const [phase,   setPhase]   = useState('idle');   // idle | starting | enrolling | busy
-  const [secret,  setSecret]  = useState(null);
-  const [uri,     setUri]     = useState('');
-  const [code,    setCode]    = useState('');
-  const [msg,     setMsg]     = useState(null);     // { ok, text }
-  const [qr,      setQr]      = useState('');       // data: URL of the scannable code
-  const [method,  setMethod]  = useState(null);    // null | 'sms' | 'totp'
-
-  const refresh = () => setFactors(listFactors());
-
-  const begin = async () => {
-    setPhase('starting'); setMsg(null);
-    try {
-      const u = auth.currentUser;
-      const session = await multiFactor(u).getSession();
-      const s = await TotpMultiFactorGenerator.generateSecret(session);
-      setSecret(s);
-      const otpauth = s.generateQrCodeUrl(u.email || 'Taronga staff', 'Taronga Tracka');
-      setUri(otpauth);
-      // ⚠️ Dynamically imported so the ~50KB encoder never reaches a student's phone — this panel
-      //    is staff-only and loads once in a blue moon. Same reasoning as model-viewer in ZooYard.
-      // ⚠️ Generated LOCALLY. 🚫 Never send an MFA secret to a QR-rendering web service: that
-      //    hands the second factor to a third party and defeats the entire exercise.
-      try {
-        const QR = await import('qrcode');
-        setQr(await QR.toDataURL(otpauth, { width: 220, margin: 1 }));
-      } catch (e) {
-        setQr('');   // the setup key below still works by hand
-        console.warn('[mfa] could not draw the QR code:', e);
-      }
-      setPhase('enrolling');
-    } catch (err) {
-      const code2 = err?.code || '';
-      setPhase('idle');
-      setMsg({ ok: false, text: code2.includes('operation-not-allowed') || code2.includes('unsupported')
-        ? 'Two-step sign-in is not switched on for this project yet. Turn on multi-factor authentication in the Firebase Console first.'
-        : `Could not start setup (${code2 || 'error'}).` });
-    }
-  };
-
-  const finish = async () => {
-    if (!secret || code.trim().length < 6) return;
-    setPhase('busy'); setMsg(null);
-    try {
-      const assertion = TotpMultiFactorGenerator.assertionForEnrollment(secret, code.trim());
-      await multiFactor(auth.currentUser).enroll(assertion, 'Authenticator app');
-      setSecret(null); setUri(''); setCode(''); setQr(''); setPhase('idle');
-      setMsg({ ok: true, text: 'Two-step sign-in is on. You will be asked for a code next time you sign in.' });
-      refresh();
-    } catch (err) {
-      setPhase('enrolling');
-      setMsg({ ok: false, text: err?.code === 'auth/invalid-verification-code'
-        ? 'That code was not accepted. Codes change every 30 seconds, so try the current one.'
-        : `Could not turn it on (${err?.code || 'error'}).` });
-    }
-  };
-
-  const remove = async (f) => {
-    if (!window.confirm('Turn off two-step sign-in for your account?')) return;
-    setPhase('busy');
-    try {
-      await multiFactor(auth.currentUser).unenroll(f);
-      setMsg({ ok: true, text: 'Two-step sign-in is off for your account.' });
-      refresh();
-    } catch (err) {
-      setMsg({ ok: false, text: `Could not turn it off (${err?.code || 'error'}).` });
-    } finally { setPhase('idle'); }
-  };
-
-  const box = { background:'var(--t-chalk)', borderRadius:'var(--t-r-lg)', padding:'1.5rem', boxShadow:'var(--t-shadow-sm)', marginBottom:'1rem', border:'1px solid var(--t-stone)' };
-  return (
-    <div style={box}>
-      <h3 style={{ fontSize:'1rem', fontWeight:700, color:'var(--t-deep)', margin:'0 0 0.35rem' }}>Two-step sign-in</h3>
-      <p style={{ fontSize:'0.8rem', color:'var(--t-slate)', margin:'0 0 1rem', lineHeight:1.6 }}>
-        Adds a 6-digit code from an authenticator app on your phone, on top of your password. It
-        applies to your own account only.
-      </p>
-
-      {factors.length > 0 ? (
-        factors.map(f => (
-          <div key={f.uid} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'0.75rem', padding:'0.6rem 0.8rem', background:'rgba(46,125,85,0.08)', border:'1px solid rgba(46,125,85,0.25)', borderRadius:'var(--t-r-sm)', marginBottom:'0.6rem' }}>
-            <span style={{ fontSize:'0.85rem', color:'var(--t-deep)', fontWeight:600 }}>✓ On — {f.displayName || 'Authenticator app'}</span>
-            <button onClick={() => remove(f)} disabled={phase==='busy'}
-              style={{ fontSize:'0.75rem', color:'#B91C1C', background:'none', border:'1px solid rgba(185,28,28,0.35)', padding:'0.3rem 0.65rem', borderRadius:'var(--t-r-pill)', cursor:'pointer', fontWeight:600 }}>
-              Turn off
-            </button>
-          </div>
-        ))
-      ) : (phase === 'idle' || phase === 'starting') && !method ? (
-        <button onClick={() => { setMethod('totp'); begin(); }} disabled={phase==='starting'}
-          style={{ padding:'0.65rem 1.1rem', borderRadius:'var(--t-r-pill)', border:'none', background: phase==='starting' ? '#CCC' : 'linear-gradient(135deg,var(--t-mid),var(--t-eucalyptus))', color:'white', fontSize:'0.85rem', fontWeight:700, cursor: phase==='starting' ? 'not-allowed' : 'pointer' }}>
-          {phase==='starting' ? 'Starting…' : 'Turn on two-step sign-in'}
-        </button>
-      ) : null}
-
-
-
-      {method === 'totp' && (phase === 'enrolling' || (phase === 'busy' && secret)) && (
-        <div style={{ marginTop:'0.4rem' }}>
-          {/* ⚠️ SCANNING IS THE WHOLE POINT. The first version offered only a key to copy by hand,
-              and copying a 32-character secret from a laptop to a phone is miserable enough that
-              Cameron reasonably asked to switch to SMS instead. A worse second factor because the
-              setup screen was unpleasant is a bad trade: fix the screen. */}
-          {qr ? (
-            <>
-              <p style={{ fontSize:'0.85rem', color:'var(--t-deep)', lineHeight:1.7, margin:'0 0 0.7rem' }}>
-                Open your authenticator app, choose to add an account, and point your phone at this:
-              </p>
-              {/* ⚠️ Worth saying out loud: scanning with a PASSWORD MANAGER instead of a phone app
-                  means the code autofills at sign-in, so there is no phone involved at all. It is
-                  the smoothest version of this flow and nobody discovers it by themselves. */}
-              <p style={{ fontSize:'0.78rem', color:'var(--t-slate)', lineHeight:1.6, margin:'0 0 0.7rem' }}>
-                Tip: scan it with your password manager (Apple Passwords, 1Password) instead, and
-                the code fills itself in when you sign in.
-              </p>
-              <img src={qr} alt="Scan this with your authenticator app" width={220} height={220}
-                style={{ display:'block', borderRadius:'var(--t-r-sm)', border:'1px solid var(--t-stone)', background:'white', padding:6, marginBottom:'0.8rem' }} />
-            </>
-          ) : (
-            <p style={{ fontSize:'0.85rem', color:'var(--t-deep)', lineHeight:1.7, margin:'0 0 0.7rem' }}>
-              Open your authenticator app, add an account, and enter this key by hand:
-            </p>
-          )}
-
-          <details style={{ marginBottom:'0.8rem' }}>
-            <summary style={{ fontSize:'0.78rem', color:'var(--t-slate)', cursor:'pointer' }}>Can&rsquo;t scan it?</summary>
-            <code style={{ display:'block', padding:'0.6rem 0.75rem', background:'white', border:'1px solid var(--t-stone)', borderRadius:'var(--t-r-sm)', fontSize:'0.85rem', wordBreak:'break-all', margin:'0.5rem 0' }}>{secret?.secretKey}</code>
-            <div style={{ display:'flex', gap:'0.5rem', flexWrap:'wrap' }}>
-              <button onClick={() => navigator.clipboard?.writeText(secret?.secretKey || '')}
-                style={{ fontSize:'0.75rem', background:'var(--t-foam)', border:'1px solid var(--t-mist)', padding:'0.3rem 0.7rem', borderRadius:'var(--t-r-pill)', cursor:'pointer', fontWeight:600, color:'var(--t-deep)' }}>Copy key</button>
-              {uri && <a href={uri} style={{ fontSize:'0.75rem', background:'var(--t-foam)', border:'1px solid var(--t-mist)', padding:'0.3rem 0.7rem', borderRadius:'var(--t-r-pill)', fontWeight:600, color:'var(--t-deep)', textDecoration:'none' }}>Open on this device</a>}
-            </div>
-          </details>
-          <p style={{ fontSize:'0.85rem', color:'var(--t-deep)', margin:'0 0 0.5rem' }}>Then type the 6-digit code it shows:</p>
-          <input value={code} onChange={e=>setCode(e.target.value.replace(/\D/g,'').slice(0,6))}
-            inputMode="numeric" placeholder="6-digit code"
-            style={{ width:'100%', maxWidth:'180px', padding:'0.6rem 0.8rem', borderRadius:'var(--t-r-sm)', border:'1.5px solid var(--t-stone)', fontSize:'1rem', letterSpacing:'0.18em', marginRight:'0.6rem', boxSizing:'border-box' }} />
-          <button onClick={finish} disabled={phase==='busy' || code.length < 6}
-            style={{ padding:'0.6rem 1.1rem', borderRadius:'var(--t-r-pill)', border:'none', background: (phase==='busy'||code.length<6) ? '#CCC' : 'var(--t-mid)', color:'white', fontSize:'0.85rem', fontWeight:700, cursor: (phase==='busy'||code.length<6) ? 'not-allowed' : 'pointer' }}>
-            {phase==='busy' ? 'Checking…' : 'Confirm'}
-          </button>
-          <p style={{ fontSize:'0.76rem', color:'#B45309', margin:'0.8rem 0 0', lineHeight:1.6 }}>
-            ⚠️ Keep the authenticator app safe. If you lose it there is no backup code, and the
-            only way back in is removing the second factor from the Firebase Console.
-          </p>
-        </div>
-      )}
-
-      {msg && (
-        <p role="alert" style={{ fontSize:'0.8rem', margin:'0.8rem 0 0', lineHeight:1.6, color: msg.ok ? 'var(--t-mid)' : '#B91C1C' }}>{msg.text}</p>
-      )}
-    </div>
-  );
-}
-
 // ⚠️⚠️ THE CONTROL ROOM GATE IS A RE-AUTHENTICATION, NOT A PASSWORD.
 //
 // It used to be `if (input === 'Bowie')` — a literal string in the client bundle, readable by
@@ -3014,8 +2829,6 @@ function ControlRoomTab() {
           {gpsLoading ? '…' : gpsOn ? 'Turn GPS Off' : 'Turn GPS On'}
         </button>
       </div>
-
-      <StaffMfaPanel />
 
       {/* ── Staff administrators ────────────────────────────────────────────────────── */}
       <div style={{ background:'white', borderRadius:'var(--t-r-lg)', padding:'1.5rem', boxShadow:'var(--t-shadow-sm)', marginBottom:'1rem', border:'1px solid var(--t-stone)' }}>

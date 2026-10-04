@@ -738,7 +738,36 @@ That is a meeting conversation, and a good one to have: it would mean Taronga's 
 controls staff access and revocation, with no credentials held by this project at all. Once they
 provide the two values it is one `defaultSupportedIdpConfigs` call plus a second button.
 
-#### ✅ Two-step sign-in for staff (TOTP) — SHIPPED 2026-10-03, NEEDS ONE CONSOLE SWITCH
+#### 🔄 TOTP ENROLMENT WAS BUILT AND THEN REMOVED THE SAME DAY (2026-10-03)
+
+It worked — Cameron enrolled successfully (`totpInfo`, 00:07:28Z). It was removed once **Sign in
+with Google** landed, because Google does the same job with nothing to set up. `qrcode` was
+uninstalled with it.
+
+⚠️ **THE SIGN-IN CHALLENGE IN `AdminLoginScreen.jsx` WAS DELIBERATELY KEPT.** A second factor can
+still exist on an account — enrolled before the panel went, added from the Firebase console, or
+arriving with a future provider — and without that code Firebase throws
+`auth/multi-factor-auth-required` at a screen that cannot answer it. That is a permanent lockout
+for a portal with nobody above the root admin. 🚫 Do not delete it as dead code.
+
+⚠️ **CHECK FOR ENROLLED FACTORS BEFORE REMOVING ANY MFA UI.** Cameron's account had one at the
+time of this request, and deleting the screen without clearing it would have locked him out:
+```bash
+curl -s -X POST -H "Authorization: Bearer $(gcloud auth print-access-token)" \
+  -H "x-goog-user-project: tarongatracka" -H "Content-Type: application/json" \
+  https://identitytoolkit.googleapis.com/v1/projects/tarongatracka/accounts:query -d '{}'
+```
+and look for `mfaInfo`. Clear with `accounts:update` (see Recovery above).
+
+**`mfa.state` is left ENABLED on the project.** Nothing can enrol through the app, so it is inert,
+and leaving it on means a factor added from the console still works.
+
+**What provides MFA now:** Google sign-in, carrying whatever two-step the account's owner has set.
+⚠️ **A staff member using EMAIL AND PASSWORD has no second factor.** That is the honest position to
+state — it is not "MFA everywhere", it is "MFA for anyone signing in with Google", and the
+Microsoft route would extend it to the rest.
+
+#### (historical) Two-step sign-in for staff (TOTP) — how it was built
 
 **Control Room → Two-step sign-in** enrols an authenticator app against the staff member's own
 account; `AdminLoginScreen` handles the `auth/multi-factor-auth-required` challenge on sign-in.

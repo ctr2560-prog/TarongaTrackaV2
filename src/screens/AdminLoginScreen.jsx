@@ -28,9 +28,16 @@ export default function AdminLoginScreen() {
   const [password, setPassword] = useState('');
   const [status, setStatus]     = useState('idle');   // idle | loading
   const [error, setError]       = useState('');
-  // ⚠️ The second-step challenge. This is shipped BEFORE anyone enrols on purpose — enrolling
-  //    first would lock that person out until this existed. See StaffMfaPanel in
-  //    AdminDashboardScreen.jsx for the enrolment side and the recovery path.
+  // ⚠️⚠️ THE CHALLENGE IS KEPT EVEN THOUGH THE APP NO LONGER ENROLS ANYONE (2026-10-03).
+  //
+  // The enrolment panel was removed once Sign in with Google landed. This half deliberately
+  // stays, because a second factor can still exist on an account — set up before the panel was
+  // removed, added from the Firebase console, or arriving with a future provider — and if this
+  // code is gone, Firebase throws `auth/multi-factor-auth-required` at a screen that cannot
+  // answer it. That is a permanent lockout for a portal with no one above the root admin.
+  //
+  // 🚫 Do not delete this as dead code. It is insurance, it is inert when nobody is enrolled, and
+  //    the recovery it protects against needs project-owner access to the Admin API.
   const [resolver, setResolver] = useState(null);     // Firebase MultiFactorResolver | null
   const [mfaCode,  setMfaCode]  = useState('');
   // ⚠️ A phone factor needs a code SENT before it can be entered, and a text costs money — so it
