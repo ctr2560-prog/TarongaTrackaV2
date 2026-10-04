@@ -705,6 +705,39 @@ two-step panel enrol a factor without prompting again.
 
 🚫 **Never put a shared secret in front of a destructive action.**
 
+#### ✅ SIGN IN WITH GOOGLE — the easiest MFA is the one someone else already runs (2026-10-03)
+
+**`google.com` is enabled on the live project** (it already had a clientId provisioned, so unlike
+the SMS saga this needed no console work):
+```bash
+curl -s -X PATCH -H "Authorization: Bearer $(gcloud auth print-access-token)" \
+  -H "x-goog-user-project: tarongatracka" -H "Content-Type: application/json" \
+  ".../admin/v2/projects/tarongatracka/defaultSupportedIdpConfigs/google.com?updateMask=enabled" \
+  -d '{"enabled":true}'
+```
+
+**Why this is the right answer to "is there an easier way".** A Google account already carries
+whatever two-step its owner has set, checked by Google before Firebase sees anything. The staff
+member enrols nothing, types no codes, and Taronga maintains none of it. It is also the one option
+that gets *easier* as the staff list grows.
+
+⚠️ **The staff check still runs, and must.** A Google sign-in proves identity, not entitlement —
+anyone with a Google account can press the button. A non-staff account is signed straight back out,
+exactly as on the password path. 🚫 Never treat "signed in with Google" as "is staff".
+
+⚠️ **The Google path handles `auth/multi-factor-auth-required` too.** An account can have both a
+Google identity and an enrolled authenticator, and skipping that branch would strand them.
+
+🚫 **DO NOT REMOVE EMAIL + PASSWORD.** Taronga staff on `@zoo.nsw.gov.au` are very likely a
+Microsoft shop, not Google. The password path is the only thing standing between a provider problem
+and a portal nobody can enter.
+
+**MICROSOFT IS NOT BUILT, and cannot be from this side.** `microsoft.com` as an IdP needs an **app
+registration in Taronga's own Azure AD** — a client ID and secret that only their IT can issue.
+That is a meeting conversation, and a good one to have: it would mean Taronga's own identity team
+controls staff access and revocation, with no credentials held by this project at all. Once they
+provide the two values it is one `defaultSupportedIdpConfigs` call plus a second button.
+
 #### ✅ Two-step sign-in for staff (TOTP) — SHIPPED 2026-10-03, NEEDS ONE CONSOLE SWITCH
 
 **Control Room → Two-step sign-in** enrols an authenticator app against the staff member's own

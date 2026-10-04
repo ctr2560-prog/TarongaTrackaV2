@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import {
   signInWithEmailAndPassword, getMultiFactorResolver, TotpMultiFactorGenerator,
   RecaptchaVerifier, PhoneAuthProvider, PhoneMultiFactorGenerator, PhoneAuthProvider as PAP,
+  GoogleAuthProvider, signInWithPopup,
 } from 'firebase/auth';
 import { auth } from '../firebase';
 import { useApp } from '../context/AppContext';
@@ -97,6 +98,48 @@ export default function AdminLoginScreen() {
       setError(code === 'auth/too-many-requests'
         ? 'Too many attempts. Wait a few minutes and try again.'
         : 'Incorrect email or password.');
+      setStatus('idle');
+    }
+  };
+
+  // ⚠️ SIGN IN WITH GOOGLE — the easiest second factor is the one someone else already runs.
+  //
+  // A Google account carries whatever two-step its owner has set on it, verified by Google before
+  // Firebase ever sees the sign-in. So this gives a staff member MFA with nothing to enrol, no
+  // codes to type and nothing for Taronga to maintain. It is why the Firebase console nudges
+  // towards it, and it is the answer to "is there an easier way".
+  //
+  // ⚠️ The staff check is UNCHANGED and still runs. A Google sign-in proves who someone is; it
+  //    says nothing about whether they should be in this portal. Anyone with a Google account can
+  //    reach this button, so a non-staff account must be signed straight back out — exactly as on
+  //    the password path.
+  const signInWithGoogle = async () => {
+    if (status === 'loading') return;
+    setStatus('loading'); setError('');
+    try {
+      const cred = await signInWithPopup(auth, new GoogleAuthProvider());
+      if (!(await isTarongaStaff(cred.user.email))) {
+        await auth.signOut();
+        setError('That account does not have staff access.');
+        setStatus('idle');
+        return;
+      }
+      setCurrentScreen('adminDashboard');
+    } catch (err) {
+      const code = err?.code || '';
+      // An account that ALSO has an authenticator enrolled lands here, not in the success path.
+      if (code === 'auth/multi-factor-auth-required') {
+        setResolver(getMultiFactorResolver(auth, err));
+        setStatus('idle');
+        return;
+      }
+      if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+        setStatus('idle');
+        return;   // they changed their mind; not an error worth shouting about
+      }
+      setError(code === 'auth/popup-blocked'
+        ? 'Your browser blocked the Google window. Allow pop-ups for this site and try again.'
+        : 'Could not sign in with Google. Try again, or use your email and password.');
       setStatus('idle');
     }
   };
@@ -197,6 +240,28 @@ export default function AdminLoginScreen() {
           </>
         ) : (
         <>
+        <button onClick={signInWithGoogle} disabled={status === 'loading'}
+          style={{ width:'100%', padding:'0.8rem', borderRadius:'var(--t-r-pill)', border:'1.5px solid #E5E5E5', background:'white', color:'#3C4043', fontSize:'0.95rem', fontWeight:600, cursor: status === 'loading' ? 'not-allowed' : 'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:'0.6rem', marginBottom:'1rem' }}>
+          <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24s.92 7.54 2.56 10.78l7.97-6.19z"/>
+            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+          </svg>
+          Sign in with Google
+        </button>
+
+        {/* ⚠️ Email and password stays. Taronga staff on @zoo.nsw.gov.au are very likely on
+            Microsoft rather than Google, and Microsoft sign-in needs an app registration only
+            Taronga IT can create. 🚫 Do not remove the password path until every staff member has
+            a working alternative — it is the only thing standing between a provider problem and a
+            portal nobody can enter. */}
+        <div style={{ display:'flex', alignItems:'center', gap:'0.7rem', margin:'0 0 1rem' }}>
+          <div style={{ flex:1, height:1, background:'#E5E5E5' }} />
+          <span style={{ fontSize:'0.75rem', color:'#999' }}>or</span>
+          <div style={{ flex:1, height:1, background:'#E5E5E5' }} />
+        </div>
+
         <label style={{ display:'block', fontSize:'0.82rem', fontWeight:600, color:'var(--t-deep)', marginBottom:'0.35rem' }}>Email</label>
         <input type="email" autoComplete="username" value={email}
           onChange={e => { setEmail(e.target.value); setError(''); }}
