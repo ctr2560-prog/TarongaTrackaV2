@@ -18,13 +18,55 @@ region: `australia-southeast1`. ⚠️ See **Build & Deploy** — these two drif
 
 ---
 
-## Where we left off (2026-09-28)
+## Where we left off (2026-10-03/04)
+
+### What happened on 2026-10-03 — the security day, and a two-day video bug
+
+**43 commits.** Two threads ran together and they turned out to be connected.
+
+**1. Security, taken from "wide open" to a defensible position.** Closed on the day: the staff
+portal's authentication bypass, mass data harvesting, Storage browsing, arbitrary uploads,
+anonymous deletes, privilege escalation, an open email relay, the shared staff access code, the
+hardcoded Control Room password, and the permanent media links. Student records are now owned by
+the device that created them. Retention runs. **Sign in with Google** gives staff MFA with nothing
+to maintain. Each item has its own section below — read those before touching any of it.
+
+**2. The cards-only film, and why it took two days.** A student's film came out with every title
+card and none of the footage or audio. It was eventually explained by **three things combining**:
+the `ensureStudentAuth` race (so the student's own writes, including `clipURL`, were refused), the
+signed-URL fallback, and `revokeDownloadTokens` having just killed the stored links it fell back
+to. Every one of those failures was **silent**.
+
+⚠️⚠️ **THE LESSON WORTH CARRYING OUT OF THE WHOLE DAY:** the pipeline was full of forgiving
+`catch` blocks that swallowed the evidence, and the UI reported a film with no footage as a
+success. **Be forgiving AND loud.** Four silent failures are now on record in this one pipeline.
+
+⚠️ **And on method:** three rounds of correct crop arithmetic were spent on the "zoomed in" camera
+before anyone looked at a frame. `ffmpeg -ss 2 -i clip.webm -frames:v 1 out.png` answered it in
+seconds — the camera was being told to crop itself. **When the complaint is about how something
+LOOKS, extract the pixels before reasoning about the code.**
 
 ### ⚠️ Do these first
+
+0. **Verify a ZooSnooz documentary end to end.** Its stitcher now reports failures like Evolve's,
+   but it still **centre-crops landscape clips** (the "zoomed in" complaint applies to it) and its
+   capture has never been re-checked. Fixing the crop means the same pair of changes made to
+   Evolve — capture constraints AND `drawFrame` together. 🚫 Do not do one without the other.
+0b. **Newly uploaded media still gets a permanent link.** Revocation cleared the legacy ones; it
+   does not stop new ones. The real fix is storing storage *paths* instead of URLs — 26 call sites
+   across 7 files. This is the last real security gap and the honest answer to "is it closed?".
+0c. **Microsoft sign-in** is agreed with Taronga, not built. They supply a client ID and secret from
+   an Azure app registration, and allow the redirect `https://tarongatracka.firebaseapp.com/__/auth/handler`.
+   Then it is one `defaultSupportedIdpConfigs` call and a second button.
+
 1. ~~**`firebase deploy --only storage` has NOT been run.**~~ ✅ **DONE 2026-10-02** — deployed
    alongside the folder-listing fix, so the `wildestDreams/` rule is finally live and Wildest
    Dreams uploads should now work. **Untested with a real clip** — worth one upload to confirm.
-2. **Decide whether Taronga actually wants a retention policy.** ⚠️ Until 2026-09-24 the ZooSnooz
+2. ~~**Decide whether Taronga actually wants a retention policy.**~~ ✅ **DONE 2026-10-03** —
+   `cleanupRawClips` is built, was run on real data, and the parent letters were updated **only
+   after** that. Read the four safety rules before touching it. Original note kept below for the
+   reasoning.
+   (was:) **Decide whether Taronga actually wants a retention policy.** ⚠️ Until 2026-09-24 the ZooSnooz
    parent letter told families raw footage was "permanently deleted within 48 hours" and the
    documentary "hosted for up to 12 months, then deleted". **Neither was ever implemented** —
    there is no scheduled function and no `deleteObject` call anywhere in the codebase — and that
