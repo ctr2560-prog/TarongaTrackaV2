@@ -1653,11 +1653,17 @@ function EvolveFilmsTab({ classes }) {
     copyText(link, entry.docId);
   };
 
-  const copyText = (url, key) => {
-    navigator.clipboard.writeText(url).then(() => {
+  // ⚠️ MINT BEFORE COPYING. Stored media is now a storage PATH, not a URL, so copying the raw
+  //    value would put `evolve/ABC123/Quokka/film.webm` on the clipboard — useless, and confusing
+  //    because it looks almost like a link. Minting also means what gets pasted into an email is a
+  //    link that expires in an hour rather than one that works forever.
+  const copyText = async (url, key) => {
+    const link = await mintMediaUrl(url);
+    if (!link) { window.alert('That link could not be prepared. The video itself is safe.'); return; }
+    navigator.clipboard.writeText(link).then(() => {
       setCopied(key);
       setTimeout(() => setCopied(null), 2000);
-    }).catch(() => window.prompt('Copy this URL:', url));
+    }).catch(() => window.prompt('Copy this URL:', link));
   };
 
   // A plain <a download> is ignored cross-origin — the browser navigates to the file instead of

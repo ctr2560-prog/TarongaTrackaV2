@@ -109,11 +109,30 @@ sections below.
       side of the same question, used by the hook, `mintMediaUrl`, `mintStudentMedia` and the
       souvenir viewer. 🚫 Never test for `firebasestorage.googleapis.com` alone again — once paths
       are stored, that answers **false for exactly the values that most need minting**.
-   2. ⬜ **Flip the 9 upload sites to store the path**, one mode at a time, testing each:
-      Evolve (`EvolveScreen.jsx` 991 clip, 1155 film) · ZooSnooz (`ZooSnoozScreen.jsx` 511 clip,
-      1151 documentary) · Wildest Dreams (`modes/wildest-dreams/index.jsx` 112, 151) ·
-      ZooYard (`ZooYardScreen.jsx` 445, 516) · challenge photos (`TeacherDashboardScreen.jsx` 286).
-      ⚠️ Evolve first: it is the best understood and the only one tested end to end this week.
+   2. 🟡 **Flip the 9 upload sites to store the path**, one mode at a time, testing each.
+      ✅ **EVOLVE DONE (2026-10-04)** — clip and film both store the path now, and
+      `getMediaUrl` was **deployed first**, which is the ordering that matters: the function has to
+      understand paths *before* anything writes one. 🚫 Never flip an upload before deploying the
+      reader; new media would be unplayable the moment it is saved.
+      ⬜ ZooSnooz (`ZooSnoozScreen.jsx` 511 clip, 1151 documentary) ·
+      ⬜ Wildest Dreams (`modes/wildest-dreams/index.jsx` 112, 151) ·
+      ⬜ ZooYard (`ZooYardScreen.jsx` 445, 516) ·
+      ⬜ challenge photos (`TeacherDashboardScreen.jsx` 286 — but see the exclusion below).
+
+      ⚠️ **`copyText` in the staff Evolve tab had to change too.** It copied the stored value
+      straight to the clipboard, which would now paste a bare path — useless, and confusing
+      because it almost looks like a link. It mints first, so what gets pasted into an email is a
+      link that expires in an hour instead of one that works forever.
+
+      **Verified live after the Evolve flip** (all four against the deployed function):
+      | Check | Result |
+      |---|---|
+      | Legacy URL record + correct token (regression) | signed URL returned |
+      | **Path** record + correct token | signed URL, and the file **streams: HTTP 206** |
+      | Wrong token | `Not found.` |
+      | `../../etc/passwd`, `evolve/../teachers/…`, `https://evil.example.com/…` | all refused |
+      ⚠️ A **leading slash is stripped and accepted** (`/evolve/…` works). Deliberate — it resolves
+      to the same object and rejecting it would be a trap for no gain.
    3. ⬜ **Convert the ~12 read sites that mint a permanent URL on the fly** to ask `getMediaUrl`
       instead (`AdminDashboardScreen.jsx` 1362–1370, 1620–1628; `ClassDetailsScreen.jsx` 239).
       These create a fresh permanent link every time a staff member opens a panel.

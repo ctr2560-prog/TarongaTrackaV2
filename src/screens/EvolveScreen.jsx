@@ -4,7 +4,7 @@ import { useStudent } from '../context/StudentContext';
 import { EVOLVE_CHAPTERS, EVOLVE_STORY_ORDER, EVOLVE_CHAPTER_WORDS as WORDS, EVOLVE_THEME as T, EVOLVE_MIN_WORDS } from '../data/evolveAnimals';
 import { buildEvolveFilm, startChapterRecording, describeMime, EVOLVE_VIDEO_ASPECT } from '../utils/evolveFilm';
 import { doc, getDoc, updateDoc, setDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
-import { ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { ref as storageRef, uploadBytesResumable } from 'firebase/storage';
 import { db, storage } from '../firebase';
 import { normaliseCode, safeStudentId } from '../utils/helpers';
 import { evolveSouvenirLink, canWriteNfcTag, writeNfcTag } from '../utils/evolveSouvenir';
@@ -988,8 +988,17 @@ export default function EvolveScreen() {
         async () => {
           clearTimeout(stuck);
           try {
-            const url = await getDownloadURL(task.snapshot.ref);
-            await updateDoc(doc(db, 'classes', code, 'students', sid), { [`evolve.${chapterId}.clipURL`]: url });
+            // ⚠️ THE STORAGE PATH IS STORED, NOT A DOWNLOAD URL (2026-10-04).
+            //
+            // `getDownloadURL()` mints a PERMANENT, login-free link. Anyone who ever sees it can
+            // watch that clip forever, and revoking the old ones does not stop new ones being
+            // created. A path is useless on its own: `getMediaUrl` mints a 60-minute signed URL
+            // for a caller who proves entitlement.
+            //
+            // ⚠️ The field is still called `clipURL`. Renaming it would mean touching every
+            //    reader and every existing record for a cosmetic gain; the readers handle both
+            //    forms (see needsMinting in utils/useSignedMedia.js) and old records keep working.
+            await updateDoc(doc(db, 'classes', code, 'students', sid), { [`evolve.${chapterId}.clipURL`]: path });
             setUploadPct(p => ({ ...p, [chapterId]: 'done' }));
           } catch (e) { console.warn('Evolve clip URL:', e); setUploadPct(p => ({ ...p, [chapterId]: 'error' })); }
         });
@@ -1152,7 +1161,10 @@ export default function EvolveScreen() {
         const path = `evolve/${code}/${sid}/film.${fileExt}`;
         const task = uploadBytesResumable(storageRef(storage, path), filmBlobRef.current, { contentType });
         await new Promise((res, rej) => task.on('state_changed', null, rej, res));
-        url = await getDownloadURL(task.snapshot.ref);
+        // ⚠️ The PATH, not a download URL — see the note on the clip upload above. This value
+        //    reaches the keepsake record and therefore the souvenir link a family may open years
+        //    from now, so it is the single most important one not to leave permanent.
+        url = path;
       }
       const reflections = {};
       EVOLVE_CHAPTERS.forEach(c => { if (done[c.id]) reflections[c.id] = done[c.id]; });
