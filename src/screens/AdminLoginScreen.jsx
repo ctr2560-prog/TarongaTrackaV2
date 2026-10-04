@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   signInWithEmailAndPassword, getMultiFactorResolver, TotpMultiFactorGenerator,
   RecaptchaVerifier, PhoneAuthProvider, PhoneMultiFactorGenerator, PhoneAuthProvider as PAP,
@@ -36,6 +36,9 @@ export default function AdminLoginScreen() {
   //    is requested once, here, rather than on every keystroke or re-render.
   const [smsId,    setSmsId]    = useState('');
   const verifierRef = useRef(null);
+  // ⚠️ The auto-submit fires from inside onChange, which closes over the state of that render.
+  //    Calling through a ref means it always runs the latest version, with the code just typed.
+  const submitMfaRef = useRef(null);
 
   const isValid = email.trim().includes('@') && password.length > 0;
 
@@ -125,6 +128,8 @@ export default function AdminLoginScreen() {
     }
   };
 
+  useEffect(() => { submitMfaRef.current = submitMfa; });
+
   const field = {
     width:'100%', padding:'0.75rem 1rem', borderRadius:'var(--t-r-md)', border:'2px solid #E5E5E5',
     fontSize:'1rem', fontFamily:'DM Sans, sans-serif', marginBottom:'1rem', boxSizing:'border-box',
@@ -151,13 +156,34 @@ export default function AdminLoginScreen() {
 
         {resolver ? (
           <>
-            <p style={{ fontSize:'0.85rem', color:'#666', lineHeight:1.6, marginBottom:'1rem' }}>
+            {/* ⚠️ NO QR CODE HERE, and it is not an oversight. The QR at ENROLMENT hands the phone
+                a secret once; after that the app generates codes offline and never contacts us
+                again, so at sign-in there is literally nothing to encode. 🚫 Do not "add a QR" by
+                rendering the otpauth:// URI here — that URI means "add this account", so scanning
+                it would enrol a duplicate and make the screen worse, not better. */}
+            <p style={{ fontSize:'0.9rem', color:'var(--t-deep)', lineHeight:1.6, marginBottom:'0.35rem', fontWeight:600 }}>
               {resolver.hints[0]?.factorId === PAP.PROVIDER_ID
                 ? `We sent a 6-digit code by text${resolver.hints[0]?.phoneNumber ? ` to ${resolver.hints[0].phoneNumber}` : ''}.`
-                : 'Enter the 6-digit code from your authenticator app.'}
+                : 'Open your authenticator app'}
             </p>
-            <input value={mfaCode} onChange={e => { setMfaCode(e.target.value.replace(/\D/g,'').slice(0,6)); setError(''); }}
-              inputMode="numeric" autoComplete="one-time-code" autoFocus placeholder="000000"
+            <p style={{ fontSize:'0.82rem', color:'#666', lineHeight:1.6, marginBottom:'1rem' }}>
+              {resolver.hints[0]?.factorId === PAP.PROVIDER_ID
+                ? 'Enter it below.'
+                : 'Enter the 6-digit code shown next to Taronga Tracka. It changes every 30 seconds.'}
+            </p>
+            {/* ⚠️ `autoComplete="one-time-code"` is load-bearing: if the staff member scanned the
+                setup QR with a password manager (Apple Passwords, 1Password) rather than a phone
+                app, the code autofills here and there is no phone involved at all. It is the
+                smoothest version of this whole flow — worth telling people. */}
+            <input value={mfaCode} autoFocus inputMode="numeric" autoComplete="one-time-code"
+              placeholder="000000"
+              onChange={e => {
+                const v = e.target.value.replace(/\D/g,'').slice(0,6);
+                setMfaCode(v); setError('');
+                // Six digits is always the whole code, so asking for a button press afterwards is
+                // a pointless extra step - submit as soon as it can possibly be complete.
+                if (v.length === 6) setTimeout(() => submitMfaRef.current?.(), 0);
+              }}
               onKeyDown={e => e.key === 'Enter' && submitMfa()}
               style={{ ...field, textAlign:'center', letterSpacing:'0.3em', fontSize:'1.3rem' }} />
             {error && <p role="alert" style={{ color:'#DC2626', fontSize:'0.85rem', margin:'0 0 0.9rem' }}>{error}</p>}

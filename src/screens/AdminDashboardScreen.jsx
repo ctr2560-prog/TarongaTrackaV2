@@ -2572,6 +2572,13 @@ function StaffMfaPanel() {
               <p style={{ fontSize:'0.85rem', color:'var(--t-deep)', lineHeight:1.7, margin:'0 0 0.7rem' }}>
                 Open your authenticator app, choose to add an account, and point your phone at this:
               </p>
+              {/* ⚠️ Worth saying out loud: scanning with a PASSWORD MANAGER instead of a phone app
+                  means the code autofills at sign-in, so there is no phone involved at all. It is
+                  the smoothest version of this flow and nobody discovers it by themselves. */}
+              <p style={{ fontSize:'0.78rem', color:'var(--t-slate)', lineHeight:1.6, margin:'0 0 0.7rem' }}>
+                Tip: scan it with your password manager (Apple Passwords, 1Password) instead, and
+                the code fills itself in when you sign in.
+              </p>
               <img src={qr} alt="Scan this with your authenticator app" width={220} height={220}
                 style={{ display:'block', borderRadius:'var(--t-r-sm)', border:'1px solid var(--t-stone)', background:'white', padding:6, marginBottom:'0.8rem' }} />
             </>
