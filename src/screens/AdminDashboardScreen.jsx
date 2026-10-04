@@ -3065,7 +3065,7 @@ function ControlRoomTab() {
         {wipeStep === 0 && (
           <button onClick={() => setWipeStep(1)}
             style={{ padding:'0.65rem 1.5rem', borderRadius:'var(--t-r-sm)', border:'none', background:'#DC2626', color:'white', fontSize:'0.88rem', fontWeight:700, cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.06em' }}>
-            Wipe All Test Data
+            Wipe ALL Classes &amp; Students
           </button>
         )}
         {wipeStep === 1 && (

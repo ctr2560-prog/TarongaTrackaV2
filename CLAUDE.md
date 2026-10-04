@@ -69,19 +69,31 @@ sections below.
    but it still **centre-crops landscape clips** (the "zoomed in" complaint applies to it) and its
    capture has never been re-checked. Fixing the crop means the same pair of changes made to
    Evolve — capture constraints AND `drawFrame` together. 🚫 Do not do one without the other.
-0a. 🔴 **`adminWipeAllData` IS DEPLOYED BUT ITS SOURCE IS NOT IN THE REPOSITORY.** Found by the
-   security sweep on 2026-10-04: `gcloud functions list` returns it, `functions/index.js` does not
-   export it, and nothing in `functions/` mentions it. **The function that can delete every
-   school's data cannot be reviewed, diffed, or reproduced.**
-   ✅ It does still enforce access — verified live: no token, a junk token, and the old access code
-   all return `Staff sign-in required.` with the correct confirm string (`WIPE`).
-   ⚠️ **It validates the body BEFORE checking auth** (an unauthenticated call returns 400
-   "Confirmation text did not match", not 403), which leaks the shape of the request. Harmless
-   here, wrong order generally.
-   🚫 **DO NOT RUN `firebase deploy --only functions` UNTIL THIS IS RESOLVED** — the CLI offers to
-   delete functions missing from source, and losing it would break the Control Room wipe. Rewrite
-   it into `functions/index.js` with `verifyStaff(req)` first, deploy, and re-verify the three
-   refusals above.
+0a. ~~**`adminWipeAllData` deployed with no source in the repository.**~~ ✅ **FIXED 2026-10-04.**
+   **Source and deployment now match exactly — 9 functions both sides.**
+
+   ⚠️ **HOW IT WAS RECOVERED, because this is the useful part.** It was NOT rewritten from memory:
+   guessing at the scope of a deleter is how you delete the wrong thing. Cloud Functions keeps the
+   deployed artefact, so the original came back verbatim:
+   ```bash
+   gcloud functions describe adminWipeAllData --region=australia-southeast1 --format=json
+   # -> buildConfig.source.storageSource {bucket, object, generation}
+   gcloud storage cp "gs://gcf-v2-sources-925190436532-australia-southeast1/adminWipeAllData/function-source.zip#<generation>" .
+   unzip -o function-source.zip
+   ```
+   🚫 **Never reconstruct a destructive function from memory while the real one is recoverable.**
+
+   **Two genuine faults found by reading it:**
+   - ⚠️ **It validated the body BEFORE checking auth**, so an unauthenticated caller learned the
+     request shape ("Confirmation text did not match"). Now authenticates first — verified: an
+     unauthenticated call went from **400 → 403**.
+   - ⚠️⚠️ **The button said "Wipe All Test Data". It deletes EVERY CLASS AND EVERY STUDENT in the
+     project, for every school.** Relabelled "Wipe ALL Classes & Students". 🚫 Never let a control
+     be labelled milder than what it does.
+
+   **Also added:** a `dryRun` option that counts and deletes nothing, so the Control Room can show
+   what is about to be destroyed. Deleting remains the default when `confirm` is right, so the
+   existing call site is unchanged.
 
 0b. **Newly uploaded media still gets a permanent link.** Revocation cleared the legacy ones; it
    does not stop new ones. The real fix is storing storage *paths* instead of URLs — 26 call sites

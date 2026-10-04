@@ -977,6 +977,89 @@ exports.generateStaffPasswordReset = onRequest(
 // read is also unused; its rules already deny all client access.
 
 
+// adminWipeAllData — the staff Control Room "wipe all data" button.
+//
+// ⚠️⚠️ THIS SOURCE WAS LOST AND RECOVERED. It was deployed on 2026-10-02 and its source was never
+// committed; the security sweep on 2026-10-04 found `gcloud functions list` returning it while
+// `functions/index.js` had no trace. **The most destructive operation in the system could not be
+// read, reviewed or reproduced**, and the next `firebase deploy --only functions` would have
+// offered to delete it. Recovered from the deployed artefact
+// (`gs://gcf-v2-sources-.../adminWipeAllData/function-source.zip`) rather than rewritten from
+// memory, because guessing at the scope of a deleter is how you delete the wrong thing.
+// 🚫 Never leave a deployed function out of source. If it is worth running, it is worth reviewing.
+//
+// ⚠️⚠️ IT DELETES **EVERY CLASS AND EVERY STUDENT IN THE PROJECT**, for every school, not just
+// test data. The Control Room button used to say "Wipe All Test Data", which understated it to
+// the point of being dangerous; that label has been corrected.
+//
+// ⚠️ It requires a signed-in STAFF ACCOUNT and an explicit confirm string, and it logs the email
+// that ran it — which is the whole point of moving off a shared code: "who wiped the data?" now
+// has an answer.
+//
+// ⚠️ The auth check runs BEFORE the body is inspected (corrected 2026-10-04). The recovered
+// version validated `confirm` first, so an unauthenticated caller got "Confirmation text did not
+// match" and could learn the request shape. 🚫 Authenticate first, always: a stranger should learn
+// nothing from an endpoint except that they are not welcome.
+exports.adminWipeAllData = onRequest(
+  { region: 'australia-southeast1', invoker: 'public' },
+  async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    const staff = await verifyStaff(req);
+    if (!staff.ok) { res.status(staff.status).json({ error: staff.error }); return; }
+
+    const { confirm, dryRun } = req.body || {};
+    if (confirm !== 'WIPE') {
+      res.status(400).json({ error: 'Confirmation text did not match.' });
+      return;
+    }
+
+    const db = admin.firestore();
+    const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.ip;
+
+    try {
+      const classesSnap = await db.collection('classes').get();
+
+      // ⚠️ `dryRun` counts and deletes NOTHING. Added 2026-10-04 so the Control Room can show what
+      //    is about to be destroyed before anyone types the confirm string. Deleting is still the
+      //    default when `confirm` is right, so the existing call site is unchanged.
+      if (dryRun) {
+        let students = 0;
+        for (const classDoc of classesSnap.docs) {
+          const snap = await db.collection('classes').doc(classDoc.id).collection('students').get();
+          students += snap.size;
+        }
+        console.warn(`[adminWipeAllData] DRY RUN by ${staff.email}: ${classesSnap.size} classes, ${students} students`);
+        res.json({ ok: true, dryRun: true, classes: classesSnap.size, students });
+        return;
+      }
+
+      let classes = 0, students = 0;
+      for (const classDoc of classesSnap.docs) {
+        const studentsSnap = await db.collection('classes').doc(classDoc.id).collection('students').get();
+        // Firestore caps a batch at 500 writes.
+        let batch = db.batch(), n = 0;
+        for (const s of studentsSnap.docs) {
+          batch.delete(s.ref); students++;
+          if (++n >= 450) { await batch.commit(); batch = db.batch(); n = 0; }
+        }
+        batch.delete(classDoc.ref); classes++;
+        await batch.commit();
+      }
+      console.warn(`[adminWipeAllData] WIPED ${classes} classes and ${students} students by ${staff.email} (ip=${ip})`);
+      res.json({ ok: true, classes, students });
+    } catch (err) {
+      console.error('adminWipeAllData failed:', err);
+      res.status(500).json({ error: 'Wipe failed: ' + err.message });
+    }
+  }
+);
+
 exports.getAdminTeacherRoster = onRequest(
   { region: 'australia-southeast1', invoker: 'public' },
   async (req, res) => {
