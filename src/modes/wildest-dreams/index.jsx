@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useApp } from '../../context/AppContext';
 import { doc, getDoc, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref as storageRef, uploadBytes } from 'firebase/storage';
 import { makeSouvenirToken, wildestDreamsSouvenirLink } from '../../utils/evolveSouvenir';
 import { mintStudentMedia } from '../../utils/useSignedMedia';
 import { db, storage } from '../../firebase';
@@ -108,9 +108,18 @@ export default function WildestDreamsScreen() {
     try {
       const { fileExt, contentType } = pickMimeType();
       const path = `wildestDreams/${code}/${sid}/${stop.id}.${fileExt}`;
-      const snap = await uploadBytes(storageRef(storage, path), clip.blob, { contentType });
-      const url  = await getDownloadURL(snap.ref);
-      setClips(prev => ({ ...prev, [stop.id]: url }));
+      await uploadBytes(storageRef(storage, path), clip.blob, { contentType });
+      // ⚠️ THE PATH IS STORED, AND `getDownloadURL` IS NOT CALLED AT ALL (2026-10-04).
+      //
+      // Calling it does not merely return a permanent link — it CREATES one on the object, by
+      // writing the download token. So avoiding the call is the point, not just avoiding the
+      // stored value. `getMediaUrl` signs the path for 60 minutes when entitlement is proven.
+      //
+      // ⚠️ `clips` keeps the LOCAL blob URL set a few lines above. It is what the stitcher reads
+      //    in-session, and it is already better than a remote URL: no network, no CORS, no wait.
+      //    🚫 Do not put the path in `clips` — the stitcher would try to fetch it and the film
+      //    would come out as cards only, which is a failure this project has already had.
+      const url = path;
       // ⚠️ updateDoc, not setDoc+merge: a dotted key in setDoc becomes a LITERAL field name
       // containing dots rather than a nested path. Same trap documented for ZooSnooz/ZooYard.
       await updateDoc(doc(db, 'classes', code, 'students', sid), {
@@ -147,8 +156,10 @@ export default function WildestDreamsScreen() {
         try {
           const { fileExt, contentType } = pickMimeType();
           const path = `wildestDreams/${code}/${sid}/film.${fileExt}`;
-          const snap = await uploadBytes(storageRef(storage, path), result.blob, { contentType });
-          const url  = await getDownloadURL(snap.ref);
+          await uploadBytes(storageRef(storage, path), result.blob, { contentType });
+          // ⚠️ The path, not a download URL — see the clip upload above. `filmURL` on screen is
+          //    still the local blob URL set a moment ago, so playback here is unaffected.
+          const url = path;
 
           // ── The keepsake record ──────────────────────────────────────────────────────────
           // ⚠️ Until 2026-10-02 this mode had NO souvenir route. The film existed only as a

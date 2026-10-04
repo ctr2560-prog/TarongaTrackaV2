@@ -4,7 +4,7 @@ import { useStudent } from '../context/StudentContext';
 import { ZOOSNOOZ_ANIMALS } from '../data/zoosnoozAnimals';
 import StudentFeedbackModal from '../components/StudentFeedbackModal';
 import { doc, setDoc, updateDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
-import { ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { ref as storageRef, uploadBytesResumable } from 'firebase/storage';
 import { db, storage } from '../firebase';
 import { normaliseCode, safeStudentId, getMinWords } from '../utils/helpers';
 import { buildObservationScore } from '../utils/scoring';
@@ -508,11 +508,15 @@ export default function ZooSnoozScreen() {
           async () => {
             clearTimeout(stuckTimer);
             try {
-              const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+              // ⚠️ THE STORAGE PATH IS STORED, NOT A DOWNLOAD URL (2026-10-04). `getDownloadURL()`
+              //    mints a permanent, login-free link; a path is useless on its own and
+              //    `getMediaUrl` signs it for 60 minutes when someone proves entitlement.
+              //    The field keeps its `videoURL` name — every reader handles both forms (see
+              //    needsMinting in utils/useSignedMedia.js) and old records keep working.
               const code = normaliseCode(classCode);
               const sid  = safeStudentId(studentName);
               await updateDoc(doc(db, 'classes', code, 'students', sid),
-                { [`zoosnooz.${animalId}.videoURL`]: downloadURL, [`zoosnooz.${animalId}.videoCompleted`]: true }
+                { [`zoosnooz.${animalId}.videoURL`]: path, [`zoosnooz.${animalId}.videoCompleted`]: true }
               );
               setZzUploadProgress(prev => ({ ...prev, [animalId]: 'done' }));
             } catch(e) {
@@ -1148,7 +1152,8 @@ export default function ZooSnoozScreen() {
           const sRef = storageRef(storage, `zoosnooz/${code}/${sid}/documentary.${ext}`);
           const task = uploadBytesResumable(sRef, blob, { contentType: blobType });
           await new Promise((res, rej) => task.on('state_changed', null, rej, res));
-          docURL = await getDownloadURL(task.snapshot.ref);
+          // ⚠️ The PATH, not a download URL — see the clip upload above.
+          docURL = `zoosnooz/${code}/${sid}/documentary.${ext}`;
         } catch(e) { console.warn('ZZ documentary upload error:', e); }
       }
 

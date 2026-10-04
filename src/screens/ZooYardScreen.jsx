@@ -4,7 +4,7 @@ import { useStudent } from '../context/StudentContext';
 import { ZOOYARD_ANIMALS, ZOOYARD_HABITAT_THEME } from '../data/zooyardAnimals';
 import StudentFeedbackModal from '../components/StudentFeedbackModal';
 import { doc, getDoc, setDoc, updateDoc, addDoc, collection, serverTimestamp, increment } from 'firebase/firestore';
-import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref as storageRef, uploadBytes } from 'firebase/storage';
 import { db, storage } from '../firebase';
 import { normaliseCode, safeStudentId, getMinWords, getStageScaffoldTip } from '../utils/helpers';
 import PhotoCapture from '../components/PhotoCapture';
@@ -441,9 +441,14 @@ export default function ZooYardScreen() {
       const sid  = safeStudentId(studentName);
       const ext  = photoExt(blob);
       const path = `zooyardHabitats/${code}/${sid}-${animal.id}-${Date.now()}.${ext}`;
-      const snap = await uploadBytes(storageRef(storage, path), blob, { contentType: blob.type || 'image/jpeg' });
-      const url  = await getDownloadURL(snap.ref);
-      setHabitatPhotos(prev => ({ ...prev, [animal.id]: url }));
+      await uploadBytes(storageRef(storage, path), blob, { contentType: blob.type || 'image/jpeg' });
+      // ⚠️ THE PATH IS STORED, AND `getDownloadURL` IS NOT CALLED (2026-10-04). Calling it CREATES
+      //    a permanent, login-free link on the object; a path is useless alone and `getMediaUrl`
+      //    signs it on demand. Teachers view these through SignedImage, which handles both forms.
+      const url = path;
+      // ⚠️ On screen, show the photo from the LOCAL blob — the student just took it, so there is
+      //    no reason to go back to the network, and a path would render as a broken image.
+      setHabitatPhotos(prev => ({ ...prev, [animal.id]: URL.createObjectURL(blob) }));
 
       // ⚠️ This used to live only in React state, written to Firestore at badge time. Now the
       // photo is what UNLOCKS the habitat on the map, so it has to persist the moment it is
@@ -512,8 +517,10 @@ export default function ZooYardScreen() {
 
       const ext  = photoExt(csFile);
       const path = `citizenScienceEvidence/${code}/${sid}-${zyAnimal.id}-${Date.now()}.${ext}`;
-      const snap = await uploadBytes(storageRef(storage, path), csFile, { contentType: csFile.type || 'image/jpeg' });
-      const photoUrl = await getDownloadURL(snap.ref);
+      await uploadBytes(storageRef(storage, path), csFile, { contentType: csFile.type || 'image/jpeg' });
+      // ⚠️ The path — see the habitat photo above. Staff and teachers view these through
+      //    SignedImage, which mints on demand and handles legacy URLs too.
+      const photoUrl = path;
 
       await addDoc(collection(db, 'citizenScienceSubmissions'), {
         classCode: code, studentId: sid, studentName, teacherEmail, schoolName,

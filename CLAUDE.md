@@ -114,10 +114,26 @@ sections below.
       `getMediaUrl` was **deployed first**, which is the ordering that matters: the function has to
       understand paths *before* anything writes one. 🚫 Never flip an upload before deploying the
       reader; new media would be unplayable the moment it is saved.
-      ⬜ ZooSnooz (`ZooSnoozScreen.jsx` 511 clip, 1151 documentary) ·
-      ⬜ Wildest Dreams (`modes/wildest-dreams/index.jsx` 112, 151) ·
-      ⬜ ZooYard (`ZooYardScreen.jsx` 445, 516) ·
-      ⬜ challenge photos (`TeacherDashboardScreen.jsx` 286 — but see the exclusion below).
+      ✅ **ZooSnooz, Wildest Dreams and ZooYard all done (2026-10-04).** Every student-media
+      upload in the app now stores a path. **Verified by Cameron end to end on Evolve** (film
+      plays, souvenir link works, staff copy-link works) before the rest followed.
+      🚫 **`challengeEvidence/` (`TeacherDashboardScreen.jsx` 286) is the ONE deliberate
+      exception** — see the exclusion below. It is the only remaining `getDownloadURL` in an
+      upload path, and it is correct.
+
+      ⚠️⚠️ **`getDownloadURL()` does not merely RETURN a permanent link — it CREATES one**, by
+      writing the download token onto the object. So Wildest Dreams and ZooYard do not call it at
+      all any more; avoiding the call is the point, not just avoiding the stored value.
+
+      ⚠️⚠️ **IN-SESSION STATE MUST KEEP A USABLE URL.** Three of these screens put the uploaded
+      value straight into React state to display it. A path there would render as a broken image,
+      and in Wildest Dreams the stitcher reads that same map — **it would have produced a
+      cards-only film**, the exact failure that cost two days this week. So:
+      - WD keeps the local blob URL already in `clips`; only Firestore gets the path.
+      - ZooYard shows the habitat photo from `URL.createObjectURL(blob)` — the student just took
+        it, so there is no reason to go back to the network at all.
+      🚫 Never assume the value written to Firestore and the value rendered on screen can be the
+      same thing.
 
       ⚠️ **`copyText` in the staff Evolve tab had to change too.** It copied the stored value
       straight to the clipboard, which would now paste a bare path — useless, and confusing
