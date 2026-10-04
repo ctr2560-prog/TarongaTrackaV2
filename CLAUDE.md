@@ -46,12 +46,43 @@ before anyone looked at a frame. `ffmpeg -ss 2 -i clip.webm -frames:v 1 out.png`
 seconds — the camera was being told to crop itself. **When the complaint is about how something
 LOOKS, extract the pixels before reasoning about the code.**
 
+### 🔎 Security sweep, measured live 2026-10-04 (not theorised)
+
+| Probe | Result |
+|---|---|
+| `manageStaffAdmins` / `generateStaffPasswordReset` / `getAdminTeacherRoster` / `cleanupRawClips` / `revokeDownloadTokens`, no auth | **403** |
+| Same, with a junk bearer token | **403** |
+| `adminWipeAllData`, correct confirm, no token / junk token / old access code | **"Staff sign-in required."** |
+| `sendMagicLink`, `verifyAdminCode`, `setTeacherRole` (deleted) | **404** |
+| Firestore `classes`, `students` (collection group), `teachers`, `staffAdmins`, `accessCodes`, `adminAccess`, `evolve_docs`, unauthenticated | **permission-denied, all seven** |
+| Storage `listAll`, upload `text/html`, `deleteObject`, unauthenticated | **storage/unauthenticated, all three** |
+| A revoked legacy download URL | **401** |
+| Auth config | MFA enabled (TOTP), phone sign-in off, anonymous on (students need it) |
+
+⚠️ **Re-run this sweep after any rules, functions or auth change.** It takes two minutes and it is
+the difference between "we believe it is closed" and "it is closed". The commands are in the
+sections below.
+
 ### ⚠️ Do these first
 
 0. **Verify a ZooSnooz documentary end to end.** Its stitcher now reports failures like Evolve's,
    but it still **centre-crops landscape clips** (the "zoomed in" complaint applies to it) and its
    capture has never been re-checked. Fixing the crop means the same pair of changes made to
    Evolve — capture constraints AND `drawFrame` together. 🚫 Do not do one without the other.
+0a. 🔴 **`adminWipeAllData` IS DEPLOYED BUT ITS SOURCE IS NOT IN THE REPOSITORY.** Found by the
+   security sweep on 2026-10-04: `gcloud functions list` returns it, `functions/index.js` does not
+   export it, and nothing in `functions/` mentions it. **The function that can delete every
+   school's data cannot be reviewed, diffed, or reproduced.**
+   ✅ It does still enforce access — verified live: no token, a junk token, and the old access code
+   all return `Staff sign-in required.` with the correct confirm string (`WIPE`).
+   ⚠️ **It validates the body BEFORE checking auth** (an unauthenticated call returns 400
+   "Confirmation text did not match", not 403), which leaks the shape of the request. Harmless
+   here, wrong order generally.
+   🚫 **DO NOT RUN `firebase deploy --only functions` UNTIL THIS IS RESOLVED** — the CLI offers to
+   delete functions missing from source, and losing it would break the Control Room wipe. Rewrite
+   it into `functions/index.js` with `verifyStaff(req)` first, deploy, and re-verify the three
+   refusals above.
+
 0b. **Newly uploaded media still gets a permanent link.** Revocation cleared the legacy ones; it
    does not stop new ones. The real fix is storing storage *paths* instead of URLs — 26 call sites
    across 7 files. This is the last real security gap and the honest answer to "is it closed?".
