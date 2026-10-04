@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
+import { needsMinting } from '../utils/useSignedMedia';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { ZOOSNOOZ_ANIMALS } from '../data/zoosnoozAnimals';
@@ -95,9 +96,10 @@ async function mintSouvenirUrl({ mode, classCode, studentId, token, field = 'fil
     }
     if (attempt === 0) await new Promise(r => setTimeout(r, 1200));
   }
-  // ⚠️ Only a NON-Storage url is worth returning now. A stored Firebase url is a revoked, dead
-  //    link, and handing it to a <video> produces a black box with no explanation.
-  if (fallback && !/firebasestorage\.googleapis\.com/.test(fallback)) return fallback;
+  // ⚠️ Only a value a browser can actually load is worth returning now. A stored Firebase URL is
+  //    a revoked, dead link and a bare storage path is not a URL at all — either one handed to a
+  //    <video> produces a black box with no explanation. See needsMinting in utils/useSignedMedia.
+  if (fallback && !needsMinting(fallback)) return fallback;
   return null;
 }
 

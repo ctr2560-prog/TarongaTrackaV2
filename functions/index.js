@@ -584,10 +584,31 @@ exports.manageStaffAdmins = onRequest(
 // a Cloud Console grant, not a code bug.
 const SIGNED_URL_MINUTES = 60;
 
-function storagePathFromUrl(url) {
+// Accepts EITHER a stored download URL (legacy) or a bare storage path (new).
+//
+// ⚠️ THE MIGRATION THIS SUPPORTS. Uploads used to call `getDownloadURL()` and store the result,
+// which mints a PERMANENT, login-free link for every file — revoking the old ones closed the
+// legacy leak but every new upload created a fresh one. The fix is to store the **path**
+// (`evolve/ABC123/Quokka/film.webm`), which is useless on its own, and mint a short-lived URL on
+// demand. Both forms must work for a long time: records written before the switch hold URLs.
+//
+// ⚠️ A path is validated, not trusted. Callers can supply this (the student path does), so
+// anything with a scheme, a leading slash, or a `..` segment is refused — otherwise a crafted
+// value could walk out of the folder the entitlement check just verified.
+function storagePathFromUrl(value) {
+  const raw = String(value || '');
+  if (!raw) return null;
+
   // https://firebasestorage.googleapis.com/v0/b/{bucket}/o/{ENCODED_PATH}?alt=media&token=…
-  const m = String(url || '').match(/\/o\/([^?]+)/);
-  return m ? decodeURIComponent(m[1]) : null;
+  const m = raw.match(/\/o\/([^?]+)/);
+  if (m) return decodeURIComponent(m[1]);
+
+  // Anything else that still looks like a URL is not ours — refuse rather than guess.
+  if (/^[a-z][a-z0-9+.-]*:/i.test(raw) || raw.startsWith('//')) return null;
+
+  const path = raw.replace(/^\/+/, '');
+  if (!path || path.split('/').some(seg => seg === '..' || seg === '.')) return null;
+  return path;
 }
 
 exports.getMediaUrl = onRequest(

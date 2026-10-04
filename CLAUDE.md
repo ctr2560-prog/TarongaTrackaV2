@@ -96,8 +96,33 @@ sections below.
    existing call site is unchanged.
 
 0b. **Newly uploaded media still gets a permanent link.** Revocation cleared the legacy ones; it
-   does not stop new ones. The real fix is storing storage *paths* instead of URLs — 26 call sites
-   across 7 files. This is the last real security gap and the honest answer to "is it closed?".
+   does not stop new ones. The fix is storing storage *paths* instead of URLs.
+
+   🟡 **STEP 1 OF 3 IS DONE (2026-10-04): every READER now understands both forms.** Nothing has
+   changed about what is stored, so this is inert — and that is the point.
+
+   ⚠️⚠️ **DO THE STEPS IN THIS ORDER. Flipping uploads first breaks every screen at once**, because
+   a reader handed a bare path renders it as a broken element pointing at our own domain.
+   1. ✅ **Readers accept both.** `storagePathFromUrl()` in `functions/index.js` takes a URL **or**
+      a path (refusing anything with a scheme, a leading slash or a `..` segment, since the student
+      path lets a caller supply this). `needsMinting()` in `utils/useSignedMedia.js` is the client
+      side of the same question, used by the hook, `mintMediaUrl`, `mintStudentMedia` and the
+      souvenir viewer. 🚫 Never test for `firebasestorage.googleapis.com` alone again — once paths
+      are stored, that answers **false for exactly the values that most need minting**.
+   2. ⬜ **Flip the 9 upload sites to store the path**, one mode at a time, testing each:
+      Evolve (`EvolveScreen.jsx` 991 clip, 1155 film) · ZooSnooz (`ZooSnoozScreen.jsx` 511 clip,
+      1151 documentary) · Wildest Dreams (`modes/wildest-dreams/index.jsx` 112, 151) ·
+      ZooYard (`ZooYardScreen.jsx` 445, 516) · challenge photos (`TeacherDashboardScreen.jsx` 286).
+      ⚠️ Evolve first: it is the best understood and the only one tested end to end this week.
+   3. ⬜ **Convert the ~12 read sites that mint a permanent URL on the fly** to ask `getMediaUrl`
+      instead (`AdminDashboardScreen.jsx` 1362–1370, 1620–1628; `ClassDetailsScreen.jsx` 239).
+      These create a fresh permanent link every time a staff member opens a panel.
+
+   ⚠️ **`challengeEvidence/` is deliberately excluded** — those photos feed the public Conservation
+   Gallery, which anonymous visitors view with no way to mint anything.
+   ⚠️ **Old records keep their URLs forever.** There is no migration and none is needed: both forms
+   work. 🚫 Do not write a migration that rewrites stored URLs into paths — the old URLs are already
+   revoked and dead, so it would buy nothing and risk every keepsake record.
 0c. **Microsoft sign-in** is agreed with Taronga, not built. They supply a client ID and secret from
    an Azure app registration, and allow the redirect `https://tarongatracka.firebaseapp.com/__/auth/handler`.
    Then it is one `defaultSupportedIdpConfigs` call and a second button.

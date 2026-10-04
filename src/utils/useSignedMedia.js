@@ -26,6 +26,23 @@ import { auth } from '../firebase';
 // omitting it means a teacher gets refused and silently falls back to the permanent URL.
 const MEDIA_FN = 'https://australia-southeast1-tarongatracka.cloudfunctions.net/getMediaUrl';
 
+// ⚠️ A stored media reference is now EITHER a legacy download URL or a bare storage path
+//    (`evolve/ABC123/Quokka/film.webm`). Both must be minted; neither can be rendered raw.
+//
+// 🚫 Do NOT go back to testing for `firebasestorage.googleapis.com` alone. That was the old test,
+//    and once uploads store paths it answers false for exactly the values that MOST need minting —
+//    so the path would be handed to a <video src> and render as a broken element.
+//
+// Anything with a scheme that is not a Firebase Storage URL (an http link, a blob: URL mid-session,
+// a data: URI) is left completely alone.
+export function needsMinting(value) {
+  const v = String(value || '');
+  if (!v) return false;
+  if (/firebasestorage\.googleapis\.com/.test(v)) return true;   // legacy stored URL
+  if (/^[a-z][a-z0-9+.-]*:/i.test(v) || v.startsWith('//')) return false;  // blob:, data:, http…
+  return v.includes('/');                                          // a storage path
+}
+
 // Imperative version, for click handlers that open or download media rather than render it.
 // ⚠️ Same fallback contract: returns the stored URL if minting fails, so a staff member clicking
 //    "Watch" never gets a dead tab.
@@ -34,7 +51,7 @@ const MEDIA_FN = 'https://australia-southeast1-tarongatracka.cloudfunctions.net/
 //    check. (It still returns a non-Storage URL untouched.)
 export async function mintMediaUrl(storedUrl, classCode) {
   if (!storedUrl) return storedUrl;
-  if (!/firebasestorage\.googleapis\.com/.test(storedUrl)) return storedUrl;
+  if (!needsMinting(storedUrl)) return storedUrl;
   try {
     const idToken = await auth.currentUser?.getIdToken();
     if (!idToken) return storedUrl;
@@ -57,7 +74,7 @@ export async function mintMediaUrl(storedUrl, classCode) {
 // ⚠️ Returns null on any failure rather than a partial map — the caller keeps the stored URLs,
 //    which is today's behaviour. Half-minting would be worse than not minting.
 export async function mintStudentMedia(classCode, studentId, urlMap) {
-  const entries = Object.entries(urlMap || {}).filter(([, u]) => u && /firebasestorage\.googleapis\.com/.test(u));
+  const entries = Object.entries(urlMap || {}).filter(([, u]) => needsMinting(u));
   if (!entries.length) return null;
   try {
     const idToken = await auth.currentUser?.getIdToken();
@@ -88,13 +105,16 @@ export function useSignedMedia(storedUrl, classCode) {
   const [failed, setFailed] = useState(false);
   const [forUrl, setForUrl] = useState(storedUrl || null);
   if (forUrl !== storedUrl) { setForUrl(storedUrl || null); setSigned(null); setFailed(false); }
-  const url = signed || storedUrl || null;
+  // ⚠️ While minting is in flight, show the stored value only if it is something a browser can
+  //    actually load. A bare storage path is not — rendering it would produce a broken element
+  //    pointing at a relative path on our own domain.
+  const url = signed || (needsMinting(storedUrl) && !/^https?:/i.test(storedUrl || '') ? null : storedUrl) || null;
 
   useEffect(() => {
     let cancelled = false;
     if (!storedUrl) return;
-    // Anything not on Firebase Storage needs no minting and can never be a revoked link.
-    if (!/firebasestorage\.googleapis\.com/.test(storedUrl)) return;
+    // Anything that is already a usable URL (blob:, data:, an external link) needs no minting.
+    if (!needsMinting(storedUrl)) return;
 
     (async () => {
       try {
