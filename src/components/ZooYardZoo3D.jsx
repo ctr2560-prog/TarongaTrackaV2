@@ -16,21 +16,41 @@ import { preloadZooModel, onZooModelProgress, zooModelState } from '../utils/zoo
 //      canvas-only approach would leave keyboard and screen reader users with nothing at all.
 //   3. Camera orbit and clamping, lighting, shadows and tone mapping all come free.
 //
-// ── Why the model is ~6MB and not 33MB ───────────────────────────────────────────────────────
-// The baked-lighting GLB as delivered is 33MB. Regenerate with textures FIRST, then geometry:
+// ── Why the model is ~12.7MB and not 60MB ─────────────────────────────────────────────────────
+// The final map as delivered from the exporter (THREE.GLTFExporter r184) is 60MB. Regenerate in
+// THIS ORDER, which took 60MB → 12.7MB with nothing lost at all:
 //
-//   gltf-transform webp  <in> tmp.glb
-//   gltf-transform draco tmp.glb <out> --quantize-position 16 --quantize-normal 12
-//                                      --quantize-color 12 --quantize-texcoord 10
-//                                      --quantize-generic 16
+//   gltf-transform dedup <in> a.glb     # 866 textures → 436; 521 materials → 461
+//   gltf-transform prune a.glb b.glb    # ⚠️ 346 unused accessors = 18MB of dead weight
+//   gltf-transform weld  b.glb c.glb    # export is NON-INDEXED; Draco needs indices
+//   gltf-transform webp  c.glb d.glb --lossless
+//   gltf-transform draco d.glb <out> --quantize-position 16 --quantize-normal 16
+//                                    --quantize-texcoord 16
+//
+// ⚠️ TEXTURES ARE LOSSLESS ON PURPOSE, and this is the one setting not to "optimise" later.
+//    Every material here is KHR_materials_unlit: there is no runtime lighting, the lighting is
+//    PAINTED INTO THE TEXTURES. So texture quality is not texture quality, it is lighting
+//    quality, and a webp artefact lands as a smudge on a baked shadow. Lossless costs 1.2MB
+//    against --quality 92 and removes the question entirely.
+// ⚠️ Draco is at its 16-bit maximum on all three attributes. Dropping normals and UVs to the
+//    usual 12/14 saves only 230KB, and UV precision in particular is what keeps the baked
+//    lighting atlas aligned to the geometry it was baked against.
 //
 // ⚠️ ORDER MATTERS. Running `webp` after `draco` decompresses the geometry and blows it back
-//    out to 35MB.
+//    out. `weld` and `prune` must both precede `draco` or it has nothing to predict against.
+// ⚠️ `weld` makes the INTERMEDIATE file bigger (42MB → 48MB) because it adds an index buffer.
+//    That is correct and not a mistake — Draco then compresses the indexed mesh 4x better.
+// ⚠️ Bump MODEL_CACHE in utils/zooyardModel.js every time this is rebuilt, or every device that
+//    has already loaded ZooYard keeps serving the old zoo out of the Cache API forever.
 // ⚠️ The quantisation flags are not optional. Draco's DEFAULTS (position 14, normal 10) visibly
 //    soften the model: across a 717-unit zoo, 14 bits means 0.044-unit steps, enough to make
-//    fence posts and roof trim wobble.
+//    fence posts and roof trim wobble. gltf-transform's `draco` default IS 14/10/12, so running
+//    it bare is not "the safe option" — measured, it produced a byte-identical file to passing
+//    14/10/12 by hand.
 // ⚠️ Do NOT run `gltf-transform optimize`. Its pipeline includes `simplify` and `join`, which
-//    flattened 225 nodes down to 4 and destroyed every named anchor, to save 228KB.
+//    flattened the old map's 225 nodes down to 4 and destroyed every named anchor, to save
+//    228KB. This map's 1184 named nodes are what the habitat markers below are placed from,
+//    so losing them is far more expensive here than it was then.
 //
 // Baked lighting costs ~5MB over the unlit model and it is NOT recoverable by compressing
 // harder: the lighting rides on per-face atlas UVs, which have no spatial coherence, so Draco's
@@ -84,37 +104,72 @@ import { preloadZooModel, onZooModelProgress, zooModelState } from '../utils/zoo
 //    NOT fit on: it put the Function Centre rotunda at (-183, 32) against the model's actual
 //    `retreat_pavilion_canopy` at (-185, 30).
 const SPOTS = {
-  // ⚠️ The model has NO koala exhibit: nothing koala-named exists in it anywhere. This position
-  // was derived from the printed map instead, by interpolating between two things that DO exist
-  // in both (Corroboree Frogs and the Hive, which sit either side of the koala exhibit). Checked
-  // to land inside terrain_bushland / terrain_lawn, so the marker stands on ground rather than
-  // floating. Terrain tops out near y 67 there, hence 80.
-  koala:   { pos: '41 80 160',   where: 'the koala exhibit, by the Institute of Science and Learning' },
-  giraffe: { pos: '159 74 90',   where: 'African Savannah' },
-  tiger:   { pos: '253 68 67',   where: 'Tiger Trek' },
+  // ⚠️ ALL EIGHT WERE RE-DERIVED against the final map (2026-10-16, bushwalk added 2026-10-17),
+  // which is a different export covering the whole harbour. Do not trust a position in git
+  // history: the map these were measured from is not the map those were measured from.
+  //
+  // Method: node transforms are all zero (geometry is baked into the mesh vertices), so a
+  // position is the CENTRE of that node's POSITION accessor bounds in xz, with the marker at
+  // y + 9 above the top of EVERYTHING standing on that xz point — not just the animals node.
+  //
+  // ⚠️ That last part is new and it was measured, not guessed. Using the animals node's own top
+  // buried two markers in foliage: the giraffe marker sat inside `savannah_eucalypt_canopy`
+  // (top 74, marker was 73) and the chimpanzee marker inside `chimp_palm_fronds` (top 80,
+  // marker was 75). Giraffe, tiger, chimpanzee and rhino are all raised for this reason, which
+  // is why their clearances differ. To re-derive: for each marker xz, take the max top y of
+  // every node whose xz box contains it, EXCLUDING `trees_canopy_eucalypt` and
+  // `trees_canopy_dark` — those two are merged canopies spanning the whole 717x564 map, so they
+  // contain every point and tell you nothing.
+  //
+  // ⚠️ Those same two merged canopies mean a scattered tree can still occlude a marker at some
+  // rotations. Splitting them would need the 1.6M-vertex POSITION data grid-clustered in xz,
+  // which has not been done. If a marker plays hide-and-seek as the zoo turns, that is why.
+  //
+  // ✅ Good news about this export: 1141 nodes carry real per-structure names, so seven of the
+  // eight anchor onto an `animals_*` node that holds ONLY that species. No clustering needed,
+  // unlike the old map where `aviary_mesh` spanned the entire zoo as one primitive.
 
-  // Added 2026-09-29. All five were read out of the GLB the same way the first three were:
-  // the model's node transforms are all zero (geometry is baked into the mesh vertices), so a
-  // position is the CENTRE of that node's POSITION accessor bounds, with the marker sat at the
-  // bounding box's top y + 9. That +9 is not arbitrary — it is the offset the original three
-  // already used (animals_giraffes tops out at y 65 and its marker sits at 74), so a new marker
-  // floats exactly as far above its exhibit as the existing ones do.
-  chimpanzee: { pos: '177 75 160',  where: 'the chimpanzee exhibit' },      // animals_chimpanzees
-  gorilla:    { pos: '23 55 -6',    where: 'the gorilla exhibit' },         // animals_gorillas
-  rhino:      { pos: '136 49 -79',  where: 'the rhino exhibit' },           // animals_rhinos
-  'sea-lion': { pos: '16 46 -93',   where: 'the seal and sea lion pools' }, // animals_seals
+  // The koala interpolated from the printed map at (41, 160) turned out to be RIGHT: this export
+  // has a real `koala_walkabout` building centred (41, 162). Position kept, y raised 80 → 81 to
+  // sit on its actual roof top of 72.
+  // ⚠️ There is a SECOND koala in this map — `animals_koala_tree_canopy` at (-198, 117), in the
+  // Australian precinct beside Nocturnal Country and the dingoes. The marker points at the
+  // Walkabout building because that is the named koala-viewing structure and it matches the
+  // `where` text below. Move it only if the zoo says the koalas students watch are the western
+  // ones.
+  koala:   { pos: '41 81 162',   where: 'the koala exhibit, by the Institute of Science and Learning' },
 
-  // The walk-through aviary beside the Taronga Function Centre rotunda. Its extent is
-  // x -160..-145, y 52..64, z -1..10. Took three attempts, so the method is written down below.
-  'blue-mountains-bushwalk': { pos: '-153 73 5', where: 'the Blue Mountains Bushwalk aviary' },
+  giraffe: { pos: '157 83 81',   where: 'African Savannah' },                // animals_giraffes
+  tiger:   { pos: '249 74 56',   where: 'Tiger Trek' },                      // animals_tigers
+  chimpanzee: { pos: '170 89 160',  where: 'the chimpanzee exhibit' },       // animals_chimpanzees
+  gorilla:    { pos: '21 55 -9',    where: 'the gorilla exhibit' },          // animals_gorillas
+  rhino:      { pos: '121 54 -66',  where: 'the rhino exhibit' },            // animals_rhinos
+  'sea-lion': { pos: '21 45 -93',   where: 'the seal and sea lion pools' },  // animals_seals
+
+  // The aviary was MISSING from the first cut of this map, which briefly sent this marker to
+  // Backyard to Bush. It was added to the export on 2026-10-17 and now anchors properly onto
+  // `blue_mountains_aviary_steel`, centred (-157, 6).
+  // Worth noting for anyone who doubts the old method: the original position, interpolated off
+  // the printed zoo map back when no aviary existed in the model at all, was (-153, 5) — four
+  // units from where the real geometry turned out to be. Same story as the koala above.
+  'blue-mountains-bushwalk': { pos: '-157 82 6', where: 'the Blue Mountains Bushwalk aviary' },
 };
 
-// theta (spin) phi (height) radius (distance). The zoo is ~717 units across, so the radius has
-// to be large. START is swung round and pulled back; REST is where it settles. Tuned against
-// renders: 980m left the zoo small in empty sky, 700m cropped the harbour off.
-const CAM_START  = '-78deg 76deg 1500m';
-const CAM_REST   = '8deg 58deg 850m';
-const CAM_TARGET = '70m 26m 45m';
+// theta (spin) phi (height) radius (distance).
+// ⚠️ Re-framed 2026-10-16 for the final map, and the reason is worth knowing: 687 of its 1141
+// nodes are Sydney — the CBD skyline, the harbour, the Opera House, the ferries. The full model
+// is 717 x 787 units, but THE ZOO IS NOT IN THE MIDDLE OF IT. Framing on the model's own centre
+// points the camera at open water.
+//
+// So CAM_TARGET is the centre of the eight habitat anchors above, (24, 23) in xz, not the
+// model's centre of (0, -59). y 40 is ground level across the exhibits rather than the mean of
+// a bbox that includes 95-unit towers and a -20 harbour floor.
+//
+// START is deliberately pulled right back so the opening shot includes the harbour and the city
+// — that is the whole point of having them — and then settles onto the zoo at REST.
+const CAM_START  = '-78deg 76deg 2600m';
+const CAM_REST   = '8deg 58deg 1000m';
+const CAM_TARGET = '24m 40m 23m';
 
 export default function ZooYardZoo3D({ animals, completed, unlocked = {}, themes, onSelect }) {
   const mvRef = useRef(null);
@@ -141,7 +196,7 @@ export default function ZooYardZoo3D({ animals, completed, unlocked = {}, themes
     (async () => {
       try {
         // Both at once: the library and the model do not depend on each other. preloadZooModel
-        // joins the intro's in-flight request rather than starting a second 6MB download.
+        // joins the intro's in-flight request rather than starting a second 12.7MB download.
         const [mod, src] = await Promise.all([
           import('@google/model-viewer'),
           preloadZooModel(),
@@ -186,7 +241,7 @@ export default function ZooYardZoo3D({ animals, completed, unlocked = {}, themes
     };
   }, [ready, reduce]);
 
-  // ⚠️ The fallback is not a nicety. A 6MB GLB plus a WASM decoder is a lot to ask of a
+  // ⚠️ The fallback is not a nicety. A 12.7MB GLB plus a WASM decoder is a lot to ask of a
   // locked-down school device, and a student who cannot render it still has to pick a habitat.
   if (failed) {
     return (
@@ -228,8 +283,8 @@ export default function ZooYardZoo3D({ animals, completed, unlocked = {}, themes
           interaction-prompt="none"
           camera-orbit={reduce ? CAM_REST : CAM_START}
           camera-target={CAM_TARGET}
-          min-camera-orbit="auto 32deg 480m"
-          max-camera-orbit="auto 80deg 1200m"
+          min-camera-orbit="auto 32deg 560m"
+          max-camera-orbit="auto 80deg 2800m"
           environment-image="neutral"
           exposure="1.05"
           shadow-intensity="1.1"
@@ -278,7 +333,7 @@ export default function ZooYardZoo3D({ animals, completed, unlocked = {}, themes
         </model-viewer>
       )}
 
-      {/* A real loading screen, not a spinner. 6MB plus a WASM decoder on a school connection
+      {/* A real loading screen, not a spinner. 12.7MB plus a WASM decoder on a school connection
           is long enough that a bare spinner reads as broken. */}
       {!loaded && (
         <div className="zy3d-loading" role="status" aria-live="polite">

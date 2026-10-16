@@ -7,10 +7,10 @@
 //
 // The state is module-level on purpose: the intro and the map are different components that must
 // share ONE in-flight request. A second caller joins the existing promise rather than starting a
-// second 6MB download.
+// second 12.7MB download.
 //
 // ── Caching ──────────────────────────────────────────────────────────────────────────────────
-// 6MB must download ONCE PER DEVICE, EVER, not once per session. HTTP caching will not do it:
+// 12.7MB must download ONCE PER DEVICE, EVER, not once per session. HTTP caching will not do it:
 // GitHub Pages serves with max-age=600, so a student returning after lunch would fetch the whole
 // zoo again. The Cache API persists across sessions and reloads and ignores whatever cache
 // headers the host sends.
@@ -20,7 +20,7 @@
 //
 // ⚠️ Bump MODEL_CACHE whenever the .glb changes, or devices keep serving the old zoo forever.
 export const MODEL_URL = '/models/taronga-zoo.glb';
-const MODEL_CACHE = 'zooyard-model-v2-baked';
+const MODEL_CACHE = 'zooyard-model-v4-bushwalk';
 
 let pending = null;          // in-flight promise, shared by every caller
 let resolvedUrl = null;      // the object URL once it exists
@@ -118,5 +118,5 @@ export function preloadZooModel() {
 
 // ⚠️ The object URL is deliberately NEVER revoked. It is shared between the intro and the map,
 // and survives a student going back and forth between habitats, so revoking on any one
-// component's unmount would break the next mount. It costs ~6MB held for the session and the
+// component's unmount would break the next mount. It costs ~12.7MB held for the session and the
 // browser reclaims it on page unload; refcounting consumers to save that is not worth the bugs.

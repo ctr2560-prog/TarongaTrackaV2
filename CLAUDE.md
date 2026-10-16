@@ -2431,14 +2431,73 @@ users with nothing. Camera orbit, clamping, lighting and tone mapping come free.
 
 #### ⚠️ Regenerating the model — the recipe is not optional
 
-33MB as delivered, shipped at **6.0MB**. Textures FIRST, then geometry:
+**Replaced 2026-10-16 with the final map, bushwalk aviary added 2026-10-17.** 60MB as delivered
+(THREE.GLTFExporter r184), shipped at **12.7MB**. The previous map was 33MB → 6.0MB; both sets of
+numbers appear in older notes, so check which map a note is about before trusting a figure.
 
 ```bash
-gltf-transform webp  <in> tmp.glb
-gltf-transform draco tmp.glb <out> --quantize-position 16 --quantize-normal 12 \
-                                   --quantize-color 12 --quantize-texcoord 10 \
-                                   --quantize-generic 16
+gltf-transform dedup <in>  a.glb     # 866 textures → 436, 521 materials → 461
+gltf-transform prune a.glb b.glb     # ⚠️ 346 unused accessors = 18MB of dead weight
+gltf-transform weld  b.glb c.glb     # the export is NON-INDEXED; Draco needs indices
+gltf-transform webp  c.glb d.glb --lossless
+gltf-transform draco d.glb <out> --quantize-position 16 --quantize-normal 16 \
+                                 --quantize-texcoord 16
 ```
+
+- ⚠️ **Textures are lossless on purpose. Do not "optimise" this later.** Every material is
+  `KHR_materials_unlit` — there is no runtime lighting, the lighting is *painted into the
+  textures*. Texture quality here is lighting quality, and a webp artefact lands as a smudge on a
+  baked shadow. Lossless costs 1.2MB over `--quality 92`; it was 11.2MB with lossy textures and
+  12/14-bit normals and UVs, 12.7MB without compromises. Take the 1.4MB.
+- Draco is at its **16-bit maximum on all three attributes**. Dropping normals and UVs to 12/14
+  saves only 230KB, and UV precision is what keeps the baked lighting atlas aligned to the
+  geometry it was baked against.
+
+- **`prune` and `weld` are where the win is**, not Draco settings. `prune` alone dropped 18MB of
+  accessors nothing referenced. `weld` makes the intermediate file *bigger* (42 → 48MB) because
+  it adds an index buffer; that is correct, and Draco then compresses the indexed mesh 4x better.
+- **Bump `MODEL_CACHE` in `utils/zooyardModel.js` every single time.** It is
+  `zooyard-model-v4-bushwalk` as of this map. The Cache API ignores HTTP headers, so without a bump every device that has
+  ever opened ZooYard keeps serving the old zoo forever.
+
+**This map is half Sydney.** 687 of its 1141 nodes are the CBD skyline, the harbour, the Opera
+House, Milsons Point and the ferries. Two consequences:
+1. The model's bbox centre is **open water**. `CAM_TARGET` is the centre of the eight habitat
+   anchors, `24m 40m 23m`, not the model centre of `0 38 -59`. Camera radii were rescaled to
+   match (rest 850 → 1000m, start 1500 → 2600m, max orbit 1200 → 2800m).
+2. The city is most of the remaining weight. If 11.2MB ever becomes the problem, deleting the
+   `cbd_*` / `harbour_*` / `opera_*` nodes is the lever — but it is also the best thing about the
+   map, so ask first.
+
+**Marker placement got much easier.** This export has **1141 named nodes**, including an
+`animals_<species>` node per species holding only that species. Seven of the eight habitats
+anchor straight onto one. No grid-clustering of vertex data, which the old map needed because
+`aviary_mesh` was one primitive spanning the entire zoo.
+
+Two judgement calls made on 2026-10-16 that someone should confirm:
+- **Koala.** The old interpolated position (41, 160) turned out to be right — there is a real
+  `koala_walkabout` building at (41, 162). But this map *also* has `animals_koala_tree_canopy` at
+  (-198, 117), in the Australian precinct by Nocturnal Country. The marker points at the
+  Walkabout building; move it if the koalas students actually watch are the western ones.
+- ~~**Blue Mountains Bushwalk relocated**~~ **— resolved 2026-10-17.** The aviary was missing
+  from the first cut of the final map, which briefly sent this marker to `backyard_to_bush`. It
+  was added to the export and now anchors onto `blue_mountains_aviary_steel` at (-157, 6).
+  Nothing else in the map changed between those two exports — the diff is exactly four new nodes.
+
+**The old interpolation method is vindicated twice over.** Both positions that were derived off
+the printed zoo map, back when neither structure existed in the model, landed within a few units
+of where the real geometry turned out to be: koala interpolated (41, 160) against the actual
+`koala_walkabout` at (41, 162), and bushwalk interpolated (-153, 5) against the actual
+`blue_mountains_aviary` at (-157, 6). If a future map is missing something again, the printed-map
+affine fit described below is trustworthy.
+
+⚠️ **Marker height is max top y of EVERYTHING on that xz, + 9** — not the animals node's own top.
+Using the animals node buried the giraffe marker inside `savannah_eucalypt_canopy` (top 74) and
+the chimpanzee marker inside `chimp_palm_fronds` (top 80). Exclude `trees_canopy_eucalypt` and
+`trees_canopy_dark` when measuring: both are merged canopies spanning the whole 717x564 map, so
+they contain every point. Those two also mean a scattered tree can still occlude a marker at some
+rotations; splitting them needs the 1.6M-vertex POSITION data clustered in xz and has not been
+done.
 
 - **Order matters.** Running `webp` *after* `draco` decompresses the geometry and blows it back
   out to 35MB.

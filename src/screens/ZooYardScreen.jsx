@@ -98,7 +98,7 @@ const ZY_TEASER = {
 
 function ZooYardIntro({ onStart }) {
   // ⚠️ The whole point of this effect. A student spends ten or twenty seconds reading the four
-  // steps below; starting the 6MB zoo download now means it is usually cached by the time they
+  // steps below; starting the 12.7MB zoo download now means it is usually cached by the time they
   // reach the map. Without it, thirty students hit the download simultaneously at the exact
   // moment the lesson starts. Fire and forget: the map joins this same request rather than
   // starting a second one, and shows its loading screen only if this has not finished.
