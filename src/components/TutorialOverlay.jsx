@@ -7,49 +7,49 @@ const STEPS = [
     title: "Hi, I'm Dr. Cam!",
     text: "Welcome to Taronga Tracka! I'm going to show you how everything works before you head out to find the animals.",
     selector: null,
-    camImage: 'images/guide-character.png',
+    camImage: 'images/guide-character.webp',
     camCorner: 'center',
   },
   {
     title: "Your Animal Cards",
     text: "These cards show all the animals at Taronga Zoo you need to find today. The closest ones always appear at the top of the list!",
     selector: '.discovery-grid',
-    camImage: 'images/dr-cam-point-up-left.png',
+    camImage: 'images/dr-cam-point-up-left.webp',
     camCorner: 'bottom-right',
   },
   {
     title: "Follow the Arrow",
     text: "See the yellow arrow on each card? It points in the direction you need to walk! Watch the distance number shrink as you get closer.",
     selector: '.discovery-card',
-    camImage: 'images/dr-cam-point-up-left.png',
+    camImage: 'images/dr-cam-point-up-left.webp',
     camCorner: 'bottom-right',
   },
   {
     title: "Zoo Map",
     text: "If you ever get lost, tap the Zoo Map button up here to see a full map of the zoo!",
     selector: '#t-zoo-map-btn',
-    camImage: 'images/dr-cam-point-up-right.png',
+    camImage: 'images/dr-cam-point-up-right.webp',
     camCorner: 'bottom-left',
   },
   {
     title: "Your Badges",
     text: "This shows your points and how many badges you've collected! Tap it to see your full badge collection.",
     selector: '.student-points-chip',
-    camImage: 'images/dr-cam-point-up-right.png',
+    camImage: 'images/dr-cam-point-up-right.webp',
     camCorner: 'bottom-left',
   },
   {
     title: "Completing the Activity",
     text: "When your teacher says it's time to finish, tap 'Complete Activity' here to submit all your work. Good luck out there!",
     selector: '.submit-btn',
-    camImage: 'images/dr-cam-point-up-right.png',
+    camImage: 'images/dr-cam-point-up-right.webp',
     camCorner: 'bottom-left',
   },
   {
     title: "Need a hand?",
     text: "If you need me at any time, tap this button to ask me helpful questions during your visit!",
     selector: '#t-guide-btn',
-    camImage: 'images/dr-cam-point-up-right.png',
+    camImage: 'images/dr-cam-point-up-right.webp',
     camCorner: 'bottom-left',
     elevateTarget: true,
   },
@@ -113,7 +113,7 @@ export default function TutorialOverlay() {
   const back = () => setStep(s => s - 1);
 
   const handleImgError = (src) => setImgMap(m => ({ ...m, [src]: true }));
-  const imgSrc = (src) => imgMap[src] ? 'images/guide-character.png' : src;
+  const imgSrc = (src) => imgMap[src] ? 'images/guide-character.webp' : src;
 
   if (done) return null;
 

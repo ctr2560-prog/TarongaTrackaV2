@@ -496,7 +496,7 @@
       position: absolute;
       top: 0; bottom: 0; left: 0; right: 0;
       background-color: #B08040;
-      background-image: url("images/river.png");
+      background-image: url("images/river.webp");
       background-repeat: repeat-x;
       /* 50% width tiles 2× across; 250% height centred zooms into the
          opaque content band of the 1920×1080 source image */
@@ -2042,7 +2042,7 @@
     .rr-river {
       position:absolute; top:0; bottom:0; left:0; right:0;
       background-color:#B08040;
-      background-image:url("images/river.png");
+      background-image:url("images/river.webp");
       background-repeat:repeat-x;
       background-size:50% 250%;
       background-position-x:0;

@@ -140,9 +140,9 @@ export default function TeacherLoginScreen() {
 
         <div style={{ textAlign:'center', marginBottom:'1rem' }}>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'0.85rem', marginBottom:'0.75rem' }}>
-            <img src="/images/tracka-logo-full.png" alt="Taronga Tracka" style={{ height:'68px', width:'auto' }} onError={e => e.target.style.display='none'} />
+            <img src="/images/tracka-logo-full.webp" alt="Taronga Tracka" style={{ height:'68px', width:'auto' }} onError={e => e.target.style.display='none'} />
             <span style={{ color:'#D4D4D8', fontSize:'1.6rem', fontWeight:200 }}>+</span>
-            <img src="/images/wildly-logo.png" alt="Wildly by Taronga" style={{ height:'60px', width:'auto' }} onError={e => e.target.style.display='none'} />
+            <img src="/images/wildly-logo.webp" alt="Wildly by Taronga" style={{ height:'60px', width:'auto' }} onError={e => e.target.style.display='none'} />
           </div>
           <h2 className="taronga-title" style={{ fontSize:'clamp(1.4rem, 3vh, 1.7rem)', color:ink, marginBottom:'0.2rem' }}>Taronga Education</h2>
           <p style={{ color:muted, fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:'0.4rem' }}>Multiple applications, one log-in</p>

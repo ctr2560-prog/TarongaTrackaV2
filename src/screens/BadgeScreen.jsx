@@ -111,7 +111,7 @@ export default function BadgeScreen() {
 
         {/* Badge image */}
         <div style={{ height:'clamp(100px,22vh,150px)', width:'clamp(100px,22vh,150px)', margin:'0 auto 0.75rem',
-          backgroundImage:`url(images/badge-${lastBadge.animalId}.png)`, backgroundSize:'contain', backgroundRepeat:'no-repeat', backgroundPosition:'center',
+          backgroundImage:`url(images/badge-${lastBadge.animalId}.webp)`, backgroundSize:'contain', backgroundRepeat:'no-repeat', backgroundPosition:'center',
           filter:'drop-shadow(0 6px 18px rgba(7,30,20,0.22))' }} />
 
         <h2 className="taronga-title" style={{ fontSize:'clamp(1.5rem,3.5vh,2rem)', color:'var(--t-deep)', marginBottom:'0.1rem', letterSpacing:'0.04em' }}>Badge Earned!</h2>

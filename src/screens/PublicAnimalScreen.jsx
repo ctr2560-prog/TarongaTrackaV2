@@ -71,7 +71,7 @@ export default function PublicAnimalScreen() {
             )}
             {found.has(selected.id) && (
               <div style={{ background:'rgba(74,222,128,0.12)', border:'1px solid rgba(74,222,128,0.3)', borderRadius:16, padding:'0.85rem 1rem', display:'flex', alignItems:'center', gap:'0.75rem' }}>
-                <div style={{ width:42, height:42, borderRadius:10, backgroundImage:`url(images/badge-${selected.id}.png)`, backgroundSize:'cover', backgroundPosition:'center', flexShrink:0 }} />
+                <div style={{ width:42, height:42, borderRadius:10, backgroundImage:`url(images/badge-${selected.id}.webp)`, backgroundSize:'cover', backgroundPosition:'center', flexShrink:0 }} />
                 <div>
                   <div style={{ color:'#4ADE80', fontWeight:700 }}>{selected.name} discovered!</div>
                   <div style={{ color:'rgba(255,255,255,0.5)', fontSize:'0.75rem' }}>+20 exploration points</div>

@@ -13,7 +13,7 @@ const STEPS = [
   {
     title: 'Create a New Class',
     text: 'Fill in your location, subject, school name, NSW stage, and class name. Enter your Taronga access code and hit Create Class to generate a unique join code for your students.',
-    image: '/images/teacher-tutorial/dashboard-create-class.png',
+    image: '/images/teacher-tutorial/dashboard-create-class.webp',
     highlights: [
       { x: 0.15, y: 0.73, width: 0.83, height: 0.21 },
     ],
@@ -21,7 +21,7 @@ const STEPS = [
   {
     title: 'Teacher Documents',
     text: 'Below the form you\'ll find the NSW Curriculum Outcomes mapped to your subject and stage. Download the Teacher Information Sheet for a printable overview to use before and after your visit.',
-    image: '/images/teacher-tutorial/dashboard-teacher-docs.png',
+    image: '/images/teacher-tutorial/dashboard-teacher-docs.webp',
     highlights: [
       { x: 0.15, y: 0.38, width: 0.83, height: 0.40 },
     ],
@@ -29,7 +29,7 @@ const STEPS = [
   {
     title: 'Access Code & Your Classes',
     text: 'Once your class is created it appears in the My Classes list. Each class shows the unique code your students use to join. Tap any class to start a live session or view analytics.',
-    image: '/images/teacher-tutorial/dashboard-code-classes.png',
+    image: '/images/teacher-tutorial/dashboard-code-classes.webp',
     highlights: [
       { x: 0.15, y: 0.63, width: 0.83, height: 0.35 },
       { x: 0.89, y: 0.72, width: 0.09, height: 0.09 },
@@ -43,39 +43,39 @@ const STEPS = [
       {
         title: 'Analytics Overview',
         text: 'At a glance: total students, animals found, badges earned, and quiz scores. The chart shows which animals your class visited most and how quiz results are distributed.',
-        image: '/images/teacher-tutorial/analytics-overview.png',
+        image: '/images/teacher-tutorial/analytics-overview.webp',
       },
       {
         title: 'Writing & Insights',
         text: 'The radar chart breaks down writing quality across six domains. Teaching Takeaways highlight where your class excelled and where they need support, generated automatically from their work.',
-        image: '/images/teacher-tutorial/analytics-writing.png',
+        image: '/images/teacher-tutorial/analytics-writing.webp',
       },
       {
         title: 'Student Performance',
         text: 'See every student ranked by overall performance band. Click any student to drill into their individual results, quiz answers, and observation writing.',
-        image: '/images/teacher-tutorial/analytics-students.png',
+        image: '/images/teacher-tutorial/analytics-students.webp',
       },
       {
         title: 'Viewing Observations',
         text: "Read each student's observation writing exactly as they submitted it. Use this to assess quality and spot students who may need extra support.",
-        image: '/images/teacher-tutorial/analytics-observations.png',
+        image: '/images/teacher-tutorial/analytics-observations.webp',
       },
       {
         title: 'Marking & Review',
         text: 'Override any automatically-generated score here. Use the dropdowns to adjust marks for quiz, writing, and engagement. Changes update instantly.',
-        image: '/images/teacher-tutorial/analytics-marking.png',
+        image: '/images/teacher-tutorial/analytics-marking.webp',
       },
       {
         title: 'Conservation Statements',
         text: "Each student writes a personal conservation commitment at the end of their visit. Read them here. Often the most meaningful part of the whole experience.",
-        image: '/images/teacher-tutorial/analytics-conservation.png',
+        image: '/images/teacher-tutorial/analytics-conservation.webp',
       },
     ],
   },
   {
     title: 'Need Help?',
     text: "See the green question mark button in the bottom-right corner? Tap it any time to get answers about using the dashboard, reading analytics, or running a session.",
-    image: '/images/teacher-tutorial/dashboard-code-classes.png',
+    image: '/images/teacher-tutorial/dashboard-code-classes.webp',
     highlights: [
       { x: 0.96, y: 0.87, width: 0.05, height: 0.10 },
     ],

@@ -5,7 +5,7 @@ import { getGuideContent } from '../utils/studentGuideContent';
 
 const AVATAR = (
   <div style={{ width: '28px', height: '28px', borderRadius: '50%', overflow: 'hidden', border: '1.5px solid #4A9E6B', flexShrink: 0, background: '#e8f5e9', alignSelf: 'flex-end' }}>
-    <img src="images/guide-character.png" alt="Dr. Cam" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: '50% 12%' }}
+    <img src="images/guide-character.webp" alt="Dr. Cam" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: '50% 12%' }}
       onError={e => { e.target.style.display = 'none'; }} />
   </div>
 );
@@ -103,7 +103,7 @@ export default function StudentGuide({ screen = 'map', animal = null }) {
         ) : imgFailed ? (
           <span style={{ fontSize: '1.6rem', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>🦁</span>
         ) : (
-          <img src="images/guide-character.png" alt="Dr. Cam"
+          <img src="images/guide-character.webp" alt="Dr. Cam"
             style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: '50% 12%' }}
             onError={() => setImgFailed(true)} />
         )}
@@ -128,7 +128,7 @@ export default function StudentGuide({ screen = 'map', animal = null }) {
               {imgFailed ? (
                 <span style={{ fontSize: '1.6rem', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>🦁</span>
               ) : (
-                <img src="images/guide-character.png" alt="Dr. Cam"
+                <img src="images/guide-character.webp" alt="Dr. Cam"
                   style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: '50% 12%' }}
                   onError={() => setImgFailed(true)} />
               )}

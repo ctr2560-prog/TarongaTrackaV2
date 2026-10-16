@@ -399,7 +399,7 @@ export default function DocumentaryViewer() {
         {/* Badge earned pill */}
         {isPersonal && (
           <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', background:'rgba(74,222,128,0.1)', border:'1px solid rgba(74,222,128,0.25)', borderRadius:16, padding:'0.85rem 1rem' }}>
-            <div style={{ width:44, height:44, borderRadius:10, backgroundImage:`url(images/badge-${parsed.animalId}.png)`, backgroundSize:'cover', backgroundPosition:'center', flexShrink:0, boxShadow:'0 2px 12px rgba(74,222,128,0.3)' }} />
+            <div style={{ width:44, height:44, borderRadius:10, backgroundImage:`url(images/badge-${parsed.animalId}.webp)`, backgroundSize:'cover', backgroundPosition:'center', flexShrink:0, boxShadow:'0 2px 12px rgba(74,222,128,0.3)' }} />
             <div>
               <div style={{ color:'#4ADE80', fontWeight:700, fontSize:'0.88rem' }}>ZooSnooz Badge Earned</div>
               {obsScore && (

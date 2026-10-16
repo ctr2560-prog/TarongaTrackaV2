@@ -201,7 +201,7 @@ export default function AdminClassViewScreen() {
                                   return (
                                     <div key={i} style={{ background:'white', borderRadius:'var(--t-r-md)', padding:'0.75rem', border:'1px solid var(--t-mist)' }}>
                                       <div style={{ display:'flex', gap:'0.75rem', alignItems:'flex-start' }}>
-                                        <div style={{ width:36, height:36, borderRadius:'var(--t-r-sm)', backgroundImage:`url(images/badge-${b.animalId}.png)`, backgroundSize:'cover', backgroundPosition:'center', flexShrink:0 }} />
+                                        <div style={{ width:36, height:36, borderRadius:'var(--t-r-sm)', backgroundImage:`url(images/badge-${b.animalId}.webp)`, backgroundSize:'cover', backgroundPosition:'center', flexShrink:0 }} />
                                         <div style={{ flex:1, minWidth:0 }}>
                                           <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', marginBottom:'0.2rem' }}>
                                             <span style={{ fontWeight:700, fontSize:'0.83rem', color:'var(--t-deep)' }}>{b.animal}</span>

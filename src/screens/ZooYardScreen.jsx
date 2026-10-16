@@ -109,7 +109,7 @@ function ZooYardIntro({ onStart }) {
       <div style={{ maxWidth:560, margin:'0 auto', padding:'2rem 1.25rem 2.5rem', minHeight:'100%', display:'flex', flexDirection:'column', justifyContent:'center' }}>
 
         <div className="animate-scale-in" style={{ textAlign:'center', marginBottom:'1.5rem' }}>
-          <img src="/images/guide-character.png" alt="Dr. Cam"
+          <img src="/images/guide-character.webp" alt="Dr. Cam"
             style={{ width:120, height:120, borderRadius:'50%', objectFit:'cover', objectPosition:'50% 12%', border:'4px solid rgba(255,255,255,0.85)', boxShadow:'0 10px 30px rgba(0,0,0,0.4)' }}
             onError={e => { e.target.style.display = 'none'; }} />
           <h1 className="taronga-title" style={{ color:'white', fontSize:'clamp(1.9rem,7vw,2.6rem)', margin:'0.9rem 0 0.4rem', lineHeight:1.1 }}>
@@ -1123,7 +1123,7 @@ export default function ZooYardScreen() {
             const w = badge?.writing   || 0;
             return (
               <div key={animal.id} style={{ background: earned ? 'linear-gradient(135deg,rgba(46,125,85,0.22),rgba(10,47,31,0.9))' : 'rgba(255,255,255,0.04)', border: earned ? '1px solid rgba(46,125,85,0.4)' : '1px solid rgba(255,255,255,0.1)', borderRadius:16, marginBottom:'0.85rem', overflow:'hidden', display:'flex', gap:'1rem', padding:'1rem', alignItems:'flex-start' }}>
-                <div style={{ flexShrink:0, width:72, height:72, borderRadius:'50%', backgroundImage: earned ? `url(/images/badge-${animal.id}.png)` : 'none', backgroundSize:'contain', backgroundRepeat:'no-repeat', backgroundPosition:'center', backgroundColor: earned ? 'transparent' : 'rgba(255,255,255,0.04)', border: earned ? '2px solid rgba(46,125,85,0.5)' : '2px solid rgba(255,255,255,0.08)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.4rem' }}>
+                <div style={{ flexShrink:0, width:72, height:72, borderRadius:'50%', backgroundImage: earned ? `url(/images/badge-${animal.id}.webp)` : 'none', backgroundSize:'contain', backgroundRepeat:'no-repeat', backgroundPosition:'center', backgroundColor: earned ? 'transparent' : 'rgba(255,255,255,0.04)', border: earned ? '2px solid rgba(46,125,85,0.5)' : '2px solid rgba(255,255,255,0.08)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.4rem' }}>
                   {!earned && <span style={{ opacity:0.4 }}>🔒</span>}
                 </div>
                 <div style={{ flex:1, minWidth:0 }}>

@@ -62,8 +62,8 @@ export const IMAGE_LIBRARY = [
     items: [
       { src: '/images/blue-mountains-bushwalk.jpg', label: 'Blue Mountains Bushwalk' },
       { src: '/images/concert-lawn.jpg',            label: 'Concert Lawn' },
-      { src: '/images/taronga-map.png',             label: 'Zoo Map' },
-      { src: '/images/africa-map.png',              label: 'Africa Map' },
+      { src: '/images/taronga-map.webp',             label: 'Zoo Map' },
+      { src: '/images/africa-map.webp',              label: 'Africa Map' },
     ],
   },
 ];

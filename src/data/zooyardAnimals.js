@@ -1,6 +1,6 @@
 // zooyardAnimals.js — ZooYard (self-attest, no-GPS school program) content, Science v1
 // Reuses the same animal ids as src/data/animals.js on purpose: same photos (/images/{id}.jpg),
-// same badge art (/images/badge-{id}.png), and koala/giraffe already have hand-tuned keyword
+// same badge art (/images/badge-{id}.webp), and koala/giraffe already have hand-tuned keyword
 // scoring branches in scoring.js's scoreObservation(). Safe because ZooYard classes are entirely
 // separate class documents from any daytime class.
 //

@@ -1401,7 +1401,7 @@ export default function ZooSnoozScreen() {
             return (
               <div key={animal.id} style={{ background: earned ? 'linear-gradient(135deg,rgba(20,40,28,0.95),rgba(10,25,18,0.98))' : 'rgba(10,20,14,0.6)', border: earned ? '1px solid rgba(74,158,107,0.4)' : '1px solid rgba(74,158,107,0.12)', borderRadius:'16px', marginBottom:'0.85rem', overflow:'hidden', display:'flex', gap:'1rem', padding:'1rem', alignItems:'flex-start' }}>
                 {/* Badge image */}
-                <div style={{ flexShrink:0, width:'72px', height:'72px', borderRadius:'50%', backgroundImage: earned ? `url(/images/badge-${animal.id}.png)` : 'none', backgroundSize:'contain', backgroundRepeat:'no-repeat', backgroundPosition:'center', backgroundColor: earned ? 'transparent' : 'rgba(255,255,255,0.04)', border: earned ? '2px solid rgba(74,158,107,0.5)' : '2px solid rgba(255,255,255,0.08)', boxShadow: earned ? '0 0 18px rgba(74,158,107,0.35)' : 'none', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.5rem', filter: earned ? 'drop-shadow(0 0 8px rgba(74,158,107,0.5))' : 'grayscale(1) opacity(0.3)' }}>
+                <div style={{ flexShrink:0, width:'72px', height:'72px', borderRadius:'50%', backgroundImage: earned ? `url(/images/badge-${animal.id}.webp)` : 'none', backgroundSize:'contain', backgroundRepeat:'no-repeat', backgroundPosition:'center', backgroundColor: earned ? 'transparent' : 'rgba(255,255,255,0.04)', border: earned ? '2px solid rgba(74,158,107,0.5)' : '2px solid rgba(255,255,255,0.08)', boxShadow: earned ? '0 0 18px rgba(74,158,107,0.35)' : 'none', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.5rem', filter: earned ? 'drop-shadow(0 0 8px rgba(74,158,107,0.5))' : 'grayscale(1) opacity(0.3)' }}>
                   {!earned && <span style={{ fontSize:'1.4rem', opacity:0.4 }}>🔒</span>}
                 </div>
 
@@ -1621,7 +1621,7 @@ export default function ZooSnoozScreen() {
                 {/* Badge with glow */}
                 <div style={{ position:'relative', width:'180px', height:'180px', margin:'0 auto 1.25rem' }}>
                   <div style={{ position:'absolute', inset:'-12px', borderRadius:'50%', background:'radial-gradient(circle, rgba(46,125,85,0.35) 0%, transparent 70%)' }} />
-                  <div style={{ width:'100%', height:'100%', borderRadius:'50%', backgroundImage:`url(images/badge-${ba.id}.png)`, backgroundSize:'contain', backgroundRepeat:'no-repeat', backgroundPosition:'center', filter:'drop-shadow(0 0 20px rgba(46,125,85,0.6))' }} />
+                  <div style={{ width:'100%', height:'100%', borderRadius:'50%', backgroundImage:`url(images/badge-${ba.id}.webp)`, backgroundSize:'contain', backgroundRepeat:'no-repeat', backgroundPosition:'center', filter:'drop-shadow(0 0 20px rgba(46,125,85,0.6))' }} />
                 </div>
 
                 <div style={{ fontSize:'0.6rem', fontWeight:800, color:'rgba(168,196,178,0.7)', textTransform:'uppercase', letterSpacing:'0.18em', marginBottom:'0.3rem' }}>Mission Complete</div>

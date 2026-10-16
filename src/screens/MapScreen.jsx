@@ -133,7 +133,7 @@ export default function MapScreen() {
           {badges.length > 0 && (
             <div style={{ display:'flex', justifyContent:'center', gap:'0.5rem', flexWrap:'wrap', marginBottom:'1.4rem' }}>
               {badges.map((b, i) => (
-                <div key={i} style={{ width:'48px', height:'48px', borderRadius:'var(--t-r-sm)', backgroundImage:`url(images/badge-${b.animalId}.png)`, backgroundSize:'cover', backgroundPosition:'center', boxShadow:'0 2px 8px rgba(0,0,0,0.15)', border:'2px solid white' }} />
+                <div key={i} style={{ width:'48px', height:'48px', borderRadius:'var(--t-r-sm)', backgroundImage:`url(images/badge-${b.animalId}.webp)`, backgroundSize:'cover', backgroundPosition:'center', boxShadow:'0 2px 8px rgba(0,0,0,0.15)', border:'2px solid white' }} />
               ))}
             </div>
           )}
@@ -396,7 +396,7 @@ export default function MapScreen() {
               onTouchEnd={handleTouchEnd}
             >
               <img
-                src="images/taronga-map.png"
+                src="images/taronga-map.webp"
                 alt="Taronga Zoo Map"
                 style={{ width:'100%', display:'block' }}
                 onLoad={() => setMapLoaded(true)}

@@ -44,7 +44,7 @@ export default function CollectionScreen() {
           return (
             <div key={animal.id} className={`badge-tile${earned ? ' bt-earned' : ''}`}>
               <div className={`bt-img${earned ? '' : ' bt-img-locked'}`}
-                style={{ backgroundImage:`url(images/badge-${animal.id}.png)` }} />
+                style={{ backgroundImage:`url(images/badge-${animal.id}.webp)` }} />
               <h3 className="bt-name">{animal.name}</h3>
               {earned && badge ? (
                 <>

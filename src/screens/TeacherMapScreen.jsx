@@ -33,7 +33,7 @@ export default function TeacherMapScreen() {
       {/* Map */}
       <div style={{ flex:1, overflow:'auto', WebkitOverflowScrolling:'touch', background:'#0a1a0a', textAlign:'center' }}>
         <div style={{ position:'relative', display:'inline-block', width:`${Math.round(scale * 100)}%` }}>
-          <img src="/images/taronga-map.png" alt="Taronga Zoo Map" style={{ width:'100%', display:'block' }} />
+          <img src="/images/taronga-map.webp" alt="Taronga Zoo Map" style={{ width:'100%', display:'block' }} />
 
           {Object.entries(ANIMAL_MAP_POSITIONS).map(([id, pos]) => (
             <div key={id} style={{ position:'absolute', left:`${pos.x}%`, top:`${pos.y}%`, transform:'translate(-50%,-100%)', zIndex:5, display:'flex', flexDirection:'column', alignItems:'center' }}>

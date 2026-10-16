@@ -128,7 +128,7 @@ export default function BuffaloMission() {
       if (pipePool[i]) return pipePool[i];
       const mkImg = (isTop) => {
         const el = document.createElement('img');
-        el.src = 'images/pipe.png';
+        el.src = 'images/pipe.webp';
         el.className = 'rr-pipe ' + (isTop ? 'rr-pipeTop' : 'rr-pipeBot');
         el.style.display = 'none';
         pipesEl.appendChild(el);
@@ -257,7 +257,7 @@ export default function BuffaloMission() {
     if (bflPhase !== 'playing') return;
     let cancelled = false;
     const proceed = () => { if (!cancelled) { cancelled = true; setBflReady(true); } };
-    const srcs = ['images/buffalo.png', 'images/pipe.png', 'images/river.png', 'images/bank.png', 'images/trees.png'];
+    const srcs = ['images/buffalo.webp', 'images/pipe.webp', 'images/river.webp', 'images/bank.webp', 'images/trees.webp'];
     Promise.all(srcs.map(src => {
       const img = new Image();
       img.src = src;
@@ -352,13 +352,13 @@ export default function BuffaloMission() {
         onClick={flap}
         onTouchStart={e => { e.preventDefault(); flap(); }}
         style={{ top:'52px', bottom:0 }}>
-        <img src="images/trees.png" alt="" className="rr-topTrees" />
-        <img src="images/bank.png"  alt="" className="rr-topBank" />
+        <img src="images/trees.webp" alt="" className="rr-topTrees" />
+        <img src="images/bank.webp"  alt="" className="rr-topBank" />
         <div ref={bflRiverRef} className="rr-river" />
-        <img src="images/bank.png"  alt="" className="rr-bottomBank" />
-        <img src="images/trees.png" alt="" className="rr-bottomTrees" />
+        <img src="images/bank.webp"  alt="" className="rr-bottomBank" />
+        <img src="images/trees.webp" alt="" className="rr-bottomTrees" />
         <div ref={bflPipesRef} style={{ position:'absolute', inset:0, zIndex:4, pointerEvents:'none' }} />
-        <img ref={bflBuffaloRef} src="images/buffalo.png" alt="" className="rr-buffalo" />
+        <img ref={bflBuffaloRef} src="images/buffalo.webp" alt="" className="rr-buffalo" />
         <div className="rr-hud">
           <div className="rr-hudPill">
             <div className="rr-hudLabel">SCORE</div>
@@ -369,7 +369,7 @@ export default function BuffaloMission() {
         {/* Loading overlay */}
         {!bflReady && bflPhase === 'playing' && (
           <div style={{ position:'absolute', inset:0, zIndex:50, background:'linear-gradient(160deg,#0A2818,#0D3320)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'1.2rem' }}>
-            <img src="images/buffalo.png" alt="" style={{ width:'110px', opacity:0.9, filter:'drop-shadow(0 4px 16px rgba(0,0,0,0.6))' }} />
+            <img src="images/buffalo.webp" alt="" style={{ width:'110px', opacity:0.9, filter:'drop-shadow(0 4px 16px rgba(0,0,0,0.6))' }} />
             <p className="taronga-title" style={{ color:'white', fontSize:'1.4rem', letterSpacing:'0.1em', margin:0 }}>River Run</p>
             <div style={{ display:'flex', gap:'0.5rem' }}>
               {[0,1,2].map(i => (<div key={i} style={{ width:'8px', height:'8px', borderRadius:'50%', background:'rgba(100,220,140,0.85)', animation:`bflDot 1.1s ease-in-out ${i*0.22}s infinite` }} />))}
