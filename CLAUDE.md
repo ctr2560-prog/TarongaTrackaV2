@@ -40,18 +40,67 @@ no resizing, no quality loss. The student download for a zoo visit went 46.7MB �
 described ZooYard as three habitats when it has had eight since 2026-09-29. Evolve and Wildest
 Dreams are on it, and the zoo visit is named Tracka Trek throughout the staff portal.
 
-**4. ⚠️ `liveSessions` and `liveResponses` were wide open and the fix was never committed.** The
-rules change had been sitting in the working tree since 2026-10-17. Both are the remains of a
-retired Wildly feature; both were empty and unwritten-to, but `liveResponses` allowed
-`create, update: if true` — anyone, unauthenticated, could create or overwrite a student response —
-and any signed-in teacher could delete any other school's session. Both are staff-only now.
+**4. `liveSessions` and `liveResponses` locked down** — committed 2026-10-18, **deployed
+2026-10-17**. Both are the remains of a retired Wildly feature; both empty and unwritten-to, but
+`liveResponses` had allowed `create, update: if true` (anyone, unauthenticated, could create or
+overwrite a student response) and any signed-in teacher could delete any school's session.
 
-⚠️ **The lesson:** a security fix in an uncommitted working tree is not a fix. It survived a
-day and two pushes of unrelated work. **`git status` before you believe the sweep results**, and
-rules changes need `firebase deploy --only firestore:rules` on top of the commit — the push alone
-does nothing.
+⚠️ **A correction worth keeping, because it cuts both ways.** The rules file sat **uncommitted**
+in the working tree for a day, and I read that as "never deployed" and told Cameron production was
+still exposed. It was not: the live ruleset was created `2026-10-17T01:41:27Z` and already
+contained the fix. **Deploy state and git state are independent, and neither implies the other.**
+
+🚫 **Do not infer deploy state from `git status`, in either direction.** Ask the live project:
+```bash
+TOK=$(gcloud auth print-access-token)
+curl -s -H "Authorization: Bearer $TOK" -H "X-Goog-User-Project: tarongatracka" \
+  "https://firebaserules.googleapis.com/v1/projects/tarongatracka/releases"
+# then GET the rulesetName it returns to read the ACTUAL deployed source + its createTime
+```
+⚠️ The `X-Goog-User-Project` header is required — without it the API 403s on a quota project.
+⚠️ `firebase deploy` printing *"latest version already up to date, skipping upload"* is itself the
+tell that the content was already live. It is easy to read as a no-op; it means the opposite.
+
+⚠️ **The real hazard here is the reverse case**: a rules change deployed but never committed is
+invisible to code review and gets silently reverted by the next person who deploys from a clean
+checkout. Commit *and* deploy, and verify both.
+
+### 🌙 ZooSnooz — what is waiting, ahead of the next block of work
+
+Collected 2026-10-18 while converting the media read paths. **None of these is fixed.**
+
+1. ⚠️⚠️ **The stitcher still centre-crops landscape clips.** This is item 0 of "Do these first"
+   and it is the same "the camera is zoomed in" complaint that cost two days on Evolve. 🚫 Fixing
+   it means changing **capture constraints AND `drawFrame` together** — do not do one without the
+   other. Its capture path has never been re-checked since.
+
+2. ⚠️ **No ZooSnooz souvenir link.** Evolve has `utils/evolveSouvenir.js` and a `?doc=` route, so
+   a tag carries an **app** URL with a token and keeps working if the film is re-stitched. The
+   ZooSnooz tab's button says *"Copy a URL to program it onto a student's NFC tag"* but copies a
+   **media** link — which, as of 2026-10-18, expires in 60 minutes. ⚠️ **An NFC tag written from
+   that button today is dead within the hour.** The interim fix (minting instead of copying a
+   revoked permanent URL) is strictly better than what was there, but the button's stated purpose
+   is still unmet. This is the single most misleading control in the staff portal right now.
+
+3. ⚠️ **No documentary has been verified end to end since the pipeline changed.** Uploads store
+   paths (2026-10-04) and the stitcher reports failures like Evolve's, but nobody has watched one
+   come out whole.
+
+4. **Where the data lives is not where you would guess** — see "ZooSnooz student data location"
+   below before writing any query.
 
 ### ⚠️ Not verified, and I could not verify it
+
+⚠️ **A deletion was prepared and NOT carried out.** 36 superseded PNGs (39.1MB) plus the three
+unreferenced `screenshots/mode-*.png` (7.5MB) were confirmed unreferenced in source and confirmed
+tracked in git — then the delete was blocked by the sandbox as irreversible local destruction.
+**They are all still on disk.** If you want them gone: `git rm` them, nothing references them, and
+git history keeps them recoverable.
+
+⚠️ **The reference check needs `--exclude-dir=.firebase`.** Without it, every PNG looks referenced:
+`.firebase/hosting.ZGlzdA.cache` is the Hosting upload cache and lists every file ever deployed. It
+is not a source reference, and it will make any "is this asset still used?" audit answer "yes" for
+everything. Cost ten minutes here.
 
 The 3D map's camera framing and all eight marker positions are **unchecked by eye**. The marker
 coordinates were derived from the GLB's own per-node bounding boxes and cross-checked against the
@@ -98,9 +147,18 @@ the filter. ⚠️ **Adding a programme means three edits: `VIEW_LABEL`, `NOT_DA
 `sessionTypeLabel`.** A missing `sessionTypeLabel` entry does not render blank — it renders
 "Tracka Trek", a wrong answer that looks like a right one.
 
-⚠️ **Wildest Dreams still has no VIEW sidebar entry of its own.** It is correctly excluded from
-Tracka Trek now, so it is no longer inflating that number, but its classes appear only in Total.
-Giving it a view is a `VIEW_ORDER` row plus one `else if` in `viewClasses`.
+✅ **Wildest Dreams now has its own VIEW** (`🎬 Wildest Dreams`, view key `wildest`), added
+2026-10-18.
+
+⚠️⚠️ **THE EXCLUSION EXISTS TWICE.** `viewClasses` filters classes and `viewStudents` filters
+students, and each carries its **own copy** of the same list. Only the class-level one was fixed
+first; the student-level one still had the wildest-dreams hole, so the class count and the student
+count disagreed about what a zoo visit was. Both read `NOT_DAILY` now so they cannot drift apart
+again. 🚫 **If you ever inline that list back into either filter, the two will diverge and nobody
+will notice** — the numbers stay plausible.
+
+⚠️ Wildest Dreams has no points, quizzes or marks by design, so most of the analytics panels in
+its view will be empty. That is correct, not a fault — the same is true of Evolve.
 
 ⚠️ **The About page copy names its own programme count out loud** ("Five powerful ways"), and
 ZooYard's paragraph names its habitat count and lists the habitat types. Both go stale silently.
@@ -239,9 +297,33 @@ sections below.
       | `../../etc/passwd`, `evolve/../teachers/…`, `https://evil.example.com/…` | all refused |
       ⚠️ A **leading slash is stripped and accepted** (`/evolve/…` works). Deliberate — it resolves
       to the same object and rejecting it would be a trap for no gain.
-   3. ⬜ **Convert the ~12 read sites that mint a permanent URL on the fly** to ask `getMediaUrl`
-      instead (`AdminDashboardScreen.jsx` 1362–1370, 1620–1628; `ClassDetailsScreen.jsx` 239).
-      These create a fresh permanent link every time a staff member opens a panel.
+   3. ✅ **DONE 2026-10-18 — the read sites no longer mint anything.** They were not "reads" at
+      all: each used `getDownloadURL` in a try/catch as an **existence probe**, to discover whether
+      a recording was saved as `.webm` or `.mp4`. 🚫 **`getDownloadURL()` CREATES a permanent link
+      as a side effect of answering**, so expanding a ZooSnooz or Evolve row, or opening a
+      ZooSnooz observation modal, minted fresh never-expiring public links to a child's video.
+      `revokeDownloadTokens` cleared the old ones on 2026-10-03; these screens had been
+      manufacturing new ones ever since.
+
+      **`utils/mediaProbe.js` → `findMediaPath(base, name)`** answers the same question with
+      `getMetadata`, which throws `storage/object-not-found` for a missing object and **writes
+      nothing**. Same read permission, so no rules change. It returns a **path**, which is inert,
+      and every consumer (`mintMediaUrl`, `<SignedVideo>`, `<SignedImage>`, `<SignedLink>`,
+      `download`) already mints on demand.
+
+      ⚠️ **Use `getMetadata`, never `getDownloadURL`, to ask whether a file exists.**
+
+      Converted: the ZooSnooz documentary + clips and the Evolve film + clips in
+      `AdminDashboardScreen.jsx`, and the ZooSnooz modal clips in `ClassDetailsScreen.jsx`.
+      ⚠️ The staff tabs display these values as monospace text — a path reads *better* there than
+      a 300-character URL, so nothing was lost. `fileFor()` still derives the extension correctly
+      because a path contains `.mp4` just as a URL does.
+
+      **Also fixed: two ZooSnooz copy buttons that never minted.** `handleCopy` and
+      `handleCopyClip` wrote the stored value straight to the clipboard. The Evolve tab's
+      `copyText` was fixed for this on 2026-10-04; these were missed because they are separate
+      handlers in a separate tab. 🚫 **When you fix a pattern, grep for every instance of it** —
+      "the Evolve one is fixed" is not "it is fixed".
 
    ⚠️ **`challengeEvidence/` is deliberately excluded** — those photos feed the public Conservation
    Gallery, which anonymous visitors view with no way to mint anything.
@@ -3621,6 +3703,10 @@ server round trip.** Copy this pattern for any new printable.
 
 ## Static Assets (`public/`)
 
+⚠️ **Check a resized photo BY EYE, never by filesize.** A number that looks right tells you
+nothing about whether fine detail survived — feathers, whiskers, and dark-on-dark fur are where it
+goes first. `Read` the output file and look at it.
+
 ⚠️ **Photos are routinely shipped at full camera resolution and nobody notices.**
 `blue-mountains-bushwalk.jpg` was a 3543x2362 original at **7.4MB**, served to every student on
 that mission, until 2026-09-28. The house norm is roughly **1000–1500px and ~200–400KB**
@@ -3653,8 +3739,11 @@ the About page uses the `.jpg`). They were kept as lossless sources. Deleting th
 has not been done, and `git` keeps them in history regardless, so a fresh clone is no smaller
 either way — only **Git LFS or a history rewrite** would change that, and neither has been done.
 
-Still oversized and **not** fixed by that pass, because they are JPEGs and were never in it:
-`lemur.jpg` (998KB, 2880x1860) and `asian-water-buffalo.jpg` (755KB, 2880x1357).
+✅ **`lemur.jpg` and `asian-water-buffalo.jpg` resized 2026-10-18** — they were JPEGs and so were
+never in the WebP pass. 2880x1860 → 1500x968 (974KB → 266KB) and 2880x1357 → 1500x706 (737KB →
+249KB), both now in the house norm. ⚠️ Checked by eye at quality 82: the buffalo is the hard case
+(dark fur on dark wet rock is where JPEG blocks up first) and its coat detail, whiskers and ear tag
+all survive with no shadow banding.
 
 ### What is where
 
