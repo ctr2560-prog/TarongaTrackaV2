@@ -4,9 +4,14 @@
 
 Taronga Tracka is an educational field-study app for school excursions to Taronga Zoo Sydney. Students use the app to make animal observations, complete missions, earn badges, and participate in class challenges. Teachers manage classes and track progress through a portal. A staff portal (Taronga admin) manages codes, approves submissions, and oversees the whole program.
 
+The zoo-visit programme itself is called **Tracka Trek** (it was "Daily" / "At the Zoo" until
+2026-10-17). ⚠️ It is the only programme with **no** `sessionType` on its class documents — it is
+the absence of the others — so its internal key is still `daily` and renaming that key would
+orphan every class ever created. See **Programme names** below.
+
 There is also **ZooSnooz** — a separate night-mode variant with NFC stations, keeper interactions, video recording, and a documentary stitching pipeline, sharing the same codebase.
 
-There is also **ZooYard** — a self-attest, no-GPS "at school" program for classes that can't visit the zoo (built for NSW DoE devices, which block geolocation). Students work through three habitats in their own schoolyard, each one ending in a real citizen science build. See the ZooYard Deep Reference section below.
+There is also **ZooYard** — a self-attest, no-GPS "at school" program for classes that can't visit the zoo (built for NSW DoE devices, which block geolocation). Students work through **eight** habitats in their own schoolyard, each one ending in a real citizen science build. See the ZooYard Deep Reference section below.
 
 There is also **Evolve** — a Stage 6 (Year 11/12) twilight excursion supporting the Life Ready course. Five animals are five chapters of one story about leaving school; students write a reflection and film a piece to camera at each, which stitch into a single short film they keep. Deliberately has no points, badges or marks. See the Evolve Deep Reference section below.
 
@@ -18,7 +23,92 @@ region: `australia-southeast1`. ⚠️ See **Build & Deploy** — these two drif
 
 ---
 
-## Where we left off (2026-10-03/04)
+## Where we left off (2026-10-16 → 10-18)
+
+### Three things shipped, and one security fix that had been sitting uncommitted
+
+**1. The final ZooYard map.** Replaced twice in two days — a 60MB export down to **12.7MB** with
+nothing given up, then re-done when the Blue Mountains Bushwalk aviary was added. Full method, and
+the reasons each step is in that order, is in **The 3D zoo map** section. The short version: the
+win was `prune` and `weld`, not Draco tuning. 346 unused accessors were 18MB of dead weight.
+
+**2. Every student-facing PNG is WebP.** 36 files, **37.3MB → 7.0MB**, format conversion only —
+no resizing, no quality loss. The student download for a zoo visit went 46.7MB → 16.4MB. See
+**Static Assets** for the one file that must stay PNG and why.
+
+**3. The About page tells the truth now.** It listed three programmes while five were bookable, and
+described ZooYard as three habitats when it has had eight since 2026-09-29. Evolve and Wildest
+Dreams are on it, and the zoo visit is named Tracka Trek throughout the staff portal.
+
+**4. ⚠️ `liveSessions` and `liveResponses` were wide open and the fix was never committed.** The
+rules change had been sitting in the working tree since 2026-10-17. Both are the remains of a
+retired Wildly feature; both were empty and unwritten-to, but `liveResponses` allowed
+`create, update: if true` — anyone, unauthenticated, could create or overwrite a student response —
+and any signed-in teacher could delete any other school's session. Both are staff-only now.
+
+⚠️ **The lesson:** a security fix in an uncommitted working tree is not a fix. It survived a
+day and two pushes of unrelated work. **`git status` before you believe the sweep results**, and
+rules changes need `firebase deploy --only firestore:rules` on top of the commit — the push alone
+does nothing.
+
+### ⚠️ Not verified, and I could not verify it
+
+The 3D map's camera framing and all eight marker positions are **unchecked by eye**. The marker
+coordinates were derived from the GLB's own per-node bounding boxes and cross-checked against the
+printed zoo map, and an occlusion pass caught two markers buried in foliage — but the Chrome
+automation timed out five times across two sessions, so nobody has actually *looked* at the result
+in a browser. **Open ZooYard on a real device and look at it before a class does.**
+
+### Programme names — display label vs stored key
+
+⚠️ The label a user reads and the key the data carries are **not** the same, and the keys are
+frozen. Renaming a key orphans existing class documents.
+
+| What a school sees | `sessionType` on the class doc | Admin view key | Public `MODES` id |
+|---|---|---|---|
+| **Tracka Trek** (was "Daily" / "At the Zoo") | `standard`, **or absent on old classes** | `daily` | `zoo` |
+| **ZooSnooz** | `zoosnooz` | `zoosnooz` | `zoosnooz` |
+| **ZooYard** | `zooyard` | `school` | `school` |
+| **Evolve** | `evolve` | `evolve` | `evolve` |
+| **Wildest Dreams** | `wildest-dreams` | *(no view — see below)* | `wildest-dreams` |
+
+`CreateClassScreen.jsx:84` is the single place these are assigned. ⚠️ **`'standard'` and an absent
+field both mean the zoo visit** — classes created before the dashboard redesign have no
+`sessionType` at all, so anything reading it must handle both. Labels live in `VIEW_LABEL` /
+`VIEW_ORDER` at the top of `AdminDashboardScreen.jsx` and in `MODES` at the top of
+`HomeScreen.jsx`; the next rename is a one-line change in each.
+
+⚠️ **`Daily Code` is not the Daily programme.** It means the code rotates daily. Leave it alone.
+
+#### ⚠️ The exclusion trap — this has now bitten three times
+
+The Tracka Trek analytics view is defined by **subtraction**: everything that is not one of the
+other programmes. So a new programme that gets a `sessionType` and is *not* added to the exclusion
+list is silently counted as a zoo visit. The number still looks plausible, which is why nobody
+catches it.
+
+| When | What was counted as the zoo visit |
+|---|---|
+| until 2026-10-01 | **Evolve** — invisible to every filter, still in Total |
+| until 2026-10-18 | **Wildest Dreams** — had a `sessionType` from day one, nothing excluded it |
+| until 2026-10-18 | **Wildest Dreams feedback badges** — `sessionTypeLabel` had no entry, so it fell through to the default and read "Tracka Trek" |
+
+The exclusion list is now one named constant, `NOT_DAILY`, instead of a chain of `!==` inline in
+the filter. ⚠️ **Adding a programme means three edits: `VIEW_LABEL`, `NOT_DAILY`, and
+`sessionTypeLabel`.** A missing `sessionTypeLabel` entry does not render blank — it renders
+"Tracka Trek", a wrong answer that looks like a right one.
+
+⚠️ **Wildest Dreams still has no VIEW sidebar entry of its own.** It is correctly excluded from
+Tracka Trek now, so it is no longer inflating that number, but its classes appear only in Total.
+Giving it a view is a `VIEW_ORDER` row plus one `else if` in `viewClasses`.
+
+⚠️ **The About page copy names its own programme count out loud** ("Five powerful ways"), and
+ZooYard's paragraph names its habitat count and lists the habitat types. Both go stale silently.
+There is a comment above `MODES` saying so.
+
+---
+
+## Earlier — 2026-10-03/04
 
 ### What happened on 2026-10-03 — the security day, and a two-day video bug
 
@@ -1389,12 +1479,34 @@ Tracka is the foundation of a wider "Taronga Education" ecosystem — one login 
 **⚠️ Protections — read before touching anything ecosystem-related:**
 1. **This repo's `firestore.rules` is the ONLY canonical rules file for the shared project.** Wildly's `firestore.rules`/`firebase.json` were deleted from its repo on purpose — it has no local rules file anymore. Deploying rules (`firebase deploy --only firestore:rules`) must only ever happen from *this* repo. If a `firestore.rules` file ever reappears in the Wildly repo, that's a sign someone tried to reintroduce standalone rules — delete it, don't deploy it.
 2. **Never rename or remove the `teachers` collection**, or change what a document ID looks like there (must stay the lowercased email). Both apps' entire identity model depends on `teachers/{email}` being stable.
-3. **Editing Wildly (content, UI, features) is completely safe and isolated** — Wildly's own collections (`contentItems`, `dashboardConfig`, `professionalLearning`, `tarongaTvVideos`, `upcomingEvents`, `liveSessions`, `liveResponses`) are separate from Tracka's and can't collide. The only shared surface is the `teachers/{email}` doc itself and the rules file describing who can touch what.
+3. **Editing Wildly (content, UI, features) is completely safe and isolated** — Wildly's own collections (`contentItems`, `dashboardConfig`, `professionalLearning`, `tarongaTvVideos`, `upcomingEvents`, `liveSessions`, `liveResponses`) are separate from Tracka's and can't collide. ⚠️ `liveSessions` and `liveResponses` are a **retired** feature: both empty, nothing writes them, and both locked to staff on 2026-10-18 after being found wide open. If live sessions are ever revived, scope sessions to the owning teacher (`createdBy == auth email`) and validate response writes — do not reinstate `create, update: if true`. The only shared surface is the `teachers/{email}` doc itself and the rules file describing who can touch what.
 4. **Ordinary git pushes to Wildly's repo auto-deploy to production** (`wildlybytaronga.com.au`) via its own GitHub Actions workflow — there's no separate "deploy" step to pause on there, unlike Tracka's manual `firebase deploy`. Treat a Wildly push as a live release.
 5. If Wildly's identity/auth code is ever changed again, re-verify against this repo's `firestore.rules` `isWildlyStaff()` function and the `teachers/{email}` shape described above — don't let the two repos' assumptions about the shared doc drift apart.
 
 ### Firestore rules gotcha
-The staff portal uses code-based login (no Firebase Auth), so **any collection the staff portal reads or writes must have `allow ... if true`** — you cannot use `request.auth != null` for those paths. This is intentional; security comes from the access code being secret.
+
+⚠️ **This note used to say "security comes from the access code being secret". That access code
+was deleted on 2026-10-03.** Do not reason from the old version of this paragraph.
+
+Roughly 29 `if true` rules remain, and most of them are deliberate. The reason is that **students
+have no Firebase Auth identity at all** — they join with a class code and an alias — so every path
+a student touches (`classes` read, `students` create, `schools` write, the `*_docs` collections,
+`studentFeedback`, `citizenScienceSubmissions`) cannot be gated on `request.auth`. Restricting
+them would mean routing every student write through a Cloud Function.
+
+**What actually protects those paths is App Check**: an unauthenticated REST call carries no App
+Check token and is rejected before the rules are even evaluated. That is why the 2026-10-04 sweep
+got `permission-denied` on seven collections whose rules read `if true`. Each open rule has a
+comment above it in `firestore.rules` saying why it is open and what the worst case is — read the
+comment before changing the rule.
+
+⚠️ **"The staff portal needs it open" is no longer a valid reason.** The staff portal uses **Sign
+in with Google** now, not a shared code, so staff-only paths can and should use `isWildlyStaff()`.
+On 2026-10-18 `liveSessions` and `liveResponses` were still carrying the old permissive rules from
+a retired Wildly feature — `liveResponses` allowed `create, update: if true`, so anyone could
+overwrite a student response, and any signed-in teacher could delete any school's session. Both
+are staff-only now. **If a rule is open, it must be open because a student with no auth needs it,
+not because nobody has looked at it since.**
 
 ---
 
@@ -3521,18 +3633,51 @@ Still oversized and worth the same treatment: `lemur.jpg` (975KB, 2880x1860) and
 `asian-water-buffalo.jpg` (737KB, 2880x1357).
 
 
+### WebP conversion (2026-10-17) — 36 files, 37.3MB → 7.0MB
+
+**Format conversion only. Nothing was resized and no quality was given up** — the PNGs were
+lossless RGB/RGBA at 8-bit, and lossless WebP stores the same pixels in a quarter of the space.
+The student-facing download for a zoo visit went **46.7MB → 16.4MB**.
+
+`sips` on this machine **cannot write WebP**. Use `npx sharp-cli@5` or a local `sharp@0.33`.
+
+⚠️ **`taronga-zoo-white.png` must stay PNG.** `functions/index.js` embeds it in the HTML staff
+emails and **WebP does not render in Outlook** — converting it silently breaks every email the
+app sends. The `.webp` version was created and then deleted for this reason. Before converting any
+image, grep `functions/` for it.
+
+⚠️ **The original PNGs are still on disk next to the WebPs** — measured 2026-10-18: **36 files,
+39.1MB**, every one of them with a `.webp` sibling that is what actually gets served. The three
+old `screenshots/mode-*.png` are unreferenced too (nothing in `src/` or `index.html` names them;
+the About page uses the `.jpg`). They were kept as lossless sources. Deleting them is safe but
+has not been done, and `git` keeps them in history regardless, so a fresh clone is no smaller
+either way — only **Git LFS or a history rewrite** would change that, and neither has been done.
+
+Still oversized and **not** fixed by that pass, because they are JPEGs and were never in it:
+`lemur.jpg` (998KB, 2880x1860) and `asian-water-buffalo.jpg` (755KB, 2880x1357).
+
+### What is where
+
 | File | Purpose |
 |---|---|
 | `images/logo.png` | Taronga platypus logo (primary) |
-| `images/taronga-zoo-white.png` | "For the Wild" white lockup — HomeScreen top-left |
-| `images/taronga-map.png` | Zoo map used in MapScreen + TeacherMapScreen |
+| `images/taronga-zoo-white.png` | "For the Wild" white lockup — HomeScreen top-left. ⚠️ **PNG on purpose** — also embedded in staff emails, see above |
+| `images/taronga-map.webp` | Zoo map used in MapScreen + TeacherMapScreen |
+| `images/tracka-logo-full.webp` | Tracka wordmark |
 | `images/TarongaHeadline-Regular.ttf` | Brand display font |
 | `taronga-venue-safety-2026.pdf` | Linked from ExcursionPlanScreen tile 04 |
 | `taronga-accessibility-toolkit.pdf` | Downloadable from AccessibilityScreen sidebar |
 | `taronga-accessibility-map.pdf` | Downloadable from AccessibilityScreen sidebar |
+| `models/taronga-zoo.glb` | The ZooYard 3D map, 12.7MB — see **The 3D zoo map** |
+| `draco/` | Google's prebuilt Draco decoder. Vendor code, minified, **excluded from eslint** — it was 3459 of 3673 lint errors |
 
-Animal photos: `/images/{animalId}.jpg` (e.g. `tiger.jpg`, `lion.jpg`)
-ZooSnooz badges: `/images/badge-{animalId}.png`
+Animal photos: `/images/{animalId}.jpg` (e.g. `tiger.jpg`, `lion.jpg`) — **still JPEG**
+ZooSnooz badges: `/images/badge-{animalId}.webp`
+About-page mode cards: `/images/screenshots/mode-{id}.{jpg,webp}` — ⚠️ mixed extensions, the
+three original modes are `.jpg` and the two added on 2026-10-17 are `.webp`. `MODES` in
+`HomeScreen.jsx` carries the full path per mode, so do not assume one extension.
+
+`gorilla-game/` and `Seal Game/` sprites are untouched PNGs — they are small and game-local.
 
 ---
 
