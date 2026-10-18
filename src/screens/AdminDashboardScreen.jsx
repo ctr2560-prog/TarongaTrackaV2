@@ -26,6 +26,43 @@ function generateCode() {
   return c;
 }
 
+// ─── Programme names ─────────────────────────────────────────────────────────
+// ⚠️ DISPLAY LABELS ONLY. The keys are what the rest of the app and every stored document
+// already use, so they are NOT renamed: a class in Firestore carries sessionType 'zoosnooz',
+// 'zooyard' or 'evolve', and the zoo visit carries NO sessionType at all — it is the absence of
+// the others, which is why its key here is still 'daily'. Renaming a key would orphan every
+// class ever created.
+//
+// The zoo-visit programme was called "Daily" until 2026-10-17 and is now Tracka Trek. It is
+// defined in this one place so the next rename is one line, not a hunt through the file.
+const VIEW_LABEL = {
+  total:    'Total',
+  daily:    'Tracka Trek',
+  zoosnooz: 'ZooSnooz',
+  evolve:   'Evolve',
+  dubbo:    'Taronga Dubbo',
+  school:   'ZooYard',
+};
+
+// Sidebar order, with the icons the plain labels above do not carry.
+const VIEW_ORDER = [
+  ['total',    VIEW_LABEL.total],
+  ['daily',    VIEW_LABEL.daily],
+  ['zoosnooz', '🌙 ' + VIEW_LABEL.zoosnooz],
+  ['evolve',   '✦ '  + VIEW_LABEL.evolve],
+  ['dubbo',    VIEW_LABEL.dubbo],
+  ['school',   '🌱 ' + VIEW_LABEL.school],
+];
+
+// ⚠️ A stored sessionType, not a view key. This used to be an inline ternary that read
+// `sessionType === 'zoosnooz' ? 'ZooSnooz' : 'Daily'`, which labelled Evolve and ZooYard
+// feedback as Daily — wrong before the rename and more confidently wrong after it, so it is a
+// real lookup now. Absent sessionType means the zoo visit.
+function sessionTypeLabel(sessionType) {
+  return { zoosnooz: VIEW_LABEL.zoosnooz, zooyard: VIEW_LABEL.school, evolve: VIEW_LABEL.evolve }[sessionType]
+    || VIEW_LABEL.daily;
+}
+
 // ─── Tab: Analytics ──────────────────────────────────────────────────────────
 const GREEN = '#2E7D55';
 const AXES_DEG = [270, 30, 150];
@@ -68,7 +105,7 @@ function AnalyticsTab({ classes }) {
 
   const viewClasses = useMemo(() => {
     let c = classes;
-    // Evolve is excluded from Daily and gets its own view: it is a different programme with no
+    // Evolve is excluded from Tracka Trek and gets its own view: it is a different programme with no
     // points or marks, and its subject ('life-ready') is not in the subject dropdown, so before
     // this it was invisible to every filter yet still counted in Total.
     if (view === 'daily')    c = c.filter(x => x.sessionType !== 'zoosnooz' && x.sessionType !== 'zooyard' && x.sessionType !== 'evolve' && x.location !== 'dubbo' && x.location !== 'school');
@@ -384,7 +421,7 @@ function AnalyticsTab({ classes }) {
   const totalStudentsAll = viewClasses.reduce((s, c) => s + c.studentCount, 0);
   const maxVisit  = animalVisits[0]?.[1] || 1;
   const maxBucket = Math.max(...quizBuckets, 1);
-  const viewLabel = { total:'Total', daily:'Daily', zoosnooz:'ZooSnooz', evolve:'Evolve', dubbo:'Taronga Dubbo', school:'ZooYard' }[view] || 'Total';
+  const viewLabel = VIEW_LABEL[view] || 'Total';
 
   return (
     <div style={{ display:'flex', gap:'1.5rem', alignItems:'flex-start' }}>
@@ -392,7 +429,7 @@ function AnalyticsTab({ classes }) {
       {/* VIEW sidebar */}
       <div style={{ width:155, flexShrink:0, background:'var(--t-chalk)', borderRadius:'var(--t-r-md)', padding:'1rem', border:'1px solid var(--t-stone)' }}>
         <div style={{ fontSize:'0.62rem', fontWeight:700, color:'var(--t-ash)', textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:'0.6rem' }}>VIEW</div>
-        {[['total','Total'],['daily','Daily'],['zoosnooz','🌙 ZooSnooz'],['evolve','✦ Evolve'],['dubbo','Taronga Dubbo'],['school','🌱 ZooYard']].map(([val,label]) => (
+        {VIEW_ORDER.map(([val,label]) => (
           <button key={val} onClick={() => setView(val)}
             style={{ display:'block', width:'100%', textAlign:'left', padding:'0.5rem 0.75rem', marginBottom:'0.2rem', borderRadius:'var(--t-r-sm)', border:'none', background: view===val ? GREEN : 'transparent', color: view===val ? 'white' : 'var(--t-slate)', fontWeight: view===val ? 700 : 500, cursor:'pointer', fontSize:'0.82rem', fontFamily:'inherit' }}>
             {label}
@@ -1247,7 +1284,7 @@ function ReviewTab({ classes }) {
                   <span style={{ fontWeight:700, color:'var(--t-deep)', fontSize:'0.88rem' }}>{rating}/5</span>
                   {fb.sessionType && (
                     <span style={{ background: fb.sessionType === 'zoosnooz' ? '#1e1040' : 'var(--t-foam)', color: fb.sessionType === 'zoosnooz' ? '#a78bfa' : 'var(--t-mid)', border:`1px solid ${fb.sessionType === 'zoosnooz' ? '#4c1d95' : 'var(--t-mist)'}`, borderRadius:999, padding:'0.15rem 0.6rem', fontSize:'0.68rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em' }}>
-                      {fb.sessionType === 'zoosnooz' ? 'ZooSnooz' : 'Daily'}
+                      {sessionTypeLabel(fb.sessionType)}
                     </span>
                   )}
                   {fb.classCode && (
