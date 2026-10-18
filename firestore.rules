@@ -381,15 +381,18 @@ service cloud.firestore {
       allow write: if isWildlyStaff();
     }
 
+    // Wildly's retired live-session feature (both collections empty, nothing writes them as
+    // of 2026-10-17). Locked to staff. They used to let any signed-in teacher edit or delete
+    // any school's session, let ANYONE create or overwrite student responses, and let any
+    // teacher read every school's responses.
+    // 🚫 If live sessions come back, scope them to the owning teacher (createdBy == auth
+    //    email) and validate response writes. Never reopen `create, update: if true`.
     match /liveSessions/{docId} {
-      allow read: if true;
-      allow create, update, delete: if request.auth != null;
+      allow read, write: if isWildlyStaff();
     }
 
     match /liveResponses/{docId} {
-      allow read: if request.auth != null;
-      allow create, update: if true;
-      allow delete: if isWildlyStaff();
+      allow read, write: if isWildlyStaff();
     }
   }
 }
