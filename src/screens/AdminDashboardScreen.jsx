@@ -5,7 +5,7 @@ import {
 } from 'firebase/firestore';
 import { db, storage, auth } from '../firebase';
 import { EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
-import { ref as storageRef, getDownloadURL } from 'firebase/storage';
+import { findMediaPath } from '../utils/mediaProbe';
 import { isTarongaStaff } from '../constants/tarongaStaff';
 import { SignedImage } from '../components/SignedMedia';
 import { mintMediaUrl } from '../utils/useSignedMedia';
@@ -56,6 +56,7 @@ const VIEW_ORDER = [
   ['daily',    VIEW_LABEL.daily],
   ['zoosnooz', '🌙 ' + VIEW_LABEL.zoosnooz],
   ['evolve',   '✦ '  + VIEW_LABEL.evolve],
+  ['wildest',  '🎬 ' + VIEW_LABEL.wildest],
   ['dubbo',    VIEW_LABEL.dubbo],
   ['school',   '🌱 ' + VIEW_LABEL.school],
 ];
@@ -128,6 +129,7 @@ function AnalyticsTab({ classes }) {
     if (view === 'daily')    c = c.filter(x => !NOT_DAILY.has(x.sessionType) && x.location !== 'dubbo' && x.location !== 'school');
     else if (view === 'zoosnooz') c = c.filter(x => x.sessionType === 'zoosnooz' || x.location === 'zoosnooz-sydney');
     else if (view === 'evolve')  c = c.filter(x => x.sessionType === 'evolve');
+    else if (view === 'wildest') c = c.filter(x => x.sessionType === 'wildest-dreams');
     else if (view === 'dubbo')   c = c.filter(x => x.location === 'dubbo');
     else if (view === 'school')  c = c.filter(x => x.sessionType === 'zooyard' || x.location === 'school');
     if (subjectFilter !== 'all') c = c.filter(x => x.subject === subjectFilter);
@@ -137,9 +139,12 @@ function AnalyticsTab({ classes }) {
   const viewStudents = useMemo(() => {
     if (!students) return [];
     let s = students;
-    if (view === 'daily')    s = s.filter(st => st._sessionType !== 'zoosnooz' && st._sessionType !== 'zooyard' && st._sessionType !== 'evolve' && st._location !== 'dubbo' && st._location !== 'school');
+    // ⚠️ SECOND copy of the same exclusion as viewClasses, at student level. It had the identical
+    //    wildest-dreams hole. Both use NOT_DAILY now so they cannot drift apart again.
+    if (view === 'daily')    s = s.filter(st => !NOT_DAILY.has(st._sessionType) && st._location !== 'dubbo' && st._location !== 'school');
     else if (view === 'zoosnooz') s = s.filter(st => st._sessionType === 'zoosnooz' || st._location === 'zoosnooz-sydney');
     else if (view === 'evolve')  s = s.filter(st => st._sessionType === 'evolve');
+    else if (view === 'wildest') s = s.filter(st => st._sessionType === 'wildest-dreams');
     else if (view === 'dubbo')   s = s.filter(st => st._location === 'dubbo');
     else if (view === 'school')  s = s.filter(st => st._sessionType === 'zooyard' || st._location === 'school');
     if (subjectFilter !== 'all') s = s.filter(st => st._subject === subjectFilter);
@@ -1411,18 +1416,14 @@ function ZooSnoozAdminTab({ classes }) {
     const base = `zoosnooz/${entry.classCode}/${entry.studentDocId}`;
     let docUrl = entry.zzDocumentaryURL || null;
     const clipUrls = {};
-    if (!docUrl) {
-      // Try both extensions - Safari/iOS records mp4, Chrome records webm
-      try { docUrl = await getDownloadURL(storageRef(storage, `${base}/documentary.webm`)); } catch {}
-      if (!docUrl) {
-        try { docUrl = await getDownloadURL(storageRef(storage, `${base}/documentary.mp4`)); } catch {}
-      }
-    }
+    // ⚠️ `findMediaPath` probes with getMetadata and returns a PATH. It used to be a
+    //    `getDownloadURL` try/catch, which minted a permanent public link to a child's video every
+    //    time this panel was opened — see utils/mediaProbe.js. Everything downstream mints on
+    //    demand, so a path is what should be held here.
+    if (!docUrl) docUrl = await findMediaPath(base, 'documentary');
     await Promise.all(entry.clips.map(async clip => {
-      try { clipUrls[clip.animalId] = await getDownloadURL(storageRef(storage, `${base}/${clip.animalId}.webm`)); } catch {}
-      if (!clipUrls[clip.animalId]) {
-        try { clipUrls[clip.animalId] = await getDownloadURL(storageRef(storage, `${base}/${clip.animalId}.mp4`)); } catch {}
-      }
+      const found = await findMediaPath(base, clip.animalId);
+      if (found) clipUrls[clip.animalId] = found;
     }));
     const result = { docUrl, clipUrls };
     setUrlCache(prev => ({ ...prev, [entry.docId]: result }));
@@ -1444,20 +1445,34 @@ function ZooSnoozAdminTab({ classes }) {
     else alert('No documentary file found in Storage for this student yet.');
   };
 
+  // ⚠️ MINT BEFORE COPYING. This copied the stored value straight to the clipboard, which since
+  //    2026-10-03 was a revoked permanent URL that 401s, and after the path conversion would be a
+  //    bare `zoosnooz/ABC123/Student/documentary.webm` — useless, and confusing because it looks
+  //    almost like a link. The Evolve tab's `copyText` was fixed for this on 2026-10-04; this one
+  //    was missed because it is a separate handler in a separate tab.
+  // ⚠️ What lands on the clipboard now expires in 60 minutes. For ZooSnooz that is a genuine
+  //    mismatch with the stated purpose of the button ("program it onto a student's NFC tag") —
+  //    see the ZooSnooz souvenir-link gap in CLAUDE.md. An hour-long link is still strictly better
+  //    than a dead one, so this is the right interim behaviour, not the final answer.
   const handleCopy = async (entry) => {
     const { docUrl } = await ensureUrls(entry);
     if (!docUrl) { alert('No documentary file found in Storage for this student yet.'); return; }
-    navigator.clipboard.writeText(docUrl).then(() => {
+    const link = await mintMediaUrl(docUrl, entry.classCode);
+    if (!link) { window.alert('That link could not be prepared. The video itself is safe.'); return; }
+    navigator.clipboard.writeText(link).then(() => {
       setCopied(entry.docId);
       setTimeout(() => setCopied(null), 2000);
-    });
+    }).catch(() => window.prompt('Copy this URL:', link));
   };
 
-  const handleCopyClip = (url, key) => {
-    navigator.clipboard.writeText(url).then(() => {
+  // ⚠️ Same reason as handleCopy — this is now a storage path, so it must be minted.
+  const handleCopyClip = async (url, key, classCode) => {
+    const link = await mintMediaUrl(url, classCode);
+    if (!link) { window.alert('That link could not be prepared. The video itself is safe.'); return; }
+    navigator.clipboard.writeText(link).then(() => {
       setCopied(key);
       setTimeout(() => setCopied(null), 2000);
-    });
+    }).catch(() => window.prompt('Copy this URL:', link));
   };
 
   const handleExpand = async (entry) => {
@@ -1541,7 +1556,7 @@ function ZooSnoozAdminTab({ classes }) {
                         </div>
                       </div>
                       {cached?.docUrl && (
-                        <button onClick={() => handleCopyClip(cached.docUrl, `${entry.docId}_doc`)}
+                        <button onClick={() => handleCopyClip(cached.docUrl, `${entry.docId}_doc`, entry.classCode)}
                           style={{ flexShrink:0, padding:'0.3rem 0.7rem', borderRadius:'var(--t-r-pill)', border:'none', background: copied === `${entry.docId}_doc` ? '#22C55E' : GREEN, color:'white', fontSize:'0.7rem', fontWeight:700, cursor:'pointer' }}>
                           {copied === `${entry.docId}_doc` ? '✓' : 'Copy'}
                         </button>
@@ -1560,7 +1575,7 @@ function ZooSnoozAdminTab({ classes }) {
                             </div>
                           </div>
                           {clipUrl && (
-                            <button onClick={() => handleCopyClip(clipUrl, clipKey)}
+                            <button onClick={() => handleCopyClip(clipUrl, clipKey, entry.classCode)}
                               style={{ flexShrink:0, padding:'0.3rem 0.7rem', borderRadius:'var(--t-r-pill)', border:'none', background: copied === clipKey ? '#22C55E' : GREEN, color:'white', fontSize:'0.7rem', fontWeight:700, cursor:'pointer' }}>
                               {copied === clipKey ? '✓' : 'Copy'}
                             </button>
@@ -1669,18 +1684,14 @@ function EvolveFilmsTab({ classes }) {
     setBusy(prev => ({ ...prev, [entry.docId]: true }));
     const base = `evolve/${entry.classCode}/${entry.studentDocId}`;
     let filmUrl = entry.filmURL || null;
-    if (!filmUrl) {
-      // Chrome records webm, Safari/iOS mp4.
-      try { filmUrl = await getDownloadURL(storageRef(storage, `${base}/film.webm`)); } catch { /* try mp4 */ }
-      if (!filmUrl) { try { filmUrl = await getDownloadURL(storageRef(storage, `${base}/film.mp4`)); } catch { /* none */ } }
-    }
+    // ⚠️ Probes with getMetadata and yields a PATH — see utils/mediaProbe.js. The old
+    //    getDownloadURL probe minted a permanent link on every panel open.
+    if (!filmUrl) filmUrl = await findMediaPath(base, 'film');
     const clipUrls = {};
     await Promise.all(entry.clips.map(async clip => {
       if (clip.clipURL) { clipUrls[clip.chapterId] = clip.clipURL; return; }
-      try { clipUrls[clip.chapterId] = await getDownloadURL(storageRef(storage, `${base}/${clip.chapterId}.webm`)); } catch { /* try mp4 */ }
-      if (!clipUrls[clip.chapterId]) {
-        try { clipUrls[clip.chapterId] = await getDownloadURL(storageRef(storage, `${base}/${clip.chapterId}.mp4`)); } catch { /* none */ }
-      }
+      const found = await findMediaPath(base, clip.chapterId);
+      if (found) clipUrls[clip.chapterId] = found;
     }));
     const result = { filmUrl, clipUrls };
     setUrlCache(prev => ({ ...prev, [entry.docId]: result }));

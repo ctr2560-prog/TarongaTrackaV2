@@ -4,8 +4,8 @@ import {
   collection, doc, getDoc, getDocs, onSnapshot,
   writeBatch, setDoc, updateDoc, deleteDoc, query, where, serverTimestamp,
 } from 'firebase/firestore';
-import { db, storage } from '../firebase';
-import { ref as storageRef, getDownloadURL } from 'firebase/storage';
+import { db } from '../firebase';
+import { findMediaPath } from '../utils/mediaProbe';
 import { normaliseCode, safeStudentId, averageQuizPercent } from '../utils/helpers';
 import { SignedVideo, SignedImage, SignedLink } from '../components/SignedMedia';
 import { useApp } from '../context/AppContext';
@@ -233,13 +233,12 @@ export default function ClassDetailsScreen() {
     let cancelled = false;
     (async () => {
       const urls = {};
+      // ⚠️ Yields storage PATHS, not URLs. <SignedVideo> mints them. This was a getDownloadURL
+      //    probe, which minted a permanent public link to each clip every time a teacher opened
+      //    the modal — see utils/mediaProbe.js.
       await Promise.all(ZOOSNOOZ_ANIMALS.map(async a => {
-        for (const ext of ['webm','mp4']) {
-          try {
-            urls[a.id] = await getDownloadURL(storageRef(storage, `${base}/${a.id}.${ext}`));
-            break;
-          } catch {}
-        }
+        const found = await findMediaPath(base, a.id);
+        if (found) urls[a.id] = found;
       }));
       if (!cancelled) setZzModalClipUrls(urls);
     })();
