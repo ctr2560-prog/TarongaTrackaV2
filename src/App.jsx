@@ -14,9 +14,13 @@ import {
   ZooSnoozScreen, ZooYardScreen, EvolveScreen, DocumentaryViewer, ComingSoonScreen,
 } from './screens';
 
+// The about-page mode images, minus mode-zoo which index.html already preloads with a <link>.
+// Five programmes now, so all four of the others warm up here while the splash is holding.
 const PRELOAD_IMAGES = [
   '/images/screenshots/mode-zoosnooz.jpg',
   '/images/screenshots/mode-school.jpg',
+  '/images/screenshots/mode-evolve.webp',
+  '/images/screenshots/mode-wildest-dreams.webp',
 ];
 
 function SplashDismisser() {

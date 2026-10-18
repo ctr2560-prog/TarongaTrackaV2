@@ -3,10 +3,20 @@ import { useApp } from '../context/AppContext';
 
 // ── Data ──────────────────────────────────────────────────────────────────────
 
+// ⚠️ These are the five programmes as a SCHOOL sees them, and the labels here are the public
+// brand names. 'At the Zoo' became 'Tracka Trek' on 2026-10-17; the id stays 'zoo' because it is
+// matched against stored class data, not displayed.
+//
+// Evolve and Wildest Dreams were missing from this list until 2026-10-17 even though both are
+// bookable in CreateClassScreen, so a teacher could be sold a programme the site never mentioned.
+// Both are live, not coming soon.
+//
+// ⚠️ Keep the intro copy above the tabs in step with the length of this array — it names the
+// number of programmes out loud.
 const MODES = [
   {
     id: 'zoo',
-    label: 'At the Zoo',
+    label: 'Tracka Trek',
     accent: '#4ecb71',
     tag: 'Live Experience',
     summary: 'GPS-guided animal tracking and live missions during your Taronga Zoo excursion.',
@@ -28,8 +38,30 @@ const MODES = [
     accent: '#4ecbcb',
     tag: 'At School',
     summary: 'Build your habitat, right here at school - no GPS, no zoo visit required.',
-    detail: 'Can\'t make it to the zoo? ZooYard brings three real Taronga habitats into your classroom. Students explore bushland, rainforest and savannah, complete science activities for each animal, then take on a real citizen science task to protect wildlife at their own school.',
+    // ⚠️ Said "three real Taronga habitats ... bushland, rainforest and savannah" until
+    // 2026-10-17. ZooYard has had EIGHT habitats across six habitat types since the
+    // 2026-09-29 pass, so the copy was understating the mode by five habitats. If habitats are
+    // ever added or removed, this sentence is the thing that goes stale first.
+    detail: 'Can\'t make it to the zoo? ZooYard brings eight real Taronga habitats into your own schoolyard - bushland, forest, rainforest, wetland, coast and savannah. For each one students complete a science activity, spend two minutes actually watching the animal, then take on a real citizen science build to protect wildlife at their own school.',
     image: '/images/screenshots/mode-school.jpg',
+  },
+  {
+    id: 'evolve',
+    label: 'Evolve',
+    accent: '#E8B33C',
+    tag: 'Stage 6 Twilight',
+    summary: 'A twilight reflection on leaving school, supporting the mandatory Life Ready course.',
+    detail: 'A twilight excursion for Year 11 and 12, built around the mandatory Life Ready course. Five animals along one walking route become five chapters - what a student carries forward, what they owe, the advice they would give, who they looked to, and the territory ahead. There are no points, no badges and no marks here on purpose: students leave with a short film of their own reflections, in their own voice.',
+    image: '/images/screenshots/mode-evolve.webp',
+  },
+  {
+    id: 'wildest-dreams',
+    label: 'Wildest Dreams',
+    accent: '#FFD98A',
+    tag: 'Video First',
+    summary: 'A video-first visit built for school support units and diverse learners.',
+    detail: 'Built for school support units and diverse learners. Students watch a real animal, choose for themselves what they want to show about it, and film a short piece their own way. Every clip stitches into one documentary, "My Wildest Dreams", that the class keeps. No quizzes, no scores, no timers, and no required writing or speech - the film is the whole point.',
+    image: '/images/screenshots/mode-wildest-dreams.webp',
   },
 ];
 
@@ -553,15 +585,19 @@ export default function HomeScreen() {
                 Learning Through<br/>Nature with Taronga Zoo.
               </h2>
               <p style={{ fontSize:'clamp(0.95rem,1.4vw,1.15rem)', color:'rgba(255,255,255,0.52)', lineHeight:1.75, margin:'0 auto', maxWidth:'520px' }}>
-                Real animals. Real science. Three powerful ways to bring your students closer to wildlife.
+                Real animals. Real science. Five powerful ways to bring your students closer to wildlife.
               </p>
             </div>
 
             <div style={{ width:'100%', maxWidth:'min(92vw, 960px)', padding:'0 1.5rem', marginBottom:'0.85rem' }}>
-              <div style={{ display:'flex', gap:'0.65rem' }}>
+              {/* ⚠️ A grid, not a flex row of flex:1 children. With five programmes, equal flex
+                  columns gave each tab ~60px on a 400px phone and "Wildest Dreams" became two
+                  broken lines. auto-fit + minmax keeps one row at full width and wraps to 3+2
+                  when narrow. */}
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(96px, 1fr))', gap:'0.65rem' }}>
                 {MODES.map(m => (
                   <button key={m.id} onClick={e => { e.stopPropagation(); setActiveMode(m.id); }}
-                    style={{ flex:1, padding:'0.85rem 0.5rem', border:`1.5px solid ${activeMode===m.id ? m.accent : 'rgba(255,255,255,0.1)'}`, borderRadius:'12px', cursor:'pointer', background: activeMode===m.id ? `${m.accent}18` : 'rgba(255,255,255,0.025)', transition:'all 0.22s', position:'relative' }}>
+                    style={{ padding:'0.85rem 0.5rem', border:`1.5px solid ${activeMode===m.id ? m.accent : 'rgba(255,255,255,0.1)'}`, borderRadius:'12px', cursor:'pointer', background: activeMode===m.id ? `${m.accent}18` : 'rgba(255,255,255,0.025)', transition:'all 0.22s', position:'relative' }}>
                     <div style={{ fontSize:'clamp(0.63rem,1.1vw,0.85rem)', fontWeight:800, color: activeMode===m.id ? m.accent : 'rgba(255,255,255,0.35)', letterSpacing:'0.02em', lineHeight:1.3, transition:'color 0.2s' }}>
                       {m.label}
                     </div>
@@ -573,8 +609,23 @@ export default function HomeScreen() {
 
             <div style={{ width:'100%', maxWidth:'min(92vw, 960px)', padding:'0 1.5rem', marginBottom:'2rem' }}>
               <div style={{ background:'rgba(255,255,255,0.03)', border:`1px solid ${activeModeData?.accent}28`, borderRadius:'18px', overflow:'hidden' }}>
+                {/* All five modes have an image as of 2026-10-17. The fallback stays because a
+                    null src renders a broken-image icon, and a sixth mode will land here before
+                    its screenshot does — it draws an accent panel that reads as a design choice
+                    rather than a fault. */}
                 <div style={{ aspectRatio:'16/9', overflow:'hidden' }}>
-                  <img src={activeModeData.image} alt={activeModeData.label} style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:'center', display:'block' }} />
+                  {activeModeData.image ? (
+                    <img src={activeModeData.image} alt={activeModeData.label} style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:'center', display:'block' }} />
+                  ) : (
+                    <div style={{ width:'100%', height:'100%', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'0.5rem', background:`linear-gradient(150deg, ${activeModeData.accent}22, rgba(5,14,8,0.9) 70%)`, borderBottom:`1px solid ${activeModeData.accent}28` }}>
+                      <div className="taronga-title" style={{ fontSize:'clamp(1.5rem,4vw,2.4rem)', color:activeModeData.accent, letterSpacing:'-0.01em', textAlign:'center', padding:'0 1rem' }}>
+                        {activeModeData.label}
+                      </div>
+                      <div style={{ fontSize:'clamp(0.72rem,1.1vw,0.84rem)', color:'rgba(255,255,255,0.5)', textAlign:'center', maxWidth:'34ch', lineHeight:1.5, padding:'0 1.25rem' }}>
+                        {activeModeData.summary}
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div style={{ padding:'1.4rem 1.6rem 1.6rem' }}>
                   <div style={{ display:'inline-flex', alignItems:'center', gap:'0.35rem', marginBottom:'0.6rem' }}>
