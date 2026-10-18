@@ -28,10 +28,11 @@ function generateCode() {
 
 // ─── Programme names ─────────────────────────────────────────────────────────
 // ⚠️ DISPLAY LABELS ONLY. The keys are what the rest of the app and every stored document
-// already use, so they are NOT renamed: a class in Firestore carries sessionType 'zoosnooz',
-// 'zooyard' or 'evolve', and the zoo visit carries NO sessionType at all — it is the absence of
-// the others, which is why its key here is still 'daily'. Renaming a key would orphan every
-// class ever created.
+// already use, so they are NOT renamed. A class in Firestore carries sessionType 'zoosnooz',
+// 'zooyard', 'evolve', 'wildest-dreams' or 'standard' — and 'standard' is the zoo visit, which is
+// why this view key is still 'daily'. Classes created before the dashboard redesign have NO
+// sessionType field at all, so anything reading it must treat absent and 'standard' alike.
+// Renaming a key would orphan every class ever created.
 //
 // The zoo-visit programme was called "Daily" until 2026-10-17 and is now Tracka Trek. It is
 // defined in this one place so the next rename is one line, not a hunt through the file.
@@ -42,7 +43,12 @@ const VIEW_LABEL = {
   evolve:   'Evolve',
   dubbo:    'Taronga Dubbo',
   school:   'ZooYard',
+  wildest:  'Wildest Dreams',
 };
+
+// ⚠️ Every sessionType that is NOT the zoo visit. The Tracka Trek view subtracts these from the
+// whole set, so a programme missing from here is counted as a zoo visit.
+const NOT_DAILY = new Set(['zoosnooz', 'zooyard', 'evolve', 'wildest-dreams']);
 
 // Sidebar order, with the icons the plain labels above do not carry.
 const VIEW_ORDER = [
@@ -57,10 +63,18 @@ const VIEW_ORDER = [
 // ⚠️ A stored sessionType, not a view key. This used to be an inline ternary that read
 // `sessionType === 'zoosnooz' ? 'ZooSnooz' : 'Daily'`, which labelled Evolve and ZooYard
 // feedback as Daily — wrong before the rename and more confidently wrong after it, so it is a
-// real lookup now. Absent sessionType means the zoo visit.
+// real lookup now. 'standard' and an absent field both mean the zoo visit.
+//
+// ⚠️ Every programme needs an entry here. A missing one does not show up as blank, it shows up as
+// Tracka Trek, which is a wrong answer that looks like a right one — that is exactly how Evolve
+// and Wildest Dreams were mislabelled for months.
 function sessionTypeLabel(sessionType) {
-  return { zoosnooz: VIEW_LABEL.zoosnooz, zooyard: VIEW_LABEL.school, evolve: VIEW_LABEL.evolve }[sessionType]
-    || VIEW_LABEL.daily;
+  return {
+    zoosnooz:         VIEW_LABEL.zoosnooz,
+    zooyard:          VIEW_LABEL.school,
+    evolve:           VIEW_LABEL.evolve,
+    'wildest-dreams': VIEW_LABEL.wildest,
+  }[sessionType] || VIEW_LABEL.daily;
 }
 
 // ─── Tab: Analytics ──────────────────────────────────────────────────────────
@@ -105,10 +119,13 @@ function AnalyticsTab({ classes }) {
 
   const viewClasses = useMemo(() => {
     let c = classes;
-    // Evolve is excluded from Tracka Trek and gets its own view: it is a different programme with no
-    // points or marks, and its subject ('life-ready') is not in the subject dropdown, so before
-    // this it was invisible to every filter yet still counted in Total.
-    if (view === 'daily')    c = c.filter(x => x.sessionType !== 'zoosnooz' && x.sessionType !== 'zooyard' && x.sessionType !== 'evolve' && x.location !== 'dubbo' && x.location !== 'school');
+    // ⚠️ The Tracka Trek view is defined by EXCLUSION, so every programme that is not the zoo
+    // visit has to be named here or it silently inflates Tracka Trek's numbers. Evolve was
+    // invisible to every filter yet counted in Total until 2026-10-01 (no points, no marks, and
+    // its subject 'life-ready' is not in the subject dropdown). Wildest Dreams was doing the same
+    // thing until 2026-10-18 — it had a sessionType from the day it shipped and nothing excluded
+    // it. ⚠️ Add a new programme to NOT_DAILY the moment it gets a sessionType.
+    if (view === 'daily')    c = c.filter(x => !NOT_DAILY.has(x.sessionType) && x.location !== 'dubbo' && x.location !== 'school');
     else if (view === 'zoosnooz') c = c.filter(x => x.sessionType === 'zoosnooz' || x.location === 'zoosnooz-sydney');
     else if (view === 'evolve')  c = c.filter(x => x.sessionType === 'evolve');
     else if (view === 'dubbo')   c = c.filter(x => x.location === 'dubbo');
