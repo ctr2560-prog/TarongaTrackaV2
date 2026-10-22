@@ -11,6 +11,38 @@ import { buildObservationScore } from '../utils/scoring';
 
 const INTER_DURATION = { tiger: 30, lion: 30, rhino: 0, binturong: 0, 'sun-bear': 0 };
 
+// ── Instruction type ────────────────────────────────────────────────────────
+// The two places ZooSnooz tells a student what to DO — the mission brief on the insight
+// screen, and the prompt above the writing box. Both use Taronga Headline, applied with
+// `className="taronga-title"` alongside these.
+//
+// ⚠️ TWO THINGS THAT LOOK LIKE MISTAKES AND ARE NOT:
+//
+// 1. `lineHeight` is overridden. `.taronga-title` ships 1.1, which is right for a hero title
+//    and far too tight for a full sentence. global.css marks the face "hero / branding only";
+//    these are the first body-adjacent uses of it.
+// 2. There is NO `fontWeight`. Taronga Headline is weight 400 only, so asking for 600/700
+//    makes the browser synthesise bold and the text renders smeared. Both of these elements
+//    used to carry a weight and looked worse for it.
+//
+// ⚠️ Bebas Neue, the declared fallback in global.css, is NOT loaded anywhere. If the TTF ever
+//    fails to load the result is plain system sans, not a near-miss — so a report of "the font
+//    looks wrong" means the file did not load, not that it needs tuning.
+const ZZ_INSTRUCTION = {
+  fontSize:   'clamp(1.15rem, 3.6vw, 1.5rem)',
+  lineHeight: 1.35,
+  letterSpacing: '0.02em',
+  margin: 0,
+};
+
+// The small kicker above a mission brief. Same face, still a label.
+const ZZ_KICKER = {
+  fontSize: '0.82rem',
+  letterSpacing: '0.18em',
+  textTransform: 'uppercase',
+  lineHeight: 1.2,
+};
+
 function ZzDoneScreen({ classCode, studentName, onDone }) {
   const [showFeedback, setShowFeedback] = useState(false);
   useEffect(() => {
@@ -1747,8 +1779,8 @@ export default function ZooSnoozScreen() {
               </p>
             </div>
             <div style={{ background:'rgba(46,125,85,0.12)', border:'1.5px solid rgba(74,158,107,0.4)', borderRadius:'16px', padding:'1.5rem 1.25rem', textAlign:'center' }}>
-              <div style={{ fontSize:'0.6rem', fontWeight:800, color:'rgba(168,196,178,0.7)', textTransform:'uppercase', letterSpacing:'0.2em', marginBottom:'0.75rem' }}>Your Mission</div>
-              <p style={{ color:'white', fontSize:'1.2rem', fontWeight:700, lineHeight:1.55, margin:0 }}>{zzAnimal.interaction.instruction}</p>
+              <div className="taronga-title" style={{ ...ZZ_KICKER, color:'rgba(168,196,178,0.85)', marginBottom:'0.6rem' }}>Your Mission</div>
+              <p className="taronga-title" style={{ ...ZZ_INSTRUCTION, color:'white' }}>{zzAnimal.interaction.instruction}</p>
             </div>
             <button onClick={() => setZzPhase('interaction')} className="zz-btn">Begin Mission →</button>
           </div>
@@ -2577,14 +2609,10 @@ export default function ZooSnoozScreen() {
                   : `Describe what you observe - what is the ${lastName} doing? What do you notice? Then write what the keeper said when you asked them your question.`;
                 return (
                   <>
-                    {/* Observation prompt — the instruction for the written task.
-                        ⚠️ Taronga Headline is marked "hero / branding only" in global.css and
-                        `.taronga-title` ships line-height 1.1, which is far too tight for a
-                        full sentence. The line-height is deliberately overridden to 1.35 here.
-                        ⚠️ Do NOT add fontWeight: the face is weight 400 only, so anything heavier
-                        is synthesised by the browser and looks smeared. */}
+                    {/* Observation prompt — the instruction for the written task. See
+                        ZZ_INSTRUCTION at the top of this file before changing the type. */}
                     <div className="zz-card">
-                      <p className="taronga-title" style={{ color:'var(--zz-text)', fontSize:'clamp(1.15rem, 3.6vw, 1.5rem)', lineHeight:1.35, letterSpacing:'0.02em', margin:0 }}>{obsPrompt}</p>
+                      <p className="taronga-title" style={{ ...ZZ_INSTRUCTION, color:'var(--zz-text)' }}>{obsPrompt}</p>
                     </div>
 
                     {/* Keeper question */}
