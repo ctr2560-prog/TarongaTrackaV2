@@ -28,16 +28,33 @@ const INTER_DURATION = { tiger: 30, lion: 30, rhino: 0, binturong: 0, 'sun-bear'
 // ⚠️ Bebas Neue, the declared fallback in global.css, is NOT loaded anywhere. If the TTF ever
 //    fails to load the result is plain system sans, not a near-miss — so a report of "the font
 //    looks wrong" means the file did not load, not that it needs tuning.
+// ⚠️ THE vw TERM IS TUNED FOR PHONE WIDTHS, NOT DESKTOP. A clamp like
+//    `clamp(1.15rem, 3.6vw, 1.5rem)` looks reasonable and is DEAD on every phone: 3.6vw of a
+//    390px screen is 14px, below the 18.4px minimum, so the middle term never wins and every
+//    handset renders the same fixed size. Measured 2026-10-22 — all three ZooSnooz scales were
+//    flat from 360px to 430px. 🚫 When adding a clamp here, divide the minimum px by ~360 to get
+//    a vw that actually does something: 18.4/360 ≈ 5.1vw.
 const ZZ_INSTRUCTION = {
-  fontSize:   'clamp(1.15rem, 3.6vw, 1.5rem)',
+  fontSize:   'clamp(1.15rem, 5.1vw, 1.5rem)',
   lineHeight: 1.35,
+  letterSpacing: '0.02em',
+  margin: 0,
+};
+
+// ⚠️ The mission brief is DELIBERATELY larger than ZZ_INSTRUCTION, not a copy of it. It is the
+//    first thing a student reads after tapping an animal and it carries the whole task, so it
+//    is sized as a headline. They were briefly the same size (2026-10-22) and the mission did
+//    not stand out. 🚫 Do not "tidy" these back into one constant — the difference is the point.
+const ZZ_MISSION = {
+  fontSize:   'clamp(1.45rem, 6.5vw, 2rem)',
+  lineHeight: 1.25,
   letterSpacing: '0.02em',
   margin: 0,
 };
 
 // The small kicker above a mission brief. Same face, still a label.
 const ZZ_KICKER = {
-  fontSize: '0.82rem',
+  fontSize: '0.95rem',
   letterSpacing: '0.18em',
   textTransform: 'uppercase',
   lineHeight: 1.2,
@@ -1773,14 +1790,20 @@ export default function ZooSnoozScreen() {
                 <div style={{ fontSize:'0.75rem', color:'rgba(168,196,178,0.7)', fontStyle:'italic' }}>{zzAnimal.scientificName}</div>
               </div>
             </div>
+            {/* Keeper insight — the two or three lines that set up the mission.
+                ⚠️ Stays in the BODY face on purpose, unlike the mission brief below it. This is
+                   reading text, several lines long and often carrying the actual science; a
+                   display face makes it harder to read, not more important.
+                ⚠️ `whiteSpace: pre-line` is load-bearing — the copy is authored with \n line
+                   breaks per idea (see zoosnoozAnimals.js) and collapses into a block without it. */}
             <div className="zz-card">
-              <p style={{ color:'var(--zz-text)', fontSize:'0.95rem', lineHeight:1.65, margin:0, whiteSpace:'pre-line' }}>
+              <p style={{ color:'var(--zz-text)', fontSize:'clamp(1.05rem, 4.7vw, 1.25rem)', lineHeight:1.65, margin:0, whiteSpace:'pre-line' }}>
                 {stageData.keeperInsight || zzAnimal.keeperInsight}
               </p>
             </div>
             <div style={{ background:'rgba(46,125,85,0.12)', border:'1.5px solid rgba(74,158,107,0.4)', borderRadius:'16px', padding:'1.5rem 1.25rem', textAlign:'center' }}>
               <div className="taronga-title" style={{ ...ZZ_KICKER, color:'rgba(168,196,178,0.85)', marginBottom:'0.6rem' }}>Your Mission</div>
-              <p className="taronga-title" style={{ ...ZZ_INSTRUCTION, color:'white' }}>{zzAnimal.interaction.instruction}</p>
+              <p className="taronga-title" style={{ ...ZZ_MISSION, color:'white' }}>{zzAnimal.interaction.instruction}</p>
             </div>
             <button onClick={() => setZzPhase('interaction')} className="zz-btn">Begin Mission →</button>
           </div>
