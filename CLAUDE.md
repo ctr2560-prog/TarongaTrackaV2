@@ -82,11 +82,34 @@ Collected 2026-10-18 while converting the media read paths. **None of these is f
    revoked permanent URL) is strictly better than what was there, but the button's stated purpose
    is still unmet. This is the single most misleading control in the staff portal right now.
 
-3. ⚠️ **No documentary has been verified end to end since the pipeline changed.** Uploads store
+3. ✅ **The MCQ is one tap now (2026-10-22).** Tapping an option reveals the result; the "Check
+   Answer" button is gone. It had been offering a take-back that did not exist — the mark was
+   already taken on the first tap. Retry-until-correct stays; the points do not come back.
+
+   ⚠️⚠️ **It fixed a scoring bug, and the shape of it is worth remembering.** The guard read
+   `if (mcqAnswer === null) setMcqFirstOk(...)`. The "Try Again" button resets `mcqAnswer` to
+   null, so the guard **re-opened** and the next tap overwrote the mark. Wrong → retry → right
+   scored a full 20 points and was recorded as correct on the first attempt.
+
+   🚫 **Never guard a recorded value on UI state that something else resets.** Guard on the
+   recorded value itself: `setMcqFirstOk(prev => (prev === null ? i === correct : prev))`, which
+   is what `StudentContext` already did for the main zoo quiz
+   (`if (prev[questionIndex] !== undefined) return prev`). Same intent, two implementations, one
+   of them wrong for as long as the retry loop has existed.
+
+   ⚠️ **Historical ZooSnooz `quizCorrect` / `correctOnFirstAttempt` data is overstated** — every
+   student who retried into a correct answer is recorded as a first-try success. That affects the
+   staff portal's **"Quiz First Try"** figure, the per-animal **"✓ Quiz +20"** chip, and stored
+   `quizPercentage`. There is no way to tell retried answers from genuine ones after the fact, so
+   the old records cannot be repaired. 🚫 Do not compare ZooSnooz quiz figures from before and
+   after 2026-10-22 and read the drop as a decline in performance — it is the number becoming
+   honest.
+
+4. ⚠️ **No documentary has been verified end to end since the pipeline changed.** Uploads store
    paths (2026-10-04) and the stitcher reports failures like Evolve's, but nobody has watched one
    come out whole.
 
-4. **Where the data lives is not where you would guess** — see "ZooSnooz student data location"
+5. **Where the data lives is not where you would guess** — see "ZooSnooz student data location"
    below before writing any query.
 
 ### ⚠️ Not verified, and I could not verify it
