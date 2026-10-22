@@ -2451,13 +2451,11 @@ export default function ZooSnoozScreen() {
               {/* Question + options */}
               <div className="zz-card">
                 <div style={{ color:'var(--zz-gold)', fontSize:'0.7rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:'0.75rem' }}>Make Your Call</div>
-                <p style={{ color:'var(--zz-text)', fontSize:'0.95rem', lineHeight:1.6, margin:'0 0 0.5rem', fontWeight:600 }}>{q}</p>
-                {/* ⚠️ Tapping is final for MARKS, so students are told before they tap rather than
-                    after. Without this the instant lock is a trap — especially on a phone, in the
-                    dark, where a mis-tap costs 20 points with no take-back. */}
-                <p style={{ color:'rgba(255,255,255,0.4)', fontSize:'0.72rem', lineHeight:1.5, margin:'0 0 1rem', fontStyle:'italic' }}>
-                  Your first answer is the one that counts.
-                </p>
+                {/* ⚠️ No "your first answer counts" caption here — tried on 2026-10-22 and
+                    removed the same day at Cameron's call: it adds pressure at 9pm on a sleepover,
+                    and ZooSnooz is deliberately the gentlest of the modes. The instant lock stays
+                    unannounced. 🚫 Don't reintroduce it as a "helpful hint". */}
+                <p style={{ color:'var(--zz-text)', fontSize:'0.95rem', lineHeight:1.6, margin:'0 0 1rem', fontWeight:600 }}>{q}</p>
                 <div style={{ display:'flex', flexDirection:'column', gap:'0.55rem' }}>
                   {opts.map((opt, i) => {
                     let bg = 'rgba(255,255,255,0.06)', border = 'rgba(255,255,255,0.14)';

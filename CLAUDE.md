@@ -97,6 +97,10 @@ Collected 2026-10-18 while converting the media read paths. **None of these is f
    (`if (prev[questionIndex] !== undefined) return prev`). Same intent, two implementations, one
    of them wrong for as long as the retry loop has existed.
 
+   ⚠️ **No caption telling students their first answer counts.** One was added and removed the
+   same day at Cameron's call — it adds pressure at 9pm on a sleepover, and ZooSnooz is
+   deliberately the gentlest of the modes. 🚫 Do not reintroduce it as a helpful hint.
+
    ⚠️ **Historical ZooSnooz `quizCorrect` / `correctOnFirstAttempt` data is overstated** — every
    student who retried into a correct answer is recorded as a first-try success. That affects the
    staff portal's **"Quiz First Try"** figure, the per-animal **"✓ Quiz +20"** chip, and stored
