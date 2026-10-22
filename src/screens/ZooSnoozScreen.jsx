@@ -2566,7 +2566,7 @@ export default function ZooSnoozScreen() {
                       {isRight ? 'Correct!' : 'Not Quite'}
                     </h2>
                     {isRight ? (
-                      <p style={{ color:'rgba(168,196,178,0.85)', fontSize:'0.95rem', lineHeight:1.7, maxWidth:'340px', marginBottom:'2rem' }}>
+                      <p style={{ color:'rgba(168,196,178,0.92)', fontSize:'clamp(1.1rem, 5vw, 1.4rem)', lineHeight:1.5, maxWidth:'360px', marginBottom:'2rem' }}>
                         {zzAnimal.fact}
                       </p>
                     ) : (
