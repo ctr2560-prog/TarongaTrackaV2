@@ -2577,9 +2577,14 @@ export default function ZooSnoozScreen() {
                   : `Describe what you observe - what is the ${lastName} doing? What do you notice? Then write what the keeper said when you asked them your question.`;
                 return (
                   <>
-                    {/* Observation prompt */}
+                    {/* Observation prompt — the instruction for the written task.
+                        ⚠️ Taronga Headline is marked "hero / branding only" in global.css and
+                        `.taronga-title` ships line-height 1.1, which is far too tight for a
+                        full sentence. The line-height is deliberately overridden to 1.35 here.
+                        ⚠️ Do NOT add fontWeight: the face is weight 400 only, so anything heavier
+                        is synthesised by the browser and looks smeared. */}
                     <div className="zz-card">
-                      <p style={{ color:'var(--zz-text)', fontSize:'0.95rem', lineHeight:1.6, margin:0, fontWeight:600 }}>{obsPrompt}</p>
+                      <p className="taronga-title" style={{ color:'var(--zz-text)', fontSize:'clamp(1.15rem, 3.6vw, 1.5rem)', lineHeight:1.35, letterSpacing:'0.02em', margin:0 }}>{obsPrompt}</p>
                     </div>
 
                     {/* Keeper question */}
