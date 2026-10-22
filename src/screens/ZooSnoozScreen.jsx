@@ -2451,7 +2451,13 @@ export default function ZooSnoozScreen() {
               {/* Question + options */}
               <div className="zz-card">
                 <div style={{ color:'var(--zz-gold)', fontSize:'0.7rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:'0.75rem' }}>Make Your Call</div>
-                <p style={{ color:'var(--zz-text)', fontSize:'0.95rem', lineHeight:1.6, margin:'0 0 1rem', fontWeight:600 }}>{q}</p>
+                <p style={{ color:'var(--zz-text)', fontSize:'0.95rem', lineHeight:1.6, margin:'0 0 0.5rem', fontWeight:600 }}>{q}</p>
+                {/* ⚠️ Tapping is final for MARKS, so students are told before they tap rather than
+                    after. Without this the instant lock is a trap — especially on a phone, in the
+                    dark, where a mis-tap costs 20 points with no take-back. */}
+                <p style={{ color:'rgba(255,255,255,0.4)', fontSize:'0.72rem', lineHeight:1.5, margin:'0 0 1rem', fontStyle:'italic' }}>
+                  Your first answer is the one that counts.
+                </p>
                 <div style={{ display:'flex', flexDirection:'column', gap:'0.55rem' }}>
                   {opts.map((opt, i) => {
                     let bg = 'rgba(255,255,255,0.06)', border = 'rgba(255,255,255,0.14)';
@@ -2461,9 +2467,29 @@ export default function ZooSnoozScreen() {
                     } else if (i === mcqAnswer) { bg = 'rgba(255,255,255,0.12)'; border = 'rgba(255,255,255,0.4)'; }
                     return (
                       <button key={i} onClick={() => {
-                        if (mcqRevealed) return;
-                        if (mcqAnswer === null) setMcqFirstOk(i === correct);
+                        if (mcqRevealed || mcqShowResult) return;
+                        // ⚠️⚠️ RECORD THE FIRST ATTEMPT ONCE, EVER — and never overwrite it.
+                        //
+                        // This used to read `if (mcqAnswer === null) setMcqFirstOk(...)`, which
+                        // looks equivalent and is not. The "give it another go" button resets
+                        // `mcqAnswer` to null, so the guard RE-OPENED and the next tap overwrote
+                        // the mark. A student who answered wrong, retried and got it right was
+                        // recorded as correct on the first attempt and given the full 20 points.
+                        // The field is called `correctOnFirstAttempt` and it feeds the staff
+                        // portal's "Quiz First Try" figure, so that number was wrong too.
+                        //
+                        // 🚫 Never guard this on a piece of UI state that something else resets.
+                        //    Guard on the recorded value itself, the way StudentContext does
+                        //    (`if (prev[questionIndex] !== undefined) return prev`).
+                        // ⚠️ `mcqFirstOk` is reset to null per ANIMAL (see the phase reset above).
+                        //    That is the only reset it should ever get.
+                        setMcqFirstOk(prev => (prev === null ? i === correct : prev));
                         setMcqAnswer(i);
+                        // Tapping IS the answer — there is no separate confirm step. The old
+                        // "Check Answer" button implied the choice was still changeable, but the
+                        // mark had already been taken on the first tap, so it was offering a
+                        // take-back that did not exist.
+                        setMcqShowResult(true);
                       }}
                       style={{ background:bg, border:`1.5px solid ${border}`, borderRadius:10, padding:'0.85rem 1rem', color:'var(--zz-text)', fontSize:'0.88rem', textAlign:'left', cursor: mcqRevealed ? 'default' : 'pointer', transition:'all 0.15s', lineHeight:1.5, width:'100%' }}>
                         {opt}
@@ -2473,9 +2499,6 @@ export default function ZooSnoozScreen() {
                 </div>
               </div>
 
-              {mcqAnswer !== null && !mcqRevealed && (
-                <button onClick={() => setMcqShowResult(true)} className="zz-btn">Check Answer</button>
-              )}
               {mcqRevealed && (
                 <button onClick={() => setZzPhase('observation')} className="zz-btn">Continue →</button>
               )}
