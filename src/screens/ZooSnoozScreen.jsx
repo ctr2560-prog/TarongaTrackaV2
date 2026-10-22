@@ -1715,17 +1715,58 @@ export default function ZooSnoozScreen() {
                   );
                 })()}
 
-                {/* Progress */}
-                <div style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'14px', padding:'0.85rem', marginBottom:'1.25rem', display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.5rem' }}>
-                  <div>
-                    <div style={{ fontSize:'1.3rem', fontWeight:800, color:'white' }}>{baDone}/{ZOOSNOOZ_ANIMALS.length}</div>
-                    <div style={{ fontSize:'0.62rem', color:'rgba(168,196,178,0.6)', textTransform:'uppercase', letterSpacing:'0.1em' }}>Animals Done</div>
+                {/* Writing score breakdown — replaced the Animals Done / Total Points pair on
+                    2026-10-22. Those two numbers are both still on the collection screen's totals
+                    strip; this is the only place a student is shown HOW their writing was marked,
+                    which is what actually turns into their points.
+                    ⚠️ The three domains are each out of 5 and sum to the 15 that becomes the
+                       observation points (`(sum / 15) * 100`), so this breakdown and the "+N
+                       Points Earned" figure above it are the same number shown two ways. If the
+                       scorer's scale ever changes, SCORE_MAX changes with it.
+                    ⚠️ Falls back to the old progress pair when there is no observationScore. That
+                       should not happen (the written task is required) but a badge written by an
+                       older build has no score, and a blank panel would read as a fault. */}
+                {zzBadgeAnimal.observationScore ? (() => {
+                  const SCORE_MAX = 5;
+                  const obs = zzBadgeAnimal.observationScore;
+                  const rows = [
+                    { key:'behaviour', label:'What you saw' },
+                    { key:'detail',    label:'Detail & reasons' },
+                    { key:'writing',   label:'Writing' },
+                  ];
+                  return (
+                    <div style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'14px', padding:'0.85rem 0.95rem', marginBottom:'1.25rem' }}>
+                      <div style={{ fontSize:'0.58rem', fontWeight:800, color:'rgba(168,196,178,0.6)', textTransform:'uppercase', letterSpacing:'0.12em', marginBottom:'0.6rem', textAlign:'left' }}>How your writing scored</div>
+                      {rows.map(({ key, label }) => {
+                        const v = Math.max(0, Math.min(SCORE_MAX, obs[key] ?? 0));
+                        // ⚠️ Amber, never red, below the threshold. ZooSnooz is deliberately the
+                        //    gentlest mode and this lands at 9pm on a sleepover. 3+ is the same
+                        //    "did well" threshold the feedback cards above use.
+                        const col = v >= 3 ? '#4A9E6B' : '#FCD34D';
+                        return (
+                          <div key={key} style={{ display:'flex', alignItems:'center', gap:'0.6rem', marginBottom:'0.45rem' }}>
+                            <div style={{ flex:'0 0 7.5rem', fontSize:'0.72rem', color:'rgba(255,255,255,0.65)', textAlign:'left', lineHeight:1.2 }}>{label}</div>
+                            <div style={{ flex:1, height:'7px', borderRadius:'999px', background:'rgba(255,255,255,0.08)', overflow:'hidden' }}>
+                              <div style={{ width:`${(v / SCORE_MAX) * 100}%`, height:'100%', borderRadius:'999px', background:col, transition:'width 0.5s ease' }} />
+                            </div>
+                            <div style={{ flex:'0 0 1.9rem', fontSize:'0.72rem', fontWeight:800, color:col, textAlign:'right', fontVariantNumeric:'tabular-nums' }}>{v}/{SCORE_MAX}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })() : (
+                  <div style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'14px', padding:'0.85rem', marginBottom:'1.25rem', display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.5rem' }}>
+                    <div>
+                      <div style={{ fontSize:'1.3rem', fontWeight:800, color:'white' }}>{baDone}/{ZOOSNOOZ_ANIMALS.length}</div>
+                      <div style={{ fontSize:'0.62rem', color:'rgba(168,196,178,0.6)', textTransform:'uppercase', letterSpacing:'0.1em' }}>Animals Done</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize:'1.3rem', fontWeight:800, color:'#A8C4B2' }}>{baRunningTotal}</div>
+                      <div style={{ fontSize:'0.62rem', color:'rgba(168,196,178,0.6)', textTransform:'uppercase', letterSpacing:'0.1em' }}>Total Points</div>
+                    </div>
                   </div>
-                  <div>
-                    <div style={{ fontSize:'1.3rem', fontWeight:800, color:'#A8C4B2' }}>{baRunningTotal}</div>
-                    <div style={{ fontSize:'0.62rem', color:'rgba(168,196,178,0.6)', textTransform:'uppercase', letterSpacing:'0.1em' }}>Total Points</div>
-                  </div>
-                </div>
+                )}
 
                 <button
                   onClick={() => setZzBadgeAnimal(null)}
