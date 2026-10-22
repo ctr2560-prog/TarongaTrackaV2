@@ -109,11 +109,45 @@ Collected 2026-10-18 while converting the media read paths. **None of these is f
    after 2026-10-22 and read the drop as a decline in performance — it is the number becoming
    honest.
 
-4. ⚠️ **No documentary has been verified end to end since the pipeline changed.** Uploads store
+4. ⚠️⚠️ **ZooSnooz's LION is scored by the day-zoo lion branch, and the word lists do not match
+   the mission.** Found 2026-10-22 by scoring real answers after the badge screen began showing
+   students their domain scores.
+
+   `scoring.js` line ~345 catches `animalId === 'lion'` before anything else, and that branch is
+   built for the **day-zoo conservation prompt**: its `conservationWords` are protect, ecosystem,
+   biodiversity, poaching, savanna, apex… **ZooSnooz's lion mission is about sound and
+   communication**, and the lists contain no `roar`, `roaring`, `sound`, `call`, `communicate`,
+   `pride`, `contact`, `hear` or `listen`. So `conservationHits` is 0 and
+   `behaviourBonus = min(0 + 1, 5) = 1`.
+
+   | Answer (stage 4) | what you saw |
+   |---|---|
+   | "The lions were roaring to each other across the enclosure. This helps them stay in contact with the pride at night." | **2/5** |
+   | "The tiger sat still." (four words) | **3/5** |
+
+   ⚠️ **A four-word answer outscores a strong on-prompt one.** Students can now see this.
+
+   **Why only the lion.** The fallback branch has `zzAnimalIds = new Set(['tiger','rhino',
+   'binturong','sun-bear'])` — four of ZooSnooz's five animals, with its own
+   `calculateZzBehaviourScore`. Those four score sensibly (3–4). The lion is missing from that
+   set, and would be unreachable anyway because `if (animalId === 'lion')` catches it first.
+
+   **Proposed fix, NOT applied** (changing the scorer changes students' marks — Cameron's call):
+   add the sound/communication vocabulary to the lion branch's lists. It is safe for the day-zoo
+   conservation prompt because those words rarely appear in a conservation answer, so no existing
+   score inflates. 🚫 Do not instead add `lion` to `zzAnimalIds` — the `if` above wins and nothing
+   would change.
+
+   ⚠️ **This is the fault CLAUDE.md already warned about**, in the same shape: *"Rewriting a
+   prompt means re-checking that animal's word list."* ZooSnooz reused `animalId: 'lion'` with a
+   completely different prompt, which is the same mistake by another route. 🚫 **Reusing an
+   animalId across modes silently inherits that animal's vocabulary list.**
+
+5. ⚠️ **No documentary has been verified end to end since the pipeline changed.** Uploads store
    paths (2026-10-04) and the stitcher reports failures like Evolve's, but nobody has watched one
    come out whole.
 
-5. **Where the data lives is not where you would guess** — see "ZooSnooz student data location"
+6. **Where the data lives is not where you would guess** — see "ZooSnooz student data location"
    below before writing any query.
 
 ### ⚠️ Not verified, and I could not verify it
