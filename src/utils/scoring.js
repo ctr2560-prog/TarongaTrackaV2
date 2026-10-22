@@ -343,14 +343,33 @@ export function scoreObservation(text, animalId, classStage) {
   let behaviourBonus, detailBonus, literacyBonus;
 
   if (animalId === 'lion') {
-    const conservationWords = ['important','protect','ecosystem','balance','food chain','biodiversity','conservation','survive','survival','species','nature','wild','wildlife'];
-    const detailWords = ['prey','predator','extinction','humans','habitat','biodiversity','threat','poaching','population','climate','savanna','africa','apex','chain'];
+    // ⚠️⚠️ THIS BRANCH SERVES TWO DIFFERENT PROMPTS. The day-zoo lion mission asks about
+    //    conservation; ZooSnooz's lion mission asks about SOUND and communication. Both arrive
+    //    here because both use `animalId: 'lion'`, and this `if` catches them before the ZooSnooz
+    //    fallback further down ever runs.
+    //
+    //    Until 2026-10-22 the lists held conservation vocabulary only, so a strong ZooSnooz
+    //    answer matched nothing and `behaviourBonus = min(0 + 1, 5) = 1`:
+    //      "The lions were roaring to each other across the enclosure. This helps them stay in
+    //       contact with the pride at night."            -> 2/5, the SAME as "The lion was there."
+    //    The sound vocabulary below fixes that. It cannot inflate a conservation answer, because
+    //    these words do not appear in one — verified by re-scoring both prompts before and after.
+    //
+    // 🚫 Do NOT "fix" this by adding 'lion' to `zzAnimalIds` in the fallback branch. This `if`
+    //    wins and nothing would change.
+    // ⚠️ Reusing an animalId across modes silently inherits that animal's word lists. If a new
+    //    mode reuses one, score a real answer to the NEW prompt before shipping it.
+    const conservationWords = ['important','protect','ecosystem','balance','food chain','biodiversity','conservation','survive','survival','species','nature','wild','wildlife',
+      'roar','call','sound','communicat','vocal','growl','contact','pride','listen','hear','noise'];
+    const detailWords = ['prey','predator','extinction','humans','habitat','biodiversity','threat','poaching','population','climate','savanna','africa','apex','chain',
+      'roar','call','sound','pride','night','territory','social','group','family','communicat','distance'];
     const conservationHits = conservationWords.filter(w => lower.includes(w)).length;
     const detailHits = detailWords.filter(w => lower.includes(w)).length;
     const hasExplanation = ['because','so','helps','allows','leads','since','therefore','means','in order','as a result'].some(p => lower.includes(p));
     behaviourBonus = Math.min(conservationHits + 1, 5);
     if (stage <= 2) {
-      const s1words = ['lion','lions','big','large','huge','strong','sleeping','resting','walking','running','eating','mane','fur','yellow','golden','paw','tail','shade','grass'];
+      const s1words = ['lion','lions','big','large','huge','strong','sleeping','resting','walking','running','eating','mane','fur','yellow','golden','paw','tail','shade','grass',
+        'roar','loud','sound','noise','night','call','listen','hear','heard','pride','group','family','dark'];
       behaviourBonus = stage1BehaviourScore(text, s1words);
       detailBonus = stage1DetailScore(text, s1words);
       literacyBonus = stage1WritingScore(text);
