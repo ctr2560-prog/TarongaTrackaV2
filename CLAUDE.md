@@ -2901,16 +2901,34 @@ in the mode for a student to stand through without actually looking.
    collecting, graphing or interpreting data, however well the code seems to fit. This is stated
    above the outcome list in both the panel and the sheet so it cannot be skimmed past.
 
-   ⚠️ **The K–6 syllabus has an expiry.** Verified against the NSW curriculum site 2026-10-26:
-   Science and Technology K–6 **(2017)** is current, schools plan during 2026, teach the **2024**
-   syllabus **from 2027**, and 2017 is **withdrawn after December 2028**. The 2024 codes are in
-   `ZOOYARD_OUTCOMES_2024_NOTE`, deliberately not wired in — a teacher cannot report against a
-   syllabus they are not yet teaching. ⚠️ `ST*-DAT-01` is absent from that list on purpose: it is
-   the data outcome.
+   ⚠️ **BOTH syllabuses are carried, and the switch is automatic.** Verified against the NSW
+   curriculum site 2026-10-26: Science and Technology K–6 **(2017)** is current, schools plan
+   during 2026, teach the **2024** syllabus **from 2027**, and 2017 is **withdrawn after December
+   2028**. `zooyardOutcomesFor(stage)` picks by calendar year, so the panel and the sheet flip
+   themselves on 1 January 2027. 🚫 **Do not delete the 2017 set before 2029** — a school still
+   teaching it must be able to report against it. ⚠️ Stages 4–5 are Science 7–10 (2023), already
+   current and still current in 2027, so they are identical in both sets and defined once.
 
-   🚫 **The `desc` wordings are paraphrases**, inherited from the existing in-app lists rather
-   than transcribed from NESA. Both the panel and the sheet say so in a visible caution block.
-   Someone needs to check each line against the syllabus before the mode is sold on its outcomes.
+   ⚠️⚠️ **THE 2024 SYLLABUS FITS ZOOYARD WORSE AT STAGE 2.** `ST2-SCI-01` (2024) is about the
+   solar system and the effects of energy; `ST2-PQU-01` is fair tests, `ST2-DAT-01` is data,
+   `ST2-DDT-02` is algorithms. That leaves **exactly one** honest Stage 2 outcome from 2027:
+   `ST2-DDT-01`. 🚫 **Do not pad that list to make it look comparable.** Both surfaces carry a red
+   note from 2027 saying a Stage 2 class is better served running ZooYard as a Design and
+   Technology task.
+
+   ⚠️ Where 2027 fits **better**: `ST3-SCI-01` ("uses evidence to explain how scientific knowledge
+   can support sustainable practices") is the best match ZooYard has in either syllabus, and the
+   `ST*-DDT-01` design outcomes give the build step a home at Stages 1–3 rather than Stage 1 alone.
+
+   🚫 **The exclusion rule, enforced in both sets and covered by a test:** no `ST*-DAT-01` at any
+   stage, and no `ST2-PQU-01` / `ST3-PQU-01`. ZooYard supports neither a data nor a fair-test
+   claim.
+
+   ⚠️ **Wording provenance differs by stage.** Stage 1 and Stage 2 of the **2024** set are
+   **verbatim** from curriculum.nsw.edu.au. 🚫 Stage 3 (2024) and **all** 2017 wordings are
+   paraphrases — Stage 3 was only reachable through NSW DoE secondary pages, and the 2017 set was
+   inherited from the existing in-app lists. Both surfaces say so in a visible caution block.
+   Someone needs to check each line against NESA before the mode is sold on its outcomes.
 
    ⚠️⚠️ **`ST2-5WT-T` in `CreateClassScreen.jsx` APPEARS NOT TO EXIST.** No source could be found
    for it on 2026-10-26; the nearest real code is `ST2-5LW-T`. It is **not** used in the ZooYard
