@@ -1,5 +1,5 @@
 import { ZOOYARD_ANIMALS } from '../data/zooyardAnimals';
-import { ZOOYARD_OUTCOMES, ZOOYARD_OUTCOMES_NOTE } from '../data/zooyardOutcomes';
+import { zooyardOutcomesFor, using2024Syllabus, ZOOYARD_OUTCOMES_NOTE, ZOOYARD_STAGE2_2024_NOTE, SYLLABUS_2024_FROM } from '../data/zooyardOutcomes';
 
 // zooyardInfoSheet.js — the ZooYard Teacher Information Sheet.
 //
@@ -60,7 +60,8 @@ function habitatRows() {
 }
 
 function outcomeBlock(stageNum) {
-  const entry = ZOOYARD_OUTCOMES[stageNum] || ZOOYARD_OUTCOMES[4];
+  // ⚠️ Year-aware — flips to the 2024 syllabus on 1 January 2027. See zooyardOutcomes.js.
+  const entry = zooyardOutcomesFor(stageNum);
   const rows = entry.outcomes.map(o => `
     <tr>
       <td class="code">${esc(o.code)}</td>
@@ -73,7 +74,10 @@ function outcomeBlock(stageNum) {
       <thead><tr><th>Outcome</th><th>Description</th><th>Where ZooYard addresses it</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
-    <p class="note">${esc(ZOOYARD_OUTCOMES_NOTE)}</p>`;
+    <p class="note">${esc(ZOOYARD_OUTCOMES_NOTE)}</p>
+    ${using2024Syllabus() && Number(stageNum) === 2
+      ? `<div class="warn"><strong>Stage 2 is thin under this syllabus.</strong> ${esc(ZOOYARD_STAGE2_2024_NOTE)}</div>`
+      : ''}`;
 }
 
 /**
@@ -152,10 +156,11 @@ export function openZooYardInfoSheet(cls = {}) {
 <h2>Syllabus outcomes — Stage ${esc(stageNum)}</h2>
 ${outcomeBlock(stageNum)}
 <div class="warn">
-  <strong>Before you report against these:</strong> the outcome codes are current, but the
+  <strong>Before you report against these:</strong> the outcome codes are current, but several
   descriptions here are working paraphrases and should be checked against the NESA syllabus.
-  The K–6 codes are from Science and Technology K–6 (2017); NSW schools move to the 2024 syllabus
-  from 2027, and the 2017 version is withdrawn after December 2028.
+  ${using2024Syllabus()
+    ? `These are the Science and Technology K&ndash;6 (2024) outcomes, taught in NSW from ${SYLLABUS_2024_FROM}. A school still teaching the 2017 syllabus should report against that instead &mdash; it remains available until December 2028.`
+    : `These are the Science and Technology K&ndash;6 (2017) outcomes. NSW schools begin teaching the 2024 syllabus from ${SYLLABUS_2024_FROM}, and this sheet switches to it automatically then.`}
 </div>
 
 <h2>Running it with a class</h2>

@@ -1,41 +1,141 @@
 // zooyardOutcomes.js — the NSW syllabus outcomes ZooYard can defensibly claim.
 //
-// ⚠️⚠️ READ THE THREE WARNINGS BELOW BEFORE SHOWING THIS TO A SCHOOL.
+// ⚠️⚠️ READ THE FOUR WARNINGS BELOW BEFORE SHOWING THIS TO A SCHOOL.
 //
 // ── 1. WHAT ZOOYARD CAN AND CANNOT CLAIM ────────────────────────────────────
 // ZooYard had a measurement step (pace out the canopy gap, count sightline blockers) and it was
 // removed on 2026-10-01 as one step too many. 🚫 That removal means **ZooYard does not support a
-// Working Scientifically DATA claim.** It collects no quantitative data, runs no fair test and
-// controls no variables. Any outcome whose wording turns on collecting, graphing or interpreting
-// data is NOT honestly claimable here, however tempting the code looks.
+// data claim, and it does not support a fair-test claim either.** It collects no quantitative
+// data, runs no fair test and controls no variables.
 //
-// What it genuinely does, and what every `evidence` line below is tied to:
+// This rules out whole families of outcome, and the rule is applied strictly below:
+//   🚫 ST*-DAT-01 — the data outcomes. Excluded at every stage.
+//   🚫 ST2-PQU-01 / ST3-PQU-01 — "fair tests", "identify variables". Excluded.
+// However well a code seems to fit, if its wording turns on data or fair testing it is not ours.
+//
+// What ZooYard genuinely does, and what every `evidence` line is tied to:
 //   a student observes one named environmental quality in their own schoolyard, decides where it
 //   is missing, BUILDS something that provides it, photographs the result, and explains why it
 //   matters to that animal.
 // That is observation, living-world understanding, designed solutions and conservation action.
 //
-// ── 2. THE CODES ARE THE 2017 K–6 SYLLABUS, AND IT IS BEING REPLACED ────────
-// ⚠️ Verified 2026-10-26: NSW is replacing Science and Technology K–6 (2017) with Science and
-//    Technology K–6 (2024). Schools plan during 2026, **teach the new syllabus from 2027**, and
-//    the 2017 syllabus is **withdrawn after December 2028**.
-// So the K–6 codes below are correct for a class running today and have a known expiry.
-// `ZOOYARD_OUTCOMES_2024_NOTE` carries the replacement codes. 🚫 Do not switch to them before a
-// school's own transition year — a teacher cannot report against a syllabus they are not teaching.
+// ── 2. TWO SYLLABUSES, SELECTED BY YEAR ─────────────────────────────────────
+// ⚠️ Verified against the NSW curriculum site 2026-10-26. NSW is replacing Science and Technology
+//    K–6 (2017) with Science and Technology K–6 (2024). Schools plan during 2026, **teach the new
+//    syllabus from 2027**, and the 2017 syllabus is **withdrawn after December 2028**.
+// Both sets are kept here and `zooyardOutcomesFor(stage)` picks by the current year, so the app
+// switches itself on 1 January 2027 and nobody has to remember. 🚫 Do not delete the 2017 set
+// before 2029 — a school still teaching it must be able to report against it.
+// ⚠️ Stages 4–5 are Science 7–10 (2023), which is already current and still current in 2027, so
+//    the secondary outcomes are identical in both sets and are defined once.
 //
-// ── 3. ⚠️ THE WORDINGS NEED A NESA CHECK BEFORE THIS IS SOLD ON ─────────────
-// Every CODE below already appears elsewhere in this codebase, and the Stage 1/3 Working
-// Scientifically and Stage 1 Design and Production codes were corroborated against NSW
-// Department of Education and NESA-derived sources on 2026-10-26. The `desc` strings, however,
-// were inherited from the existing in-app lists, not transcribed from the syllabus document.
-// 🚫 Treat `desc` as a paraphrase until someone has checked each line against NESA.
-// ⚠️ `ST2-5WT-T`, used in `CreateClassScreen.jsx`, could NOT be found in any source. The nearest
+// ── 3. ⚠️ THE 2024 SYLLABUS FITS ZOOYARD *WORSE* AT STAGE 2 ─────────────────
+// Not a bug and not something to paper over. ST2-SCI-01 (2024) is about **the solar system and
+// the effects of energy** — ZooYard is habitat, so it is not claimable. ST2-PQU-01 is fair tests
+// and ST2-DAT-01 is data, both excluded by rule 1, and ST2-DDT-02 is algorithms and digital
+// systems. That leaves **exactly one** honest Stage 2 outcome from 2027: `ST2-DDT-01`.
+// 🚫 Do not pad the Stage 2 list to make it look comparable. Tell the school instead — a Stage 2
+//    class in 2027 is better served by running ZooYard as a Design and Technology task.
+//
+// ── 4. ⚠️ THE WORDINGS ─────────────────────────────────────────────────────
+// Early Stage 1, Stage 1 and Stage 2 of the 2024 set are **verbatim** from the NSW curriculum
+// site. 🚫 The Stage 3 (2024) wordings and ALL 2017 wordings are working paraphrases — the Stage 3
+// outcomes were only available through NSW Department of Education secondary pages, and the 2017
+// set was inherited from the existing in-app lists. Check each against NESA before the mode is
+// sold on its outcomes. Both the panel and the sheet say so in a visible caution block.
+//
+// ⚠️ `ST2-5WT-T`, used in `CreateClassScreen.jsx`, could not be found in any source. The nearest
 //    real code appears to be `ST2-5LW-T`. It is deliberately NOT used here. Fix it there.
 //
-// Shape matches WD_OUTCOMES in modes/wildest-dreams/content.js on purpose, so the info sheets
-// can stay near-identical: { lifeSkills, syllabus, outcomes: [{ code, desc, evidence }] }.
+// Shape matches WD_OUTCOMES in modes/wildest-dreams/content.js:
+//   { lifeSkills, syllabus, outcomes: [{ code, desc, evidence }] }
 
-export const ZOOYARD_OUTCOMES = {
+// The year NSW schools begin teaching Science and Technology K–6 (2024).
+export const SYLLABUS_2024_FROM = 2027;
+
+// ── Stages 4–5: Science 7–10 (2023). Unchanged across the K–6 transition. ───
+const SECONDARY = {
+  4: {
+    lifeSkills: false,
+    syllabus: 'Science 7–10 (2023)',
+    outcomes: [
+      { code: 'SC4-WS-01',
+        desc: 'Uses scientific tools and instruments for observations',
+        evidence: 'Structured observation of one variable in a real environment, with the camera as the recording instrument.' },
+      { code: 'SC4-WS-08',
+        desc: 'Communicates scientific concepts and ideas using a range of communication forms',
+        evidence: 'The write-up is marked on three domains, and the build photo and citizen science statement are communication in their own right.' },
+      { code: 'SC4-LIV-01',
+        desc: 'Describes the role, structure and function of a range of living systems and their components',
+        evidence: 'Each habitat isolates one component of a living system — ground layer, canopy connectivity, vertical layering — and asks what it does.' },
+    ],
+  },
+  5: {
+    lifeSkills: false,
+    syllabus: 'Science 7–10 (2023)',
+    outcomes: [
+      { code: 'SC5-WS-01',
+        desc: 'Selects and uses scientific tools and instruments for accurate observations',
+        evidence: 'Same observation task, marked against the Stage 5 rubric, which requires an explanation rather than a description.' },
+      { code: 'SC5-WS-08',
+        desc: 'Communicates scientific arguments with evidence, using scientific language and terminology in a range of communication forms',
+        evidence: 'Stage 5 writing prompts ask the student to explain a mechanism — why cover changes hunting success, why layering raises species diversity — not just report it.' },
+      { code: 'SC5-CLS-01',
+        desc: 'Analyses and evaluates the structural and functional relationships of living systems',
+        evidence: 'The organising question of every habitat is the relationship between a structural feature of a habitat and an animal\'s function within it.' },
+    ],
+  },
+};
+
+// ── Science and Technology K–6 (2024) — taught from 2027 ────────────────────
+// ⚠️ Stage 1 and Stage 2 wordings are verbatim from curriculum.nsw.edu.au. Stage 3 is a
+//    paraphrase from NSW Department of Education pages — see warning 4.
+export const ZOOYARD_OUTCOMES_2024 = {
+  1: {
+    lifeSkills: false,
+    syllabus: 'Science and Technology K–6 (2024)',
+    outcomes: [
+      { code: 'ST1-DDT-01',
+        desc: 'Uses technologies and materials to design and make products to address user needs or opportunities',
+        evidence: 'The build step, and the strongest fit in the whole 2024 set: the student makes something real — plants into a canopy gap, rakes a ground layer back, makes a shaded refuge — and photographs it.' },
+      { code: 'ST1-SCI-01',
+        desc: 'Measures and describes changes in living things, materials, movement, Earth and the sky',
+        evidence: 'Describes the change the build makes to a living thing\'s habitat. ⚠️ ZooYard does NOT measure — claim the "describes changes in living things" half of this outcome only.' },
+      { code: 'ST1-PQU-01',
+        desc: 'Poses questions based on observations and information to investigate cause and effect',
+        evidence: 'Two minutes of watching produces the question the habitat turns on: this quality is missing here, so what happens to the animal?' },
+    ],
+  },
+  2: {
+    lifeSkills: false,
+    syllabus: 'Science and Technology K–6 (2024)',
+    outcomes: [
+      { code: 'ST2-DDT-01',
+        desc: 'Uses a design process to create products to address user needs or opportunities',
+        evidence: 'Observe what is missing, choose a build, make it, photograph it — a complete design process, with a stated fallback for schools that cannot plant into the ground.' },
+    ],
+  },
+  3: {
+    lifeSkills: false,
+    syllabus: 'Science and Technology K–6 (2024)',
+    outcomes: [
+      { code: 'ST3-SCI-01',
+        desc: 'Uses evidence to explain how scientific knowledge can support sustainable practices',
+        evidence: 'The best fit ZooYard has in either syllabus. The student observes, builds a sustainability measure, then explains from evidence why it helps that animal.' },
+      { code: 'ST3-DDT-01',
+        desc: 'Designs solutions, evaluating and modifying them',
+        evidence: 'Each habitat sets a problem — this quality is missing here — and the student designs and builds the solution.' },
+      { code: 'ST3-CWT-01',
+        desc: 'Creates scientific and technological texts',
+        evidence: 'The write-up, marked on three domains, with Stage 3 prompts asking for a reason rather than a description.' },
+    ],
+  },
+  ...SECONDARY,
+};
+
+// ── Science and Technology K–6 (2017) — current until schools transition ────
+// 🚫 Keep until 2029. A school still teaching 2017 must be able to report against it.
+export const ZOOYARD_OUTCOMES_2017 = {
   1: {
     lifeSkills: false,
     syllabus: 'Science and Technology K–6 (2017)',
@@ -75,37 +175,22 @@ export const ZOOYARD_OUTCOMES = {
         evidence: 'The whole mode is environmental change the student makes themselves, then explains the effect of.' },
     ],
   },
-  4: {
-    lifeSkills: false,
-    syllabus: 'Science 7–10 (2023)',
-    outcomes: [
-      { code: 'SC4-WS-01',
-        desc: 'Uses scientific tools and instruments for observations',
-        evidence: 'Structured observation of one variable in a real environment, with the camera as the recording instrument.' },
-      { code: 'SC4-WS-08',
-        desc: 'Communicates scientific concepts and ideas using a range of communication forms',
-        evidence: 'The write-up is marked on three domains, and the build photo and citizen science statement are communication in their own right.' },
-      { code: 'SC4-LIV-01',
-        desc: 'Describes the role, structure and function of a range of living systems and their components',
-        evidence: 'Each habitat isolates one component of a living system — ground layer, canopy connectivity, vertical layering — and asks what it does.' },
-    ],
-  },
-  5: {
-    lifeSkills: false,
-    syllabus: 'Science 7–10 (2023)',
-    outcomes: [
-      { code: 'SC5-WS-01',
-        desc: 'Selects and uses scientific tools and instruments for accurate observations',
-        evidence: 'Same observation task, marked against the Stage 5 rubric, which requires an explanation rather than a description.' },
-      { code: 'SC5-WS-08',
-        desc: 'Communicates scientific arguments with evidence, using scientific language and terminology in a range of communication forms',
-        evidence: 'Stage 5 writing prompts ask the student to explain a mechanism — why cover changes hunting success, why layering raises species diversity — not just report it.' },
-      { code: 'SC5-CLS-01',
-        desc: 'Analyses and evaluates the structural and functional relationships of living systems',
-        evidence: 'The organising question of every habitat is the relationship between a structural feature of a habitat and an animal\'s function within it.' },
-    ],
-  },
+  ...SECONDARY,
 };
+
+/**
+ * The outcome set a school should report against, for a given calendar year.
+ * ⚠️ Switches itself on 1 January 2027. Pass `year` only in tests.
+ */
+export function zooyardOutcomesFor(stage, year = new Date().getFullYear()) {
+  const set = year >= SYLLABUS_2024_FROM ? ZOOYARD_OUTCOMES_2024 : ZOOYARD_OUTCOMES_2017;
+  return set[stage] || set[4];
+}
+
+/** True once the 2024 K–6 syllabus is the one being taught. */
+export function using2024Syllabus(year = new Date().getFullYear()) {
+  return year >= SYLLABUS_2024_FROM;
+}
 
 // Shown under the outcome table wherever it appears.
 export const ZOOYARD_OUTCOMES_NOTE =
@@ -113,20 +198,9 @@ export const ZOOYARD_OUTCOMES_NOTE =
   'collect quantitative data, run fair tests or control variables, so it should not be reported ' +
   'against outcomes that require data collection or experimental design.';
 
-// ⚠️ The replacement syllabus, for planning only. Verified against the NSW curriculum site
-//    2026-10-26. Teaching starts 2027; the 2017 syllabus goes after December 2028.
-// 🚫 Do not wire these into the info sheet yet — see warning 2 at the top.
-export const ZOOYARD_OUTCOMES_2024_NOTE = {
-  syllabus: 'Science and Technology K–6 (2024)',
-  teachingFrom: 2027,
-  withdrawn2017After: 'December 2028',
-  likelyCodes: {
-    1: ['ST1-SCI-01', 'ST1-PQU-01', 'ST1-DDT-01'],
-    2: ['ST2-SCI-01', 'ST2-PQU-01', 'ST2-DDT-01'],
-    3: ['ST3-SCI-01', 'ST3-PQU-01', 'ST3-DDT-01', 'ST3-CWT-01'],
-  },
-  caution:
-    'Codes only — the Stage 3 set and all 2024 wordings still need checking against NESA, and the ' +
-    'mapping from ZooYard to each one has not been written. ST*-DAT-01 is deliberately absent: it ' +
-    'is the data outcome, and ZooYard collects none.',
-};
+// ⚠️ Shown on the Stage 2 view only, from 2027. See warning 3.
+export const ZOOYARD_STAGE2_2024_NOTE =
+  'Stage 2 of the 2024 syllabus places the science content on the solar system and the effects of ' +
+  'energy, and its remaining outcomes require fair tests, data or digital systems — none of which ' +
+  'ZooYard does. Only the design outcome is honestly claimable. A Stage 2 class is better served ' +
+  'by running ZooYard as a Design and Technology task.';

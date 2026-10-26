@@ -1,4 +1,4 @@
-import { ZOOYARD_OUTCOMES, ZOOYARD_OUTCOMES_NOTE, ZOOYARD_OUTCOMES_2024_NOTE } from '../data/zooyardOutcomes';
+import { zooyardOutcomesFor, using2024Syllabus, ZOOYARD_OUTCOMES_NOTE, ZOOYARD_STAGE2_2024_NOTE, SYLLABUS_2024_FROM } from '../data/zooyardOutcomes';
 import { ZOOYARD_ANIMALS } from '../data/zooyardAnimals';
 
 // ZooYardOutcomesPanel — the ZooYard view inside Curriculum Alignment.
@@ -13,9 +13,12 @@ import { ZOOYARD_ANIMALS } from '../data/zooyardAnimals';
 const ACCENT = '#4ecbcb';
 
 export default function ZooYardOutcomesPanel({ stage }) {
-  const entry = ZOOYARD_OUTCOMES[stage] || ZOOYARD_OUTCOMES[4];
+  // ⚠️ Year-aware. NSW teaches Science and Technology K–6 (2024) from 2027, so this flips
+  //    itself on 1 January 2027 and nobody has to remember.
+  const entry = zooyardOutcomesFor(stage);
   const { outcomes, syllabus } = entry;
-  const is2017 = /2017/.test(syllabus);
+  const is2024 = using2024Syllabus();
+  const thinStage2 = is2024 && Number(stage) === 2;
 
   return (
     <>
@@ -41,16 +44,28 @@ export default function ZooYardOutcomesPanel({ stage }) {
           Before reporting against these
         </p>
         <p style={{ margin:0, fontSize:'0.76rem', color:'#6B5214', lineHeight:1.6 }}>
-          The outcome codes are current, but the descriptions shown here are working paraphrases
-          and should be checked against the NESA syllabus.
-          {is2017 && (
-            <> The K–6 codes come from <strong>{ZOOYARD_OUTCOMES_2024_NOTE.syllabus.replace(' (2024)', ' (2017)')}</strong>.
-            NSW schools begin teaching the {ZOOYARD_OUTCOMES_2024_NOTE.syllabus} from{' '}
-            {ZOOYARD_OUTCOMES_2024_NOTE.teachingFrom}, and the 2017 syllabus is withdrawn after{' '}
-            {ZOOYARD_OUTCOMES_2024_NOTE.withdrawn2017After}.</>
-          )}
+          The outcome codes are current, but several descriptions shown here are working
+          paraphrases and should be checked against the NESA syllabus.
+          {is2024
+            ? <> These are the <strong>{syllabus}</strong> outcomes, which NSW schools teach from{' '}
+              {SYLLABUS_2024_FROM}. A school still teaching the 2017 syllabus should report against
+              that instead — it remains available until December 2028.</>
+            : <> These are the <strong>{syllabus}</strong> outcomes. NSW schools begin teaching
+              Science and Technology K–6 (2024) from {SYLLABUS_2024_FROM}, and this page switches
+              to it automatically then.</>}
         </p>
       </div>
+
+      {/* ⚠️ Stage 2 of the 2024 syllabus genuinely yields ONE claimable outcome. Say so rather
+          than letting a short list look like an oversight. */}
+      {thinStage2 && (
+        <div style={{ background:'#FDECEC', border:'1px solid #E8A9A9', borderRadius:'var(--t-r-lg)', padding:'0.9rem 1.1rem', marginBottom:'1.5rem' }}>
+          <p style={{ margin:'0 0 0.5rem', fontSize:'0.72rem', fontWeight:800, color:'#8B2F2F', textTransform:'uppercase', letterSpacing:'0.08em' }}>
+            Stage 2 is thin under this syllabus
+          </p>
+          <p style={{ margin:0, fontSize:'0.76rem', color:'#8B2F2F', lineHeight:1.6 }}>{ZOOYARD_STAGE2_2024_NOTE}</p>
+        </div>
+      )}
 
       <h3 className="lms-section-heading" style={{ marginBottom:'0.2rem' }}>Outcomes Addressed</h3>
       <p style={{ fontSize:'0.72rem', color:'var(--t-slate)', margin:'0 0 0.9rem', lineHeight:1.6, maxWidth:'62ch' }}>
