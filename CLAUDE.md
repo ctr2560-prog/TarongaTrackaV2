@@ -3780,7 +3780,41 @@ progression — every row now steps up cleanly:
 | SMI | Describes and demonstrates … in a range of contexts | Explains and applies … in a range of contexts | Evaluates and applies … in a range of contexts |
 
 🚫 **Still worth one check against the NESA document**, and marked `verbatim: false` in the code.
-🚫 **Science Stage 3 (2024) has the same gap** and has NOT had the same treatment.
+
+### ✅ Science Stage 3 — and how to reach a truncated syllabus page
+
+⚠️ **The OUTCOMES page truncates before Stage 3 from every offset. The CONTENT page does not.**
+`/learning-areas/science/science-and-technology-k-6-2024/content/stage-3/fab23dc156` carried
+three of them verbatim. 🚫 Don't give up on a stage because the outcomes page cuts off — try the
+content page for that stage.
+
+⚠️⚠️ **FOUR OF THE SIX STAGE 3 WORDINGS WERE WRONG**, checked 2026-10-26. Every one was my own
+compression, written confidently and labelled only as "a paraphrase":
+
+| Code | Was | Now |
+|---|---|---|
+| `ST3-SCI-01` | "…can **support** sustainable practices" | "…can **be used to develop** sustainable practices" |
+| `ST3-PQU-01` | "…fair tests to **collect** data" | "…fair tests to **gather** data" |
+| `ST3-DDT-01` | "Designs solutions, evaluating and modifying them" | "Uses design processes to create, evaluate and modify designed solutions" |
+| `ST3-CWT-01` | "Creates scientific and technological texts" | "Creates written texts to communicate understanding of scientific and technological concepts and processes" |
+
+`ST3-DAT-01` was already exact. The first two are now **verbatim**; `ST3-DDT-01` and
+`ST3-CWT-01` are **corroborated, not primary** — the content page rendered "Loading" placeholders
+exactly where they sit.
+
+🚫 **A paraphrase that reads plausibly is not a wording.** All four were being shown to teachers
+across ZooYard, the Teacher Info Sheet, ZooSnooz and Wildest Dreams.
+
+### 🚫 Never type a 2024 wording into a mode file
+
+Every one now comes from `science2024()` / `pdhpe2024()` / `pdhpeK6_2024()`. One place to fix, and
+each **throws** on an unknown code.
+
+⚠️ **The audit went blind when that happened.** Moving wordings into the helpers removed the
+literal `code: 'XXX'` form from four files, so `audit-outcomes.mjs` silently stopped seeing 4
+codes — it reported **65** where it had reported **69**. A shrinking "ok" count reads like
+progress. The matcher accepts both shapes now and sees 72. 🚫 **Any new way of referencing a code
+must be added to `CODE_RE`, or it becomes invisible to the thing that is supposed to catch it.**
 
 ⚠️ Stage 3 wordings come from `pdhpeK6_2024()`, so the copies in `teacherInfoSheet.js` and
 `CreateClassScreen.jsx` cannot drift — which is exactly how the app ended up carrying two
