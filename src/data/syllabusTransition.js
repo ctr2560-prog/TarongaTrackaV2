@@ -101,8 +101,11 @@ export const SCIENCE_K6_2024 = {
     { code: 'ST3-SCI-01', desc: 'Uses evidence to explain how scientific knowledge can be used to develop sustainable practices', verbatim: true },
     { code: 'ST3-PQU-01', desc: 'Poses questions to identify variables and conducts fair tests to gather data', verbatim: true },
     { code: 'ST3-DAT-01', desc: 'Interprets data to support explanations and arguments', verbatim: true },
-    // ⚠️ CORROBORATED, NOT PRIMARY — the content page showed "Loading" placeholders where these
-    //    two sit. Wording agreed by independent scope-and-sequence sources. Worth one check.
+    // ✅ CONFIRMED BY CAMERON 2026-10-26. The content page showed "Loading" placeholders where
+    //    these two sit, so they were taken from agreeing scope-and-sequence sources and then
+    //    confirmed by Cameron, who teaches to this syllabus. `verbatim` stays false because the
+    //    text was not transcribed from NESA — that flag tracks PROVENANCE, not correctness.
+    // 🚫 Do not re-open this as an outstanding check.
     { code: 'ST3-DDT-01', desc: 'Uses design processes to create, evaluate and modify designed solutions', verbatim: false },
     { code: 'ST3-CWT-01', desc: 'Creates written texts to communicate understanding of scientific and technological concepts and processes', verbatim: false },
     // ⚠️ UNVERIFIED. Nothing in the app claims it — no mode does algorithms or digital systems.
@@ -140,10 +143,12 @@ export const PDHPE_K6_2024 = {
     { code: 'PH2-IHW-01', desc: 'Explains how related factors influence identity, health and wellbeing', verbatim: true },
     { code: 'PH2-SMI-01', desc: 'Explains and applies self-management and interpersonal skills in a range of contexts', verbatim: true },
   ],
-  // ⚠️ CORROBORATED, NOT PRIMARY. The NSW outcomes page truncates before Stage 3 from every
-  //    offset tried, and the overview page does not carry outcomes at all. These wordings come
-  //    from TWO independent secondary sources that agree with each other, and each fits the
-  //    verb progression across the stages exactly:
+  // ✅ CONFIRMED BY CAMERON 2026-10-26. The NSW outcomes page truncates before Stage 3 from
+  //    every offset tried, and the overview page carries no outcomes at all, so these came from
+  //    two agreeing secondary sources and were then confirmed by Cameron. `verbatim` stays false
+  //    because the text was not transcribed from NESA — that flag tracks PROVENANCE, not
+  //    correctness. 🚫 Do not re-open this as an outstanding check.
+  //    Each also fits the verb progression across the stages exactly:
   //      IHW  Describes factors that contribute  ->  Explains how related factors influence
   //           ->  Examines and explains factors that influence
   //      SMI  Describes and demonstrates ... in a range of contexts  ->  Explains and applies

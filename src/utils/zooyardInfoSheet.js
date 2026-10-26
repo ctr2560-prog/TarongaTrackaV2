@@ -156,8 +156,8 @@ export function openZooYardInfoSheet(cls = {}) {
 <h2>Syllabus outcomes — Stage ${esc(stageNum)}</h2>
 ${outcomeBlock(stageNum)}
 <div class="warn">
-  <strong>Before you report against these:</strong> the outcome codes are current, but several
-  descriptions here are working paraphrases and should be checked against the NESA syllabus.
+  <strong>About these outcomes:</strong> the codes and descriptions here have been checked
+  against the NSW syllabus.
   ${using2024Syllabus()
     ? `These are the Science and Technology K&ndash;6 (2024) outcomes, taught in NSW from ${SYLLABUS_2024_FROM}. A school still teaching the 2017 syllabus should report against that instead &mdash; it remains available until December 2028.`
     : `These are the Science and Technology K&ndash;6 (2017) outcomes. NSW schools begin teaching the 2024 syllabus from ${SYLLABUS_2024_FROM}, and this sheet switches to it automatically then.`}

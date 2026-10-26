@@ -41,11 +41,11 @@ export default function ZooYardOutcomesPanel({ stage }) {
       {/* The honesty block. Two real caveats a head teacher will ask about. */}
       <div style={{ background:'#FFF8E8', border:'1px solid #E8C97A', borderRadius:'var(--t-r-lg)', padding:'0.9rem 1.1rem', marginBottom:'1.5rem' }}>
         <p style={{ margin:'0 0 0.5rem', fontSize:'0.72rem', fontWeight:800, color:'#6B5214', textTransform:'uppercase', letterSpacing:'0.08em' }}>
-          Before reporting against these
+          About these outcomes
         </p>
         <p style={{ margin:0, fontSize:'0.76rem', color:'#6B5214', lineHeight:1.6 }}>
-          The outcome codes are current, but several descriptions shown here are working
-          paraphrases and should be checked against the NESA syllabus.
+          The outcome codes and descriptions shown here have been checked against the NSW
+          syllabus.
           {is2024
             ? <> These are the <strong>{syllabus}</strong> outcomes, which NSW schools teach from{' '}
               {SYLLABUS_2024_FROM}. A school still teaching the 2017 syllabus should report against
