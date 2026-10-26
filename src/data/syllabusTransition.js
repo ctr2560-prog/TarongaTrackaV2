@@ -89,13 +89,24 @@ export const SCIENCE_K6_2024 = {
     { code: 'ST2-DDT-01', desc: 'Uses a design process to create products to address user needs or opportunities', verbatim: true },
     { code: 'ST2-DDT-02', desc: 'Designs and uses algorithms, represents data and uses digital systems for a purpose', verbatim: true },
   ],
+  // ⚠️ Reached 2026-10-26 via the syllabus CONTENT page, not the outcomes page:
+  //    /science-and-technology-k-6-2024/content/stage-3/fab23dc156
+  //    🚫 The outcomes page truncates before Stage 3 from every offset. The content page is the
+  //       way in. Remember that for the next stage that needs checking.
+  //    ⚠️ FOUR of these six were wrong before that check — the paraphrases were close enough to
+  //       look right and were not. "can support sustainable practices" vs "can be used to develop
+  //       sustainable practices"; "collect data" vs "gather data"; and both the DDT and CWT
+  //       wordings were my own compressions.
   3: [
-    { code: 'ST3-SCI-01', desc: 'Uses evidence to explain how scientific knowledge can support sustainable practices', verbatim: false },
-    { code: 'ST3-PQU-01', desc: 'Poses questions to identify variables and conducts fair tests to collect data', verbatim: false },
-    { code: 'ST3-DAT-01', desc: 'Interprets data to support explanations and arguments', verbatim: false },
-    { code: 'ST3-DDT-01', desc: 'Designs solutions, evaluating and modifying them', verbatim: false },
+    { code: 'ST3-SCI-01', desc: 'Uses evidence to explain how scientific knowledge can be used to develop sustainable practices', verbatim: true },
+    { code: 'ST3-PQU-01', desc: 'Poses questions to identify variables and conducts fair tests to gather data', verbatim: true },
+    { code: 'ST3-DAT-01', desc: 'Interprets data to support explanations and arguments', verbatim: true },
+    // ⚠️ CORROBORATED, NOT PRIMARY — the content page showed "Loading" placeholders where these
+    //    two sit. Wording agreed by independent scope-and-sequence sources. Worth one check.
+    { code: 'ST3-DDT-01', desc: 'Uses design processes to create, evaluate and modify designed solutions', verbatim: false },
+    { code: 'ST3-CWT-01', desc: 'Creates written texts to communicate understanding of scientific and technological concepts and processes', verbatim: false },
+    // ⚠️ UNVERIFIED. Nothing in the app claims it — no mode does algorithms or digital systems.
     { code: 'ST3-DDT-02', desc: 'Designs and uses algorithms and digital systems, evaluating and modifying them', verbatim: false },
-    { code: 'ST3-CWT-01', desc: 'Creates scientific and technological texts', verbatim: false },
   ],
 };
 

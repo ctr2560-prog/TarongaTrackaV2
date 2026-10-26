@@ -51,6 +51,11 @@
 //   { lifeSkills, syllabus, outcomes: [{ code, desc, evidence }] }
 
 // The year NSW schools begin teaching Science and Technology K–6 (2024).
+// ⚠️ 2024 wordings come from science2024() in syllabusTransition.js, never typed out here.
+//    Four of the six Stage 3 wordings in this file were WRONG before that check on 2026-10-26 —
+//    close enough to look right and not right. 🚫 Do not paste a wording back in.
+import { science2024 } from './syllabusTransition';
+
 export const SYLLABUS_2024_FROM = 2027;
 
 // ── Stages 4–5: Science 7–10 (2023). Unchanged across the K–6 transition. ───
@@ -95,14 +100,11 @@ export const ZOOYARD_OUTCOMES_2024 = {
     lifeSkills: false,
     syllabus: 'Science and Technology K–6 (2024)',
     outcomes: [
-      { code: 'ST1-DDT-01',
-        desc: 'Uses technologies and materials to design and make products to address user needs or opportunities',
+      { ...science2024('ST1-DDT-01'),
         evidence: 'The build step, and the strongest fit in the whole 2024 set: the student makes something real — plants into a canopy gap, rakes a ground layer back, makes a shaded refuge — and photographs it.' },
-      { code: 'ST1-SCI-01',
-        desc: 'Measures and describes changes in living things, materials, movement, Earth and the sky',
+      { ...science2024('ST1-SCI-01'),
         evidence: 'Describes the change the build makes to a living thing\'s habitat. ⚠️ ZooYard does NOT measure — claim the "describes changes in living things" half of this outcome only.' },
-      { code: 'ST1-PQU-01',
-        desc: 'Poses questions based on observations and information to investigate cause and effect',
+      { ...science2024('ST1-PQU-01'),
         evidence: 'Two minutes of watching produces the question the habitat turns on: this quality is missing here, so what happens to the animal?' },
     ],
   },
@@ -110,8 +112,7 @@ export const ZOOYARD_OUTCOMES_2024 = {
     lifeSkills: false,
     syllabus: 'Science and Technology K–6 (2024)',
     outcomes: [
-      { code: 'ST2-DDT-01',
-        desc: 'Uses a design process to create products to address user needs or opportunities',
+      { ...science2024('ST2-DDT-01'),
         evidence: 'Observe what is missing, choose a build, make it, photograph it — a complete design process, with a stated fallback for schools that cannot plant into the ground.' },
     ],
   },
@@ -119,14 +120,11 @@ export const ZOOYARD_OUTCOMES_2024 = {
     lifeSkills: false,
     syllabus: 'Science and Technology K–6 (2024)',
     outcomes: [
-      { code: 'ST3-SCI-01',
-        desc: 'Uses evidence to explain how scientific knowledge can support sustainable practices',
+      { ...science2024('ST3-SCI-01'),
         evidence: 'The best fit ZooYard has in either syllabus. The student observes, builds a sustainability measure, then explains from evidence why it helps that animal.' },
-      { code: 'ST3-DDT-01',
-        desc: 'Designs solutions, evaluating and modifying them',
+      { ...science2024('ST3-DDT-01'),
         evidence: 'Each habitat sets a problem — this quality is missing here — and the student designs and builds the solution.' },
-      { code: 'ST3-CWT-01',
-        desc: 'Creates scientific and technological texts',
+      { ...science2024('ST3-CWT-01'),
         evidence: 'The write-up, marked on three domains, with Stage 3 prompts asking for a reason rather than a description.' },
     ],
   },

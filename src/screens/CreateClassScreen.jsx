@@ -1,4 +1,4 @@
-import { pdhpe2024, pdhpeK6_2024 } from '../data/syllabusTransition';
+import { science2024, pdhpe2024, pdhpeK6_2024 } from '../data/syllabusTransition';
 import { useState, useEffect } from 'react';
 import { doc, getDoc, serverTimestamp, setDoc, increment, arrayUnion } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -87,12 +87,12 @@ const OUTCOMES_PRE_2027 = {
 const OUTCOMES_2027 = {
   science: {
     syllabus: { 1:'Science and Technology K–6 (2024)', 2:'Science and Technology K–6 (2024)', 3:'Science and Technology K–6 (2024)', 4:'Science 7–10 (2023)', 5:'Science 7–10 (2023)' },
-    1: [{ code:'ST1-DDT-01', desc:'Uses technologies and materials to design and make products to address user needs or opportunities' }],
+    1: [{ code:'ST1-DDT-01', desc:science2024('ST1-DDT-01').desc }],
     // ⚠️⚠️ STAGE 2 LOSES ITS LIVING WORLD CONTENT. ST2-SCI-01 (2024) is the solar system and the
     //    effects of energy, so the old ST2-4LW-S has no Stage 2 equivalent. The design outcome is
     //    the honest one. 🚫 Do not substitute ST2-SCI-01 to keep the list looking full.
-    2: [{ code:'ST2-DDT-01', desc:'Uses a design process to create products to address user needs or opportunities' }],
-    3: [{ code:'ST3-SCI-01', desc:'Uses evidence to explain how scientific knowledge can support sustainable practices' }],
+    2: [{ code:'ST2-DDT-01', desc:science2024('ST2-DDT-01').desc }],
+    3: [{ code:'ST3-SCI-01', desc:science2024('ST3-SCI-01').desc }],
     ...SCIENCE_SECONDARY,
   },
   pdhpe: {

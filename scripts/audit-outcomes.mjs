@@ -28,9 +28,15 @@ function walk(dir, out = []) {
   return out;
 }
 
-// Only `code: 'XXX'` — the shape every outcome list in this app uses. Deliberately narrow, so
-// prose mentioning a code in a comment is not counted.
-const CODE_RE = /code:\s*'([A-Z][A-Z0-9-]{3,})'/g;
+// Two shapes count as a usage:
+//   code: 'ST3-SCI-01'          a literal entry in an outcome list
+//   science2024('ST3-SCI-01')   a lookup through the single-source helpers
+// ⚠️ THE SECOND ONE MATTERS. When wordings moved into syllabusTransition.js the literal form
+//    disappeared from four files and this audit silently stopped seeing 4 codes — it reported
+//    65 where it had reported 69, and a shrinking "ok" count reads like progress. 🚫 Any new
+//    way of referencing a code must be added here or it becomes invisible to the audit.
+// Deliberately narrow otherwise, so a code mentioned in prose or a comment is not counted.
+const CODE_RE = /(?:code:\s*|(?:science2024|pdhpe2024|pdhpeK6_2024)\s*\(\s*)'([A-Z][A-Z0-9-]{3,})'/g;
 
 const found = new Map();   // code -> Set(file)
 for (const file of walk(join(ROOT, 'src'))) {
