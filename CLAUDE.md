@@ -3711,6 +3711,74 @@ its own — but it will mislead the next editor).
 
 ---
 
+## NSW syllabus outcomes — the 2027 transition
+
+⚠️ **Audited 2026-10-26 against NSW sources. 82 distinct outcome codes across five files.**
+Re-run it after touching any outcome list, and before any curriculum conversation with a school:
+
+```bash
+npx vite-node scripts/audit-outcomes.mjs          # as a school sees it today
+npx vite-node scripts/audit-outcomes.mjs 2027     # as a school will see it in 2027
+```
+It exits 1 on a code that does not exist, so it can go in CI. `data/syllabusTransition.js` is
+what it checks against — that file is the single source of truth for which syllabus a code
+belongs to.
+
+### What 2027 changes
+
+| Learning area | Syllabus | 2027 |
+|---|---|---|
+| English | English K–10 (2022) | unaffected |
+| Mathematics | Mathematics K–10 (2022) | unaffected |
+| Science 7–10 (incl. `SCLS-*` Life Skills) | Science 7–10 (2023) | unaffected |
+| **Science K–6** | Science and Technology K–6 (2017) | **→ (2024)**, 2017 withdrawn after Dec 2028 |
+| **PDHPE** | PDHPE K–10 (2018) | **→ K–6 (2024) / 7–10 (2024)**, 2018 withdrawn after Dec 2028 |
+
+⚠️ **PDHPE 7–10 (2024) is staggered** — Years 7 and 9 from 2027, Years 8 and 10 from 2028. 🚫 Do
+not present a single Stage 4/5 PDHPE answer for 2027 as settled.
+
+### ⚠️⚠️ STAGE 2 LOSES ITS LIVING WORLD CONTENT
+
+The most important finding, and a **content** problem rather than a code one. `ST2-SCI-01` (2024)
+is **the solar system and the effects of energy**. `ST2-4LW-S` has **no Stage 2 equivalent**.
+Every mode claiming a Stage 2 living-world outcome is affected, not just ZooYard.
+🚫 **Do not substitute `ST2-SCI-01` to keep a list looking full.** Say the stage is thin, and
+offer the Design and Technology framing instead — that is what ZooYard's panel does from 2027.
+
+### Three things that were already wrong
+
+1. ⚠️ **`ST2-5WT-T` is not a real outcome.** No source exists for it. It sat in
+   `CreateClassScreen.jsx` with a Design and Production description. Replaced with `ST2-4LW-S`.
+   The audit fails on it now, so it cannot return.
+2. ⚠️ **Invented syllabus names.** There is no "Science K–6 (2023)", "Mathematics K–6 (2023)" or
+   "English K–6 (2023)". All three were in `CreateClassScreen.jsx`. Corrected.
+3. ⚠️ **The app contradicted itself about PDHPE** — `CreateClassScreen.jsx` used the 2018 codes
+   while `teacherInfoSheet.js` used the 2024 ones, for the same class.
+
+### ⚠️ Wording provenance — not all equal
+
+**Verbatim** from curriculum.nsw.edu.au: Science and Technology K–6 (2024) **Stages 1–2**, and
+PDHPE K–6 (2024) **Stages 1–2**.
+🚫 **Not transcribed** (the outcomes pages truncated before them, no second source found):
+Science Stage 3 (2024), PDHPE Stage 3 (2024), and **all** PDHPE 7–10 (2024) wordings. They are
+marked unverified in the code and need a NESA check before a school sees them.
+
+### Where each set lives
+
+| File | State |
+|---|---|
+| `data/zooyardOutcomes.js` | ✅ both sets, auto-switches 2027 |
+| `screens/CreateClassScreen.jsx` | ✅ both sets, auto-switches 2027 |
+| `utils/teacherInfoSheet.js` | ⚠️ PDHPE already 2024; **K–6 science still 2017** |
+| `utils/zoosnoozInfoSheet.js` | ⚠️ **K–6 science still 2017** |
+| `modes/wildest-dreams/content.js` | ⚠️ **K–6 science still 2017** |
+
+🚫 **Do not bulk-replace the remaining three.** Each carries mode-specific `evidence` lines tied
+to what that mode actually does, and the Stage 2 gap above needs a decision rather than a
+substitution.
+
+---
+
 ## Class Subjects
 
 `classSubject` determines which animal data, scoring rubric, and observation prompts are used:
