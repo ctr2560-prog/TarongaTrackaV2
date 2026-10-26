@@ -1,3 +1,4 @@
+import { pdhpe2024 } from '../data/syllabusTransition';
 import { useState, useEffect } from 'react';
 import { doc, getDoc, serverTimestamp, setDoc, increment, arrayUnion } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -98,11 +99,14 @@ const OUTCOMES_2027 = {
     syllabus: { 1:'PDHPE K–6 (2024)', 2:'PDHPE K–6 (2024)', 3:'PDHPE K–6 (2024)', 4:'PDHPE 7–10 (2024, Years 7 and 9 from 2027)', 5:'PDHPE 7–10 (2024, Years 7 and 9 from 2027)' },
     1: [{ code:'PH1-IHW-01', desc:'Describes factors that contribute to identity, health and wellbeing' }],
     2: [{ code:'PH2-IHW-01', desc:'Explains how related factors influence identity, health and wellbeing' }],
-    // ⚠️ UNVERIFIED wordings — codes match the set already used in teacherInfoSheet.js, but the
-    //    NSW outcomes page truncated before Stage 3 and no second source was found.
-    3: [{ code:'PH3-IHW-01', desc:'Analyses factors that influence identity, health and wellbeing' }],
-    4: [{ code:'PH4-SHW-01', desc:'Examines strategies that support health, safety and wellbeing' }],
-    5: [{ code:'PH5-SHW-01', desc:'Evaluates strategies that support health, safety and wellbeing' }],
+    // ⚠️ STAGE 3 WORDING IS STILL UNVERIFIED — the NSW K-6 outcomes page truncates before Stage 3
+    //    from every offset tried. The CODE is corroborated; the wording is a pattern-match on the
+    //    Stage 1 and Stage 2 progression (Describes -> Explains how -> Analyses how). 🚫 Do not
+    //    present it to a school as syllabus text until someone checks it against NESA.
+    3: [{ code:'PH3-IHW-01', desc:'Analyses how factors influence identity, health and wellbeing' }],
+    // ✅ Stage 4 and Stage 5 are VERBATIM, pulled from the single source so they cannot drift.
+    4: [{ code:'PH4-IBC-01', desc:pdhpe2024('PH4-IBC-01').desc }],
+    5: [{ code:'PH5-IBC-01', desc:pdhpe2024('PH5-IBC-01').desc }],
   },
   ...UNCHANGED,
 };

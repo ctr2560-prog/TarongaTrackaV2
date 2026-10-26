@@ -1183,10 +1183,29 @@ export const NSW_OUTCOMES = {
       { code:'PH2-SMI-01', desc:'Explains and applies self-management and interpersonal skills in a range of contexts' },
     ],
     3: [
+      // ⚠️⚠️ STAGE 3 IS THE ONLY UNVERIFIED PDHPE SET LEFT. The NSW K-6 outcomes page truncates
+      //    before Stage 3 from every offset tried (2026-10-26). The CODES are corroborated by NSW
+      //    DoE resources; two of the three WORDINGS look wrong and are left alone deliberately:
+      //
+      //    PH3-MSP-01  ✅ corroborated — this wording matches a NSW DoE unit resource.
+      //    PH3-IHW-01  ⚠️ PROBABLY WRONG. Stage 1 and Stage 2 both end on "identity, health and
+      //                wellbeing"; this one ends on "participation in physical activity", which
+      //                belongs to MSP/SHP. Expected shape: "Analyses how ... influence identity,
+      //                health and wellbeing".
+      //    PH3-SMI-01  ⚠️ PROBABLY WRONG. A NSW DoE unit resource describes it as "evaluates and
+      //                applies ... in a range of contexts", matching the Describes -> Explains
+      //                and applies -> Evaluates and applies progression across the stages.
+      //
+      // 🚫 NOT corrected from the pattern. A guess that fits a progression is still a guess, and
+      //    this is the first thing a head teacher checks. Fix it from the NESA document.
       { code:'PH3-MSP-01', desc:'Refines and applies movement skills, strategies and collaboration in physical activities' },
       { code:'PH3-IHW-01', desc:'Analyses how health behaviours and contextual factors influence health, wellbeing and participation in physical activity' },
       { code:'PH3-SMI-01', desc:'Applies self-management and interpersonal skills to manage situations and promote health, safety and wellbeing' },
     ],
+    // ✅ Stages 4-5 VERIFIED VERBATIM against curriculum.nsw.edu.au 2026-10-26 — every wording
+    //    below matches the published syllabus exactly. These were previously assumed to be
+    //    paraphrases; they are not. ⚠️ PDHPE 7-10 (2024) is staggered: Years 7 and 9 from 2027,
+    //    Years 8 and 10 from 2028, so in 2027 a Stage 4/5 class may be on either syllabus.
     4: [
       { code:'PH4-SHP-01', desc:'Plans for and uses strategies to participate in activities that encourage safety, health and lifelong physical activity' },
       { code:'PH4-SHW-01', desc:'Assesses the influence of contextual factors on attitudes and behaviours to propose strategies that enhance safety, health and wellbeing' },

@@ -101,9 +101,20 @@ export const SCIENCE_K6_2024 = {
 
 // ── PDHPE K–6 (2024) ───────────────────────────────────────────────────────
 // ⚠️ Stage 1 and Stage 2 are VERBATIM from curriculum.nsw.edu.au (2026-10-26).
-// 🚫 STAGE 3 IS NOT RECORDED — the page truncated before it and no second source was found.
-//    Do not invent it. `teacherInfoSheet.js` already carries PH3-* codes; they are plausible and
-//    follow the pattern, but they are UNVERIFIED.
+// 🚫 STAGE 3 IS STILL NOT VERIFIED. The outcomes page truncates before it, twice, from two
+//    different offsets. Secondary sources corroborate the CODES but not all the wording:
+//      PH3-MSP-01  corroborated, and matches what teacherInfoSheet.js already says.
+//      PH3-IHW-01  ⚠️ teacherInfoSheet.js says "...influence health, wellbeing and participation
+//                  in physical activity". That is off-pattern — Stage 1 and Stage 2 both end on
+//                  "identity, health and wellbeing", and physical activity belongs to MSP/SHP.
+//                  Treat as PROBABLY WRONG until checked.
+//      PH3-SMI-01  ⚠️ teacherInfoSheet.js says "Applies ... to manage situations and promote
+//                  health, safety and wellbeing". A NSW DoE unit resource describes it as
+//                  "evaluates and applies ... in a range of contexts", which also fits the
+//                  Describes -> Explains and applies -> Evaluates and applies progression.
+//                  Treat as PROBABLY WRONG until checked.
+//    🚫 Not corrected here, because a guess that matches a pattern is still a guess and this is
+//       the content a head teacher checks first.
 export const PDHPE_K6_2024 = {
   1: [
     { code: 'PH1-MSP-01', desc: 'Demonstrates fundamental movement skills and fair play in physical activities', verbatim: true },
@@ -120,6 +131,49 @@ export const PDHPE_K6_2024 = {
   ],
   // 3: NOT RECORDED — see the warning above. 🚫 Do not fill this in from memory.
 };
+
+
+// ── PDHPE 7–10 (2024) — taught from 2027 ───────────────────────────────────
+// ⚠️ ALL of these are VERBATIM from curriculum.nsw.edu.au (2026-10-26). Stage 4 and Stage 5 are
+//    fully verified; this is the one 2024 set with no paraphrases in it.
+// ⚠️ Staggered: Years 7 and 9 from 2027, Years 8 and 10 from 2028. So in 2027 a Stage 4 or
+//    Stage 5 PDHPE class may be on EITHER syllabus depending on the year group.
+// ⚠️ The syllabus also publishes Life Skills outcomes (PHLS-*), not recorded here — nothing in
+//    the app uses them. Wildest Dreams uses the SCIENCE Life Skills outcomes (SCLS-*).
+export const PDHPE_7_10_2024 = {
+  4: [
+    { code: 'PH4-MSS-01', desc: 'Transfers movement skills and concepts for use in a range of dynamic movement environments', verbatim: true },
+    { code: 'PH4-MSS-02', desc: 'Demonstrates how strategies and actions can be transferred to solve movement challenges', verbatim: true },
+    { code: 'PH4-SHP-01', desc: 'Plans for and uses strategies to participate in activities that encourage safety, health and lifelong physical activity', verbatim: true },
+    { code: 'PH4-SMI-01', desc: 'Refines and applies self-management and interpersonal skills to manage complex situations', verbatim: true },
+    { code: 'PH4-SHW-01', desc: 'Assesses the influence of contextual factors on attitudes and behaviours to propose strategies that enhance safety, health and wellbeing', verbatim: true },
+    { code: 'PH4-IPS-01', desc: 'Investigates and uses health information, products and support services to propose strategies that enhance safety, health and wellbeing', verbatim: true },
+    { code: 'PH4-RRL-01', desc: 'Explains and applies strategies for promoting safe and respectful relationships in a range of contexts', verbatim: true },
+    { code: 'PH4-IBC-01', desc: 'Investigates and explains factors that shape identity and sense of belonging', verbatim: true },
+  ],
+  5: [
+    { code: 'PH5-MSS-01', desc: 'Refines and transfers movement skills and concepts for adaptation in a range of dynamic movement environments', verbatim: true },
+    { code: 'PH5-MSS-02', desc: 'Selects, implements and justifies strategies and actions to solve movement challenges', verbatim: true },
+    { code: 'PH5-SHP-01', desc: 'Designs, implements and evaluates plans to enhance safety, health and participation in lifelong physical activity', verbatim: true },
+    { code: 'PH5-SMI-01', desc: 'Evaluates and adapts self-management and interpersonal skills to manage complex situations', verbatim: true },
+    { code: 'PH5-SHW-01', desc: 'Analyses the interrelationship between contextual factors, attitudes and behaviours to promote safety, health and wellbeing', verbatim: true },
+    { code: 'PH5-IPS-01', desc: 'Evaluates the effectiveness and suitability of health information, products and support services for improved individual and community safety, health and wellbeing', verbatim: true },
+    { code: 'PH5-RRL-01', desc: 'Evaluates and applies strategies for promoting and maintaining safe and respectful relationships in a range of contexts', verbatim: true },
+    { code: 'PH5-IBC-01', desc: 'Analyses how identity and a sense of belonging contribute to the health and wellbeing of individuals and communities', verbatim: true },
+  ],
+};
+
+/**
+ * The verified wording for a PDHPE 7–10 (2024) code. Same contract as science2024():
+ * single-sourced, and throws on an unknown code so a typo fails at build.
+ */
+export function pdhpe2024(code) {
+  for (const list of Object.values(PDHPE_7_10_2024)) {
+    const hit = list.find(o => o.code === code);
+    if (hit) return hit;
+  }
+  throw new Error(`pdhpe2024: unknown code "${code}" — add it to PDHPE_7_10_2024 first.`);
+}
 
 /** Codes that are known NOT to exist. Checked by the audit so they cannot creep back. */
 export const BOGUS_CODES = {
