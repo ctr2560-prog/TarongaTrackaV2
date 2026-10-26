@@ -3765,17 +3765,37 @@ marked unverified in the code and need a NESA check before a school sees them.
 
 ### Where each set lives
 
-| File | State |
-|---|---|
-| `data/zooyardOutcomes.js` | ✅ both sets, auto-switches 2027 |
-| `screens/CreateClassScreen.jsx` | ✅ both sets, auto-switches 2027 |
-| `utils/teacherInfoSheet.js` | ⚠️ PDHPE already 2024; **K–6 science still 2017** |
-| `utils/zoosnoozInfoSheet.js` | ⚠️ **K–6 science still 2017** |
-| `modes/wildest-dreams/content.js` | ⚠️ **K–6 science still 2017** |
+✅ **All five now carry both sets and switch automatically on 1 January 2027** —
+`data/zooyardOutcomes.js`, `screens/CreateClassScreen.jsx`, `utils/teacherInfoSheet.js`,
+`utils/zoosnoozInfoSheet.js`, `modes/wildest-dreams/content.js`.
 
-🚫 **Do not bulk-replace the remaining three.** Each carries mode-specific `evidence` lines tied
-to what that mode actually does, and the Stage 2 gap above needs a decision rather than a
-substitution.
+⚠️ **2024 wordings come from `science2024()` in `syllabusTransition.js`, never typed out.** Four
+surfaces show them and a wording written four times is a wording that drifts. It **throws** on an
+unknown code, so a typo fails at build rather than printing a blank description on a sheet handed
+to a school.
+
+🚫 **Keep every pre-2027 set until 2029.** A school still teaching the old syllabus must see it.
+
+### The mapping is not one-for-one
+
+Each mode claims what it actually evidences, not a mechanical substitution:
+
+| | Stage 1 | Stage 2 | Stage 3 |
+|---|---|---|---|
+| Teacher Info Sheet | PQU + SCI | PQU + DAT | SCI + CWT |
+| ZooSnooz | — | PQU + DAT | SCI + CWT |
+| Wildest Dreams | PQU + SCI | PQU + DAT | CWT + PQU |
+| ZooYard | DDT + SCI + PQU | **DDT only** | SCI + DDT + CWT |
+
+⚠️ **Two places 2027 fits BETTER than 2017:** `ST3-SCI-01` (sustainable practices) beats the
+`ST3-4LW-S` it replaces for the zoo visit and ZooSnooz, both of which end on conservation; and
+`ST3-CWT-01` (creates scientific and technological texts) finally gives the Wildest Dreams **film**
+a home — a documentary is a technological text and the 2017 set had nowhere to put it.
+
+⚠️ **Weak fits are labelled in the evidence lines, not hidden.** `ST1-SCI-01` says to claim the
+"describes changes in living things" half only, because nothing is measured. The Stage 2 and 3
+`PQU` entries say to claim the questioning, not the fair testing. 🚫 Do not quietly drop those
+qualifiers to make a sheet read more confidently.
 
 ---
 
