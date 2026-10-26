@@ -1,4 +1,4 @@
-import { science2024, using2027Syllabuses, STAGE2_LIVING_WORLD_GONE } from '../data/syllabusTransition';
+import { science2024, pdhpeK6_2024, using2027Syllabuses, STAGE2_LIVING_WORLD_GONE } from '../data/syllabusTransition';
 const BRAND = {
   forest:     '#071E14',
   deep:       '#0A2F1F',
@@ -1183,24 +1183,21 @@ export const NSW_OUTCOMES = {
       { code:'PH2-SMI-01', desc:'Explains and applies self-management and interpersonal skills in a range of contexts' },
     ],
     3: [
-      // ⚠️⚠️ STAGE 3 IS THE ONLY UNVERIFIED PDHPE SET LEFT. The NSW K-6 outcomes page truncates
-      //    before Stage 3 from every offset tried (2026-10-26). The CODES are corroborated by NSW
-      //    DoE resources; two of the three WORDINGS look wrong and are left alone deliberately:
-      //
-      //    PH3-MSP-01  ✅ corroborated — this wording matches a NSW DoE unit resource.
-      //    PH3-IHW-01  ⚠️ PROBABLY WRONG. Stage 1 and Stage 2 both end on "identity, health and
-      //                wellbeing"; this one ends on "participation in physical activity", which
-      //                belongs to MSP/SHP. Expected shape: "Analyses how ... influence identity,
-      //                health and wellbeing".
-      //    PH3-SMI-01  ⚠️ PROBABLY WRONG. A NSW DoE unit resource describes it as "evaluates and
-      //                applies ... in a range of contexts", matching the Describes -> Explains
-      //                and applies -> Evaluates and applies progression across the stages.
-      //
-      // 🚫 NOT corrected from the pattern. A guess that fits a progression is still a guess, and
-      //    this is the first thing a head teacher checks. Fix it from the NESA document.
-      { code:'PH3-MSP-01', desc:'Refines and applies movement skills, strategies and collaboration in physical activities' },
-      { code:'PH3-IHW-01', desc:'Analyses how health behaviours and contextual factors influence health, wellbeing and participation in physical activity' },
-      { code:'PH3-SMI-01', desc:'Applies self-management and interpersonal skills to manage situations and promote health, safety and wellbeing' },
+      // ⚠️ TWO OF THESE WERE WRONG AND WERE CORRECTED 2026-10-26.
+      //    PH3-IHW-01 used to read "...influence health, wellbeing and participation in physical
+      //      activity" — physical activity belongs to MSP/SHP, and Stages 1 and 2 both end on
+      //      "identity, health and wellbeing".
+      //    PH3-SMI-01 used to read "Applies ... to manage situations and promote health, safety
+      //      and wellbeing", which broke the "in a range of contexts" phrasing both earlier
+      //      stages use.
+      //    Each correction is backed by two independent sources that agree, and each restores the
+      //    verb progression: Describes -> Explains -> Examines/Evaluates.
+      // ⚠️ CORROBORATED, NOT PRIMARY — the NESA outcomes page truncates before Stage 3. Worth one
+      //    check against the syllabus document. Wordings come from pdhpeK6_2024() so they cannot
+      //    drift from the copy in CreateClassScreen.
+      { code:'PH3-MSP-01', desc:pdhpeK6_2024('PH3-MSP-01').desc },
+      { code:'PH3-IHW-01', desc:pdhpeK6_2024('PH3-IHW-01').desc },
+      { code:'PH3-SMI-01', desc:pdhpeK6_2024('PH3-SMI-01').desc },
     ],
     // ✅ Stages 4-5 VERIFIED VERBATIM against curriculum.nsw.edu.au 2026-10-26 — every wording
     //    below matches the published syllabus exactly. These were previously assumed to be

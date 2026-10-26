@@ -129,8 +129,32 @@ export const PDHPE_K6_2024 = {
     { code: 'PH2-IHW-01', desc: 'Explains how related factors influence identity, health and wellbeing', verbatim: true },
     { code: 'PH2-SMI-01', desc: 'Explains and applies self-management and interpersonal skills in a range of contexts', verbatim: true },
   ],
-  // 3: NOT RECORDED — see the warning above. 🚫 Do not fill this in from memory.
+  // ⚠️ CORROBORATED, NOT PRIMARY. The NSW outcomes page truncates before Stage 3 from every
+  //    offset tried, and the overview page does not carry outcomes at all. These wordings come
+  //    from TWO independent secondary sources that agree with each other, and each fits the
+  //    verb progression across the stages exactly:
+  //      IHW  Describes factors that contribute  ->  Explains how related factors influence
+  //           ->  Examines and explains factors that influence
+  //      SMI  Describes and demonstrates ... in a range of contexts  ->  Explains and applies
+  //           ... in a range of contexts  ->  Evaluates and applies ... in a range of contexts
+  //    🚫 Still worth one check against the NESA document before a school sees them.
+  3: [
+    { code: 'PH3-MSP-01', desc: 'Refines and applies movement skills, strategies and collaboration in physical activities', verbatim: false },
+    { code: 'PH3-IHW-01', desc: 'Examines and explains factors that influence identity, health and wellbeing of individuals and groups', verbatim: false },
+    { code: 'PH3-SMI-01', desc: 'Evaluates and applies self-management and interpersonal skills in a range of contexts', verbatim: false },
+    // ⚠️ Recorded for completeness; nothing in the app claims respectful-relationships outcomes.
+    { code: 'PH3-RRS-01', desc: 'Explains and applies skills and strategies to manage respectful relationships', verbatim: false },
+  ],
 };
+
+/** The verified-or-corroborated wording for a PDHPE K–6 (2024) code. */
+export function pdhpeK6_2024(code) {
+  for (const list of Object.values(PDHPE_K6_2024)) {
+    const hit = list.find(o => o.code === code);
+    if (hit) return hit;
+  }
+  throw new Error(`pdhpeK6_2024: unknown code "${code}" — add it to PDHPE_K6_2024 first.`);
+}
 
 
 // ── PDHPE 7–10 (2024) — taught from 2027 ───────────────────────────────────
