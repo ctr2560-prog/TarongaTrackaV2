@@ -3764,20 +3764,27 @@ PDHPE K–6 (2024) **Stages 1–2**, and **all 16** PDHPE 7–10 (2024) **Stage 
 needing a NESA check. They are not — checked 2026-10-26 against the syllabus page, every wording
 in `teacherInfoSheet.js` matches **exactly**. 🚫 Don't re-flag them.
 
-🚫 **Still not transcribed:** Science Stage 3 (2024), and PDHPE K–6 **Stage 3**. Both outcomes
-pages truncate before Stage 3 from every offset tried.
+✅ **PDHPE Stage 3 corrected 2026-10-26.** Two of the three wordings were wrong:
+`PH3-IHW-01` ended on "participation in physical activity" (that belongs to MSP/SHP) and
+`PH3-SMI-01` broke the "in a range of contexts" phrasing both earlier stages use. Both replaced.
+`PH3-MSP-01` was already right.
 
-⚠️⚠️ **Two PDHPE Stage 3 wordings in `teacherInfoSheet.js` look WRONG**, and are left in place
-deliberately with the expected shape noted beside them:
+⚠️ **CORROBORATED, NOT PRIMARY.** The NESA outcomes page truncates before Stage 3 from every
+offset, and the overview page carries no outcomes at all. These came from **two independent
+secondary sources that agree**, and the strongest evidence is that they restore the verb
+progression — every row now steps up cleanly:
 
-| Code | State |
-|---|---|
-| `PH3-MSP-01` | ✅ corroborated against a NSW DoE unit resource |
-| `PH3-IHW-01` | ⚠️ ends on "participation in physical activity"; Stages 1 and 2 both end on "identity, health and wellbeing", and physical activity belongs to MSP/SHP |
-| `PH3-SMI-01` | ⚠️ a NSW DoE unit resource says "evaluates and applies … in a range of contexts", matching the Describes → Explains and applies → Evaluates and applies progression |
+| | Stage 1 | Stage 2 | Stage 3 |
+|---|---|---|---|
+| IHW | Describes factors that contribute | Explains how related factors influence | Examines and explains factors that influence |
+| SMI | Describes and demonstrates … in a range of contexts | Explains and applies … in a range of contexts | Evaluates and applies … in a range of contexts |
 
-🚫 **Do not fix these from the pattern.** A guess that fits a progression is still a guess, and
-this is the first thing a head teacher checks. Fix them from the NESA document.
+🚫 **Still worth one check against the NESA document**, and marked `verbatim: false` in the code.
+🚫 **Science Stage 3 (2024) has the same gap** and has NOT had the same treatment.
+
+⚠️ Stage 3 wordings come from `pdhpeK6_2024()`, so the copies in `teacherInfoSheet.js` and
+`CreateClassScreen.jsx` cannot drift — which is exactly how the app ended up carrying two
+different PDHPE syllabuses in the first place.
 
 ⚠️ `CreateClassScreen.jsx`'s Stage 4–5 PDHPE descriptions **were invented** (by me, 2026-10-26 —
 "Examines strategies that support health, safety and wellbeing" is not syllabus text). Replaced
