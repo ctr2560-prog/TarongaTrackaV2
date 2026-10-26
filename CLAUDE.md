@@ -3779,7 +3779,7 @@ progression — every row now steps up cleanly:
 | IHW | Describes factors that contribute | Explains how related factors influence | Examines and explains factors that influence |
 | SMI | Describes and demonstrates … in a range of contexts | Explains and applies … in a range of contexts | Evaluates and applies … in a range of contexts |
 
-🚫 **Still worth one check against the NESA document**, and marked `verbatim: false` in the code.
+✅ **Confirmed by Cameron 2026-10-26.** 🚫 Do not re-open this as an outstanding check.
 
 ### ✅ Science Stage 3 — and how to reach a truncated syllabus page
 
@@ -3799,8 +3799,18 @@ compression, written confidently and labelled only as "a paraphrase":
 | `ST3-CWT-01` | "Creates scientific and technological texts" | "Creates written texts to communicate understanding of scientific and technological concepts and processes" |
 
 `ST3-DAT-01` was already exact. The first two are now **verbatim**; `ST3-DDT-01` and
-`ST3-CWT-01` are **corroborated, not primary** — the content page rendered "Loading" placeholders
-exactly where they sit.
+`ST3-CWT-01` came from agreeing secondary sources because the content page rendered "Loading"
+placeholders exactly where they sit — and both were ✅ **confirmed by Cameron 2026-10-26**.
+
+⚠️ **`verbatim: false` is left as false on all four confirmed wordings.** That flag tracks
+**provenance** — whether the text was transcribed from NESA — not correctness. 🚫 Do not flip it:
+it is what separates "copied from the syllabus" from "confirmed by someone who teaches it", and
+losing that would mislead the next person checking provenance.
+
+⚠️ **The teacher-facing panels no longer tell a teacher to go and check.** They now read "the
+codes and descriptions here have been checked against the NSW syllabus". The old line — "working
+paraphrases and should be checked against the NESA syllabus" — was correct when written and would
+have undersold the mode to a head teacher.
 
 🚫 **A paraphrase that reads plausibly is not a wording.** All four were being shown to teachers
 across ZooYard, the Teacher Info Sheet, ZooSnooz and Wildest Dreams.
