@@ -2908,23 +2908,47 @@ in the mode for a student to stand through without actually looking.
    anything spans lessons.
 6. **Teachers cannot see the dataset.** `habitatObservations` is written and nothing reads it.
    A staff-side view of readings across schools is the whole reason it is de-identified and flat.
-7. ⚠️ **The scorer marks the five new habitats harshly at Stage 5, and this is measured, not
-   suspected.** Scoring a strong, on-topic answer for each (2026-09-29):
+7. ✅ **FIXED 2026-10-26 — ZooYard has its own writing vocabulary now.** The old note said five
+   habitats scored harshly at Stage 5. Re-measuring found the picture had moved: **sea-lion and
+   chimpanzee had come good on their own**, and the worst case was one the note never listed —
+   **the tiger, at 1/5**.
 
-   | Animal | Stage 3 behaviour | Stage 5 behaviour |
+   **The cause was the same one that bit the lion on 2026-10-22, for the third time.** ZooYard
+   reuses the day-zoo animalIds but asks a different question: the day zoo asks what the animal is
+   *doing*, ZooYard asks the student to explain why a change to their schoolyard *matters*. The
+   shared lists are observable actions (walk, rest, eat, roar), so ecology answers matched nothing.
+   The tiger is not in the per-animal chain at all, so it fell through to
+   `calculateZzBehaviourScore` — the **ZooSnooz** scorer — to mark an answer about cover.
+
+   `ZOOYARD_WORDS` in `scoring.js` holds one entry per habitat, keyed to that habitat's actual
+   prompt, reached **only** when the caller passes `mode === 'zooyard'`. `ZooYardScreen.jsx` is the
+   only caller that does.
+
+   🚫 **Not fixed by widening the shared lists**, which is what the lion got. That was right there
+   because the lion's two prompts do not overlap; here it would have moved day-zoo and ZooSnooz
+   marks for eight animals at once.
+
+   | Strong stage-5 answer | before | after |
    |---|---|---|
-   | blue-mountains-bushwalk | 4 | **2** |
-   | sea-lion | 5 | **2** |
-   | chimpanzee | 3 | **2** |
-   | gorilla | 3 | **2** |
-   | rhino | 5 | 5 |
+   | tiger | **1** | 5 |
+   | gorilla | **2** | 5 |
+   | blue-mountains-bushwalk | **2** | 5 |
+   | koala, giraffe, sea-lion, chimpanzee | 5 | 5 |
+   | rhino | 4 | 5 |
 
-   This is fault #1 in the Scoring System section: the new prompts are about litter, drains,
-   vertical layers and plant variety, and those animals' vocabulary lists do not contain those
-   words. **It is not purely new content** — the pre-existing giraffe does the same thing (5 at
-   Stage 4, **2** at Stage 5), so there is a Stage 5 behaviour path worth looking at on its own.
-   Fixing it means widening the per-animal word lists and re-verifying across every stage and
-   subject, which is its own piece of work. Do not tune thresholds; score real text first.
+   ⚠️ **Checked that it discriminates, not just inflates** — every strong answer now maxes the
+   behaviour sub-score, so quality tiers were scored on total points: tiger weak 33 / thin 53 /
+   middle 80 / strong 93. Weak answers rise by at most one point and never above 3. ⚠️ Gorilla's
+   middle and strong both land on 93, so the TOP of the range is flat — a property of the
+   15-point scale, not these lists, and worth knowing before anyone reads a 93 as excellence.
+
+   **Regression: 1875 non-ZooYard cases** (15 animals x 5 stages x 5 subjects x 5 texts, no mode
+   flag) — zero changes.
+
+   ⚠️ **Rewriting a habitat's `writingPromptByStage` means rewriting its `ZOOYARD_WORDS` entry**
+   and scoring a real answer. 🚫 Reusing an animalId across modes silently inherits that animal's
+   word lists — three modes have now been bitten by this.
+
 8. **No teacher control over which habitats run.** See the warning on eight habitats above.
 
 ### Class details / GPS panel
