@@ -13,17 +13,30 @@ function generateClassCode() {
   return code;
 }
 
-const NSW_OUTCOMES = {
-  science: {
-    syllabus: { 1:'Science K–6 (2023)', 2:'Science K–6 (2023)', 3:'Science K–6 (2023)', 4:'Science 7–10 (2023)', 5:'Science 7–10 (2023)' },
-    1: [{ code:'ST1-2DP-T', desc:'Identifies and uses materials for a variety of purposes.' }],
-    2: [{ code:'ST2-4LW-S', desc:'Compares features and characteristics of living and non-living things.' }, { code:'ST2-5WT-T', desc:'Selects and uses materials, tools and equipment to design and create solutions' }],
-    3: [{ code:'ST3-4LW-S', desc:'Examines how the environment affects the growth, survival and adaptation of living things.' }],
-    4: [{ code:'SC4-CLS-01', desc:'Describes the unique features of cells in living things and how structural features can be used to classify organisms' }, { code:'SC4-LIV-01', desc:'Describes the role, structure and function of a range of living systems and their components' }],
-    5: [{ code:'SC5-CLS-01', desc:'Analyses and evaluates the structural and functional relationships of living systems' }],
-  },
+// ⚠️⚠️ TWO SYLLABUSES, SELECTED BY YEAR. Audited 2026-10-26 — run
+//    `npx vite-node scripts/audit-outcomes.mjs` after touching anything here.
+//
+// Three things were wrong in this block before that audit:
+//   1. The syllabus NAMES were invented. There is no "Science K–6 (2023)", no
+//      "Mathematics K–6 (2023)" and no "English K–6 (2023)". The real names are below.
+//   2. `ST2-5WT-T` is not a real outcome — no source could be found for it.
+//   3. PDHPE used the 2018 codes (PD1-2, PD4-2) while `teacherInfoSheet.js` used the 2024 ones
+//      (PH1-IHW-01). The app contradicted itself about the same class.
+//
+// NSW replaces TWO of the four areas from 2027, both withdrawn after December 2028:
+//   Science and Technology K–6 (2017) -> (2024)
+//   PDHPE K–10 (2018)                 -> PDHPE K–6 (2024) / PDHPE 7–10 (2024)
+// English K–10 (2022), Mathematics K–10 (2022) and Science 7–10 (2023) are unaffected, so they
+// are defined once and shared by both sets.
+//
+// 🚫 Do not delete the pre-2027 set before 2029 — a school still teaching it must see it.
+// ⚠️ PDHPE 7–10 (2024) is staggered: Years 7 and 9 from 2027, Years 8 and 10 from 2028, so a
+//    Stage 4/5 PDHPE class in 2027 may be on either syllabus. The label says so.
+const SYLLABUS_2027_FROM = 2027;
+
+const UNCHANGED = {
   maths: {
-    syllabus: { 1:'Mathematics K–6 (2023)', 2:'Mathematics K–6 (2023)', 3:'Mathematics K–6 (2023)', 4:'Mathematics 7–10 (2022)', 5:'Mathematics 7–10 (2022)' },
+    syllabus: { 1:'Mathematics K–10 (2022)', 2:'Mathematics K–10 (2022)', 3:'Mathematics K–10 (2022)', 4:'Mathematics K–10 (2022)', 5:'Mathematics K–10 (2022)' },
     1: [{ code:'MA1-RWN-01', desc:'Applies place value to read, represent and order numbers' }],
     2: [{ code:'MA2-RN-01',  desc:'Applies place value to order, read and represent numbers' }],
     3: [{ code:'MA3-RN-01',  desc:'Compares, orders and calculates with fractions, decimals and percentages' }],
@@ -31,22 +44,70 @@ const NSW_OUTCOMES = {
     5: [{ code:'MA5-NUM-C-01', desc:'Selects and applies appropriate operations with real numbers' }],
   },
   english: {
-    syllabus: { 1:'English K–6 (2023)', 2:'English K–6 (2023)', 3:'English K–6 (2023)', 4:'English 7–10 (2022)', 5:'English 7–10 (2022)' },
+    syllabus: { 1:'English K–10 (2022)', 2:'English K–10 (2022)', 3:'English K–10 (2022)', 4:'English K–10 (2022)', 5:'English K–10 (2022)' },
     1: [{ code:'EN1-VOCAB-01', desc:'Uses Tier 1 and Tier 2 vocabulary to understand and create texts' }, { code:'EN1-CWT-01', desc:'Plans and creates written texts for different purposes using simple sentences' }],
     2: [{ code:'EN2-VOCAB-01', desc:'Builds and extends vocabulary to communicate meaning' }, { code:'EN2-CWT-01', desc:'Plans, creates and revises imaginative, informative and persuasive texts' }],
     3: [{ code:'EN3-VOCAB-01', desc:'Selects vocabulary to enhance meaning when creating texts' }, { code:'EN3-CWT-01', desc:'Plans, creates and revises written texts for multiple purposes and audiences' }],
     4: [{ code:'EN4-URA-01', desc:'Analyses how meaning is created through language forms, features and structures' }],
     5: [{ code:'EN5-URA-01', desc:'Examines how increasingly complex language forms create meaning and position readers' }],
   },
-  pdhpe: {
-    syllabus: { 1:'PDHPE K–6 (2018)', 2:'PDHPE K–6 (2018)', 3:'PDHPE K–6 (2018)', 4:'PDHPE 7–10 (2018)', 5:'PDHPE 7–10 (2018)' },
-    1: [{ code:'PD1-2', desc:'Describes how personal identity is shaped and how physical activity contributes to health' }],
-    2: [{ code:'PD2-7', desc:'Investigates strategies to make healthy, informed choices to promote health and wellbeing' }],
-    3: [{ code:'PD3-7', desc:'Investigates how health choices and behaviours affect individual wellbeing' }],
-    4: [{ code:'PD4-2', desc:'Examines and applies health and physical activity concepts to enhance personal development' }],
-    5: [{ code:'PD5-2', desc:'Analyses the interrelationship between health, wellbeing, and movement' }],
-  },
 };
+
+// Stage 4-5 science is Science 7–10 (2023), unaffected by the K–6 change.
+const SCIENCE_SECONDARY = {
+  4: [{ code:'SC4-CLS-01', desc:'Describes the unique features of cells in living things and how structural features can be used to classify organisms' }, { code:'SC4-LIV-01', desc:'Describes the role, structure and function of a range of living systems and their components' }],
+  5: [{ code:'SC5-CLS-01', desc:'Analyses and evaluates the structural and functional relationships of living systems' }],
+};
+
+const OUTCOMES_PRE_2027 = {
+  science: {
+    syllabus: { 1:'Science and Technology K–6 (2017)', 2:'Science and Technology K–6 (2017)', 3:'Science and Technology K–6 (2017)', 4:'Science 7–10 (2023)', 5:'Science 7–10 (2023)' },
+    1: [{ code:'ST1-2DP-T', desc:'Identifies and uses materials for a variety of purposes.' }],
+    // ⚠️ `ST2-5WT-T` used to sit here with a Design and Production description. It is not a real
+    //    code. Replaced with the Living World outcome this stage genuinely has.
+    2: [{ code:'ST2-4LW-S', desc:'Compares features and characteristics of living and non-living things.' }],
+    3: [{ code:'ST3-4LW-S', desc:'Examines how the environment affects the growth, survival and adaptation of living things.' }],
+    ...SCIENCE_SECONDARY,
+  },
+  pdhpe: {
+    syllabus: { 1:'PDHPE K–10 (2018)', 2:'PDHPE K–10 (2018)', 3:'PDHPE K–10 (2018)', 4:'PDHPE K–10 (2018)', 5:'PDHPE K–10 (2018)' },
+    1: [{ code:'PD1-2', desc:'Recognises and describes strategies people can use to feel comfortable, resilient and safe in situations' }],
+    2: [{ code:'PD2-7', desc:'Describes strategies to make home and school healthy, safe and physically active spaces' }],
+    3: [{ code:'PD3-7', desc:'Proposes and implements actions and protective strategies that promote health, safety, wellbeing and physically active spaces' }],
+    4: [{ code:'PD4-2', desc:'Examines and demonstrates the role help-seeking strategies and behaviours play in supporting themselves and others' }],
+    5: [{ code:'PD5-2', desc:'Researches and appraises the effectiveness of health information and support services available in the community' }],
+  },
+  ...UNCHANGED,
+};
+
+// ⚠️ Science Stage 1 and Stage 2 wordings are VERBATIM from curriculum.nsw.edu.au. PDHPE Stage 1
+//    and Stage 2 likewise. 🚫 Everything marked below as unverified is a pattern-match on the
+//    codes already used elsewhere in this app, NOT a transcription. See data/syllabusTransition.js.
+const OUTCOMES_2027 = {
+  science: {
+    syllabus: { 1:'Science and Technology K–6 (2024)', 2:'Science and Technology K–6 (2024)', 3:'Science and Technology K–6 (2024)', 4:'Science 7–10 (2023)', 5:'Science 7–10 (2023)' },
+    1: [{ code:'ST1-DDT-01', desc:'Uses technologies and materials to design and make products to address user needs or opportunities' }],
+    // ⚠️⚠️ STAGE 2 LOSES ITS LIVING WORLD CONTENT. ST2-SCI-01 (2024) is the solar system and the
+    //    effects of energy, so the old ST2-4LW-S has no Stage 2 equivalent. The design outcome is
+    //    the honest one. 🚫 Do not substitute ST2-SCI-01 to keep the list looking full.
+    2: [{ code:'ST2-DDT-01', desc:'Uses a design process to create products to address user needs or opportunities' }],
+    3: [{ code:'ST3-SCI-01', desc:'Uses evidence to explain how scientific knowledge can support sustainable practices' }],
+    ...SCIENCE_SECONDARY,
+  },
+  pdhpe: {
+    syllabus: { 1:'PDHPE K–6 (2024)', 2:'PDHPE K–6 (2024)', 3:'PDHPE K–6 (2024)', 4:'PDHPE 7–10 (2024, Years 7 and 9 from 2027)', 5:'PDHPE 7–10 (2024, Years 7 and 9 from 2027)' },
+    1: [{ code:'PH1-IHW-01', desc:'Describes factors that contribute to identity, health and wellbeing' }],
+    2: [{ code:'PH2-IHW-01', desc:'Explains how related factors influence identity, health and wellbeing' }],
+    // ⚠️ UNVERIFIED wordings — codes match the set already used in teacherInfoSheet.js, but the
+    //    NSW outcomes page truncated before Stage 3 and no second source was found.
+    3: [{ code:'PH3-IHW-01', desc:'Analyses factors that influence identity, health and wellbeing' }],
+    4: [{ code:'PH4-SHW-01', desc:'Examines strategies that support health, safety and wellbeing' }],
+    5: [{ code:'PH5-SHW-01', desc:'Evaluates strategies that support health, safety and wellbeing' }],
+  },
+  ...UNCHANGED,
+};
+
+const NSW_OUTCOMES = new Date().getFullYear() >= SYLLABUS_2027_FROM ? OUTCOMES_2027 : OUTCOMES_PRE_2027;
 
 const inputStyle = { width:'100%', padding:'0.65rem 0.9rem', borderRadius:'var(--t-r-sm)', border:'1.5px solid var(--t-stone)', fontSize:'0.88rem', fontFamily:'DM Sans, sans-serif', marginBottom:'0.85rem', boxSizing:'border-box', background:'var(--t-parchment)', color:'var(--t-ink)', outline:'none', transition:'border-color 0.2s' };
 
