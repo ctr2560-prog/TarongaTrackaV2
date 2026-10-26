@@ -378,7 +378,7 @@ export default function ZooYardScreen() {
     setObsError('');
     setSavingObs(true);
     try {
-      const scoreResult = buildObservationScore(obsText, zyAnimal.id, classStage, 'science');
+      const scoreResult = buildObservationScore(obsText, zyAnimal.id, classStage, 'science', 'zooyard');
       const observationPoints = Math.round(((scoreResult.behaviour + scoreResult.detail + scoreResult.writing) / 15) * 100);
       const quizPoints = mcqCorrect ? 20 : 0;
       const points = observationPoints + quizPoints;

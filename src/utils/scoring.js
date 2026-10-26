@@ -1220,7 +1220,145 @@ function buildEnglishObservationScore(text, animalId, classStage) {
   };
 }
 
-export function buildObservationScore(text, animalId, classStage, classSubject) {
+// ─── ZooYard scoring ─────────────────────────────────────────────────────────
+// ⚠️⚠️ WHY ZOOYARD NEEDS ITS OWN WORD LISTS AT ALL.
+//
+// ZooYard reuses the SAME animalIds as the day zoo and ZooSnooz (tiger, gorilla, koala…), but it
+// asks a completely different question. The day zoo asks "what is the animal doing?"; ZooYard
+// asks "you changed your schoolyard — explain why that matters to this animal". The shared lists
+// are full of observable actions (walk, rest, eat, roar) and the ZooYard answer is ecology, so a
+// strong answer matched almost nothing. Measured 2026-10-26, strong stage 5 answers:
+//
+//     tiger  1/5      gorilla  2/5      blue-mountains-bushwalk  2/5
+//
+// The tiger is the clearest case: it is not in the per-animal chain at all, so it fell through to
+// `calculateZzBehaviourScore` — the ZOOSNOOZ scorer, a list of animal actions — to mark an answer
+// about cover and hunting success.
+//
+// 🚫 DO NOT FIX THIS BY WIDENING THE SHARED LISTS. That is what was done for the lion on
+//    2026-10-22, and it was right there because the lion's two prompts do not overlap. Here it
+//    would change day-zoo and ZooSnooz marks for eight animals at once. These lists are reached
+//    ONLY when the caller passes mode === 'zooyard'.
+//
+// ⚠️ Keyed to the EIGHT ZooYard prompts, one entry each. If a habitat's writingPromptByStage is
+//    rewritten, rewrite its entry here and re-score a real answer — that is the whole lesson of
+//    this file.
+const ZOOYARD_WORDS = {
+  // "what separates the trees… then planted into the gap" → connectivity
+  koala: {
+    behaviour: ['gap','plant','tree','canopy','connect','link','corridor','cross','between','join','bridge','reach','space','apart'],
+    detail:    ['koala','habitat','safe','ground','predator','dog','road','car','eucalypt','feed','continuous','fragment','isolat','travel','move'],
+  },
+  // "how much cover your spot had, then built more" → ambush hunting
+  tiger: {
+    behaviour: ['cover','hide','hidden','hiding','conceal','ambush','stalk','creep','approach','screen','shelter','grass','branch','build','built','close'],
+    detail:    ['predator','prey','hunt','success','distance','surprise','exposed','open','visible','camouflage','energy','catch','spot','seen'],
+  },
+  // "what cuts the views short… then sited water for a clear line of sight"
+  giraffe: {
+    behaviour: ['sight','view','line','clear','open','water','drink','site','sited','place','position','watch','see','saw','fence','block'],
+    detail:    ['predator','danger','vulnerable','head','tall','height','early','warn','detect','approach','safe','lion','escape','notice'],
+  },
+  // "how much of your schoolyard is bare or mown, then rebuilt a patch of ground layer"
+  'blue-mountains-bushwalk': {
+    behaviour: ['ground','layer','bare','mown','mow','litter','leaf','leaves','log','mulch','rebuild','rake','restore','plant','patch','cover'],
+    detail:    ['insect','bird','shelter','food','web','soil','moisture','beetle','lizard','habitat','base','decompos','invertebrate','frog','spider'],
+  },
+  // "what was sitting upstream of a drain, then removed it"
+  'sea-lion': {
+    behaviour: ['drain','litter','rubbish','plastic','remove','clean','pick','collect','upstream','wash','rain','stormwater','clear','bin'],
+    detail:    ['harbour','ocean','sea','water','swallow','tangle','entangle','waterway','pollut','marine','wildlife','choke','stomach','beach'],
+  },
+  // "which layers your schoolyard has, then added a missing one"
+  chimpanzee: {
+    behaviour: ['layer','shrub','middle','understorey','understory','canopy','add','plant','level','height','tall','structure','ground','tree'],
+    detail:    ['species','forest','food','shelter','move','nest','diversity','variety','habitat','complex','climb','travel','support'],
+  },
+  // "how much variety the planting had, then added a new kind"
+  gorilla: {
+    behaviour: ['variety','varied','different','kind','type','mix','mixed','diverse','diversity','add','plant','species','same','single','new'],
+    detail:    ['monoculture','food','flower','fruit','season','year','insect','bird','animal','support','range','resilien','spread','supply'],
+  },
+  // "how little shade your schoolyard has, then made somewhere cooler"
+  rhino: {
+    behaviour: ['shade','shady','cool','cover','screen','plant','tree','shelter','build','made','make','temperature','hot','sun','spot'],
+    detail:    ['overheat','heat','sweat','regulat','water','feed','stress','midday','body','thermo','energy','wallow','mud','skin'],
+  },
+};
+
+// Mirrors the shape of the generic branch in scoreObservation, with the lists above. Returns the
+// same three bonuses so everything downstream — rationale, feedback, normalisation — is unchanged.
+// ⚠️ Falls back to the ordinary scorer for an animalId with no ZooYard entry, so adding a ninth
+//    habitat without a word list degrades to today's behaviour rather than throwing.
+function scoreZooyardObservation(text, animalId, stage) {
+  const vocab = ZOOYARD_WORDS[animalId];
+  if (!vocab) return scoreObservation(text, animalId, stage);
+  const lower = String(text || '').toLowerCase();
+  const behaviourHits = vocab.behaviour.filter(w => lower.includes(w)).length;
+  const detailHits    = vocab.detail.filter(w => lower.includes(w)).length;
+  const hasExplanation = ['because','so','helps','allows','leads','since','therefore','means','in order','as a result','which']
+    .some(pp => lower.includes(pp));
+  const wc = String(text || '').trim().split(/\s+/).filter(Boolean).length;
+
+  let behaviourBonus = Math.min(behaviourHits + 1, 5);
+  let detailBonus;
+  let literacyBonus;
+
+  if (stage <= 2) {
+    const s1 = [...vocab.behaviour, ...vocab.detail];
+    behaviourBonus = stage1BehaviourScore(text, s1);
+    detailBonus    = stage1DetailScore(text, s1);
+    literacyBonus  = stage1WritingScore(text);
+    return { behaviourBonus, detailBonus, literacyBonus };
+  }
+  if (stage === 3) {
+    const s3 = stage3Score(detailHits, hasExplanation);
+    behaviourBonus = Math.max(behaviourBonus, s3.b);
+    detailBonus    = s3.d;
+  } else if (stage === 5) {
+    const s5 = stage5Score(text, vocab.behaviour, vocab.detail, hasExplanation);
+    behaviourBonus = Math.max(behaviourBonus, s5.b);
+    detailBonus    = s5.d;
+    literacyBonus  = s5.w;
+    return { behaviourBonus, detailBonus, literacyBonus };
+  } else {
+    const s4 = stage4Score(detailHits, hasExplanation, wc);
+    behaviourBonus = Math.max(behaviourBonus, s4.b);
+    detailBonus    = s4.d;
+  }
+  literacyBonus = calculateWritingScore(text, stage);
+  return { behaviourBonus, detailBonus, literacyBonus };
+}
+
+// ⚠️ `mode` is the ONLY thing that routes to the ZooYard word lists. ZooYardScreen passes
+//    'zooyard'; nothing else does, and nothing else should. It is checked before classSubject
+//    because ZooYard always sends 'science' and must never fall into a subject branch.
+export function buildObservationScore(text, animalId, classStage, classSubject, mode) {
+  if (mode === 'zooyard') {
+    const { behaviourBonus, detailBonus, literacyBonus } = scoreZooyardObservation(text, animalId, classStage);
+    const zyRationale = generateScoreRationale(text, behaviourBonus, detailBonus, literacyBonus, animalId, classStage);
+    const zyNorm = normaliseScores({
+      behaviourScore: behaviourBonus,
+      detailScore:    detailBonus,
+      writingScore:   literacyBonus,
+      evidence:       zyRationale.extractedEvidence,
+      stage:          classStage,
+      isLowQuality:   isLowQualityResponse(text),
+    });
+    return {
+      behaviour: zyNorm.behaviourScore,
+      detail:    zyNorm.detailScore,
+      writing:   zyNorm.writingScore,
+      rationale: zyRationale.rationale,
+      overallFeedback: zyRationale.overallFeedback,
+      improvementTips: zyRationale.improvementTips,
+      extractedEvidence: zyRationale.extractedEvidence,
+      confidence: zyRationale.confidence,
+      reviewRecommended: zyRationale.reviewRecommended,
+    };
+  }
+
+  // Everything below is the original path, unchanged, for every other mode.
   if (classSubject === 'maths') {
     return buildMathsObservationScore(text, animalId, classStage);
   }
