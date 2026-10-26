@@ -1328,8 +1328,14 @@ export function openTeacherInfoSheet(subject, stage, outcomes) {
       </div>
     </div>`).join('');
 
+  // ⚠️ The science label MUST follow the same year switch as NSW_OUTCOMES.science. It was
+  //    hardcoded to K–6 (2017), so from 2027 this sheet would have printed 2024 outcome codes
+  //    under a 2017 heading. 🚫 Never hardcode a syllabus year beside a list that switches.
+  // ⚠️ PDHPE was already correct — teacherInfoSheet has carried the 2024 codes all along.
   const syllabusLabel = isScience
-    ? 'Science 7–10 (2023) / Science & Technology K–6 (2017)'
+    ? (using2027Syllabuses()
+        ? 'Science 7–10 (2023) / Science & Technology K–6 (2024)'
+        : 'Science 7–10 (2023) / Science & Technology K–6 (2017)')
     : isMaths ? 'Mathematics K–10 (2022)'
     : isPdhpe ? 'PDHPE K–6 (2024) / PDHPE 7–10 (2024)'
     : 'English K–10 (2022)';

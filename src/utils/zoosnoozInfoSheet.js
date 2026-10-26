@@ -214,8 +214,14 @@ export function openZooSnoozInfoSheet(stage) {
   const stageNum  = parseInt(stage, 10);
   const stageMeta = STAGE_EXPECTATIONS[stageNum] || STAGE_EXPECTATIONS[4];
   const outcomes  = ZZ_OUTCOMES[stageNum] || ZZ_OUTCOMES[4];
+  // ⚠️ MUST follow the same year switch as ZZ_OUTCOMES above. This was hardcoded to (2017), so
+  //    from 2027 the sheet would have printed 2024 outcome codes under a 2017 heading — a sheet
+  //    that contradicts itself in front of a teacher. 🚫 Never hardcode a syllabus year next to
+  //    a list that switches.
   const syllabusLabel = stageNum <= 3
-    ? 'Science and Technology K–6 Syllabus (2017)'
+    ? (using2027Syllabuses()
+        ? 'Science and Technology K–6 Syllabus (2024)'
+        : 'Science and Technology K–6 Syllabus (2017)')
     : 'Science 7–10 Syllabus (2023)';
   const origin    = window.location.origin;
   const today     = new Date().toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' });
