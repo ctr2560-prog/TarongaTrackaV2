@@ -3757,11 +3757,32 @@ offer the Design and Technology framing instead — that is what ZooYard's panel
 
 ### ⚠️ Wording provenance — not all equal
 
-**Verbatim** from curriculum.nsw.edu.au: Science and Technology K–6 (2024) **Stages 1–2**, and
-PDHPE K–6 (2024) **Stages 1–2**.
-🚫 **Not transcribed** (the outcomes pages truncated before them, no second source found):
-Science Stage 3 (2024), PDHPE Stage 3 (2024), and **all** PDHPE 7–10 (2024) wordings. They are
-marked unverified in the code and need a NESA check before a school sees them.
+**Verbatim** from curriculum.nsw.edu.au: Science and Technology K–6 (2024) **Stages 1–2**,
+PDHPE K–6 (2024) **Stages 1–2**, and **all 16** PDHPE 7–10 (2024) **Stage 4–5** outcomes.
+
+⚠️ **A correction worth keeping.** PDHPE Stages 4–5 were reported here as unverified paraphrases
+needing a NESA check. They are not — checked 2026-10-26 against the syllabus page, every wording
+in `teacherInfoSheet.js` matches **exactly**. 🚫 Don't re-flag them.
+
+🚫 **Still not transcribed:** Science Stage 3 (2024), and PDHPE K–6 **Stage 3**. Both outcomes
+pages truncate before Stage 3 from every offset tried.
+
+⚠️⚠️ **Two PDHPE Stage 3 wordings in `teacherInfoSheet.js` look WRONG**, and are left in place
+deliberately with the expected shape noted beside them:
+
+| Code | State |
+|---|---|
+| `PH3-MSP-01` | ✅ corroborated against a NSW DoE unit resource |
+| `PH3-IHW-01` | ⚠️ ends on "participation in physical activity"; Stages 1 and 2 both end on "identity, health and wellbeing", and physical activity belongs to MSP/SHP |
+| `PH3-SMI-01` | ⚠️ a NSW DoE unit resource says "evaluates and applies … in a range of contexts", matching the Describes → Explains and applies → Evaluates and applies progression |
+
+🚫 **Do not fix these from the pattern.** A guess that fits a progression is still a guess, and
+this is the first thing a head teacher checks. Fix them from the NESA document.
+
+⚠️ `CreateClassScreen.jsx`'s Stage 4–5 PDHPE descriptions **were invented** (by me, 2026-10-26 —
+"Examines strategies that support health, safety and wellbeing" is not syllabus text). Replaced
+with verbatim wordings from `pdhpe2024()`. ⚠️ Both `science2024()` and `pdhpe2024()` **throw** on
+an unknown code, so a typo fails at build rather than printing a blank description on a sheet.
 
 ### Where each set lives
 
