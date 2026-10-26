@@ -2892,11 +2892,37 @@ in the mode for a student to stand through without actually looking.
    also heavy (savannah 3.5MB, bushland 2.8MB) for a school network with a class on it at once.
    ⚠️ They are also now **only used on the write-up screen**, since the habitat picker is the 3D
    model rather than a video-backed card list.
-2. **No curriculum outcomes anywhere.** ZooYard is the only mode with nothing to show a teacher:
-   no info sheet, nothing on Curriculum Alignment. ⚠️ This got **harder** on 2026-10-01: the
-   measurement was what would have supported a Working Scientifically *data* claim, and it is
-   gone. The defensible claim now is observation and conservation action rather than data
-   collection. Worth settling before the mode is sold to a school on its outcomes.
+2. ✅ **DONE 2026-10-26 — outcomes, info sheet and Curriculum Alignment entry all exist.**
+   `data/zooyardOutcomes.js`, `utils/zooyardInfoSheet.js`, `components/ZooYardOutcomesPanel.jsx`.
+
+   ⚠️⚠️ **THE CLAIM IS OBSERVATION, DESIGNED SOLUTIONS AND CONSERVATION ACTION — NOT DATA.** The
+   measurement step went on 2026-10-01, so ZooYard collects no quantitative data, runs no fair
+   test and controls no variables. 🚫 Never map it to an outcome whose wording turns on
+   collecting, graphing or interpreting data, however well the code seems to fit. This is stated
+   above the outcome list in both the panel and the sheet so it cannot be skimmed past.
+
+   ⚠️ **The K–6 syllabus has an expiry.** Verified against the NSW curriculum site 2026-10-26:
+   Science and Technology K–6 **(2017)** is current, schools plan during 2026, teach the **2024**
+   syllabus **from 2027**, and 2017 is **withdrawn after December 2028**. The 2024 codes are in
+   `ZOOYARD_OUTCOMES_2024_NOTE`, deliberately not wired in — a teacher cannot report against a
+   syllabus they are not yet teaching. ⚠️ `ST*-DAT-01` is absent from that list on purpose: it is
+   the data outcome.
+
+   🚫 **The `desc` wordings are paraphrases**, inherited from the existing in-app lists rather
+   than transcribed from NESA. Both the panel and the sheet say so in a visible caution block.
+   Someone needs to check each line against the syllabus before the mode is sold on its outcomes.
+
+   ⚠️⚠️ **`ST2-5WT-T` in `CreateClassScreen.jsx` APPEARS NOT TO EXIST.** No source could be found
+   for it on 2026-10-26; the nearest real code is `ST2-5LW-T`. It is **not** used in the ZooYard
+   outcomes and was **not** changed in CreateClassScreen, because that is marks-facing content for
+   other modes. Fix it there as its own change.
+
+   ⚠️ Fixed at the same time: a ZooYard class was being offered the **day-zoo** Teacher Info
+   Sheet, because the gate was on `cls.subject` and a ZooYard class still carries one (usually
+   'science'). That sheet is built around exhibits, a zoo map and a route.
+
+   ⚠️ The sheet's habitat table is generated from `ZOOYARD_ANIMALS`. 🚫 Do not hand-maintain a
+   copy of the habitat list — that is the thing that goes stale and then gets handed to a school.
 3. ~~**Stage 1 has no content.**~~ **CLOSED 2026-09-28** — all three animals now carry a stage 1
    writing prompt, so the silent fallback to Stage 4 wording is gone.
 4. Three animals and **one MCQ each** is still thin next to Evolve's five chapters or Wildest
