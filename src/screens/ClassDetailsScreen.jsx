@@ -18,6 +18,7 @@ import { openEvolveCertificates, openEvolveAdviceSheet } from '../utils/evolveCe
 const EVOLVE_PLEDGE_ID = (EVOLVE_CHAPTERS.find(c => c.isPledge) || {}).id;
 import { openTeacherInfoSheet } from '../utils/teacherInfoSheet';
 import { openZooSnoozInfoSheet } from '../utils/zoosnoozInfoSheet';
+import { openZooYardInfoSheet } from '../utils/zooyardInfoSheet';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -524,9 +525,18 @@ export default function ClassDetailsScreen() {
             <button className="lms-nav-item" onClick={() => window.open('https://www.wildlybytaronga.com.au', '_blank')}>
               <span className="lms-nav-icon"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M6 3H3a1 1 0 00-1 1v9a1 1 0 001 1h9a1 1 0 001-1v-3M10 2h4m0 0v4m0-4L7 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></span> Wildly by Taronga
             </button>
-            {['science', 'maths', 'pdhpe', 'english'].includes(cls.subject) && (
+            {/* ⚠️ `&& !isZY` matters. A ZooYard class still carries a subject — usually 'science'
+                — so without this it was offered the DAY-ZOO sheet, which is built around exhibits,
+                a zoo map and a route. ZooYard happens in a schoolyard and has none of those. It
+                gets its own sheet directly below. */}
+            {['science', 'maths', 'pdhpe', 'english'].includes(cls.subject) && !isZY && (
               <button className="lms-nav-item" onClick={() => openTeacherInfoSheet(cls.subject, cls.stage)}>
                 <span className="lms-nav-icon"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><rect x="3" y="1" width="10" height="14" rx="1.5" stroke="currentColor" strokeWidth="1.5"/><path d="M6 5h4M6 8h4M6 11h2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg></span> Teacher Info Sheet
+              </button>
+            )}
+            {isZY && (
+              <button className="lms-nav-item" onClick={() => openZooYardInfoSheet(cls)}>
+                <span className="lms-nav-icon"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><rect x="3" y="1" width="10" height="14" rx="1.5" stroke="currentColor" strokeWidth="1.5"/><path d="M6 5h4M6 8h4M6 11h2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg></span> ZooYard Info Sheet
               </button>
             )}
             {isZZ && (
