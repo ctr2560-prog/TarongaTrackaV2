@@ -1,3 +1,4 @@
+import { science2024, using2027Syllabuses, STAGE2_LIVING_WORLD_GONE } from '../data/syllabusTransition';
 const BRAND = {
   forest:     '#071E14',
   deep:       '#0A2F1F',
@@ -1091,30 +1092,57 @@ export const STAGE_EXPECTATIONS = {
   },
 };
 
+// ⚠️⚠️ K–6 SCIENCE CHANGES IN 2027. Science and Technology K–6 (2017) is replaced by the 2024
+//    syllabus from 2027 and withdrawn after December 2028. Stages 4–5 are Science 7–10 (2023)
+//    and are unaffected, so they are defined once and shared.
+//    Run `npx vite-node scripts/audit-outcomes.mjs 2027` after touching any of this.
+//
+// ⚠️ The 2024 mapping is NOT one-for-one, and the differences are real:
+//    ST1-4LW-S (living things) -> ST1-SCI-01, which still carries living things at Stage 1.
+//    ST3-4LW-S (environmental change) -> ST3-SCI-01, sustainable practices. A better fit than
+//      the outcome it replaces, because the zoo visit is explicitly about conservation.
+//    🚫 ST2-4LW-S has NO 2024 EQUIVALENT. Stage 2 science content moves to the solar system and
+//      the effects of energy. Stage 2 claims the working-scientifically outcomes only, and the
+//      sheet says so rather than substituting ST2-SCI-01 to fill the gap.
+const SCIENCE_SECONDARY_OUTCOMES = {
+  4: [
+    { code:'SC4-WS-01',  desc:'Uses scientific tools and instruments for observations' },
+    { code:'SC4-WS-08',  desc:'Communicates scientific concepts and ideas using a range of communication forms' },
+    { code:'SC4-LIV-01', desc:'Describes the role, structure and function of a range of living systems and their components' },
+  ],
+  5: [
+    { code:'SC5-WS-01',  desc:'Selects and uses scientific tools and instruments for accurate observations' },
+    { code:'SC5-WS-08',  desc:'Communicates scientific arguments with evidence, using scientific language and terminology in a range of communication forms' },
+    { code:'SC5-GEV-01', desc:'Describes the relationship between the diversity of living things and the theory of evolution' },
+  ],
+};
+
+const SCIENCE_K6_PRE_2027 = {
+  1: [
+    { code:'ST1-1WS-S', desc:'Observes, questions and collects data to communicate and compare ideas' },
+    { code:'ST1-4LW-S', desc:'Describes the behaviours and needs of living things and the features of their environment that help them survive' },
+  ],
+  2: [
+    { code:'ST2-1WS-S', desc:'Conducts investigations by observing, questioning, planning, predicting, testing and communicating' },
+    { code:'ST2-4LW-S', desc:'Compares features of living things and examines how environments affect living things' },
+  ],
+  3: [
+    { code:'ST3-1WS-S', desc:'Plans and conducts scientific investigations to answer questions or solve problems' },
+    { code:'ST3-4LW-S', desc:'Examines the role of living things in the environment and the effect of environmental change' },
+  ],
+};
+
+const SCIENCE_K6_2027 = {
+  1: [science2024('ST1-PQU-01'), science2024('ST1-SCI-01')],
+  // ⚠️ Working scientifically only — see the warning above. Not an oversight.
+  2: [science2024('ST2-PQU-01'), science2024('ST2-DAT-01')],
+  3: [science2024('ST3-SCI-01'), science2024('ST3-CWT-01')],
+};
+
 export const NSW_OUTCOMES = {
   science: {
-    1: [
-      { code:'ST1-1WS-S', desc:'Observes, questions and collects data to communicate and compare ideas' },
-      { code:'ST1-4LW-S', desc:'Describes the behaviours and needs of living things and the features of their environment that help them survive' },
-    ],
-    2: [
-      { code:'ST2-1WS-S', desc:'Conducts investigations by observing, questioning, planning, predicting, testing and communicating' },
-      { code:'ST2-4LW-S', desc:'Compares features of living things and examines how environments affect living things' },
-    ],
-    3: [
-      { code:'ST3-1WS-S', desc:'Plans and conducts scientific investigations to answer questions or solve problems' },
-      { code:'ST3-4LW-S', desc:'Examines the role of living things in the environment and the effect of environmental change' },
-    ],
-    4: [
-      { code:'SC4-WS-01',  desc:'Uses scientific tools and instruments for observations' },
-      { code:'SC4-WS-08',  desc:'Communicates scientific concepts and ideas using a range of communication forms' },
-      { code:'SC4-LIV-01', desc:'Describes the role, structure and function of a range of living systems and their components' },
-    ],
-    5: [
-      { code:'SC5-WS-01',  desc:'Selects and uses scientific tools and instruments for accurate observations' },
-      { code:'SC5-WS-08',  desc:'Communicates scientific arguments with evidence, using scientific language and terminology in a range of communication forms' },
-      { code:'SC5-GEV-01', desc:'Describes the relationship between the diversity of living things and the theory of evolution' },
-    ],
+    ...(using2027Syllabuses() ? SCIENCE_K6_2027 : SCIENCE_K6_PRE_2027),
+    ...SCIENCE_SECONDARY_OUTCOMES,
   },
   maths: {
     1: [
@@ -1247,7 +1275,13 @@ export function openTeacherInfoSheet(subject, stage, outcomes) {
     <div class="outcome-row">
       <span class="outcome-code">${o.code}</span>
       <span class="outcome-desc">${o.desc}</span>
-    </div>`).join('');
+    </div>`).join('')
+    // ⚠️ From 2027, SCIENCE Stage 2 has no living-world outcome to claim. Say why, or a short
+    //    list reads as an oversight. 🚫 Do not fill the gap with ST2-SCI-01 (solar system and
+    //    energy). Science only — the other three subjects are unaffected by the 2027 change.
+    + (isScience && using2027Syllabuses() && parseInt(stage, 10) === 2
+        ? `<div class="outcome-row" style="background:#FFF8E8;border:1px solid #E8C97A;"><span class="outcome-desc" style="color:#6B5214;">${STAGE2_LIVING_WORLD_GONE}</span></div>`
+        : '');
 
   const domainCards = scoring.domains.map(d => `
     <div class="domain-card">

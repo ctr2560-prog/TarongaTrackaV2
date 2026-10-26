@@ -1,3 +1,4 @@
+import { science2024, using2027Syllabuses } from '../../data/syllabusTransition';
 // content.js — everything Wildest Dreams says, shows and offers, in one place.
 //
 // Wildest Dreams is a video-first mode for diverse learners, particularly school support units.
@@ -128,7 +129,18 @@ export const WD_FILM_TITLE = 'My Wildest Dreams';
 //
 // `evidence` is the part a teacher actually needs: what in Wildest Dreams shows the outcome.
 // It is not a mark and must never become one. This mode has no scoring.
-export const WD_OUTCOMES = {
+// ⚠️⚠️ K–6 SCIENCE CHANGES IN 2027 — see data/syllabusTransition.js. Stage 4 below is Science
+//    7–10 (2023) Life Skills and is unaffected, so it is not duplicated.
+//
+// ⚠️ The 2024 mapping is a genuinely better fit for this mode in two places:
+//    ST*-PQU-01 (poses questions based on observations) is exactly the focus step — what I see,
+//      what I hear, what I notice — which ST*-1WS-S only half covered.
+//    ST3-CWT-01 (creates scientific and technological texts) finally gives the FILM a home. A
+//      documentary is a technological text; the 2017 set had nowhere to put it.
+// 🚫 ST2-4LW-S has NO 2024 equivalent — Stage 2 science content moves to the solar system and
+//    the effects of energy. Stage 2 claims working-scientifically only, and the sheet says so.
+//    Do not substitute ST2-SCI-01.
+const WD_K6_PRE_2027 = {
   1: {
     lifeSkills: false,
     syllabus: 'Science and Technology K-6 (2017)',
@@ -159,6 +171,37 @@ export const WD_OUTCOMES = {
         evidence: 'Records what the animal does and why its habitat matters.' },
     ],
   },
+};
+
+const WD_K6_2027 = {
+  1: {
+    lifeSkills: false,
+    syllabus: 'Science and Technology K–6 (2024)',
+    outcomes: [
+      { ...science2024('ST1-PQU-01'), evidence: 'Picks a focus before filming — what I see, what I hear, what I notice.' },
+      { ...science2024('ST1-SCI-01'), evidence: 'Describes the animal and what it is doing. ⚠️ Claim the "describes changes in living things" half only — nothing is measured.' },
+    ],
+  },
+  2: {
+    lifeSkills: false,
+    syllabus: 'Science and Technology K–6 (2024)',
+    outcomes: [
+      { ...science2024('ST2-PQU-01'), evidence: 'Chooses a question to answer at each stop. ⚠️ No fair test — claim the questioning, not the testing.' },
+      { ...science2024('ST2-DAT-01'), evidence: 'The clip is the record. Filming several animals across the route builds a set of observations to compare.' },
+    ],
+  },
+  3: {
+    lifeSkills: false,
+    syllabus: 'Science and Technology K–6 (2024)',
+    outcomes: [
+      { ...science2024('ST3-CWT-01'), evidence: 'The documentary itself. A film is a technological text, and this is the first syllabus with somewhere to put it.' },
+      { ...science2024('ST3-PQU-01'), evidence: 'Chooses what to show and films the footage that answers it. ⚠️ No variables and no fair test — claim the questioning only.' },
+    ],
+  },
+};
+
+export const WD_OUTCOMES = {
+  ...(using2027Syllabuses() ? WD_K6_2027 : WD_K6_PRE_2027),
   4: {
     lifeSkills: true,
     syllabus: 'Science 7-10 (2023) Life Skills',

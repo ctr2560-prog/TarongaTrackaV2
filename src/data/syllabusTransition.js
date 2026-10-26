@@ -161,3 +161,28 @@ export function classifyCode(code, year = new Date().getFullYear()) {
   }
   return { area: null, status: 'unknown', syllabus: null, message: 'Not recognised by any known NSW code pattern.' };
 }
+
+/**
+ * The verified wording for a Science and Technology K–6 (2024) code.
+ * ⚠️ Single-sourced on purpose — four files now show these, and a wording typed out four times
+ *    is a wording that drifts. Throws on an unknown code so a typo fails loudly at build rather
+ *    than printing a blank description on a sheet handed to a school.
+ */
+export function science2024(code) {
+  for (const list of Object.values(SCIENCE_K6_2024)) {
+    const hit = list.find(o => o.code === code);
+    if (hit) return hit;
+  }
+  throw new Error(`science2024: unknown code "${code}" — add it to SCIENCE_K6_2024 first.`);
+}
+
+/**
+ * ⚠️ Shown on any Stage 2 science view from 2027.
+ * The 2024 syllabus moves Stage 2 science content to the solar system and the effects of energy,
+ * so there is NO Stage 2 living-world outcome. 🚫 Never substitute ST2-SCI-01 to fill the gap.
+ */
+export const STAGE2_LIVING_WORLD_GONE =
+  'Stage 2 of the 2024 syllabus places its science content on the solar system and the effects ' +
+  'of energy, so there is no Stage 2 living-world outcome to claim. What this programme ' +
+  'evidences at Stage 2 is scientific questioning and working with observations, which is what ' +
+  'is listed here. For a living-world focus, Stage 1 and Stage 3 both carry it.';

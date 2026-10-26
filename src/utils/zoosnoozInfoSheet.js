@@ -1,3 +1,4 @@
+import { science2024, using2027Syllabuses, STAGE2_LIVING_WORLD_GONE } from '../data/syllabusTransition';
 import { ZOOSNOOZ_ANIMALS } from '../data/zoosnoozAnimals.js';
 
 const BRAND = {
@@ -23,7 +24,17 @@ const BRAND = {
 // Source: Science and Technology K–6 Syllabus (2017) + Science 7–10 Syllabus (2023)
 // ZooSnooz focus: structural and behavioural adaptations, organism-environment
 // interactions, and Working Scientifically observation skills.
-const ZZ_OUTCOMES = {
+// ⚠️⚠️ K–6 SCIENCE CHANGES IN 2027. Science and Technology K–6 (2017) is replaced by the 2024
+//    syllabus from 2027 and withdrawn after December 2028. Stages 4–5 are Science 7–10 (2023),
+//    unaffected. Run `npx vite-node scripts/audit-outcomes.mjs 2027` after touching this.
+//
+// 🚫 ST2-4LW-S has NO 2024 equivalent — Stage 2 science content moves to the solar system and
+//    the effects of energy. Stage 2 claims the working-scientifically outcomes only, and the
+//    sheet prints STAGE2_LIVING_WORLD_GONE beneath the table rather than substituting
+//    ST2-SCI-01 to keep the list looking full.
+// ⚠️ ST3-SCI-01 (sustainable practices) is a BETTER fit than the ST3-4LW-S it replaces —
+//    ZooSnooz ends on a conservation message and a documentary.
+const ZZ_K6_PRE_2027 = {
   2: [
     { code: 'ST2-1WS-S', desc: 'Conducts investigations by observing, questioning, planning, predicting, testing and communicating' },
     { code: 'ST2-4LW-S', desc: 'Compares features of living things and examines how environments affect living things and their survival' },
@@ -32,6 +43,15 @@ const ZZ_OUTCOMES = {
     { code: 'ST3-1WS-S', desc: 'Plans and conducts scientific investigations to answer questions or solve problems' },
     { code: 'ST3-4LW-S', desc: 'Examines the role of living things in the environment and the effect of environmental change on living things' },
   ],
+};
+
+const ZZ_K6_2027 = {
+  2: [science2024('ST2-PQU-01'), science2024('ST2-DAT-01')],
+  3: [science2024('ST3-SCI-01'), science2024('ST3-CWT-01')],
+};
+
+const ZZ_OUTCOMES = {
+  ...(using2027Syllabuses() ? ZZ_K6_2027 : ZZ_K6_PRE_2027),
   4: [
     { code: 'SC4-WS-01',  desc: 'Uses scientific tools and instruments to make and record observations, and represents and analyses data to identify patterns and draw conclusions' },
     { code: 'SC4-LIV-01', desc: 'Describes the role, structure and function of a range of living systems and their components, and explains how structural features relate to function' },
@@ -286,7 +306,12 @@ export function openZooSnoozInfoSheet(stage) {
     <div class="outcome-row">
       <span class="outcome-code">${o.code}</span>
       <span class="outcome-desc">${o.desc}</span>
-    </div>`).join('');
+    </div>`).join('')
+    // ⚠️ From 2027 a Stage 2 teacher must be told WHY the living-world outcome is missing, or a
+    //    two-item list reads as an oversight. 🚫 Do not fill the gap with ST2-SCI-01.
+    + (using2027Syllabuses() && stageNum === 2
+        ? `<div class="outcome-row" style="background:#FFF8E8;border:1px solid #E8C97A;"><span class="outcome-desc" style="color:#6B5214;">${STAGE2_LIVING_WORLD_GONE}</span></div>`
+        : '');
 
   // ── Guide row helper ─────────────────────────────────────────────────────
   function guideRows(items) {
