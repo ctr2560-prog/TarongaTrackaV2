@@ -233,6 +233,15 @@ export default function ZooYardScreen() {
   const [zyAnimal, setZyAnimal] = useState(null);       // currently open animal object
   const [zyPhase,  setZyPhase]  = useState('attest');    // video | activity | observe | action | written | badge
   const [zyCompleted, setZyCompleted] = useState({});    // { [animalId]: { points, quizCorrect } }
+  // ⚠️ Habitats a student STARTED but did not finish: { [animalId]: { phase, quizCorrect } }.
+  //    ZooYard runs across lessons, so a bell can land anywhere in a habitat. Before this, a
+  //    student who had walked outside, watched for two minutes and built their pile came back
+  //    to the video and did all of it again.
+  // ⚠️ The two EXPENSIVE things were already safe — the unlock photo and the build photo are
+  //    written to Firestore when taken. Only *where they were* and *the quiz result* were lost,
+  //    which is why this is a small save rather than a draft system.
+  const [zyInProgress, setZyInProgress] = useState({});
+  const [resumeChoice, setResumeChoice] = useState(null);  // animal awaiting continue/restart
   const [badgeReveal, setBadgeReveal] = useState(null);  // { animal, points, quizCorrect, behaviour, detail, writing }
   // ⚠️⚠️ A REFUSED SAVE MUST BE VISIBLE. ZooYard's writes are backgrounded, and every failure
   //    here used to be a bare console.warn — on a tablet there is no console, so a student
@@ -281,6 +290,16 @@ export default function ZooYardScreen() {
     return () => clearInterval(t);
   }, [observeEndsAt]);
 
+
+  // What a student actually did, phrased as the thing they remember doing — not the phase name.
+  // ⚠️ Keyed to the phase they are ABOUT to resume into, so it describes what is already behind
+  //    them. Keep in step with the phase machine in openAnimal().
+  const RESUME_BLURB = {
+    activity: 'you watched the video',
+    observe:  'you answered the question',
+    action:   'you did your two minutes of watching',
+    written:  'you built it and took your photo',
+  };
   const allDone = ZOOYARD_ANIMALS.every(a => zyCompleted[a.id]);
   const totalPoints = Object.values(zyCompleted).reduce((s, c) => s + (c.points || 0), 0);
 
@@ -295,14 +314,19 @@ export default function ZooYardScreen() {
         const snap = await getDoc(doc(db, 'classes', normaliseCode(classCode), 'students', safeStudentId(studentName)));
         const zy = snap.exists() ? (snap.data().zooyard || {}) : {};
         if (cancelled) return;
-        const done = {}, photos = {};
+        const done = {}, photos = {}, inprog = {};
         ZOOYARD_ANIMALS.forEach(a => {
           const d = zy[a.id];
           if (!d) return;
           // Outside the completed check on purpose: the photo is the unlock, so a student who
           // attested but has not finished the habitat must still come back to an open padlock.
           if (d.habitatPhotoUrl) photos[a.id] = d.habitatPhotoUrl;
-          if (!d.completed) return;
+          // ⚠️ Only an UNFINISHED habitat carries a live bookmark. A finished one keeps its
+          //    `progress` map in Firestore harmlessly, but must never offer to resume.
+          if (!d.completed) {
+            if (d.progress?.phase) inprog[a.id] = { phase: d.progress.phase, quizCorrect: d.progress.quizCorrect ?? null };
+            return;
+          }
           done[a.id] = {
             points: d.points || 0, quizCorrect: !!d.quizCorrect,
             behaviour: d.behaviour ?? 0, detail: d.detail ?? 0, writing: d.writing ?? 0,
@@ -310,6 +334,7 @@ export default function ZooYardScreen() {
         });
         setZyCompleted(done);
         setHabitatPhotos(photos);
+        setZyInProgress(inprog);
         if (zy.sessionCompleted) setZyScreen('done');
         // Gated on BOTH: never shown twice, and never shown to someone already part way
         // through, so a mid-session reload does not drop them back on the welcome screen.
@@ -327,13 +352,37 @@ export default function ZooYardScreen() {
     return () => { cancelled = true; };
   }, [classCode, studentName, setZyScreen]);
 
+  // Records WHERE a student is inside a habitat, so a bell mid-habitat costs nothing.
+  // ⚠️ Fire-and-forget on purpose: this is a convenience, and blocking a student's next screen
+  //    on a network write would be worse than losing the bookmark. A genuine refusal still
+  //    surfaces, because the habitat's real writes (unlock, build, completion) report theirs.
+  // 🚫 Individual dotted fields, never a whole `zooyard.{id}.progress` object — assigning the
+  //    object would replace the map and could wipe habitatPhotoUrl, which IS the unlock.
+  function saveProgress(animalId, phase, quizCorrectSoFar) {
+    if (!studentName || !classCode || !animalId) return;
+    const fields = {
+      [`zooyard.${animalId}.progress.phase`]: phase,
+      [`zooyard.${animalId}.progress.updatedAt`]: new Date().toISOString(),
+    };
+    if (quizCorrectSoFar !== undefined && quizCorrectSoFar !== null) {
+      fields[`zooyard.${animalId}.progress.quizCorrect`] = quizCorrectSoFar;
+    }
+    setZyInProgress(prev => ({ ...prev, [animalId]: { phase, quizCorrect: quizCorrectSoFar ?? prev[animalId]?.quizCorrect ?? null } }));
+    updateDoc(doc(db, 'classes', normaliseCode(classCode), 'students', safeStudentId(studentName)), fields)
+      .catch(e => console.warn('ZooYard progress bookmark failed:', e));
+  }
+
   // Entering a habitat always starts at the video now. Proving where you are happens on the
   // map, in the unlock sheet, so by the time this runs the padlock is already open.
-  function openAnimal(animal) {
+  function openAnimal(animal, resumeFrom) {
     if (zyCompleted[animal.id]) return;
     setZyAnimal(animal);
-    setZyPhase('video');
-    setMcqAnswer(null); setMcqCorrect(null); setMcqRevealed(false);
+    // ⚠️ `resumeFrom` carries the saved phase AND the saved quiz result. Without the quiz result
+    //    a resumed habitat would score 0 for a question the student already answered correctly.
+    setZyPhase(resumeFrom?.phase || 'video');
+    setMcqAnswer(null);
+    setMcqCorrect(resumeFrom?.quizCorrect ?? null);
+    setMcqRevealed(resumeFrom?.quizCorrect !== undefined && resumeFrom?.quizCorrect !== null);
     setObsText(''); setObsError('');
     setHintsOpen(false);
     setObserveEndsAt(null); setObserveNow(0);
@@ -343,7 +392,15 @@ export default function ZooYardScreen() {
   // What tapping a marker does, which depends entirely on whether it is locked.
   function tapMarker(animal) {
     if (zyCompleted[animal.id]) return;
-    if (habitatPhotos[animal.id]) { openAnimal(animal); return; }   // already proved it
+    if (habitatPhotos[animal.id]) {
+      // ⚠️ Part way through? Ask, rather than silently resuming OR silently restarting. Either
+      //    choice made for them is wrong some of the time: a student who wants a clean run is
+      //    stuck mid-habitat, and one who wants their work back loses it.
+      const bookmark = zyInProgress[animal.id];
+      if (bookmark?.phase && bookmark.phase !== 'video') { setResumeChoice({ animal, bookmark }); return; }
+      openAnimal(animal);
+      return;
+    }   // already proved it
     setAttestPreview(null); setAttestError('');
     setUnlockAnimal(animal);                                        // stay on the map
   }
@@ -435,6 +492,8 @@ export default function ZooYardScreen() {
       }
 
       setZyCompleted(prev => ({ ...prev, [zyAnimal.id]: { points, quizCorrect: !!mcqCorrect, behaviour: scoreResult.behaviour, detail: scoreResult.detail, writing: scoreResult.writing } }));
+      // ⚠️ The habitat is done, so its bookmark must stop offering a resume.
+      setZyInProgress(prev => { const next = { ...prev }; delete next[zyAnimal.id]; return next; });
       setBadgeReveal({ animal: zyAnimal, ...badgeData, overall: scoreResult.overallFeedback });
       setZyPhase('badge');
     } finally {
@@ -559,6 +618,7 @@ export default function ZooYardScreen() {
 
       setActionPhotoUrl(photoUrl);
       setZyPhase('written');
+      saveProgress(zyAnimal.id, 'written', mcqCorrect);
     } catch (e) {
       console.error('Habitat action submit failed:', e);
       setCsError('Something went wrong uploading your photo. Please try again.');
@@ -647,7 +707,7 @@ export default function ZooYardScreen() {
           )}
         </div>
         <div style={{ padding:'1rem 1.2rem 1.5rem' }}>
-          <button onClick={() => setZyPhase('activity')}
+          <button onClick={() => { setZyPhase('activity'); saveProgress(zyAnimal.id, 'activity'); }}
             style={{ width:'100%', padding:'0.9rem', borderRadius:999, border:'none', background:'linear-gradient(135deg,#2E7D55,#1A5238)', color:'white', fontSize:'0.95rem', fontWeight:800, cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.05em' }}>
             Continue
           </button>
@@ -712,7 +772,7 @@ export default function ZooYardScreen() {
 
         {mcqRevealed && (
           <div style={{ position:'relative', padding:'1rem 1.2rem 1.5rem', maxWidth:480, margin:'0 auto', width:'100%', boxSizing:'border-box' }}>
-            <button onClick={() => setZyPhase('observe')}
+            <button onClick={() => { setZyPhase('observe'); saveProgress(zyAnimal.id, 'observe', mcqCorrect); }}
               style={{ width:'100%', padding:'0.9rem', borderRadius:999, border:'none', background:`linear-gradient(135deg, ${theme.accent}, #0A2F1F)`, color:'white', fontSize:'0.95rem', fontWeight:800, cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.05em', boxShadow:`0 8px 22px ${theme.accent}55` }}>
               Go outside and observe
             </button>
@@ -795,7 +855,7 @@ export default function ZooYardScreen() {
                 <p style={{ margin:'0.2rem 0 1.1rem', color:'#3A4A3F', fontSize:'0.95rem', lineHeight:1.6, fontWeight:600 }}>
                   Time is up. Hold on to what you saw: you are about to do something about it.
                 </p>
-                <button onClick={() => setZyPhase('action')}
+                <button onClick={() => { setZyPhase('action'); saveProgress(zyAnimal.id, 'action', mcqCorrect); }}
                   style={{ width:'100%', padding:'0.95rem', borderRadius:999, border:'none', background:`linear-gradient(135deg, ${theme.accent}, #0A2F1F)`, color:'white', fontSize:'0.95rem', fontWeight:800, cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.05em' }}>
                   Now do something about it
                 </button>
@@ -1305,6 +1365,47 @@ export default function ZooYardScreen() {
           stays visible behind it, so the padlock the student just tapped is still in view and
           the act reads as opening that specific enclosure rather than navigating away.
           Getting through to the video and everything after it requires this. */}
+      {/* ── "Pick up where you left off?" ───────────────────────────────────
+          ⚠️ Only for a habitat with a saved bookmark past the video. A student who stopped on
+             the very first screen has nothing worth resuming and is not asked.
+          ⚠️ Names what they already DID rather than the step they are on. "You built it and took
+             your photo" is recognisable; "you are on phase: written" is not.
+          🚫 Do not auto-resume without asking. A student who wants a clean run would be stuck
+             mid-habitat with no way back to the start. */}
+      {resumeChoice && (
+        <div style={{ position:'fixed', inset:0, zIndex:900, background:'rgba(8,20,14,0.65)', display:'flex', alignItems:'center', justifyContent:'center', padding:'1.25rem' }}>
+          <div style={{ background:'white', borderRadius:20, padding:'1.5rem 1.4rem', maxWidth:390, width:'100%', boxShadow:'0 24px 60px rgba(0,0,0,0.45)', textAlign:'center' }}>
+            <div style={{ fontSize:'2.4rem', lineHeight:1, marginBottom:'0.6rem' }}>🔖</div>
+            <h3 className="taronga-title" style={{ fontSize:'1.5rem', color:'#0A2F1F', margin:'0 0 0.5rem', letterSpacing:'0.02em', lineHeight:1.2 }}>
+              Carry on with {resumeChoice.animal.name}?
+            </h3>
+            <p style={{ fontSize:'0.95rem', color:'#3D3D38', lineHeight:1.55, margin:'0 0 1.1rem' }}>
+              {RESUME_BLURB[resumeChoice.bookmark.phase]
+                ? `Last time, ${RESUME_BLURB[resumeChoice.bookmark.phase]}.`
+                : 'You started this habitat before.'}{' '}
+              You can keep going from there, or start again from the beginning.
+            </p>
+            <div style={{ display:'flex', flexDirection:'column', gap:'0.55rem' }}>
+              <button
+                onClick={() => { const { animal, bookmark } = resumeChoice; setResumeChoice(null); openAnimal(animal, bookmark); }}
+                style={{ width:'100%', padding:'0.9rem', borderRadius:999, border:'none', background:'linear-gradient(135deg,#2E7D55,#1A5238)', color:'white', fontSize:'0.95rem', fontWeight:800, cursor:'pointer', fontFamily:'inherit' }}>
+                Keep going
+              </button>
+              <button
+                onClick={() => { const { animal } = resumeChoice; setResumeChoice(null); openAnimal(animal); }}
+                style={{ width:'100%', padding:'0.8rem', borderRadius:999, border:'1.5px solid #D9E2DC', background:'white', color:'#6B6B62', fontSize:'0.9rem', fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>
+                Start again
+              </button>
+              <button
+                onClick={() => setResumeChoice(null)}
+                style={{ width:'100%', padding:'0.55rem', borderRadius:999, border:'none', background:'transparent', color:'#9AA39D', fontSize:'0.82rem', fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                Back to the map
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {unlockAnimal && (
           <div style={{ position:'absolute', inset:0, zIndex:5, display:'flex', alignItems:'flex-end', justifyContent:'center' }}>
             <button onClick={closeUnlock} aria-label="Close"
