@@ -32,6 +32,11 @@ export default function StudentJoinScreen() {
   //    `zyProgress` is { [animal]: habitatsDone } and drives the resume labels below.
   const [isZooYardClass, setIsZooYardClass] = useState(false);
   const [zyProgress,     setZyProgress]     = useState({});
+  // ⚠️ Holds the animal a student tapped that SOMEONE ALREADY USES. Picking an in-use animal is
+  //    a log-in, so the cost of a mis-tap is landing in a classmate's record and adding habitats
+  //    to it. 🚫 Never let a resume selection happen on a single tap — there is no password
+  //    behind it, and this confirmation is the only thing between a wrong tap and a wrong record.
+  const [confirmResume,  setConfirmResume]  = useState(null);
   const [selectedAnimal, setSelectedAnimal] = useState('');
 
   // Live class-code preview as student types
@@ -295,6 +300,51 @@ export default function StudentJoinScreen() {
             </div>
           )}
 
+          {/* ── "Is this your animal?" ─────────────────────────────────────────
+              ⚠️ ZooYard only, and only for an animal someone is already using. Picking one is a
+                 LOG-IN with no password, so a mis-tap puts a child inside a classmate's record.
+              ⚠️ Shows how far that animal has got — a child recognises "5 of 8" far more reliably
+                 than they recognise a name they chose a week ago.
+              ⚠️ Deliberately an in-app sheet, not window.confirm: a native dialog on a school
+                 tablet shows the site URL and reads nothing like the rest of the app.
+              🚫 Do not add a "don't ask again" option. It is one tap, once per lesson. */}
+          {confirmResume && (
+            <div style={{ position:'fixed', inset:0, zIndex:900, background:'rgba(8,20,14,0.6)', display:'flex', alignItems:'center', justifyContent:'center', padding:'1.25rem' }}>
+              <div style={{ background:'white', borderRadius:20, padding:'1.5rem 1.4rem', maxWidth:380, width:'100%', boxShadow:'0 24px 60px rgba(0,0,0,0.4)', textAlign:'center' }}>
+                <div style={{ fontSize:'2.4rem', lineHeight:1, marginBottom:'0.6rem' }}>🐾</div>
+                <h3 className="taronga-title" style={{ fontSize:'1.5rem', color:'var(--t-deep)', margin:'0 0 0.5rem', letterSpacing:'0.02em', lineHeight:1.2 }}>
+                  Is {confirmResume} your animal?
+                </h3>
+                <p style={{ fontSize:'0.95rem', color:'var(--t-charcoal)', lineHeight:1.55, margin:'0 0 0.75rem' }}>
+                  Someone has already used {confirmResume}. Only choose it if it was <strong>your</strong> animal last time.
+                </p>
+                {zyProgress[confirmResume] > 0 && (
+                  <div style={{ background:'#FFFBEB', border:'1.5px solid #FCD34D', borderRadius:12, padding:'0.6rem 0.8rem', margin:'0 0 0.85rem' }}>
+                    <p style={{ margin:0, fontSize:'0.88rem', color:'#92650E', fontWeight:700 }}>
+                      {confirmResume} has finished {zyProgress[confirmResume]} of {ZOOYARD_ANIMALS.length} habitats.
+                    </p>
+                    <p style={{ margin:'0.15rem 0 0', fontSize:'0.78rem', color:'#92650E' }}>Does that sound like you?</p>
+                  </div>
+                )}
+                <p style={{ fontSize:'0.85rem', color:'var(--t-slate)', lineHeight:1.5, margin:'0 0 1.1rem' }}>
+                  If you are not sure, ask your teacher before you tap yes.
+                </p>
+                <div style={{ display:'flex', gap:'0.6rem' }}>
+                  <button
+                    onClick={() => setConfirmResume(null)}
+                    style={{ flex:1, padding:'0.85rem 0.6rem', borderRadius:999, border:'1.5px solid var(--t-stone)', background:'white', color:'var(--t-slate)', fontSize:'0.9rem', fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>
+                    Not mine
+                  </button>
+                  <button
+                    onClick={() => { setSelectedAnimal(confirmResume); setConfirmResume(null); }}
+                    style={{ flex:1, padding:'0.85rem 0.6rem', borderRadius:999, border:'none', background:'linear-gradient(135deg,#2E7D55,#1A5238)', color:'white', fontSize:'0.9rem', fontWeight:800, cursor:'pointer', fontFamily:'inherit' }}>
+                    Yes, that’s me
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Animal grid */}
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(130px, 1fr))', gap:'0.5rem', marginBottom:'1.25rem', maxHeight:'52vh', overflowY:'auto', padding:'0.25rem' }}>
             {ANIMAL_ALIASES.map(animal => {
@@ -309,7 +359,13 @@ export default function StudentJoinScreen() {
               return (
                 <button
                   key={animal}
-                  onClick={() => { if (!taken) { setSelectedAnimal(animal); setJoinError(''); } }}
+                  onClick={() => {
+                    if (taken) return;
+                    setJoinError('');
+                    // A fresh animal selects straight away; an in-use one asks first.
+                    if (resume) setConfirmResume(animal);
+                    else setSelectedAnimal(animal);
+                  }}
                   disabled={taken}
                   style={{
                     padding:'0.6rem 0.5rem',
