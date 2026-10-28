@@ -458,8 +458,9 @@ in the app's filming guidance or the teacher info sheet — it should be.
 ### Recently shipped (2026-09-28 → 10-01) — ZooYard: watch, build, explain
 - **Habitat Hero was absorbed into every habitat.** The standalone end-of-session task is gone;
   each animal carries its own `citizenScience` block. See "Watch, build, explain".
-- **Eight habitats** (was three): koala, tiger, giraffe, blue-mountains-bushwalk, sea-lion,
-  chimpanzee, gorilla, rhino. The five new ones are **DRAFT content**, marked as such.
+- **Eight habitats** (was three). ⚠️ **That list is now out of date — the giraffe was replaced by
+  `nura-diya` and six activities were rewritten on 2026-10-28.** See "Watch, build, explain" for
+  the current eight and the two-kinds-of-action design.
 - **A two-minute watch that records nothing.** The measurement step was added 09-26 and removed
   10-01 as one step too many. ⚠️ Do not reinstate a counting activity — read the reasoning first.
 - **`habitatObservations` was built and then removed** with the measurement that fed it. Never
@@ -2400,16 +2401,11 @@ eight and should survive any content edit:
    · insect waterer.
 3. Every prompt carries `{n}` and every animal has stages **1–5**.
 
-| Animal | Habitat area | Measures | Builds |
-|---|---|---|---|
-| koala | bushland | steps to next tree | plants into the canopy gap |
-| tiger | rainforest | steps until concealed | a cover pile |
-| giraffe | savannah | sightline blockers | open-sited bird water |
-| blue-mountains-bushwalk | bushland | bare steps out of ten | rakes a ground layer back |
-| sea-lion | coast | rubbish along 20 steps from a drain | clears that line |
-| chimpanzee | forest | vertical plant layers | plants the missing middle layer |
-| gorilla | forest | plant *kinds* within arm's reach | adds a kind that is missing |
-| rhino | wetland | steps to drinkable water | insect waterer with landing stones |
+🚫 **THE TABLE THAT WAS HERE IS HISTORY TWICE OVER** and has been removed rather than left to
+mislead. Its "Measures" column described the counting step deleted on 2026-10-01, and its "Builds"
+column described activities replaced on 2026-10-28 — including a `giraffe` habitat that no longer
+exists. **The current eight are in "Watch, build, explain" above.** Generate the live content with
+`scripts/zooyard-content-sheet.mjs` rather than trusting any table in this file.
 
 ⚠️ **`coast`, `forest` and `wetland` have `videoBg: null`** — no ambient clip exists for them.
 The write-up screen checks for it and falls back to the theme gradient. A path to a file that
@@ -2454,21 +2450,105 @@ thing** or the habitat falls apart into two unrelated tasks.
 
 | Animal | Quality (`observation.focus`) | Builds |
 |---|---|---|
-| koala | connected trees | plants into the canopy gap |
-| tiger | cover to hide in | a cover pile |
-| giraffe | long views and water | open-sited bird water |
-| blue-mountains-bushwalk | a living ground layer | rakes a ground layer back |
-| sea-lion | where the water goes | clears the stormwater path |
-| chimpanzee | layers at different heights | plants the missing middle layer |
-| gorilla | variety of plants | adds a kind that is missing |
-| rhino | shade and cooling | makes a shaded, cooler refuge |
+| koala | connected trees | plants into the gap, or waters one already there |
+| tiger | what we throw away | checks wrappers for palm oil, makes the poster |
+| **nura-diya** | what belongs here | **posts a letter to Taronga** about protecting it |
+| blue-mountains-bushwalk | nowhere to nest | builds a nest box |
+| sea-lion | where the water goes | collects **twenty** pieces before the drain |
+| chimpanzee | nowhere for small things to live | builds a bug hotel |
+| gorilla | where our devices come from | builds the phone collection box |
+| rhino | where would anything drink | puts water out in the open |
 
 ⚠️ **Every action is deliberately different.** Eight schoolyards of identical bird baths would be
 a worksheet. Check the table before adding a ninth habitat.
 
-**The rhino moved from water to shade** on 2026-10-01. Greater one-horned rhinos wallow to
-thermoregulate, so shade *is* the need; it stops duplicating the giraffe's water dish; and it is
-the action a school is least likely to ban, where standing water is the most likely.
+#### ⚠️⚠️ ALL EIGHT WERE REWRITTEN 2026-10-28 — read this before editing any of them
+
+Six of the eight activities changed and one habitat was replaced outright. 🚫 Anything in git
+history before this date describes a different mode.
+
+**TWO KINDS OF ACTION, and which is which is the whole design.** This is what the long rewrite
+settled, and it is the answer to "how does each activity support the local ecosystem or promote
+conservation":
+
+| Kind | What it does | Habitats |
+|---|---|---|
+| **Habitat action** | Physically improves the schoolyard for local wildlife | koala, nura-diya, bushwalk, sea-lion, chimpanzee, rhino |
+| **Footprint action** | Reduces the school's impact on that animal's REAL habitat | **tiger** (palm oil), **gorilla** (phones) |
+
+🚫 **Do not "fix" the two footprint habitats by giving them a schoolyard build.** That is what
+they used to have and it is what made them feel hollow: planting a shrub in Sydney does nothing
+for a Sumatran tiger, and the mode was pretending otherwise. The honest answer was to change what
+those two ask for, not to dress them up.
+
+⚠️ **THE GIRAFFE IS GONE.** Replaced by `nura-diya`. A schoolyard cannot recreate savannah —
+wide mown open space is the one thing it already has too much of, so there was nothing to add.
+Nura Diya is a **place**, not a species, which is also why its image is a kangaroo: the only
+habitat whose image is not of the thing it is named after. `habitatArea: 'savannah'` became
+`'country'`, it reuses the bushland video (there is no Nura Diya footage), and
+`/videos/habitat-savannah.mp4` is now unreferenced.
+
+⚠️ **THE NURA DIYA LETTER IS REAL POST, to a real address:**
+
+```
+Cameron Rodgers and Paul Maguire
+Taronga Zoo, PO Box 20, Mosman NSW 2088
+```
+
+🚫 **Do not turn it into an in-app form.** Posting it IS the activity — it is the only thing in
+the mode that leaves the school and reaches an adult who can act. ⚠️ The in-app photo still
+happens as well: the photo earns the badge and the school points through the usual moderation
+queue; the posted letter is what Taronga can actually use. Both, not either.
+
+⚠️ **The gorilla's job is STARTING the drive, not running it.** A phone drive takes a term; the
+box takes a lesson. That was the fix that let Taronga's own MobileMuster campaign fit the mode's
+shape. It is also the only habitat whose "where" is indoors, and the only ongoing activity.
+
+#### 🚫 The echidna swap — considered and declined 2026-10-29
+
+Raised twice, so the reasoning is here rather than re-derived. Swapping the **gorilla** for an
+echidna would cost Taronga's own phone campaign, the only ongoing activity, and a Critically
+Endangered animal — in exchange for one that is **Least Concern**. Swapping the **chimpanzee**
+was the better version (an echidna eats ants and termites, so it owns a bug hotel more honestly
+than a chimp does) and was still declined to keep the set stable at eight.
+
+⚠️ Everything is ready if it is ever revisited: `/images/stock-echidna.jpg` exists, and the model
+carries `animals_echidnas` at (-168, -191), so the marker would be `-168 96 -191`.
+
+🚫 **Nine habitats is not the answer.** Eight is already too many for a term, and there is still
+no teacher control over which run (see known gaps).
+
+#### ⚠️ Rewriting a prompt means rewriting that habitat's scorer vocabulary
+
+**Fourth instance of this fault.** Six habitats changed what they are about on 2026-10-28, and
+their `ZOOYARD_WORDS` entries in `scoring.js` were rewritten with them. The tiger's old list was
+about hiding and ambush — it would have scored a good palm-oil answer at the floor.
+
+⚠️ `nura-diya` is keyed as `nura` in that object and aliased, because the id carries a hyphen.
+🚫 Do not rename the id to match — the id is what is written into every student record.
+
+Measured after the rewrite: strong stage-5 answers score **93** on all eight, weak ones **33–47**.
+
+#### 📄 The review sheet — read the content without clicking through the app
+
+```bash
+npx vite-node scripts/zooyard-content-sheet.mjs 4 > docs/zooyard-stage-4-content.md
+```
+Generated from `zooyardAnimals.js`, any stage. 🚫 Never hand-maintain a copy of the habitat list —
+a reviewer reading a stale one is reviewing what the app USED to say. Re-run after any content
+edit. `docs/zooyard-stage-4-content.md` is checked in so it can be read on GitHub.
+
+#### ⚠️ Open before this is sold or run at scale
+
+1. **The Nura Diya name needs Taronga's say-so.** It is used as a place label with **no
+   translation and no cultural claim attached**, deliberately. 🚫 Do not add either without
+   Taronga's own wording and protocol — the precinct was developed with Aboriginal community.
+2. **Paul Maguire's name is in a schools app.** Cameron can consent for himself. Confirm Paul has.
+3. **Letters are slower to moderate than photos**, and they arrive on paper as well. Decide what
+   happens to them when they land — the whole value is in Taronga using them.
+4. **Attribution is class-and-school, never a child's full name** (step 5 of the letter says so).
+   Changing that is a separate consent conversation with the school.
+5. **Still all eight videos missing.** Unchanged, and still the largest content gap.
 
 #### The build screen (`zyPhase === 'action'`)
 
@@ -2556,7 +2636,7 @@ zooyard: {
     habitatPhotoUrl, unlockedAt,          // written the moment the photo lands: this is the UNLOCK
     completed: true, points, behaviour, detail, writing, quizCorrect, observation, updatedAt,
   },
-  tiger:  { ... }, giraffe: { ... },
+  tiger:  { ... }, 'nura-diya': { ... },   // ⚠️ `giraffe` until 2026-10-28; see known gaps
   sessionCompleted: true, totalPoints,
   citizenScience: { status: 'pending'|'approved'|'denied', photoUrl, note, submittedAt },
 }
@@ -2879,12 +2959,14 @@ student who cannot render it still has to be able to pick a habitat.
 
 ⚠️ **It has never been run.** As of 2026-09-26 Firestore holds **one** ZooYard class (`A3BKK5`,
 "TEST09", one student), zero completed habitats, zero finished sessions, and one pending Habitat
-Hero submission. Everything above is built and unverified in the field. The two-minute watch in
+Hero submission. ⚠️ That emptiness is also what made the 2026-10-28 content rewrite and the
+`giraffe` → `nura-diya` id change safe: there was no real student data to orphan. 🚫 An id change
+will NOT be safe once a class has run. Everything above is built and unverified in the field. The two-minute watch in
 particular needs a real class before it is trusted: it records nothing, so it is the easiest step
 in the mode for a student to stand through without actually looking.
 
-1. **The videos are still `videoUrl: null`** on all three animals, so every student hits "Video
-   coming soon", now on all eight habitats. They have a clear job: each must set up the one
+1. **The videos are still `videoUrl: null`** on every habitat, so every student hits "Video
+   coming soon" on all eight. They have a clear job: each must set up the one
    quality that habitat is about, so a student knows what they are walking out to look for.
    That is the single highest-value missing asset.
    ⚠️ Do not confuse this with `ZOOYARD_HABITAT_THEME[x].videoBg` — those three files in
@@ -3005,6 +3087,7 @@ in the mode for a student to stand through without actually looking.
    | gorilla | **2** | 5 |
    | blue-mountains-bushwalk | **2** | 5 |
    | koala, giraffe, sea-lion, chimpanzee | 5 | 5 |
+   *(`giraffe` existed when this was measured; it became `nura-diya` on 2026-10-28.)*
    | rhino | 4 | 5 |
 
    ⚠️ **Checked that it discriminates, not just inflates** — every strong answer now maxes the
