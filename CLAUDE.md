@@ -2946,6 +2946,33 @@ in the mode for a student to stand through without actually looking.
 4. Three animals and **one MCQ each** is still thin next to Evolve's five chapters or Wildest
    Dreams' eight stops. The observe → measure → build → write flow lengthened each habitat
    considerably, so this is less pressing than it was.
+4b. ✅ **MULTI-SESSION: the animal is now WHO IS LOGGED IN, not a permanent claim (2026-10-28).**
+   ZooYard runs across several lessons on whatever tablet is free. Before this, a returning
+   student saw their own animal crossed out as *"taken by a classmate"* and could not get back in
+   without a teacher pressing Restore on them one at a time.
+
+   The picker now shows progress (`Tiger — 5 of 8 done`) and tapping an in-use animal logs in and
+   takes over the device claim. ⚠️ **ZooYard only** — `!isZooYardClass` in `StudentJoinScreen.jsx`
+   is the whole behaviour change, and `sessionType` is already known before the picker renders.
+   🚫 Do not extend it to ZooSnooz, Evolve or Wildest Dreams: they hold student video, are
+   single-session, and none performs a claim-only write.
+
+   ⚠️⚠️ **A DELIBERATE RELAXATION OF THE 2026-10-03 PROTECTION, deployed and verified live.**
+   `isClaimOnlyWrite()` in `firestore.rules` permits a write whose `affectedKeys` are exactly
+   `['deviceUid']` — an identity takeover, never an edit. 🚫 **Never add a data field to that
+   `hasOnly` list**; it is the entire protection. The accepted trade: any child who can see the
+   class code can log in as any animal.
+
+   ⚠️ **Silent save failures had to go, and are now fatal to swallow.** Four ZooYard writes ended
+   in a bare `console.warn`; there is no console on a tablet, so a student saw the badge and the
+   points and lost both. Two children on one animal makes that reachable in NORMAL use — the
+   second device owns the record and the first is refused. All four set `saveError`, shown on the
+   badge screen **directly under the points**, because the points are the lie if the write failed.
+
+   ⚠️ Caught before shipping: the log-in branch used `safeId` 24 lines above its `const` — a
+   ReferenceError on every returning student, invisible to the build AND the lint. 🚫 Build green
+   does not mean a new code path runs.
+
 5. **Nothing persists a half-finished habitat.** `zyPhase` is local state, so a student who
    reloads after building but before writing returns to the map and re-enters that habitat from
    the video. Harmless today because a habitat is one sitting; it would matter the moment
