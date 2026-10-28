@@ -166,7 +166,7 @@ Every habitat runs the same five beats: **stand somewhere real → answer one qu
 
 > Taronga protects Australian wildlife. So can your school. Tell them what you have got here and what you are going to do about it.
 >
-> **Do this:** Write a letter to Taronga about your school’s own environment: what lives here, what this place means to you, and how your class is going to protect it.
+> **Do this:** Write a letter to Taronga about your school’s own environment: what lives here, what this place means to you, and how your class is going to protect it. Then post it — a real letter, to a real address.
 >
 > **If they can't:** If you cannot send a letter, make a sign for the place instead, so everyone else at your school knows what is there and why it matters.
 >
@@ -176,8 +176,9 @@ Every habitat runs the same five beats: **stand somewhere real → answer one qu
 > 3. Say what it means to you. This part is yours, not a fact.
 > 4. Say what your class is going to do to protect it.
 > 5. Sign it from your class and your school, not your full name.
+> 6. Post it to: Cameron Rodgers and Paul Maguire, Taronga Zoo, PO Box 20, Mosman NSW 2088.
 >
-> **Photo:** Photograph your letter, or the place you wrote about.
+> **Photo:** Photograph your letter before you post it.
 
 **6 · Write it up** — Stage 4
 

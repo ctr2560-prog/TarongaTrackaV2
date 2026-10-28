@@ -159,7 +159,9 @@ export const ZOOYARD_ANIMALS = [
     id: 'nura-diya',
     name: 'Nura Diya Australia',
     scientificName: 'Taronga’s Australian precinct',
-    image: '/images/blue-mountains-bushwalk.jpg',
+    // ⚠️ A kangaroo rather than a single-species portrait, because this habitat is a PLACE.
+    //    It is also the only habitat whose image is not of the thing it is named after.
+    image: '/images/kangaroo.jpg',
     habitatArea: 'country',
     habitatLabel: 'Nura Diya Australia',
     habitatColor: '#A8502D',
@@ -194,7 +196,13 @@ export const ZOOYARD_ANIMALS = [
       title: 'Speak Up for Your Place',
       icon: '✉️',
       brief: 'Taronga protects Australian wildlife. So can your school. Tell them what you have got here and what you are going to do about it.',
-      primary: 'Write a letter to Taronga about your school’s own environment: what lives here, what this place means to you, and how your class is going to protect it.',
+      // ⚠️ A REAL POSTED LETTER, to a real address, read by real people. That is the point of
+      //    this one — it is the only activity that leaves the school and reaches an adult who can
+      //    act on it. 🚫 Do not quietly turn it into an in-app form.
+      // ⚠️ The in-app photo still happens as well: the photo earns the badge and the school
+      //    points through the usual moderation queue, and the POSTED letter is what Taronga can
+      //    actually use. Both, not either.
+      primary: 'Write a letter to Taronga about your school’s own environment: what lives here, what this place means to you, and how your class is going to protect it. Then post it — a real letter, to a real address.',
       fallback: 'If you cannot send a letter, make a sign for the place instead, so everyone else at your school knows what is there and why it matters.',
       steps: [
         'Name the place. Where is it, and what is in it?',
@@ -202,8 +210,9 @@ export const ZOOYARD_ANIMALS = [
         'Say what it means to you. This part is yours, not a fact.',
         'Say what your class is going to do to protect it.',
         'Sign it from your class and your school, not your full name.',
+        'Post it to: Cameron Rodgers and Paul Maguire, Taronga Zoo, PO Box 20, Mosman NSW 2088.',
       ],
-      photoPrompt: 'Photograph your letter, or the place you wrote about.',
+      photoPrompt: 'Photograph your letter before you post it.',
     },
     writingPromptByStage: {
       1: 'You found the most Australian place in your schoolyard. What lives there, and how will you look after it?',
