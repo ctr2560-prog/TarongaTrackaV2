@@ -139,7 +139,13 @@ const SPOTS = {
   // ones.
   koala:   { pos: '41 81 162',   where: 'the koala exhibit, by the Institute of Science and Learning' },
 
-  giraffe: { pos: '157 83 81',   where: 'African Savannah' },                // animals_giraffes
+  // ⚠️ Replaced the giraffe 2026-10-28. The model carries this precinct BY NAME —
+  //    `nura_diya_australia_walls/_roof` centred (-140, 91) — so this anchors onto the real
+  //    structure rather than an interpolation. Height by the documented method: the tallest
+  //    thing standing at that xz is `trees_trunks` at 87, so the marker sits at 96.
+  //    Neighbours are the dingoes (-202, 91), the western koalas (-198, 117) and Nocturnal
+  //    Country (-165, 94) — no marker collisions.
+  'nura-diya': { pos: '-140 96 91', where: 'Nura Diya Australia' },      // nura_diya_australia
   tiger:   { pos: '249 74 56',   where: 'Tiger Trek' },                      // animals_tigers
   chimpanzee: { pos: '170 89 160',  where: 'the chimpanzee exhibit' },       // animals_chimpanzees
   gorilla:    { pos: '21 55 -9',    where: 'the gorilla exhibit' },          // animals_gorillas

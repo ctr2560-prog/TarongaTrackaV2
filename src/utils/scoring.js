@@ -1244,47 +1244,58 @@ function buildEnglishObservationScore(text, animalId, classStage) {
 //    rewritten, rewrite its entry here and re-score a real answer — that is the whole lesson of
 //    this file.
 const ZOOYARD_WORDS = {
-  // "what separates the trees… then planted into the gap" → connectivity
+  // "stand in the gap between two trees... then plant or water into it" -> connectivity
   koala: {
-    behaviour: ['gap','plant','tree','canopy','connect','link','corridor','cross','between','join','bridge','reach','space','apart'],
+    behaviour: ['gap','plant','water','tree','canopy','connect','link','corridor','cross','between','join','bridge','reach','space','apart'],
     detail:    ['koala','habitat','safe','ground','predator','dog','road','car','eucalypt','feed','continuous','fragment','isolat','travel','move'],
   },
-  // "how much cover your spot had, then built more" → ambush hunting
+  // "two minutes at the bins... then make a palm oil poster" -> consumption, not cover
+  // ⚠️ Rewritten 2026-10-28 with the activity. The old list was about hiding and ambush, which
+  //    scores an answer about palm oil at the floor.
   tiger: {
-    behaviour: ['cover','hide','hidden','hiding','conceal','ambush','stalk','creep','approach','screen','shelter','grass','branch','build','built','close'],
-    detail:    ['predator','prey','hunt','success','distance','surprise','exposed','open','visible','camouflage','energy','catch','spot','seen'],
+    behaviour: ['palm','oil','label','ingredient','wrapper','packag','poster','buy','shop','food','check','hidden','vegetable','product'],
+    detail:    ['forest','rainforest','clear','plantation','habitat','sumatra','tiger','demand','consumer','certif','sustainab','choice','aware'],
   },
-  // "what cuts the views short… then sited water for a clear line of sight"
-  giraffe: {
-    behaviour: ['sight','view','line','clear','open','water','drink','site','sited','place','position','watch','see','saw','fence','block'],
-    detail:    ['predator','danger','vulnerable','head','tall','height','early','warn','detect','approach','safe','lion','escape','notice'],
+  // "find the most Australian place... then write to Taronga about protecting it"
+  nura: {
+    behaviour: ['place','belong','protect','letter','write','care','look after','keep','save','tell','speak','matter','ours','here'],
+    detail:    ['australia','native','endemic','species','extinct','nowhere else','bush','country','local','habitat','lost','only','unique','world'],
   },
-  // "how much of your schoolyard is bare or mown, then rebuilt a patch of ground layer"
+  // "stand under the biggest old tree... then build a nest box" -> hollows
+  // ⚠️ Rewritten 2026-10-28. Was about leaf litter and the ground layer.
   'blue-mountains-bushwalk': {
-    behaviour: ['ground','layer','bare','mown','mow','litter','leaf','leaves','log','mulch','rebuild','rake','restore','plant','patch','cover'],
-    detail:    ['insect','bird','shelter','food','web','soil','moisture','beetle','lizard','habitat','base','decompos','invertebrate','frog','spider'],
+    behaviour: ['hollow','hole','nest','box','build','tree','branch','old','trunk','hang','make','fix','home'],
+    detail:    ['bird','possum','parrot','shelter','breed','egg','chick','century','hundred','years','young','slow','form','rot','depend'],
   },
-  // "what was sitting upstream of a drain, then removed it"
+  // "twenty pieces before the drain"
   'sea-lion': {
-    behaviour: ['drain','litter','rubbish','plastic','remove','clean','pick','collect','upstream','wash','rain','stormwater','clear','bin'],
-    detail:    ['harbour','ocean','sea','water','swallow','tangle','entangle','waterway','pollut','marine','wildlife','choke','stomach','beach'],
+    behaviour: ['drain','litter','rubbish','plastic','remove','clean','pick','collect','upstream','wash','rain','stormwater','clear','bin','twenty'],
+    detail:    ['harbour','ocean','sea','water','swallow','tangle','entangle','waterway','pollut','marine','wildlife','choke','stomach','beach','debris'],
   },
-  // "which layers your schoolyard has, then added a missing one"
+  // "two minutes in the garden... then build a bug hotel" -> invertebrate shelter
+  // ⚠️ Rewritten 2026-10-28. Was about forest layers and height.
   chimpanzee: {
-    behaviour: ['layer','shrub','middle','understorey','understory','canopy','add','plant','level','height','tall','structure','ground','tree'],
-    detail:    ['species','forest','food','shelter','move','nest','diversity','variety','habitat','complex','climb','travel','support'],
+    behaviour: ['bug','insect','hotel','hole','build','shelter','hide','bamboo','stem','wood','bark','small','home','gap','size'],
+    detail:    ['bee','beetle','spider','ladybird','lacewing','food','web','base','pollinat','variety','different','species','tiny','depend','termite'],
   },
-  // "how much variety the planting had, then added a new kind"
+  // "count the devices... then build the phone collection box" -> coltan
+  // ⚠️ Rewritten 2026-10-28. Was about plant variety.
   gorilla: {
-    behaviour: ['variety','varied','different','kind','type','mix','mixed','diverse','diversity','add','plant','species','same','single','new'],
-    detail:    ['monoculture','food','flower','fruit','season','year','insect','bird','animal','support','range','resilien','spread','supply'],
+    behaviour: ['phone','device','recycl','collect','box','drive','drawer','old','reuse','mobile','start','label','donate'],
+    detail:    ['coltan','metal','mineral','mining','mine','forest','habitat','congo','africa','gorilla','clear','demand','dig','taronga'],
   },
-  // "how little shade your schoolyard has, then made somewhere cooler"
+  // "where would anything drink" -> water, not shade
+  // ⚠️ Rewritten 2026-10-28. Was about shade and cooling.
   rhino: {
-    behaviour: ['shade','shady','cool','cover','screen','plant','tree','shelter','build','made','make','temperature','hot','sun','spot'],
-    detail:    ['overheat','heat','sweat','regulat','water','feed','stress','midday','body','thermo','energy','wallow','mud','skin'],
+    behaviour: ['water','drink','dish','bowl','put','out','open','fill','refill','shallow','clear','view','place'],
+    detail:    ['hot','heat','thermo','regulat','cool','wallow','mud','summer','bird','survive','thirsty','dry','overheat','parasit'],
   },
 };
+
+// ⚠️ `nura-diya` is keyed as `nura` above and mapped here, because the id carries a hyphen and
+//    the lookup is by exact id. 🚫 Do not rename the id to match the key — the id is what is
+//    written into every student record.
+ZOOYARD_WORDS['nura-diya'] = ZOOYARD_WORDS.nura;
 
 // Mirrors the shape of the generic branch in scoreObservation, with the lists above. Returns the
 // same three bonuses so everything downstream — rationale, feedback, normalisation — is unchanged.

@@ -6,7 +6,7 @@ Every habitat runs the same five beats: **stand somewhere real → answer one qu
 
 ## Before you start
 
-- ⚠️ **8 of 8 videos are missing.** Every habitat currently shows "Video coming soon" and goes straight to the question. Missing: Koala, Sumatran Tiger, Giraffe, Blue Mountains Bushwalk, Australian Sea Lion, Chimpanzee, Western Lowland Gorilla, Greater One-Horned Rhino.
+- ⚠️ **8 of 8 videos are missing.** Every habitat currently shows "Video coming soon" and goes straight to the question. Missing: Koala, Sumatran Tiger, Nura Diya Australia, Blue Mountains Bushwalk, Australian Sea Lion, Chimpanzee, Western Lowland Gorilla, Greater One-Horned Rhino.
 - **The question is the same at every stage.** Only the writing prompt changes by stage, so Stage 1 and Stage 5 students answer an identical multiple choice.
 - **Correct answers sit at positions 2, 0, 3, 1, 3, 0, 2, 1** (0 = first option). Scattered, not patterned.
 - **Every build has a fallback** for schools that cannot plant into the ground.
@@ -20,9 +20,9 @@ Every habitat runs the same five beats: **stand somewhere real → answer one qu
 
 **1 · Where they stand**
 
-> Go and stand next to a tree. Anywhere in your schoolyard, or just outside it.
+> Go and stand in the gap between two trees. Any two trees in your schoolyard, or just outside it. Stand in the space between them.
 >
-> *Unlock question:* Are you standing near a tree? — they photograph the spot to unlock it.
+> *Unlock question:* Are you standing between two trees? — they photograph the spot to unlock it.
 
 **2 · Video**
 
@@ -39,51 +39,51 @@ Every habitat runs the same five beats: **stand somewhere real → answer one qu
 >
 > *Shown when correct:* Land clearing for housing, farming and roads is the single biggest driver of koala decline. Without enough trees, koalas lose their food, shelter and safe pathways between habitats.
 
-**4 · Two minutes of watching** — Two minutes under the tree
+**4 · Two minutes of watching** — Two minutes in the gap
 
-> Stand still and look. Put the screen down. There is nothing to write yet.
+> Stand still in the gap and look up. Put the screen down. There is nothing to write yet.
 >
 > What they are told to look for:
-> - Where is the next tree, and what would an animal have to cross to reach it?
-> - Could something travel from this tree to that one without touching the ground?
-> - What lives up there? Look for movement, not just animals.
+> - How far apart are these two trees, and what is in between them?
+> - Could something travel from one to the other without touching the ground?
+> - What would an animal have to cross, and what could catch it down there?
 
 **5 · Build it** — 🌱 Close the Gap
 
-> You just looked at what separates one tree from the next. Make that gap smaller.
+> You just stood in the space that separates one tree from the next. Make that gap smaller.
 >
 > **Do this:** Plant a native tree or shrub in the gap between your two trees.
 >
-> **If they can't:** If your school cannot plant into the ground, use a large pot and place it in the gap.
+> **If they can't:** If your school cannot plant anything, find a plant that is already growing in the gap and water it properly instead. A plant that survives the summer is worth more than one that is planted and forgotten.
 >
 > Steps:
-> 1. Ask your teacher where you are allowed to plant.
+> 1. Ask your teacher where you are allowed to plant, or which plant needs water.
 > 2. Pick a spot roughly halfway between the two trees.
 > 3. Dig a hole twice as wide as the pot, and just as deep.
 > 4. Tip the plant out, sit it in, and firm the soil around it.
 > 5. Water it well, then tell your teacher who waters it next.
 >
-> **Photo:** Photograph what you planted, with the gap behind it.
+> **Photo:** Photograph what you planted or watered, with the gap behind it.
 
 **6 · Write it up** — Stage 4
 
-> You looked at what separates the trees in your schoolyard, then planted into the gap. Explain what gaps like that mean for a koala moving through, and how much difference one plant really makes.
+> You stood in the gap that separates the trees in your schoolyard, then planted or watered something in it. Explain what gaps like that mean for a koala moving through, and how much difference one plant really makes.
 
 ---
 
 ## Sumatran Tiger
 
-*Panthera tigris sumatrae* · Sumatran Rainforest · **the one thing this habitat is about: cover to hide in**
+*Panthera tigris sumatrae* · Sumatran Rainforest · **the one thing this habitat is about: what we throw away**
 
 **1 · Where they stand**
 
-> Go and stand somewhere shady and green. Under a tree, beside a garden bed, anywhere leafy and covered.
+> Go and stand at the bins. The rubbish bins at your school. The canteen bins, or the ones in the playground.
 >
-> *Unlock question:* Are you standing somewhere shady and green? — they photograph the spot to unlock it.
+> *Unlock question:* Are you standing at the bins? — they photograph the spot to unlock it.
 
 **2 · Video**
 
-> ⚠️ **Not filmed.** Should set up *cover to hide in*, so a student knows what they are walking out to look for.
+> ⚠️ **Not filmed.** Should set up *what we throw away*, so a student knows what they are walking out to look for.
 
 **3 · The question**
 
@@ -94,151 +94,151 @@ Every habitat runs the same five beats: **stand somewhere real → answer one qu
 > - Tigers moving to cities
 > - Too many tigers competing for space
 >
-> *Shown when correct:* Sumatra's rainforest is being cleared at a rapid rate for palm oil and paper plantations, fragmenting the last wild spaces tigers need to hunt and roam.
+> *Shown when correct:* Sumatra's rainforest is being cleared at a rapid rate for palm oil and paper plantations, fragmenting the last wild spaces tigers need to hunt and roam. Palm oil is in roughly half the packaged food in a supermarket, which is why it is worth knowing how to spot it.
 
-**4 · Two minutes of watching** — Two minutes in the cover
+**4 · Two minutes of watching** — Two minutes at the bins
 
-> Crouch down and stay still. Put the screen down. There is nothing to write yet.
+> Stand still and look at what is in the bins and on the ground around them. Put the screen down, and do not touch anything.
 >
 > What they are told to look for:
-> - Where could something the size of your hand hide, right now?
-> - How much of the ground here has nowhere to hide at all?
-> - What is living down at this level, under the leaves?
+> - How much of what you can see is food packaging rather than food?
+> - Pick one wrapper. How many ingredients would you guess are on the back of it?
+> - How much of this came from a plant that had to grow somewhere?
 
-**5 · Build it** — 🪵 Build the Cover
+**5 · Build it** — 🪧 Spot the Palm Oil
 
-> You just looked for the places something could hide. Make another one.
+> Tiger forest is cleared to grow palm oil, and palm oil is in about half the packaged food in a supermarket. Most people have no idea they are buying it.
 >
-> **Do this:** Build a cover pile in a quiet corner: logs, sticks, bark and rocks, loosely stacked so there are gaps to get into.
+> **Do this:** Check the ingredients on wrappers from your own lunch or the canteen, find the ones with palm oil, and make a poster that shows people how to spot it.
 >
-> **If they can't:** If you cannot find logs or rocks, a deep pile of leaf litter raked into a corner does the same job.
+> **If they can't:** If you cannot find wrappers to check, make the poster from the hidden names alone. Palm oil is often listed as vegetable oil, palmitate, palm kernel, glyceryl stearate or sodium lauryl sulfate.
 >
 > Steps:
-> 1. Find a quiet corner nobody walks through.
-> 2. Collect fallen logs, sticks, bark and a few rocks. Nothing still growing.
-> 3. Stack them loosely so there are gaps to crawl into.
-> 4. Build it up to about knee high if you have enough.
-> 5. Now leave it alone. Cover only works if nothing disturbs it.
+> 1. Collect a few clean wrappers from your lunch or the canteen.
+> 2. Read the ingredients. Palm oil often hides as "vegetable oil" or a long chemical name.
+> 3. Sort them into two piles: has it, or does not.
+> 4. Make a poster showing the hidden names people should look for.
+> 5. Put it where people choose food. The canteen, not the classroom wall.
 >
-> **Photo:** Photograph your pile, close enough to see the gaps in it.
+> **Photo:** Photograph your poster where you put it up.
 
 **6 · Write it up** — Stage 4
 
-> You looked at how much cover your spot had, then built more. Explain why cover is a survival tool rather than decoration, and what your pile provides that the bare ground around it does not.
+> You looked at what your school throws away, then made a poster about palm oil. Explain how demand for one ingredient can clear a forest, and whether telling people about it actually changes anything.
 
 ---
 
-## Giraffe
+## Nura Diya Australia
 
-*Giraffa camelopardalis* · African Savannah · **the one thing this habitat is about: long views and water**
+*Taronga’s Australian precinct* · Nura Diya Australia · **the one thing this habitat is about: what belongs here**
 
 **1 · Where they stand**
 
-> Go and stand in an open, grassy space. An oval, a field, anywhere wide and open with sky above you.
+> Go and find the most Australian place in your schoolyard. A place, not a thing. A patch of bush, a rock, a native garden bed, somewhere nobody has landscaped. Somewhere that could only be here.
 >
-> *Unlock question:* Are you standing somewhere open and grassy? — they photograph the spot to unlock it.
+> *Unlock question:* Does this place feel like it belongs here? — they photograph the spot to unlock it.
 
 **2 · Video**
 
-> ⚠️ **Not filmed.** Should set up *long views and water*, so a student knows what they are walking out to look for.
+> ⚠️ **Not filmed.** Should set up *what belongs here*, so a student knows what they are walking out to look for.
 
 **3 · The question**
 
-> What has happened to giraffe populations across Africa over the last 30 years?
+> Most of Australia’s mammals, reptiles and frogs are found nowhere else on Earth. What does that mean if they disappear here?
 >
-> - They've doubled
-> - They've stayed exactly the same
-> - They've moved entirely into forests
-> - **✓ They've declined sharply as savannah is fragmented by farms and fences**
+> - They can move to another country
+> - Nothing — the same animals live overseas
+> - Zoos overseas would still have plenty of them
+> - **✓ They are gone from the whole world, not just from Australia**
 >
-> *Shown when correct:* Giraffe numbers have dropped sharply in recent decades as open savannah is fragmented by farms, fences and settlements, cutting off the long routes giraffes travel to find food and water.
+> *Shown when correct:* Most of Australia’s mammals, reptiles and frogs live here and nowhere else. That means an Australian extinction is a world extinction — there is no population somewhere else to come back from. Australia has already lost more mammal species than any other country.
 
-**4 · Two minutes of watching** — Two minutes in the open
+**4 · Two minutes of watching** — Two minutes in this place
 
-> Stand still and look out, not down. Put the screen down. There is nothing to write yet.
+> Stand still and look at this place properly. Put the screen down. There is nothing to write yet.
 >
 > What they are told to look for:
-> - What is the furthest thing you can clearly see from here?
-> - What cuts your view short: fences, buildings, hedges?
-> - If you were an animal out here, where would you go for a drink?
+> - What is here that could only be in Australia?
+> - How much of the rest of your school could be anywhere in the world?
+> - If this place were gone next term, who would notice?
 
-**5 · Build it** — 💧 Water in the Open
+**5 · Build it** — ✉️ Speak Up for Your Place
 
-> Animals in open country trade cover for the ability to see danger coming, and they travel a long way to drink. Give them both.
+> Taronga protects Australian wildlife. So can your school. Tell them what you have got here and what you are going to do about it.
 >
-> **Do this:** Set out a shallow dish of water where a drinking bird has a clear view all around it, off the ground and away from anywhere a cat could hide.
+> **Do this:** Write a letter to Taronga about your school’s own environment: what lives here, what this place means to you, and how your class is going to protect it.
 >
-> **If they can't:** If water is not allowed at your school, leave a no-mow patch instead and mark its edges so nobody cuts it.
+> **If they can't:** If you cannot send a letter, make a sign for the place instead, so everyone else at your school knows what is there and why it matters.
 >
 > Steps:
-> 1. Choose an open spot with a clear view all the way around.
-> 2. Keep it away from bushes or fences a cat could hide behind.
-> 3. Raise it off the ground if you can: a stump, a brick, a table.
-> 4. Fill it shallow, no deeper than your finger.
-> 5. Agree with your class who refills it each week.
+> 1. Name the place. Where is it, and what is in it?
+> 2. Say what lives there, or what could live there.
+> 3. Say what it means to you. This part is yours, not a fact.
+> 4. Say what your class is going to do to protect it.
+> 5. Sign it from your class and your school, not your full name.
 >
-> **Photo:** Photograph your dish and the open view around it.
+> **Photo:** Photograph your letter, or the place you wrote about.
 
 **6 · Write it up** — Stage 4
 
-> You looked at what cuts the views short in your schoolyard, then sited water where the view is clear. Explain what long sightlines mean to an animal like a giraffe, and how fences change open country.
+> You found the most Australian place in your schoolyard and made the case for protecting it. Explain why Australian species matter differently from species found in many countries, and what your school can realistically do.
 
 ---
 
 ## Blue Mountains Bushwalk
 
-*Blue Mountains National Park* · Australian Bushland · **the one thing this habitat is about: a living ground layer**
+*Blue Mountains National Park* · Australian Bushland · **the one thing this habitat is about: nowhere to nest**
 
 **1 · Where they stand**
 
-> Go and find some messy ground. Leaf litter, a garden bed, a scruffy edge. Anywhere nobody has tidied.
+> Go and stand under the biggest, oldest tree you can find. The oldest one at your school. Thick trunk, big branches, the one that was here before the buildings.
 >
-> *Unlock question:* Are you standing on ground that is not mown grass or concrete? — they photograph the spot to unlock it.
+> *Unlock question:* Are you under a big old tree? — they photograph the spot to unlock it.
 
 **2 · Video**
 
-> ⚠️ **Not filmed.** Should set up *a living ground layer*, so a student knows what they are walking out to look for.
+> ⚠️ **Not filmed.** Should set up *nowhere to nest*, so a student knows what they are walking out to look for.
 
 **3 · The question**
 
-> Most of the small animals in Australian bushland live in one place. Where?
+> Many Australian birds and mammals can only nest in tree hollows. How long does a hollow take to form?
 >
-> - In the tops of the tallest trees
-> - **✓ In the leaf litter and fallen wood on the ground**
-> - In the open on bare soil
-> - In the sky
+> - A few weeks
+> - **✓ Over a hundred years**
+> - One season
+> - They are built by the birds
 >
-> *Shown when correct:* The ground layer does most of the work. Fallen leaves, bark and dead wood shelter the insects, spiders, skinks and fungi that everything larger feeds on. A tidy schoolyard has trees but almost no ground layer, so the food chain starts with a gap in it.
+> *Shown when correct:* Hollows are not built. They form slowly as a branch breaks and the wood rots out, and in many eucalypts that takes more than a century. Over 300 Australian species depend on them, and a schoolyard full of young trees has almost none.
 
-**4 · Two minutes of watching** — Two minutes on the ground
+**4 · Two minutes of watching** — Two minutes looking up
 
-> Crouch down and look at the ground, not the view. Put the screen down.
+> Stand under the branches and look up into the tree. Put the screen down. There is nothing to write yet.
 >
 > What they are told to look for:
-> - Is anything moving down there? Wait. It takes a while.
-> - How much of the ground around you is bare, mown or paved?
-> - Where would something the size of your thumb be able to shelter?
+> - Can you see a hole or a hollow anywhere in this tree?
+> - How old would you guess this tree is, and how old are the others nearby?
+> - If a bird needed a hole to nest in today, where would it go?
 
-**5 · Build it** — 🍂 Put the Ground Layer Back
+**5 · Build it** — 🪵 Build a Nest Box
 
-> You just looked at how much of your schoolyard has no ground layer at all. Build some back.
+> Hollows take a hundred years. A nest box takes an afternoon, and it does the same job until the trees catch up.
 >
-> **Do this:** Rake fallen leaves, bark and small sticks into a deep patch in a corner nobody walks through, and leave it there.
+> **Do this:** Build or assemble a nest box and fix it to a tree, facing away from the afternoon sun.
 >
-> **If they can't:** If there are no leaves to gather, lay a few pieces of untreated wood or bark on the soil instead and leave a gap underneath.
+> **If they can't:** If you cannot build or hang one, find out which species at your school would use a hollow and design the right box for it: the hole size decides who gets in.
 >
 > Steps:
-> 1. Find a corner out of the way of feet and mowers.
-> 2. Rake up fallen leaves, bark and small sticks from nearby.
-> 3. Pile them at least as deep as your hand is wide.
-> 4. Lay a few sticks on top so the wind cannot take it.
-> 5. Mark the edge so nobody tidies it away.
+> 1. Find out which bird or possum you are building for. The hole size decides.
+> 2. Build or assemble the box, with a lid you can open to check it later.
+> 3. Ask your teacher where it can be fixed, and how high.
+> 4. Face the hole away from the afternoon sun and the wind.
+> 5. Write the date on it, and agree who checks it next term.
 >
-> **Photo:** Photograph your patch, close enough to see how deep it is.
+> **Photo:** Photograph your box on the tree, with the trunk behind it.
 
 **6 · Write it up** — Stage 4
 
-> You looked at how much of your schoolyard is bare or mown, then rebuilt a patch of ground layer. Explain what a place loses when its ground layer is cleared away, and what your patch gives back.
+> You looked for tree hollows in your schoolyard, then built a nest box. Explain why a hollow takes so long to form, and what happens to hollow-dependent species in a place with only young trees.
 
 ---
 
@@ -276,156 +276,156 @@ Every habitat runs the same five beats: **stand somewhere real → answer one qu
 > - What is lying around that would travel with it?
 > - What is the smallest piece of rubbish you can find?
 
-**5 · Build it** — 🧤 Clear the Line
+**5 · Build it** — 🧤 Twenty Pieces
 
-> Everything you just looked at is one rainfall away from a creek. Take it out of the system.
+> Everything you just looked at is one rainfall away from a creek. Take twenty pieces of it out of the system.
 >
-> **Do this:** With gloves or a pickup tool, collect the rubbish between you and that drain and put it in a bin.
+> **Do this:** With gloves or a pickup tool, collect twenty pieces of rubbish from between you and that drain, and bin them.
 >
-> **If they can't:** If you cannot safely pick it up, photograph the worst spot and report it to your teacher or the office so it can be cleared properly.
+> **If they can't:** If you cannot safely pick it up, count twenty pieces instead, photograph the worst spot, and report it so it can be cleared properly.
 >
 > Steps:
 > 1. Put gloves on, or use a pickup tool. Never bare hands.
 > 2. Start at the drain and work back along your line.
-> 3. Leave anything sharp or broken. Tell a teacher instead.
-> 4. Check under edges and in corners, where wind collects it.
+> 3. Count as you go. Twenty pieces, however small.
+> 4. Leave anything sharp or broken. Tell a teacher instead.
 > 5. Bin it, then wash your hands.
 >
-> **Photo:** Photograph what you collected before it goes in the bin.
+> **Photo:** Photograph your twenty pieces before they go in the bin.
 
 **6 · Write it up** — Stage 4
 
-> You looked at what was sitting in the stormwater path, then removed it. Explain how schoolyard litter becomes marine debris, and why small pieces are more dangerous than large ones.
+> You removed twenty pieces of rubbish from the stormwater path. Explain how schoolyard litter becomes marine debris, and why small pieces are more dangerous than large ones.
 
 ---
 
 ## Chimpanzee
 
-*Pan troglodytes* · African Forest · **the one thing this habitat is about: layers at different heights**
+*Pan troglodytes* · African Forest · **the one thing this habitat is about: nowhere for small things to live**
 
 **1 · Where they stand**
 
-> Go and stand under a big tree. The biggest one you can get to, with branches above your head.
->
-> *Unlock question:* Are you standing under branches? — they photograph the spot to unlock it.
-
-**2 · Video**
-
-> ⚠️ **Not filmed.** Should set up *layers at different heights*, so a student knows what they are walking out to look for.
-
-**3 · The question**
-
-> Chimpanzees spend their day moving between different heights of the forest. Why does that matter?
->
-> - **✓ Food, sleep and safety are found at different heights, so they need all the layers**
-> - They can only climb in one direction
-> - Only young chimpanzees climb
-> - They are trying to stay cool
->
-> *Shown when correct:* A chimpanzee feeds on the ground and in the canopy, and builds a fresh nest in the middle branches almost every night. Selective logging can leave a forest that still looks green from above while the layer they sleep in has gone.
-
-**4 · Two minutes of watching** — Two minutes looking up
-
-> Stand under the branches and look from your feet all the way up. Put the screen down.
->
-> What they are told to look for:
-> - How many different heights can you see something living at?
-> - Is anything growing between the grass and the branches, or is that space empty?
-> - Could something climb from the ground to the top without coming down?
-
-**5 · Build it** — 🌿 Add the Missing Layer
-
-> You just looked at which layers your schoolyard has. Add one it is missing.
->
-> **Do this:** Plant a shrub, or a group of tall grasses, in the empty space between the ground and the branches.
->
-> **If they can't:** If you cannot plant, build the missing layer another way: a stack of logs, a brush pile, or a climbing frame of sticks against a fence.
->
-> Steps:
-> 1. Find the empty space between the grass and the branches.
-> 2. Choose a shrub or tall grass that will grow to about your height.
-> 3. Plant it somewhere it will still get some light.
-> 4. Cannot plant? Lean sticks against a fence to make a climbing frame.
-> 5. Water it in, and check how tall it is in a month.
->
-> **Photo:** Photograph the new layer with the ground and the branches both in shot.
-
-**6 · Write it up** — Stage 4
-
-> You looked at which layers your schoolyard has, then added a missing one. Explain what a forest loses when its middle layers are removed, even if the tall trees are left standing.
-
----
-
-## Western Lowland Gorilla
-
-*Gorilla gorilla gorilla* · African Forest · **the one thing this habitat is about: variety of plants**
-
-**1 · Where they stand**
-
-> Go and stand in a garden bed. Any planted area. The messier and more mixed up, the better.
+> Go and stand in the garden. Any planted area. The messier and more mixed up, the better.
 >
 > *Unlock question:* Are you standing somewhere with plants growing in it? — they photograph the spot to unlock it.
 
 **2 · Video**
 
-> ⚠️ **Not filmed.** Should set up *variety of plants*, so a student knows what they are walking out to look for.
+> ⚠️ **Not filmed.** Should set up *nowhere for small things to live*, so a student knows what they are walking out to look for.
 
 **3 · The question**
 
-> A wild gorilla eats from over a hundred different plant species. What does that tell you about the forest it needs?
+> Chimpanzees use tools to fish insects out of termite mounds. What does that tell you about insects in a forest?
 >
-> - It has to be quiet
-> - It only needs one kind of tree if there is enough of it
-> - **✓ It has to be varied, not just large**
-> - It has to be near a city
+> - **✓ They are worth the effort, because almost everything depends on them**
+> - They are only eaten when there is no fruit
+> - Only young chimpanzees eat them
+> - They are a problem the forest would be better without
 >
-> *Shown when correct:* Gorillas are bulk feeders on leaves, stems, pith and fruit, and what is available changes through the year. A plantation can be enormous and still starve them, because it is the same plant over and over. Variety is the habitat, not just area.
+> *Shown when correct:* Jane Goodall watched a chimpanzee strip a twig to fish for termites in 1960, and it changed what we thought made humans different. Insects are worth that effort because they are the base of the whole food web: lose them and everything above them goes too.
 
-**4 · Two minutes of watching** — Two minutes in the bed
+**4 · Two minutes of watching** — Two minutes in the garden
 
-> Stand still and look closely at the plants around you. Put the screen down.
+> Crouch down and look closely into the planting. Put the screen down. There is nothing to write yet.
 >
 > What they are told to look for:
-> - How many different leaf shapes can you find without moving your feet?
-> - Is it mostly the same plant repeated, or a real mixture?
-> - Is anything flowering, seeding or being eaten right now?
+> - Can you find anything alive that is smaller than your fingernail?
+> - Where could something that small shelter from the sun, the rain and being stepped on?
+> - How many different kinds of hiding place are there, and how many are the same?
 
-**5 · Build it** — 🌼 Add a Kind That Is Missing
+**5 · Build it** — 🐝 Build a Bug Hotel
 
-> You just looked at how many kinds of plant your schoolyard offers. Add one it does not have.
+> Different insects need completely different homes. One kind of space houses almost nothing. Many kinds house a lot.
 >
-> **Do this:** Plant something DIFFERENT from everything already growing there, ideally a local native that flowers.
+> **Do this:** Build a bug hotel with as many different hole sizes and materials as you can: bamboo, drilled wood, hollow stems, bark, pine cones.
 >
-> **If they can't:** If you cannot plant, sow seeds of a local native in a pot and put the pot in the bed, or leave a patch unmown so whatever is already in the soil can come up.
+> **If they can't:** If you cannot build a frame, bundle hollow stems tightly together with string and wedge the bundle somewhere dry and out of the wind.
 >
 > Steps:
-> 1. Look at what is already growing. Name two of them.
-> 2. Choose something different: a different leaf, a different flower.
-> 3. Pick a local native if you can. Ask your teacher which.
-> 4. Plant it in a gap so it does not get crowded out.
-> 5. Water it in and label it with its name.
+> 1. Collect materials with holes of different sizes. Variety is the whole point.
+> 2. Pack them tightly into a box, a tin or a bundle so nothing rattles loose.
+> 3. Make sure the holes face outwards and the back is closed.
+> 4. Wedge it somewhere dry, off the ground, out of the afternoon sun.
+> 5. Leave it alone. Check in a month to see who moved in.
 >
-> **Photo:** Photograph what you added, next to what was already there.
+> **Photo:** Photograph your bug hotel, close enough to see the different hole sizes.
 
 **6 · Write it up** — Stage 4
 
-> You looked at how much variety the planting had, then added a new kind. Explain why a large area of a single plant species cannot support a gorilla, and what your addition changes.
+> You looked at how few places small creatures had to live, then built a bug hotel with many different spaces. Explain why variety of shelter matters as much as amount of shelter, and what a place loses without its insects.
+
+---
+
+## Western Lowland Gorilla
+
+*Gorilla gorilla gorilla* · African Forest · **the one thing this habitat is about: where our devices come from**
+
+**1 · Where they stand**
+
+> Go to where the most people in your school walk past. The office, the library, the front door. Somewhere everybody passes.
+>
+> *Unlock question:* Is this somewhere lots of people walk past? — they photograph the spot to unlock it.
+
+**2 · Video**
+
+> ⚠️ **Not filmed.** Should set up *where our devices come from*, so a student knows what they are walking out to look for.
+
+**3 · The question**
+
+> Old mobile phones contain a metal called coltan. Why does that matter to a gorilla?
+>
+> - Gorillas are frightened by the noise phones make
+> - Phones are made from trees
+> - **✓ Coltan is mined out of the forest gorillas live in**
+> - It does not affect them at all
+>
+> *Shown when correct:* Coltan is mined in Central Africa, in and around the forests where gorillas and chimpanzees live, and the mining clears habitat and brings hunting with it. Millions of unused phones sit in drawers across Australia. Taronga runs a phone recycling campaign with MobileMuster for exactly this reason.
+
+**4 · Two minutes of watching** — Two minutes counting devices
+
+> Stand still and count every device you can see: tablets, phones, laptops, screens, the whiteboard. Put your own screen down after you have counted.
+>
+> What they are told to look for:
+> - How many devices can you see from where you are standing?
+> - How many old phones would you guess are sitting in drawers at your house?
+> - Where did the metal inside all of them come from?
+
+**5 · Build it** — 📦 Start the Phone Drive
+
+> Taronga collects old phones so the metal inside them is reused instead of mined out of gorilla forest. Your job is not to collect them all. Your job is to start it.
+>
+> **Do this:** Build and decorate a phone collection box, label it with why it matters, and put it where the whole school walks past.
+>
+> **If they can't:** If your school cannot host a box, make a card for students to take home that tells families how to recycle an old phone.
+>
+> Steps:
+> 1. Find a sturdy box with a lid and cut a slot in the top.
+> 2. Decorate it so people look at it twice.
+> 3. Write on it what goes in, and why: the metal inside is mined from gorilla forest.
+> 4. Ask the office where it is allowed to live, and put it there.
+> 5. Agree with your teacher who empties it and where the phones go.
+>
+> **Photo:** Photograph your box where you put it, with people walking past if you can.
+
+**6 · Write it up** — Stage 4
+
+> You counted the devices around you, then started a phone drive. Explain the chain between a phone in a drawer in Australia and a forest in Central Africa, and why recycling breaks that chain.
 
 ---
 
 ## Greater One-Horned Rhino
 
-*Rhinoceros unicornis* · Floodplain Grassland · **the one thing this habitat is about: shade and cooling**
+*Rhinoceros unicornis* · Floodplain Grassland · **the one thing this habitat is about: where would anything drink**
 
 **1 · Where they stand**
 
-> Go and stand somewhere with no shade at all. The middle of a playground, an open path, anywhere the sun hits hard.
+> Go and stand out in the open sun, with no shade at all. The middle of a playground, an open path, anywhere the sun hits hard.
 >
 > *Unlock question:* Are you standing somewhere out in the open sun? — they photograph the spot to unlock it.
 
 **2 · Video**
 
-> ⚠️ **Not filmed.** Should set up *shade and cooling*, so a student knows what they are walking out to look for.
+> ⚠️ **Not filmed.** Should set up *where would anything drink*, so a student knows what they are walking out to look for.
 
 **3 · The question**
 
@@ -436,35 +436,35 @@ Every habitat runs the same five beats: **stand somewhere real → answer one qu
 > - Hiding from other rhinos
 > - Drinking, and nothing else
 >
-> *Shown when correct:* They are strong swimmers and wallow for hours to regulate their temperature and shed parasites. An animal that cannot cool down cannot survive a hot day, no matter how much food is around it, and a surface with no shade is unusable for most of summer.
+> *Shown when correct:* They are strong swimmers and wallow for hours to regulate their temperature and shed parasites. An animal that cannot cool down cannot survive a hot day, no matter how much food is around it. Water is not a luxury in a hot place. It is the thing that decides who can live there.
 
 **4 · Two minutes of watching** — Two minutes in the sun
 
-> Stand still out in the open and look around you. Put the screen down.
+> Stand still out in the open and look around you. Put the screen down. There is nothing to write yet.
 >
 > What they are told to look for:
-> - Where is the shade in your schoolyard, and how far away is the nearest patch?
-> - How hot is the ground where you are standing compared with under a tree?
-> - If you had to get out of the sun for the whole lunch break, where would you go?
+> - Where is the nearest water an animal could actually reach and drink?
+> - How far would a bird have to fly from here to find any?
+> - On the hottest day of summer, where would anything out here go?
 
-**5 · Build it** — ⛱️ Make Some Shade
+**5 · Build it** — 💧 Water in the Open
 
-> You just looked at how little of your schoolyard is out of the sun. Make somewhere cooler.
+> You just looked for water an animal could drink and probably found none. Put some out.
 >
-> **Do this:** Create a shaded, cooler refuge: a board or tile raised on stones over bare soil, a shadecloth corner, or a pot plant placed to throw shade on hot ground.
+> **Do this:** Set out a shallow dish of water where a drinking bird has a clear view all around it, off the ground and away from anywhere a cat could hide.
 >
-> **If they can't:** If you cannot build anything, plant a tree or shrub where there is no shade now. It is shade for later rather than today, which is how most shade gets made.
+> **If they can't:** If water is not allowed at your school, make a shaded cool spot instead: a board or tile raised on stones over bare soil, with a finger-width gap underneath.
 >
 > Steps:
-> 1. Stand where there is no shade at all. That is your spot.
-> 2. Raise a board, tile or piece of bark on stones over bare soil.
-> 3. Leave a gap underneath about as thick as your finger.
-> 4. Angle it so it blocks the afternoon sun.
-> 5. Look underneath in a week. Something will have moved in.
+> 1. Choose an open spot with a clear view all the way around.
+> 2. Keep it away from bushes or fences a cat could hide behind.
+> 3. Raise it off the ground if you can: a stump, a brick, a table.
+> 4. Fill it shallow, no deeper than your finger, and put a stone in it so insects can climb out.
+> 5. Agree with your class who refills it each week.
 >
-> **Photo:** Photograph your shade, with the sunny ground around it in shot.
+> **Photo:** Photograph your water, with the open ground around it in shot.
 
 **6 · Write it up** — Stage 4
 
-> You looked at how little shade your schoolyard has, then made somewhere cooler. Explain why a rhino wallows, and why a place with no shade is unusable to most animals in summer.
+> You looked for water an animal could reach, then put some out in the open. Explain why a rhino wallows, and why access to water decides which animals can survive a hot place.
 
