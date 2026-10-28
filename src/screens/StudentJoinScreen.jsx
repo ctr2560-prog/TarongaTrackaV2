@@ -5,7 +5,8 @@ import { useApp } from '../context/AppContext';
 import { useStudent } from '../context/StudentContext';
 import { normaliseCode, safeStudentId } from '../utils/helpers';
 import { ANIMAL_ALIASES } from '../constants/animals';
-import { ensureStudentAuth, STUDENT_UID_FIELD } from '../utils/studentAuth';
+import { ensureStudentAuth, loginAsStudent, STUDENT_UID_FIELD } from '../utils/studentAuth';
+import { ZOOYARD_ANIMALS } from '../data/zooyardAnimals';
 
 export default function StudentJoinScreen() {
   const {
@@ -26,6 +27,11 @@ export default function StudentJoinScreen() {
   const [loading,        setLoading]        = useState(false);
   const [takenAnimals,   setTakenAnimals]   = useState([]);
   const [restoredAnimals,setRestoredAnimals]= useState([]);
+  // ⚠️ ZooYard only. In every other mode an animal is a one-off claim; in ZooYard it is "who is
+  //    logged in", because the mode runs across several lessons on whatever tablet is free.
+  //    `zyProgress` is { [animal]: habitatsDone } and drives the resume labels below.
+  const [isZooYardClass, setIsZooYardClass] = useState(false);
+  const [zyProgress,     setZyProgress]     = useState({});
   const [selectedAnimal, setSelectedAnimal] = useState('');
 
   // Live class-code preview as student types
@@ -39,6 +45,8 @@ export default function StudentJoinScreen() {
         if (snap.exists()) {
           const d = snap.data();
           setLookedUpClass({ className: d.className, yearGroup: d.yearGroup });
+          // Known before the picker renders, which is what lets the picker change behaviour.
+          setIsZooYardClass(d.sessionType === 'zooyard');
         } else {
           setLookedUpClass(null);
         }
@@ -56,15 +64,21 @@ export default function StudentJoinScreen() {
     setJoinError('');
     try {
       const studentsSnap = await getDocs(collection(db, 'classes', code, 'students'));
-      const taken = [], restored = [];
+      const taken = [], restored = [], progress = {};
       studentsSnap.docs.forEach(d => {
         const data = d.data();
         if (!data.name) return;
         if (data.restored) restored.push(data.name);
         else taken.push(data.name);
+        // ⚠️ Counted from the student's own record, not a stored tally — `zooyard.totalPoints`
+        //    exists but says nothing about how many habitats are finished.
+        const zy = data.zooyard || {};
+        const done = ZOOYARD_ANIMALS.filter(a => zy[a.id]?.completed).length;
+        if (done > 0) progress[data.name] = done;
       });
       setTakenAnimals(taken);
       setRestoredAnimals(restored);
+      setZyProgress(progress);
       setSelectedAnimal('');
       setStep('animal');
     } catch {
@@ -109,8 +123,22 @@ export default function StudentJoinScreen() {
 
       const existingDoc  = existingSnap.empty ? null : existingSnap.docs[0].data();
       const isRestored   = existingDoc?.restored === true;
+      // ⚠️ Declared HERE, not below. The ZooYard log-in branch needs it, and a `const` used
+      //    before its declaration is a runtime ReferenceError that no build or lint catches.
+      const safeId       = safeStudentId(selectedAnimal);
 
-      if (!existingSnap.empty && !isRestored) {
+      // ⚠️ ZooYard: an existing record is a LOG-IN, not a collision. Takes over the device claim
+      //    so this tablet can save, then falls through with progress untouched.
+      // 🚫 Never write anything but the claim here — see loginAsStudent() and the matching
+      //    `isClaimOnlyWrite` rule. Resetting state from this path would be refused.
+      if (!existingSnap.empty && !isRestored && isZooYardClass) {
+        const ok = await loginAsStudent(code, safeId);
+        if (!ok) {
+          setJoinError(`Could not log in as ${selectedAnimal} on this device. Check the tablet is online and try again.`);
+          setLoading(false);
+          return;
+        }
+      } else if (!existingSnap.empty && !isRestored) {
         // Someone else grabbed it - refresh taken list and stay on animal screen
         const allSnap = await getDocs(studentsRef);
         const taken = [], restored = [];
@@ -128,8 +156,6 @@ export default function StudentJoinScreen() {
         return;
       }
 
-      const safeId = safeStudentId(selectedAnimal);
-
       // Claim this record for this device. See utils/studentAuth.js — the rules use it to tell
       // this student's own writes apart from anyone else's. Non-fatal if it cannot be obtained.
       const deviceUid = await ensureStudentAuth();
@@ -145,6 +171,9 @@ export default function StudentJoinScreen() {
           completedAt: null,
           ...(deviceUid ? { [STUDENT_UID_FIELD]: deviceUid } : {}),
         }, { merge: true });
+      } else if (!existingSnap.empty && isZooYardClass) {
+        // ⚠️ Already logged in above. 🚫 Do NOT fall into the fresh-join setDoc below — it has no
+        //    merge, so it would wipe every habitat this student has finished.
       } else {
         // Fresh join
         await setDoc(doc(db, 'classes', code, 'students', safeId), {
@@ -269,7 +298,12 @@ export default function StudentJoinScreen() {
           {/* Animal grid */}
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(130px, 1fr))', gap:'0.5rem', marginBottom:'1.25rem', maxHeight:'52vh', overflowY:'auto', padding:'0.25rem' }}>
             {ANIMAL_ALIASES.map(animal => {
-              const taken    = takenAnimals.includes(animal);
+              const claimed  = takenAnimals.includes(animal);
+              // ⚠️ In ZooYard an already-used animal is NOT blocked — it is a log-in. Everywhere
+              //    else it stays a one-off claim. This single line is the whole behaviour change.
+              const taken    = claimed && !isZooYardClass;
+              const resume   = claimed && isZooYardClass;
+              const doneCount = zyProgress[animal] || 0;
               const restored = restoredAnimals.includes(animal);
               const selected = selectedAnimal === animal;
               return (
@@ -280,8 +314,8 @@ export default function StudentJoinScreen() {
                   style={{
                     padding:'0.6rem 0.5rem',
                     borderRadius:'var(--t-r-sm)',
-                    border: selected ? '2.5px solid var(--t-mid)' : taken ? '1.5px solid #e5e7eb' : restored ? '1.5px solid #FCD34D' : '1.5px solid var(--t-stone)',
-                    background: selected ? 'linear-gradient(135deg, #e8f5ed, #d0edd9)' : taken ? '#f3f4f6' : restored ? '#FFFBEB' : 'var(--t-parchment)',
+                    border: selected ? '2.5px solid var(--t-mid)' : taken ? '1.5px solid #e5e7eb' : (restored || resume) ? '1.5px solid #FCD34D' : '1.5px solid var(--t-stone)',
+                    background: selected ? 'linear-gradient(135deg, #e8f5ed, #d0edd9)' : taken ? '#f3f4f6' : (restored || resume) ? '#FFFBEB' : 'var(--t-parchment)',
                     color: selected ? 'var(--t-deep)' : taken ? '#bbb' : 'var(--t-ink)',
                     fontSize:'0.8rem',
                     fontWeight: selected ? 700 : taken ? 400 : 600,
@@ -296,7 +330,14 @@ export default function StudentJoinScreen() {
                   }}>
                   {animal}
                   {taken    && <span style={{ display:'block', fontSize:'0.65rem', color:'#ccc', fontWeight:400, textDecoration:'none', marginTop:'0.1rem' }}>taken</span>}
-                  {restored && !selected && <span style={{ display:'block', fontSize:'0.65rem', color:'#D97706', fontWeight:700, marginTop:'0.1rem' }}>↺ continue</span>}
+                  {/* ⚠️ Says how far they got, so a returning student can find themselves. A bare
+                      "continue" is no help when 28 animals are in use. */}
+                  {resume && !selected && (
+                    <span style={{ display:'block', fontSize:'0.65rem', color:'#D97706', fontWeight:700, marginTop:'0.1rem' }}>
+                      {doneCount ? `↺ ${doneCount} of ${ZOOYARD_ANIMALS.length} done` : '↺ continue'}
+                    </span>
+                  )}
+                  {restored && !resume && !selected && <span style={{ display:'block', fontSize:'0.65rem', color:'#D97706', fontWeight:700, marginTop:'0.1rem' }}>↺ continue</span>}
                   {selected && <span style={{ display:'block', fontSize:'0.65rem', color:'var(--t-mid)', fontWeight:700, marginTop:'0.1rem' }}>selected ✓</span>}
                 </button>
               );

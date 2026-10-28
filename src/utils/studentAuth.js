@@ -93,3 +93,45 @@ export async function claimStudentRecord(classCode, studentId) {
 // The field name is deliberately explicit rather than `uid`: a student document is read by
 // teachers and staff screens, and `uid` alone reads like it might be a teacher's.
 export const STUDENT_UID_FIELD = 'deviceUid';
+
+// loginAsStudent — takes over an EXISTING student record for this device.
+//
+// ⚠️⚠️ THIS IS THE "WHO IS LOGGED IN" MODEL, AND IT IS ZOOYARD-ONLY BY CALLER.
+//
+// ZooYard runs across several lessons, often on whatever tablet is free that morning. Under the
+// claim-at-join model a returning student was told their own animal was "taken by a classmate"
+// and could not get back in at all. This lets them tap their animal and continue.
+//
+// 🚫 IT WRITES `deviceUid` AND NOTHING ELSE. The matching rule (`isClaimOnlyWrite` in
+//    firestore.rules) permits exactly that one field, so this can move an identity between
+//    devices but can never alter a score, a photo or an observation. If you ever need to reset
+//    state at login, do it as a SECOND write after this one lands — by then the record is owned
+//    by this device and the ordinary rule applies.
+//
+// ⚠️ Unlike `claimStudentRecord`, this DOES overwrite an existing uid. That is the point, and it
+//    is also the trade: any student who can see the class code can log in as any animal. Accepted
+//    for ZooYard — supervised, in a schoolyard, with points rather than personal media at stake.
+//    🚫 Do not call it from ZooSnooz, Evolve or Wildest Dreams: those hold student video, are
+//       single-session, and have no reason to hand an identity to another device.
+//
+// ⚠️ Last login wins. Two children logged in as the same animal means the SECOND device owns the
+//    record and the first silently loses its writes — which is why the caller must surface a
+//    failed save rather than swallowing it.
+//
+// Returns true only if this device now owns the record.
+export async function loginAsStudent(classCode, studentId) {
+  if (!classCode || !studentId) return false;
+  const uid = await ensureStudentAuth();
+  if (!uid) return false;
+  try {
+    const ref = doc(db, 'classes', classCode, 'students', studentId);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return false;
+    if (snap.data()?.[STUDENT_UID_FIELD] === uid) return true;   // already ours, no write needed
+    await updateDoc(ref, { [STUDENT_UID_FIELD]: uid });
+    return true;
+  } catch (err) {
+    console.warn('[studentAuth] could not log in to that record:', err?.code || err);
+    return false;
+  }
+}

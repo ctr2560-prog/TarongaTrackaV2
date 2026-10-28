@@ -77,7 +77,20 @@ service cloud.firestore {
         // 🚫 Never narrow a student write and test it with a fresh JOIN only. A join writes a new
         //    document and passes `allow create` above, so it looks fine while every subsequent
         //    update is denied. TEST ACROSS A RELOAD.
-        allow update: if unclaimedStudentRecord() || ownsStudentRecord() || isEducator();
+        // ⚠️ `isClaimOnlyWrite()` is what lets ZooYard treat an animal as "who is logged in"
+        //    rather than a permanent claim. A returning student taps their animal on whatever
+        //    tablet is free, that write moves `deviceUid` to the new device, and their ordinary
+        //    writes then pass `ownsStudentRecord()` as usual.
+        // 🚫 IT ALLOWS A TAKEOVER OF IDENTITY, NOT AN EDIT. The write may touch `deviceUid` and
+        //    nothing else, so nobody can reach into another student's record and change a score,
+        //    a photo or an observation without first logging in as them.
+        // ⚠️ This IS a deliberate relaxation of the 2026-10-03 protection, accepted for ZooYard:
+        //    a supervised schoolyard activity where the alternative was telling a child their own
+        //    name had been taken by a classmate. The modes holding student VIDEO (ZooSnooz,
+        //    Evolve, Wildest Dreams) keep the device lock in practice, because nothing in them
+        //    performs a claim-only write.
+        allow update: if unclaimedStudentRecord() || ownsStudentRecord() || isEducator()
+                         || isClaimOnlyWrite();
 
         allow delete: if request.auth != null;
       }
@@ -85,6 +98,15 @@ service cloud.firestore {
 
     function unclaimedStudentRecord() {
       return !('deviceUid' in resource.data) || resource.data.deviceUid == null;
+    }
+
+    // A write that changes the device claim and NOTHING else. `affectedKeys().hasOnly()` is the
+    // whole protection — add a field to this list and you have widened what a stranger can write.
+    // 🚫 Never add a data field here. If a login needs to reset state, do it from the owning
+    //    device AFTER the claim lands, where ownsStudentRecord() already applies.
+    function isClaimOnlyWrite() {
+      return request.auth != null
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deviceUid']);
     }
 
     function ownsStudentRecord() {

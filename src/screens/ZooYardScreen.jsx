@@ -234,6 +234,13 @@ export default function ZooYardScreen() {
   const [zyPhase,  setZyPhase]  = useState('attest');    // video | activity | observe | action | written | badge
   const [zyCompleted, setZyCompleted] = useState({});    // { [animalId]: { points, quizCorrect } }
   const [badgeReveal, setBadgeReveal] = useState(null);  // { animal, points, quizCorrect, behaviour, detail, writing }
+  // ⚠️⚠️ A REFUSED SAVE MUST BE VISIBLE. ZooYard's writes are backgrounded, and every failure
+  //    here used to be a bare console.warn — on a tablet there is no console, so a student
+  //    finished a habitat, saw the badge and the points, and lost all of it.
+  //    This became reachable in NORMAL use when the animal picker became a log-in (2026-10-28):
+  //    if two children are logged in as the same animal the second device owns the record and
+  //    the first is refused. 🚫 Never swallow a student write again — set this instead.
+  const [saveError, setSaveError] = useState(null);
 
   const [mcqAnswer,   setMcqAnswer]   = useState(null);
   const [mcqCorrect,  setMcqCorrect]  = useState(null);
@@ -413,7 +420,13 @@ export default function ZooYardScreen() {
             [`zooyard.${zyAnimal.id}.updatedAt`]: serverTimestamp(),
             'zooyard.totalPoints': runningTotal,
           });
-        } catch (e) { console.warn('ZooYard badge write failed:', e); }
+        } catch (e) {
+          console.warn('ZooYard badge write failed:', e);
+          // ⚠️ Shown on the badge screen the student is about to see, not buried on the map.
+          setSaveError(e?.code === 'permission-denied'
+            ? `This habitat did not save. Someone else is logged in as ${studentName} on another tablet, so this one can no longer save. Pick ${studentName} again to take it back, then redo this habitat.`
+            : 'This habitat did not save. Check the tablet is online, then redo this habitat.');
+        }
 
         // ⚠️ `habitatObservations` used to be written here — a de-identified, flat, cross-school
         // copy of the measurement. It went when the measurement did (2026-10-01): there is no
@@ -467,7 +480,12 @@ export default function ZooYardScreen() {
             { name: studentName, classCode: code,
               zooyard: { [animal.id]: { habitatPhotoUrl: url, unlockedAt: new Date().toISOString() } } },
             { merge: true });
-        } catch (e2) { console.warn('ZooYard unlock write failed:', e2); }
+        } catch (e2) {
+          console.warn('ZooYard unlock write failed:', e2);
+          setSaveError(e2?.code === 'permission-denied'
+            ? `This habitat unlocked, but it did not save. Someone else is logged in as ${studentName} on another tablet. Pick ${studentName} again to take it back.`
+            : 'That unlock did not save. Check the tablet is online and try again.');
+        }
       }
     } catch (err) {
       console.warn('ZooYard habitat photo upload failed:', err);
@@ -534,7 +552,10 @@ export default function ZooYardScreen() {
         await updateDoc(doc(db, 'classes', code, 'students', sid), {
           [`zooyard.${zyAnimal.id}.action`]: { taskId: task.id, status: 'pending', photoUrl, submittedAt: new Date().toISOString() },
         });
-      } catch (e) { console.warn('ZooYard action write failed:', e); }
+      } catch (e) {
+        console.warn('ZooYard action write failed:', e);
+        setSaveError('That build did not save. Check the tablet is online and submit it again.');
+      }
 
       setActionPhotoUrl(photoUrl);
       setZyPhase('written');
@@ -565,7 +586,10 @@ export default function ZooYardScreen() {
         const schoolId = schoolName.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
         setDoc(doc(db, 'schools', schoolId), { name: schoolName, totalPoints: increment(10), lastUpdated: serverTimestamp() }, { merge: true }).catch(() => {});
       }
-    } catch (e) { console.warn('ZooYard session completion write failed:', e); }
+    } catch (e) {
+      console.warn('ZooYard session completion write failed:', e);
+      setSaveError('Finishing did not save. Your habitats are safe — check the tablet is online and press Finish again.');
+    }
     setZyScreen('done');
   }
 
@@ -1049,6 +1073,14 @@ export default function ZooYardScreen() {
           <img src={badgeReveal.animal.image} alt="" style={{ width:88, height:88, objectFit:'cover', borderRadius:'50%', margin:'0 auto 1rem', display:'block', border:`4px solid ${badgeReveal.animal.habitatColor}` }} />
           <h2 className="taronga-title" style={{ fontSize:'1.5rem', color:'#0A2F1F', marginBottom:'0.3rem' }}>{badgeReveal.animal.name} Badge Earned!</h2>
           <p style={{ fontSize:'1.8rem', fontWeight:800, color:'#2E7D55', margin:'0.5rem 0 1rem' }}>+{badgeReveal.points} pts</p>
+
+          {/* ⚠️ Directly under the points, because the points are the lie if the save failed. */}
+          {saveError && (
+            <div style={{ background:'#FDECEC', border:'1.5px solid #E8A9A9', borderRadius:12, padding:'0.75rem 0.9rem', margin:'0 0 1rem', textAlign:'left' }}>
+              <p style={{ margin:'0 0 0.2rem', fontSize:'0.72rem', fontWeight:800, color:'#8B2F2F', textTransform:'uppercase', letterSpacing:'0.08em' }}>Not saved</p>
+              <p style={{ margin:0, fontSize:'0.8rem', color:'#8B2F2F', lineHeight:1.5 }}>{saveError}</p>
+            </div>
+          )}
 
           {badgeReveal.overall && (
             <p style={{ fontSize:'0.95rem', color:'#0A2F1F', fontWeight:600, lineHeight:1.5, margin:'0 0 1.1rem', textWrap:'pretty' }}>
