@@ -190,8 +190,6 @@ export default function ZooSnoozScreen() {
   const [vidReady,      setVidReady]      = useState(false);
   const [zzRecording,   setZzRecording]   = useState(false);
   const [zzCountdown,   setZzCountdown]   = useState(10);
-  const [zzVideoTitle,  setZzVideoTitle]  = useState('');
-  const [zzConservationMsg, setZzConservationMsg] = useState('');
   const [zzUploadProgress, setZzUploadProgress] = useState({});
   const [zzVideoURLs,   setZzVideoURLs]   = useState({});    // { [animalId]: blobURL }
   const [nightVision,   setNightVision]   = useState(false);
@@ -410,8 +408,6 @@ export default function ZooSnoozScreen() {
     setVidReady(false);
     setZzRecording(false);
     setZzCountdown(10);
-    setZzVideoTitle('');
-    setZzConservationMsg('');
     setNightVision(false);
     setIsDrawing(false);
     setLionMonitoring(false);
@@ -445,8 +441,16 @@ export default function ZooSnoozScreen() {
     if (!zzAnimal) return;
     const obsScore = buildObservationScore(obsText, zzAnimal.id, classStage);
     const stageQ = zzAnimal.byStage?.[classStage] || zzAnimal.byStage?.[5] || {};
-    const videoTitle     = zzVideoTitle.trim();
-    const conservationMsg = zzConservationMsg.trim();
+    // ⚠️ The film's caption is NOT typed on the filming screen any more. The title is the
+    //    animal, and the quoted line is the student's own observation from the writing phase.
+    //    Cameron, 2026-10-29: "just have the title of the animal set and use the writing from
+    //    the writing piece of the students".
+    //    🚫 Do not reintroduce editable caption fields there — they asked students to write a
+    //       second, shorter thing right after writing the real one, and most left it blank.
+    //    ⚠️ Stored under the SAME keys (videoTitle / conservationMsg) so the stitcher and every
+    //       existing record keep working unchanged.
+    const videoTitle     = zzAnimal.name;
+    const conservationMsg = obsText.trim();
     const videoURL       = zzVideoURLs[zzAnimal.id] || null;
     const badgeData = {
       animalId: zzAnimal.id,
@@ -476,8 +480,6 @@ export default function ZooSnoozScreen() {
       setZzBadgeAnimal({ animal: zzAnimal, points: animalPoints, quizCorrect: mcqFirstOk === true, totalDone: newTotalDone, runningTotal: prevTotal + animalPoints, observationScore: { behaviour: obsScore.behaviour, detail: obsScore.detail, writing: obsScore.writing, rationale: obsScore.rationale, overallFeedback: obsScore.overallFeedback } });
       return next;
     });
-    setZzVideoTitle('');
-    setZzConservationMsg('');
     setNightVision(false);
     if (studentName && classCode) {
       const code = normaliseCode(classCode);
@@ -491,7 +493,7 @@ export default function ZooSnoozScreen() {
       } catch (e) { console.warn('Badge write:', e); }
     }
     setZzScreen('map');
-  }, [zzAnimal, classStage, obsText, mcqFirstOk, zzVideoTitle, zzConservationMsg, zzVideoURLs, studentName, classCode, setZzScreen]);
+  }, [zzAnimal, classStage, obsText, mcqFirstOk, zzVideoURLs, studentName, classCode, setZzScreen]);
 
   // ── Start recording ────────────────────────────────────────────────────────
   const zzStartRecording = useCallback(() => {
@@ -1140,16 +1142,33 @@ export default function ZooSnoozScreen() {
               while (ctx.measureText(t).width > textMaxW && t.length > 1) t = t.slice(0,-1);
               if (t !== videoTitle) t += '…';
               ctx.fillText(t, 24, botY + 88);
+              // ⚠⚠ THE QUOTE IS NOW THE STUDENT'S OBSERVATION, AND IT MUST BE CAPPED.
+              // This loop had no line limit. That was survivable while the caption was a
+              // separate field with maxLength 200 (~4 lines), but the observation it now prints
+              // has a ten-word MINIMUM and no maximum, so a wordy student would have drawn
+              // straight past the caption band and over their own footage.
+              // Only 6 lines fit: (botH 260 - 118 start) / 22 line height.
+              // 🚫 Never wrap text into this band without a line cap.
               if (conservMsg) {
                 ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.font = 'italic 17px "DM Sans", sans-serif';
+                const MAX_LINES = 6;
                 const words = ('"' + conservMsg + '"').split(' ');
-                let line = '', lineY = botY + 118;
+                const lines = [];
+                let line = '';
                 for (const w of words) {
                   const test = line ? line + ' ' + w : w;
-                  if (ctx.measureText(test).width > textMaxW && line) { ctx.fillText(line, 24, lineY); line = w; lineY += 22; }
+                  if (ctx.measureText(test).width > textMaxW && line) { lines.push(line); line = w; }
                   else { line = test; }
                 }
-                if (line) ctx.fillText(line, 24, lineY);
+                if (line) lines.push(line);
+                const shown = lines.slice(0, MAX_LINES);
+                if (lines.length > MAX_LINES) {
+                  // Trim the last visible line until the ellipsis and closing quote fit on it.
+                  let last = shown[MAX_LINES - 1].replace(/"$/, '');
+                  while (last.length > 1 && ctx.measureText(last + '…"').width > textMaxW) last = last.slice(0, -1);
+                  shown[MAX_LINES - 1] = last.trimEnd() + '…"';
+                }
+                shown.forEach((ln, i) => ctx.fillText(ln, 24, botY + 118 + i * 22));
               }
             }
             videoEl.onended = finish;
@@ -2859,21 +2878,15 @@ export default function ZooSnoozScreen() {
                     <div className="taronga-title" style={{ fontSize:'clamp(1.5rem,5vw,2rem)', color:'white', letterSpacing:'0.1em', marginBottom:'0.35rem', lineHeight:1.05 }}>
                       I WENT TO ZOOSNOOZ!
                     </div>
-                    <input
-                      value={zzVideoTitle}
-                      onChange={e => { if (e.target.value.length <= 40) setZzVideoTitle(e.target.value); }}
-                      placeholder={`✏ ${zzAnimal.name} After Dark…`}
-                      maxLength={40}
-                      style={{ display:'block', width:'100%', boxSizing:'border-box', background:'transparent', border:'none', borderBottom:'2px dashed rgba(46,125,85,0.5)', outline:'none', fontSize:'1.05rem', fontWeight:700, color:'#A8C4B2', fontFamily:'DM Sans, sans-serif', padding:'0.05rem 0 0.25rem', marginBottom:'0.4rem', cursor:'text' }}
-                    />
-                    <textarea
-                      value={zzConservationMsg}
-                      onChange={e => { if (e.target.value.length <= 200) setZzConservationMsg(e.target.value); }}
-                      placeholder={'✏ Conservation message or information…'}
-                      maxLength={200}
-                      rows={3}
-                      style={{ display:'block', width:'100%', boxSizing:'border-box', background:'transparent', border:'none', outline:'none', fontSize:'0.9rem', fontStyle:'italic', color:'rgba(255,255,255,0.75)', fontFamily:'DM Sans, sans-serif', padding:0, resize:'none', lineHeight:1.6, cursor:'text' }}
-                    />
+                    {/* Read-only: this is what the film will print, not something to fill in. */}
+                    <div style={{ fontSize:'1.05rem', fontWeight:700, color:'#A8C4B2', marginBottom:'0.3rem' }}>
+                      {zzAnimal.name}
+                    </div>
+                    {obsText.trim() && (
+                      <div style={{ fontSize:'0.9rem', fontStyle:'italic', color:'rgba(255,255,255,0.75)', lineHeight:1.5, display:'-webkit-box', WebkitLineClamp:3, WebkitBoxOrient:'vertical', overflow:'hidden' }}>
+                        &ldquo;{obsText.trim()}&rdquo;
+                      </div>
+                    )}
                   </div>
                   {/* Right: logo + hashtags */}
                   <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'0.4rem', flexShrink:0, paddingTop:'0.15rem' }}>
@@ -2883,20 +2896,9 @@ export default function ZooSnoozScreen() {
                 </div>
               </div>
 
-              {/* ✏ Tap to fill in callout - hidden during recording */}
-              {!zzRecording && (
-                <div style={{ position:'absolute', right:0, bottom:'130px', transform:'translateX(calc(100% + 10px))', width:'118px', zIndex:20, pointerEvents:'none' }}>
-                  <svg width="44" height="70" viewBox="0 0 44 70" style={{ position:'absolute', left:'-44px', bottom:'18px', overflow:'visible' }}>
-                    <path d="M 38 8 C 20 8, 6 28, 6 62" fill="none" stroke="rgba(255,255,255,0.65)" strokeWidth="2" strokeDasharray="5,3" strokeLinecap="round"/>
-                    <polyline points="0,58 6,68 12,58" fill="none" stroke="rgba(255,255,255,0.65)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  <div style={{ background:'rgba(46,125,85,0.25)', border:'1.5px dashed rgba(168,196,178,0.7)', borderRadius:'12px', padding:'0.65rem 0.7rem', backdropFilter:'blur(10px)' }}>
-                    <p style={{ fontSize:'0.7rem', color:'white', fontWeight:700, margin:'0 0 0.25rem', lineHeight:1.35 }}>✏ Tap to fill in</p>
-                    <p style={{ fontSize:'0.65rem', color:'rgba(184,212,192,0.9)', margin:'0 0 0.2rem', lineHeight:1.35 }}>your title &amp; conservation info!</p>
-                    <p style={{ fontSize:'0.55rem', color:'rgba(255,255,255,0.4)', margin:0, fontStyle:'italic' }}>Not recorded</p>
-                  </div>
-                </div>
-              )}
+              {/* ⚠️ The "✏ Tap to fill in" callout that stood here is gone with the fields it
+                  pointed at. The caption is not typed any more: the title is the animal, and the
+                  quote is the student's observation from the writing phase. */}
             </div>
 
             {!zzRecording
@@ -2949,11 +2951,11 @@ export default function ZooSnoozScreen() {
                       I WENT TO ZOOSNOOZ!
                     </div>
                     <div style={{ fontSize:'0.9rem', fontWeight:700, color:'#A8C4B2', marginBottom:'0.2rem' }}>
-                      {zzVideoTitle || zzAnimal.name}
+                      {zzAnimal.name}
                     </div>
-                    {zzConservationMsg && (
+                    {obsText.trim() && (
                       <div style={{ fontSize:'0.75rem', color:'rgba(255,255,255,0.65)', fontStyle:'italic', lineHeight:1.5, wordBreak:'break-word' }}>
-                        &ldquo;{zzConservationMsg}&rdquo;
+                        &ldquo;{obsText.trim()}&rdquo;
                       </div>
                     )}
                   </div>
