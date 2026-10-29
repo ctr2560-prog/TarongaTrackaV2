@@ -2800,7 +2800,7 @@ export default function ZooSnoozScreen() {
           <div style={{ display:'flex', flexDirection:'column', gap:'1rem' }}>
 
             {/* Filming guidance - compact */}
-            <div style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(46,125,85,0.2)', borderRadius:'10px', padding:'0.35rem 0.6rem' }}>
+            <div style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(46,125,85,0.2)', borderRadius:'10px', padding:'0.6rem 0.85rem' }}>
               <p style={{ fontSize:'0.58rem', fontWeight:800, color:'rgba(46,125,85,0.7)', textTransform:'uppercase', letterSpacing:'0.12em', margin:'0 0 0.25rem' }}>🎬 What to Capture</p>
               <p style={{ fontSize:'0.78rem', color:'var(--zz-muted)', lineHeight:1.5, margin:0 }}>{(zzAnimal.filmingGuidance||'').split('\n')[0]}</p>
             </div>
@@ -2818,10 +2818,8 @@ export default function ZooSnoozScreen() {
                 </div>
 
                 {/* Camera feed */}
-                {/* ⚠️ Shape comes from the film itself (ZZ_VIDEO_ASPECT), not a hand-written 3/4,
-                    and `contain` matches the stitcher's letterboxing. See ZZ_VIDEO_ASPECT. */}
-                <div style={{ position:'relative', width:'100%', aspectRatio:String(ZZ_VIDEO_ASPECT), maxHeight:'20vh', overflow:'hidden', background:'#000' }}>
-                  <video ref={zzVideoRef} muted playsInline style={{ width:'100%', height:'100%', objectFit:'contain', display:'block', transition:'filter 0.35s ease',
+                <div style={{ position:'relative', width:'100%', aspectRatio:'3/4', maxHeight:'28vh', overflow:'hidden', background:'#000' }}>
+                  <video ref={zzVideoRef} muted playsInline style={{ width:'100%', height:'100%', objectFit:'cover', display:'block', transition:'filter 0.35s ease',
                     filter: nightVision ? 'grayscale(1) brightness(1.6) contrast(1.9) sepia(1) hue-rotate(80deg) saturate(3)' : 'none',
                     transform: zzFrontCam ? 'scaleX(-1)' : 'none',
                   }} />
@@ -2864,7 +2862,7 @@ export default function ZooSnoozScreen() {
                 </div>
 
                 {/* Bottom panel - inline editable, two-column */}
-                <div style={{ padding:'0.75rem 0.85rem 0.85rem', background:'rgba(6,8,6,0.98)', borderTop:'2px solid rgba(46,125,85,0.3)', position:'relative', overflow:'hidden', display:'flex', alignItems:'flex-start', gap:'0.85rem' }}>
+                <div style={{ padding:'1.1rem 1rem 1.25rem', background:'rgba(6,8,6,0.98)', borderTop:'2px solid rgba(46,125,85,0.3)', position:'relative', overflow:'hidden', display:'flex', alignItems:'flex-start', gap:'0.85rem' }}>
                   {[...Array(8)].map((_,i) => (
                     <div key={i} style={{ position:'absolute', left:`${(i*13+4)%96}%`, top:`${(i*19+6)%80}%`, width:'1.5px', height:'1.5px', borderRadius:'50%', background:'rgba(168,196,178,0.2)', pointerEvents:'none' }} />
                   ))}
@@ -2897,24 +2895,18 @@ export default function ZooSnoozScreen() {
                 </div>
               </div>
 
-              {/* ✏ Tap to fill in hint - hidden during recording.
-                  ⚠️ PHONE-FIRST. This was absolutely positioned OUTSIDE the card
-                  (`right:0` + `translateX(calc(100% + 10px))`, 118px wide), which only fits from
-                  about 1024px up. Measured across viewports: at 320-430px, 108px of its 118px sat
-                  past the right edge and was clipped by the shell's `overflow:hidden`, so a
-                  student saw the dashed arrow pointing at the screen edge and a 10px sliver of
-                  box — it read as broken, and the hint itself was never readable. It is a normal
-                  block under the card now, so it cannot be clipped at any width.
-                  🚫 Never park a hint outside a full-width container in this app. There is no
-                     margin to put it in on a phone, and the phone is the only device students
-                     use. */}
+              {/* ✏ Tap to fill in callout - hidden during recording */}
               {!zzRecording && (
-                <div style={{ display:'flex', alignItems:'flex-start', gap:'0.6rem', background:'rgba(46,125,85,0.18)', border:'1.5px dashed rgba(168,196,178,0.55)', borderRadius:'12px', padding:'0.55rem 0.75rem', marginTop:'0.45rem' }}>
-                  <span aria-hidden="true" style={{ fontSize:'1rem', lineHeight:1.3, flexShrink:0 }}>✏</span>
-                  <p style={{ margin:0, fontSize:'0.78rem', lineHeight:1.4, color:'rgba(255,255,255,0.88)', fontWeight:600 }}>
-                    Tap the title or the message above to fill them in
-                    <span style={{ display:'block', fontWeight:400, fontSize:'0.7rem', color:'rgba(255,255,255,0.45)', fontStyle:'italic', marginTop:'0.2rem' }}>Not recorded in your video</span>
-                  </p>
+                <div style={{ position:'absolute', right:0, bottom:'130px', transform:'translateX(calc(100% + 10px))', width:'118px', zIndex:20, pointerEvents:'none' }}>
+                  <svg width="44" height="70" viewBox="0 0 44 70" style={{ position:'absolute', left:'-44px', bottom:'18px', overflow:'visible' }}>
+                    <path d="M 38 8 C 20 8, 6 28, 6 62" fill="none" stroke="rgba(255,255,255,0.65)" strokeWidth="2" strokeDasharray="5,3" strokeLinecap="round"/>
+                    <polyline points="0,58 6,68 12,58" fill="none" stroke="rgba(255,255,255,0.65)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <div style={{ background:'rgba(46,125,85,0.25)', border:'1.5px dashed rgba(168,196,178,0.7)', borderRadius:'12px', padding:'0.65rem 0.7rem', backdropFilter:'blur(10px)' }}>
+                    <p style={{ fontSize:'0.7rem', color:'white', fontWeight:700, margin:'0 0 0.25rem', lineHeight:1.35 }}>✏ Tap to fill in</p>
+                    <p style={{ fontSize:'0.65rem', color:'rgba(184,212,192,0.9)', margin:'0 0 0.2rem', lineHeight:1.35 }}>your title &amp; conservation info!</p>
+                    <p style={{ fontSize:'0.55rem', color:'rgba(255,255,255,0.4)', margin:0, fontStyle:'italic' }}>Not recorded</p>
+                  </div>
                 </div>
               )}
             </div>
@@ -2949,10 +2941,9 @@ export default function ZooSnoozScreen() {
                 </div>
 
                 {/* Video */}
-                {/* Plays the clip back in the film's own shape, so what they approve is what ships. */}
-                <div style={{ position:'relative', aspectRatio:String(ZZ_VIDEO_ASPECT), maxHeight:'38vh', overflow:'hidden', background:'#000', width:'100%' }}>
+                <div style={{ position:'relative', aspectRatio:'3/4', maxHeight:'38vh', overflow:'hidden', background:'#000', width:'100%' }}>
                   {zzVideoURLs[animalId]
-                    ? <video src={zzVideoURLs[animalId]} controls playsInline style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'contain', display:'block' }} />
+                    ? <video src={zzVideoURLs[animalId]} controls playsInline style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
                     : <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', color:'var(--zz-muted)', fontSize:'0.85rem' }}>No video recorded</div>
                   }
                   {[...Array(10)].map((_,i) => (
