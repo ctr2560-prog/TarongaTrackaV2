@@ -1604,43 +1604,50 @@ export default function ZooSnoozScreen() {
           ))}
         </div>
 
-        {/* Header - matches daily MapScreen style */}
-        <div className="student-header" style={{ position:'sticky', top:0, zIndex:100 }}>
-          <div className="student-banner-mobile student-header-inner">
-            <div className="logo-title-block" style={{ display:'flex', alignItems:'center', gap:'1rem' }}>
-              <img src="images/logo.png" alt="Taronga Tracka"
-                style={{ height:'72px', width:'auto', filter:'drop-shadow(0 0 14px rgba(46,125,85,0.7))' }}
-                onError={e=>e.target.style.display='none'} />
-              <div>
-                <h1 className="taronga-title" style={{ fontSize:'clamp(1.5rem,3vw,2rem)', color:'white', marginBottom:'0.15rem', letterSpacing:'0.06em', textShadow:'0 2px 16px rgba(46,125,85,0.6)' }}>
-                  ZOOSNOOZ
-                </h1>
-                <p style={{ color:'#4A9E6B', fontSize:'0.88rem', fontWeight:600, margin:0 }}>Nocturnal Wildlife Explorer</p>
+        {/* Header — phone-first, and deliberately NOT the shared `student-banner-mobile`.
+            ⚠️ MEASURED: under that class's `max-width:600px` rules the five children stacked into
+            a column 311px tall on a 700px viewport — 44% of the phone, permanently on screen —
+            leaving a 389px slot for animal cards that are ~380px each. Students browsed five
+            animals through a letterbox, with each card's tap target at the cut-off bottom edge.
+            ⚠️ Two of those mobile rules never applied here at all: they target `.submit-btn` and
+            `.points-card`, and ZooSnooz uses `.student-points-chip`. That class is
+            `text-align:right`, so stretched full width it rendered as a number jammed against
+            the right edge of an empty box — it read as broken, not minimal.
+            ⚠️ The header's "Submit Session" was a DUPLICATE of the "Finish Session" button below
+            the grid — same `completeSession` handler. The lower one is better: it is in the
+            right place chronologically and it shows progress. Only the duplicate was removed.
+            🚫 Do not put this back on `student-banner-mobile`. That class is MapScreen's, with
+               different children, and restyling it changes Tracka Trek at the same time. */}
+        <div className="student-header" style={{ position:'sticky', top:0, zIndex:100, padding:'0.5rem 0.85rem' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:'0.6rem', maxWidth:1400, margin:'0 auto' }}>
+            <img src="images/logo.png" alt=""
+              style={{ height:'38px', width:'auto', flexShrink:0, filter:'drop-shadow(0 0 10px rgba(46,125,85,0.6))' }}
+              onError={e=>e.target.style.display='none'} />
+            {/* minWidth:0 is load-bearing — without it a long student name refuses to shrink and
+                pushes the chip and Home button off a 320px screen. */}
+            <div style={{ flex:1, minWidth:0 }}>
+              <div className="taronga-title" style={{ fontSize:'1.1rem', color:'white', letterSpacing:'0.06em', lineHeight:1.15, textShadow:'0 2px 12px rgba(46,125,85,0.6)' }}>
+                ZOOSNOOZ
               </div>
+              {studentName && (
+                <div style={{ color:'rgba(168,196,178,0.85)', fontSize:'0.7rem', fontWeight:600, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                  👤 {studentName}
+                </div>
+              )}
             </div>
 
-            {studentName && (
-              <div className="student-name-pill" style={{ background:'rgba(255,255,255,0.12)', border:'1px solid rgba(255,255,255,0.22)', borderRadius:'var(--t-r-pill)', padding:'0.4rem 0.9rem', backdropFilter:'blur(10px)', WebkitBackdropFilter:'blur(10px)' }}>
-                <span style={{ color:'white', fontSize:'0.82rem', fontWeight:600 }}>👤 {studentName}</span>
-              </div>
-            )}
-
-            <button className="student-points-chip" onClick={() => setZzScreen('collection')}>
-              <div className="pts-value">{zzTotalPoints}</div>
-              <div className="pts-label">{totalDone}/{ZOOSNOOZ_ANIMALS.length} Badges</div>
+            <button onClick={() => setZzScreen('collection')}
+              aria-label={`${zzTotalPoints} points, ${totalDone} of ${ZOOSNOOZ_ANIMALS.length} badges`}
+              style={{ flexShrink:0, background:'rgba(255,255,255,0.12)', border:'1.5px solid rgba(255,255,255,0.28)', borderRadius:'var(--t-r-md)', padding:'0.3rem 0.6rem', cursor:'pointer', textAlign:'center', lineHeight:1.1 }}>
+              <div style={{ fontSize:'1.05rem', fontWeight:800, color:'var(--safari-gold)' }}>{zzTotalPoints}</div>
+              <div style={{ fontSize:'0.58rem', fontWeight:600, color:'rgba(255,255,255,0.82)' }}>{totalDone}/{ZOOSNOOZ_ANIMALS.length}</div>
             </button>
 
-            <button
-              onClick={() => { setSessionType('standard'); }}
-              style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(168,196,178,0.2)', color:'rgba(168,196,178,0.6)', padding:'0.4rem 0.75rem', borderRadius:'var(--t-r-pill)', cursor:'pointer', fontSize:'0.75rem', fontWeight:600, whiteSpace:'nowrap' }}>
-              🏠 Home
-            </button>
-
-            <button
-              onClick={completeSession}
-              disabled={zzSessionDone}
-              style={{ background: zzSessionDone ? 'rgba(46,125,85,0.45)' : 'linear-gradient(135deg,#2E7D55,#4C1D95)', border: zzSessionDone ? '1px solid rgba(255,255,255,0.25)' : '1.5px solid rgba(168,196,178,0.5)', color:'white', padding:'0.4rem 0.9rem', borderRadius:'var(--t-r-pill)', cursor: zzSessionDone ? 'not-allowed' : 'pointer', fontSize:'0.78rem', fontWeight:700, letterSpacing:'0.04em', opacity: zzSessionDone ? 0.65 : 1, textTransform:'uppercase', boxShadow: zzSessionDone ? 'none' : '0 4px 14px rgba(46,125,85,0.45)', backdropFilter:'blur(8px)', whiteSpace:'nowrap' }}>
-              {zzSessionDone ? '✓ Submitted' : '✓ Submit Session'}
+            {/* Icon-only: the word "Home" cost ~62px of a 390px bar for a control students use
+                once. The label is on aria-label so it is still announced. */}
+            <button onClick={() => { setSessionType('standard'); }} aria-label="Home"
+              style={{ flexShrink:0, background:'rgba(255,255,255,0.06)', border:'1px solid rgba(168,196,178,0.2)', color:'rgba(168,196,178,0.75)', width:'38px', height:'38px', borderRadius:'50%', cursor:'pointer', fontSize:'1rem', lineHeight:1, display:'flex', alignItems:'center', justifyContent:'center' }}>
+              🏠
             </button>
           </div>
         </div>
@@ -2885,18 +2892,24 @@ export default function ZooSnoozScreen() {
                 </div>
               </div>
 
-              {/* ✏ Tap to fill in callout - hidden during recording */}
+              {/* ✏ Tap to fill in hint - hidden during recording.
+                  ⚠️ PHONE-FIRST. This was absolutely positioned OUTSIDE the card
+                  (`right:0` + `translateX(calc(100% + 10px))`, 118px wide), which only fits from
+                  about 1024px up. Measured across viewports: at 320-430px, 108px of its 118px sat
+                  past the right edge and was clipped by the shell's `overflow:hidden`, so a
+                  student saw the dashed arrow pointing at the screen edge and a 10px sliver of
+                  box — it read as broken, and the hint itself was never readable. It is a normal
+                  block under the card now, so it cannot be clipped at any width.
+                  🚫 Never park a hint outside a full-width container in this app. There is no
+                     margin to put it in on a phone, and the phone is the only device students
+                     use. */}
               {!zzRecording && (
-                <div style={{ position:'absolute', right:0, bottom:'130px', transform:'translateX(calc(100% + 10px))', width:'118px', zIndex:20, pointerEvents:'none' }}>
-                  <svg width="44" height="70" viewBox="0 0 44 70" style={{ position:'absolute', left:'-44px', bottom:'18px', overflow:'visible' }}>
-                    <path d="M 38 8 C 20 8, 6 28, 6 62" fill="none" stroke="rgba(255,255,255,0.65)" strokeWidth="2" strokeDasharray="5,3" strokeLinecap="round"/>
-                    <polyline points="0,58 6,68 12,58" fill="none" stroke="rgba(255,255,255,0.65)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  <div style={{ background:'rgba(46,125,85,0.25)', border:'1.5px dashed rgba(168,196,178,0.7)', borderRadius:'12px', padding:'0.65rem 0.7rem', backdropFilter:'blur(10px)' }}>
-                    <p style={{ fontSize:'0.7rem', color:'white', fontWeight:700, margin:'0 0 0.25rem', lineHeight:1.35 }}>✏ Tap to fill in</p>
-                    <p style={{ fontSize:'0.65rem', color:'rgba(184,212,192,0.9)', margin:'0 0 0.2rem', lineHeight:1.35 }}>your title &amp; conservation info!</p>
-                    <p style={{ fontSize:'0.55rem', color:'rgba(255,255,255,0.4)', margin:0, fontStyle:'italic' }}>Not recorded</p>
-                  </div>
+                <div style={{ display:'flex', alignItems:'flex-start', gap:'0.6rem', background:'rgba(46,125,85,0.18)', border:'1.5px dashed rgba(168,196,178,0.55)', borderRadius:'12px', padding:'0.7rem 0.85rem', marginTop:'0.6rem' }}>
+                  <span aria-hidden="true" style={{ fontSize:'1rem', lineHeight:1.3, flexShrink:0 }}>✏</span>
+                  <p style={{ margin:0, fontSize:'0.78rem', lineHeight:1.4, color:'rgba(255,255,255,0.88)', fontWeight:600 }}>
+                    Tap the title or the message above to fill them in
+                    <span style={{ display:'block', fontWeight:400, fontSize:'0.7rem', color:'rgba(255,255,255,0.45)', fontStyle:'italic', marginTop:'0.2rem' }}>Not recorded in your video</span>
+                  </p>
                 </div>
               )}
             </div>
