@@ -876,6 +876,73 @@
       margin-top: 0.1rem;
     }
 
+    /* ── ZooSnooz map header — PHONE-FIRST ────────────────────────────────────
+       ⚠️ ZooSnooz deliberately does NOT use `student-banner-mobile` (MapScreen's). Under that
+       class's max-width:600px rules its five children stacked into a column measuring 311px on a
+       700px phone — 44% of the screen, permanently. See the comment above the header markup in
+       ZooSnoozScreen.jsx for the full measurement.
+       ⚠️ THE BASE RULES BELOW ARE THE PHONE, and the media query only ever scales UP. That
+       direction matters: a mistake in the min-width block can make a laptop ugly, but it can
+       never shrink the phone, which is the device every student actually holds.
+       🚫 Do not add a max-width block here to "fix" the phone — change the base instead. */
+    .zz-map-header { padding: 0.5rem 0.85rem; }
+    .zz-map-head {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    .zz-map-head-logo {
+      height: 38px; width: auto; flex-shrink: 0;
+      filter: drop-shadow(0 0 10px rgba(46,125,85,0.6));
+    }
+    /* min-width:0 is load-bearing. Without it a long student name refuses to shrink and pushes
+       the points chip and Home button off the right of a 320px screen. */
+    .zz-map-head-text { flex: 1; min-width: 0; }
+    .zz-map-head-title {
+      font-size: 1.1rem; color: white; letter-spacing: 0.06em; line-height: 1.15;
+      text-shadow: 0 2px 12px rgba(46,125,85,0.6);
+    }
+    .zz-map-head-sub { display: none; }           /* no room on a phone; returns at 601px */
+    .zz-map-head-name {
+      color: rgba(168,196,178,0.85); font-size: 0.7rem; font-weight: 600;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .zz-map-head-chip {
+      flex-shrink: 0; background: rgba(255,255,255,0.12);
+      border: 1.5px solid rgba(255,255,255,0.28); border-radius: var(--t-r-md);
+      padding: 0.3rem 0.6rem; cursor: pointer; text-align: center; line-height: 1.1;
+      transition: background 0.18s ease;
+    }
+    .zz-map-head-chip:hover { background: rgba(255,255,255,0.22); }
+    .zz-map-head-pts { font-size: 1.05rem; font-weight: 800; color: var(--safari-gold); }
+    .zz-map-head-badges { font-size: 0.58rem; font-weight: 600; color: rgba(255,255,255,0.82); }
+    .zz-map-head-home {
+      flex-shrink: 0; background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(168,196,178,0.2); color: rgba(168,196,178,0.75);
+      width: 38px; height: 38px; border-radius: 50%; cursor: pointer;
+      font-size: 1rem; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* Tablets and laptops only — scale the same bar up. 601px matches the breakpoint the rest
+       of this file already uses for the student banner. */
+    @media (min-width: 601px) {
+      .zz-map-header { padding: 0.75rem 1rem; }
+      .zz-map-head { gap: 1rem; }
+      .zz-map-head-logo { height: 66px; }
+      .zz-map-head-title { font-size: 1.9rem; margin-bottom: 0.1rem; }
+      .zz-map-head-sub {
+        display: block; color: #4A9E6B; font-size: 0.88rem; font-weight: 600;
+      }
+      .zz-map-head-name { font-size: 0.85rem; }
+      .zz-map-head-chip { padding: 0.55rem 1rem; }
+      .zz-map-head-pts { font-size: 1.5rem; }
+      .zz-map-head-badges { font-size: 0.6875rem; }
+      .zz-map-head-home { width: 46px; height: 46px; font-size: 1.15rem; }
+    }
+
     /* Discovery card grid */
     .discovery-grid {
       display: grid;

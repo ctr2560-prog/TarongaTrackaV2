@@ -1618,37 +1618,26 @@ export default function ZooSnoozScreen() {
             right place chronologically and it shows progress. Only the duplicate was removed.
             🚫 Do not put this back on `student-banner-mobile`. That class is MapScreen's, with
                different children, and restyling it changes Tracka Trek at the same time. */}
-        <div className="student-header" style={{ position:'sticky', top:0, zIndex:100, padding:'0.5rem 0.85rem' }}>
-          <div style={{ display:'flex', alignItems:'center', gap:'0.6rem', maxWidth:1400, margin:'0 auto' }}>
-            <img src="images/logo.png" alt=""
-              style={{ height:'38px', width:'auto', flexShrink:0, filter:'drop-shadow(0 0 10px rgba(46,125,85,0.6))' }}
+        <div className="student-header zz-map-header" style={{ position:'sticky', top:0, zIndex:100 }}>
+          <div className="zz-map-head">
+            <img className="zz-map-head-logo" src="images/logo.png" alt=""
               onError={e=>e.target.style.display='none'} />
-            {/* minWidth:0 is load-bearing — without it a long student name refuses to shrink and
-                pushes the chip and Home button off a 320px screen. */}
-            <div style={{ flex:1, minWidth:0 }}>
-              <div className="taronga-title" style={{ fontSize:'1.1rem', color:'white', letterSpacing:'0.06em', lineHeight:1.15, textShadow:'0 2px 12px rgba(46,125,85,0.6)' }}>
-                ZOOSNOOZ
-              </div>
-              {studentName && (
-                <div style={{ color:'rgba(168,196,178,0.85)', fontSize:'0.7rem', fontWeight:600, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                  👤 {studentName}
-                </div>
-              )}
+            <div className="zz-map-head-text">
+              <div className="taronga-title zz-map-head-title">ZOOSNOOZ</div>
+              <div className="zz-map-head-sub">Nocturnal Wildlife Explorer</div>
+              {studentName && <div className="zz-map-head-name">👤 {studentName}</div>}
             </div>
 
-            <button onClick={() => setZzScreen('collection')}
-              aria-label={`${zzTotalPoints} points, ${totalDone} of ${ZOOSNOOZ_ANIMALS.length} badges`}
-              style={{ flexShrink:0, background:'rgba(255,255,255,0.12)', border:'1.5px solid rgba(255,255,255,0.28)', borderRadius:'var(--t-r-md)', padding:'0.3rem 0.6rem', cursor:'pointer', textAlign:'center', lineHeight:1.1 }}>
-              <div style={{ fontSize:'1.05rem', fontWeight:800, color:'var(--safari-gold)' }}>{zzTotalPoints}</div>
-              <div style={{ fontSize:'0.58rem', fontWeight:600, color:'rgba(255,255,255,0.82)' }}>{totalDone}/{ZOOSNOOZ_ANIMALS.length}</div>
+            <button className="zz-map-head-chip" onClick={() => setZzScreen('collection')}
+              aria-label={`${zzTotalPoints} points, ${totalDone} of ${ZOOSNOOZ_ANIMALS.length} badges`}>
+              <div className="zz-map-head-pts">{zzTotalPoints}</div>
+              <div className="zz-map-head-badges">{totalDone}/{ZOOSNOOZ_ANIMALS.length}</div>
             </button>
 
-            {/* Icon-only: the word "Home" cost ~62px of a 390px bar for a control students use
-                once. The label is on aria-label so it is still announced. */}
-            <button onClick={() => { setSessionType('standard'); }} aria-label="Home"
-              style={{ flexShrink:0, background:'rgba(255,255,255,0.06)', border:'1px solid rgba(168,196,178,0.2)', color:'rgba(168,196,178,0.75)', width:'38px', height:'38px', borderRadius:'50%', cursor:'pointer', fontSize:'1rem', lineHeight:1, display:'flex', alignItems:'center', justifyContent:'center' }}>
-              🏠
-            </button>
+            {/* Icon-only on a phone: the word "Home" cost ~62px of a 390px bar for a control
+                used once. The label lives on aria-label so it is still announced. */}
+            <button className="zz-map-head-home" onClick={() => { setSessionType('standard'); }}
+              aria-label="Home">🏠</button>
           </div>
         </div>
 
