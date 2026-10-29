@@ -11,6 +11,21 @@ import { buildObservationScore } from '../utils/scoring';
 
 const INTER_DURATION = { tiger: 30, lion: 30, rhino: 0, binturong: 0, 'sun-bear': 0 };
 
+// ── Documentary geometry ────────────────────────────────────────────────────
+// The stitched film's canvas, and the band of it that actually shows footage. These live at
+// module scope for one reason: the capture preview reads ZZ_VIDEO_ASPECT so it can never again
+// claim a different shape from the film.
+//
+// ⚠️ THE PREVIEW MUST SHOW WHAT THE FILM WILL SHOW. Evolve learned this twice (see the comment
+// above `.ev-cam` in EvolveScreen.jsx): a preview that is a different shape, or that uses
+// `object-fit: cover`, has the student framing themselves inside a window tighter than the film
+// uses — and what they see while filming is the most zoomed-in view in the whole system.
+// 🚫 Do not hardcode a ratio for the preview, and do not set it back to `cover`, without
+//    changing `drawFrame` in this file to match.
+const ZZ_FILM_W = 720, ZZ_FILM_H = 1280;
+const ZZ_FILM_TOP = 80, ZZ_FILM_BOT = 260;
+export const ZZ_VIDEO_ASPECT = ZZ_FILM_W / (ZZ_FILM_H - ZZ_FILM_TOP - ZZ_FILM_BOT);
+
 // ── Instruction type ────────────────────────────────────────────────────────
 // The two places ZooSnooz tells a student what to DO — the mission brief on the insight
 // screen, and the prompt above the writing box. Both use Taronga Headline, applied with
@@ -318,7 +333,15 @@ export default function ZooSnoozScreen() {
     let stopped = false;
     (async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: zzFacingModeRef.current, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: true });
+        // ⚠️⚠️ DO NOT CONSTRAIN THE SHAPE OF THE CAMERA. Ask for a width, never a height.
+        // `height: { ideal: 720 }` alongside the width pins the request to 16:9, and a sensor
+        // that is natively 4:3 satisfies it by DIGITALLY CROPPING ITS OWN VERTICAL FIELD OF
+        // VIEW — the clip arrives already tighter than the student framed it, before any
+        // stitching happens. This is the same fault that produced Evolve's "zoomed in" films
+        // (there it was 9:16, which is worse, but the mechanism is identical).
+        // 🚫 Never add a height, an aspectRatio, or a portrait resolution here. The stitcher
+        //    fits whatever shape arrives — see `drawFrame` in this file.
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: zzFacingModeRef.current, width: { ideal: 1280 } }, audio: true });
         if (stopped) { stream.getTracks().forEach(t => t.stop()); return; }
         zzCamRef.current = stream;
         if (zzVideoRef.current) {
@@ -349,7 +372,9 @@ export default function ZooSnoozScreen() {
     zzCamRef.current = null;
     if (zzVideoRef.current) zzVideoRef.current.srcObject = null;
     navigator.mediaDevices.getUserMedia({
-      video: { facingMode: newFront ? 'user' : 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+      // ⚠️ Width only — no height. Same reason as the capture above; flipping the camera must
+      // not quietly reintroduce the 16:9 crop the main path just dropped.
+      video: { facingMode: newFront ? 'user' : 'environment', width: { ideal: 1280 } },
       audio: true,
     }).then(stream => {
       zzCamRef.current = stream;
@@ -706,7 +731,7 @@ export default function ZooSnoozScreen() {
 
       if (!cancelled) setZzStitchError(null);
 
-      const W = 720, H = 1280;
+      const W = ZZ_FILM_W, H = ZZ_FILM_H;
       const cvs = document.createElement('canvas');
       cvs.width = W; cvs.height = H;
       const ctx = cvs.getContext('2d');
@@ -982,7 +1007,7 @@ export default function ZooSnoozScreen() {
           const nvUsed = badge?.nightVisionUsed || false;
           const videoTitle = badge?.videoTitle || animal.name;
           const conservMsg = badge?.conservationMsg || '';
-          const topH = 80, botH = 260, vidY = topH, vidH = H - topH - botH, botY = topH + vidH;
+          const topH = ZZ_FILM_TOP, botH = ZZ_FILM_BOT, vidY = topH, vidH = H - topH - botH, botY = topH + vidH;
           const rCX = W - 80, textMaxW = rCX - 40 - 26;
           const dStr = new Date().toLocaleDateString('en-AU',{day:'2-digit',month:'short',year:'numeric'}).toUpperCase();
 
@@ -1053,22 +1078,42 @@ export default function ZooSnoozScreen() {
               const now = performance.now();
               if (now - lastFrameTime < 33) return; // ~30fps cap
               lastFrameTime = now;
-              drawn++;
               drawBg();
               try {
                 const vW = videoEl.videoWidth || W, vH2 = videoEl.videoHeight || vidH;
-                const tgtA = W / vidH, srcA = vW / vH2;
-                let sx, sy, sw, sh;
-                if (srcA > tgtA) { sh = vH2; sw = sh*tgtA; sx = (vW-sw)/2; sy = 0; }
-                else { sw = vW; sh = sw/tgtA; sx = 0; sy = (vH2-sh)/2; }
+                const srcA = vW / vH2;
+                // ⚠️ CONTAIN, NEVER CROP, AND FILL WITH BLACK.
+                //
+                // This centre-cropped to fill the video band, which throws ~60% of the width away
+                // on a landscape clip — the "the camera is zoomed in" complaint that cost two days
+                // on Evolve. The whole frame the student filmed now survives, letterboxed on
+                // black. Black is quieter than a blurred enlargement of the frame itself, which
+                // Evolve tried and Cameron rejected: "I don't like how the bars for the background
+                // now are the actual video".
+                //
+                // 🚫 Do not reintroduce a crop here without also changing the capture constraints
+                //    and the preview's object-fit — all three have to agree. See ZZ_VIDEO_ASPECT.
+                const fitW = Math.min(W, vidH * srcA);
+                const fitH = fitW / srcA;
+                const dx = (W - fitW) / 2, dy = vidY + (vidH - fitH) / 2;
+                ctx.fillStyle = '#000';
+                ctx.fillRect(0, vidY, W, vidH);
                 if (nvUsed) {
                   ctx.filter = 'grayscale(1) brightness(1.6) contrast(1.9) sepia(1) hue-rotate(80deg) saturate(3)';
-                  ctx.drawImage(videoEl, sx, sy, sw, sh, 0, vidY, W, vidH); ctx.filter = 'none';
+                  ctx.drawImage(videoEl, 0, 0, vW, vH2, dx, dy, fitW, fitH); ctx.filter = 'none';
+                  // ⚠️ The night-vision wash is scoped to the FOOTAGE, not the whole band. It used
+                  // to cover the full band because the crop guaranteed footage filled it; with
+                  // letterboxing that would tint the black bars green.
                   ctx.save(); ctx.globalCompositeOperation = 'screen'; ctx.globalAlpha = 0.08;
-                  ctx.fillStyle = '#00E63C'; ctx.fillRect(0, vidY, W, vidH); ctx.restore();
+                  ctx.fillStyle = '#00E63C'; ctx.fillRect(dx, dy, fitW, fitH); ctx.restore();
                 } else {
-                  ctx.drawImage(videoEl, sx, sy, sw, sh, 0, vidY, W, vidH);
+                  ctx.drawImage(videoEl, 0, 0, vW, vH2, dx, dy, fitW, fitH);
                 }
+                // ⚠️ Counted only on a draw that actually landed. This used to increment above the
+                // try, so a clip whose every drawImage threw still reported a healthy frame rate
+                // and the "will look frozen" warning below could never fire — the one instrument
+                // for the silent-failure class this pipeline keeps producing, reporting success.
+                drawn++;
               } catch(e) {}
               ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(0,0,W,topH);
               ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 1;
