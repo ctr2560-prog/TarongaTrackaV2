@@ -1856,14 +1856,23 @@ export default function ZooSnoozScreen() {
       </div>
       </div>
 
-      {/* Phase content */}
-      <div style={{ flex:1, overflowY:'auto', padding:'1.25rem' }}>
-      <div style={{ maxWidth:'680px', margin:'0 auto', display:'flex', flexDirection:'column', gap:'1rem' }}>
+      {/* Phase content.
+          ⚠️ PHONE BUDGET. Measured on a 390×700 viewport the phases overflowed by 98px
+          (insight), 201px (quiz) and 91px (filming), so the button a student has to tap next
+          was below the fold on three of the six. The padding and gap here were desktop
+          spacing (1.25rem / 1rem) and are the cheapest place to buy height back, because they
+          apply to every phase at once.
+          🚫 Do not widen these back without re-measuring all six phases — see the table in
+             CLAUDE.md. A phase that fits is worth more than a phase that breathes. */}
+      <div style={{ flex:1, overflowY:'auto', padding:'0.8rem 0.9rem 1rem' }}>
+      <div style={{ maxWidth:'680px', margin:'0 auto', display:'flex', flexDirection:'column', gap:'0.7rem' }}>
 
         {/* ── INSIGHT ─────────────────────────────────────────────────────── */}
         {zzPhase === 'insight' && (
-          <div style={{ display:'flex', flexDirection:'column', gap:'1rem', flex:1 }}>
-            <div style={{ height:'200px', borderRadius:16, overflow:'hidden', position:'relative', border:'1px solid var(--zz-border)' }}>
+          <div style={{ display:'flex', flexDirection:'column', gap:'0.7rem', flex:1 }}>
+            {/* 200px of a 700px phone for a decorative hero, above the text that carries the
+                science. 132px still reads as a photo and buys back the overflow. */}
+            <div style={{ height:'132px', borderRadius:16, overflow:'hidden', position:'relative', border:'1px solid var(--zz-border)' }}>
               <img src={zzAnimal.image} alt={zzAnimal.name} style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:'center', filter:'brightness(0.55)', display:'block' }} />
               <div style={{ position:'absolute', inset:0, background:'linear-gradient(0deg,rgba(4,8,15,0.9) 0%,rgba(4,8,15,0.3) 100%)' }} />
               <div style={{ position:'absolute', bottom:'1rem', left:'1.25rem', right:'1.25rem' }}>
@@ -1883,7 +1892,7 @@ export default function ZooSnoozScreen() {
                 {stageData.keeperInsight || zzAnimal.keeperInsight}
               </p>
             </div>
-            <div style={{ background:'rgba(46,125,85,0.12)', border:'1.5px solid rgba(74,158,107,0.4)', borderRadius:'16px', padding:'1.5rem 1.25rem', textAlign:'center' }}>
+            <div style={{ background:'rgba(46,125,85,0.12)', border:'1.5px solid rgba(74,158,107,0.4)', borderRadius:'16px', padding:'1rem 0.9rem', textAlign:'center' }}>
               <div className="taronga-title" style={{ ...ZZ_KICKER, color:'rgba(168,196,178,0.85)', marginBottom:'0.6rem' }}>Your Mission</div>
               <p className="taronga-title" style={{ ...ZZ_MISSION, color:'white' }}>{zzAnimal.interaction.instruction}</p>
             </div>
@@ -1893,7 +1902,7 @@ export default function ZooSnoozScreen() {
 
         {/* ── INTERACTION ──────────────────────────────────────────────────── */}
         {zzPhase === 'interaction' && (
-          <div style={{ display:'flex', flexDirection:'column', gap:'1rem', flex:1 }}>
+          <div style={{ display:'flex', flexDirection:'column', gap:'0.7rem', flex:1 }}>
 
             {/* Tiger: Behaviour Analysis Tool */}
             {zzAnimal.id === 'tiger' && (() => {
@@ -2431,11 +2440,11 @@ export default function ZooSnoozScreen() {
           const activePct     = tlTotal > 0 ? Math.round((activeSamples / tlTotal) * 100) : 0;
           const stillPct      = 100 - activePct;
           return (
-            <div style={{ display:'flex', flexDirection:'column', gap:'1rem', flex:1 }}>
+            <div style={{ display:'flex', flexDirection:'column', gap:'0.7rem', flex:1 }}>
 
               {/* Tiger - recording data summary */}
               {zzAnimal.id === 'tiger' && (
-                <div style={{ background:'rgba(0,0,0,0.45)', border:'1px solid rgba(46,125,85,0.35)', borderRadius:'14px', padding:'1rem', fontFamily:'monospace' }}>
+                <div style={{ background:'rgba(0,0,0,0.45)', border:'1px solid rgba(46,125,85,0.35)', borderRadius:'14px', padding:'0.7rem', fontFamily:'monospace' }}>
                   <p style={{ fontSize:'0.6rem', fontWeight:700, color:'rgba(168,196,178,0.7)', textTransform:'uppercase', letterSpacing:'0.14em', margin:'0 0 0.6rem', fontFamily:'DM Sans, sans-serif' }}>Your 30-second recording</p>
                   <div style={{ display:'grid', gridTemplateColumns:'repeat(30,1fr)', gap:'2px', marginBottom:'0.6rem' }}>
                     {[...Array(60)].map((_,i) => (
@@ -2469,7 +2478,7 @@ export default function ZooSnoozScreen() {
                 const peakPct = Math.min(100, lionPeak);
                 const avgPct  = lionHistory.length > 0 ? Math.min(100, Math.round(lionHistory.reduce((a,b)=>a+b,0)/lionHistory.length)) : 0;
                 return (
-                  <div style={{ background:'rgba(0,0,0,0.45)', border:'1px solid rgba(46,125,85,0.35)', borderRadius:'14px', padding:'1rem', marginBottom:'0' }}>
+                  <div style={{ background:'rgba(0,0,0,0.45)', border:'1px solid rgba(46,125,85,0.35)', borderRadius:'14px', padding:'0.7rem', marginBottom:'0' }}>
                     <p style={{ fontSize:'0.6rem', fontWeight:700, color:'rgba(168,196,178,0.7)', textTransform:'uppercase', letterSpacing:'0.14em', margin:'0 0 0.6rem', fontFamily:'DM Sans, sans-serif' }}>Your 30-second recording</p>
                     <div style={{ display:'flex', gap:'2px', alignItems:'flex-end', height:'48px', background:'rgba(0,0,0,0.35)', borderRadius:'6px', padding:'4px 6px', marginBottom:'0.75rem' }}>
                       {[...Array(60)].map((_,i) => {
@@ -2496,7 +2505,7 @@ export default function ZooSnoozScreen() {
                 const habColor  = avgB<40?'#4ADE80':avgB<85?'#4A9E6B':avgB<130?'#FBBF24':avgB<190?'#FB923C':'#F87171';
                 const maxH = 36;
                 return (
-                  <div style={{ background:'rgba(0,0,0,0.45)', border:'1px solid rgba(46,125,85,0.35)', borderRadius:'14px', padding:'1rem', marginBottom:'0' }}>
+                  <div style={{ background:'rgba(0,0,0,0.45)', border:'1px solid rgba(46,125,85,0.35)', borderRadius:'14px', padding:'0.7rem', marginBottom:'0' }}>
                     <p style={{ fontSize:'0.6rem', fontWeight:700, color:'rgba(168,196,178,0.7)', textTransform:'uppercase', letterSpacing:'0.14em', margin:'0 0 0.65rem', fontFamily:'DM Sans, sans-serif' }}>Your Habitat Scan Results</p>
                     {bintuReadings.length > 1 && (
                       <div style={{ background:'rgba(5,13,7,0.9)', borderRadius:'8px', padding:'6px 8px', marginBottom:'0.65rem' }}>
@@ -2544,7 +2553,7 @@ export default function ZooSnoozScreen() {
                 const SW=240,SH=72;
                 if(pts.length>1){const rangeX=Math.max(1,maxX-minX),rangeY=Math.max(1,maxY-minY);const scale=Math.min((SW-16)/rangeX,(SH-12)/rangeY);const ox=(SW-rangeX*scale)/2-minX*scale,oy=(SH-rangeY*scale)/2-minY*scale;svgPath=pts.map(([px,py],i)=>`${i===0?'M':'L'}${(px*scale+ox).toFixed(1)},${(py*scale+oy).toFixed(1)}`).join(' ');}
                 return (
-                  <div style={{ background:'rgba(0,0,0,0.45)', border:'1px solid rgba(46,125,85,0.35)', borderRadius:'14px', padding:'1rem', marginBottom:'0' }}>
+                  <div style={{ background:'rgba(0,0,0,0.45)', border:'1px solid rgba(46,125,85,0.35)', borderRadius:'14px', padding:'0.7rem', marginBottom:'0' }}>
                     <p style={{ fontSize:'0.6rem', fontWeight:700, color:'rgba(168,196,178,0.7)', textTransform:'uppercase', letterSpacing:'0.14em', margin:'0 0 0.65rem', fontFamily:'DM Sans, sans-serif' }}>Your Movement Recording</p>
                     {svgPath && (
                       <div style={{ background:'rgba(5,13,7,0.9)', borderRadius:'8px', marginBottom:'0.65rem', overflow:'hidden' }}>
@@ -2572,7 +2581,7 @@ export default function ZooSnoozScreen() {
                 let dataUrl = null;
                 try { dataUrl = sketchRef.current?.toDataURL('image/png'); } catch(e) {}
                 return (
-                  <div style={{ background:'rgba(0,0,0,0.45)', border:'1px solid rgba(46,125,85,0.35)', borderRadius:'14px', padding:'1rem', marginBottom:'0' }}>
+                  <div style={{ background:'rgba(0,0,0,0.45)', border:'1px solid rgba(46,125,85,0.35)', borderRadius:'14px', padding:'0.7rem', marginBottom:'0' }}>
                     <p style={{ fontSize:'0.6rem', fontWeight:700, color:'rgba(168,196,178,0.7)', textTransform:'uppercase', letterSpacing:'0.14em', margin:'0 0 0.6rem', fontFamily:'DM Sans, sans-serif' }}>Your Foraging Adaptation Sketch</p>
                     {dataUrl && <img src={dataUrl} alt="Your sketch" style={{ width:'100%', borderRadius:'8px', background:'rgba(4,10,7,0.85)', display:'block', marginBottom:'0.5rem' }} />}
                     <p style={{ fontSize:'0.65rem', color:'rgba(255,255,255,0.35)', margin:0, fontFamily:'DM Sans, sans-serif', fontStyle:'italic' }}>Use what you sketched to answer the question below.</p>
@@ -2580,20 +2589,21 @@ export default function ZooSnoozScreen() {
                 );
               })()}
 
-              {/* Animal image */}
-              <div style={{ height:'140px', borderRadius:12, overflow:'hidden' }}>
-                <img src={zzAnimal.image} alt={zzAnimal.name} style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:'center', display:'block' }} />
-              </div>
-
+              {/* ⚠️ The 140px animal photo that used to sit here is gone, on purpose. This phase
+                  measured 201px over a 390×700 phone — the worst of the six — which put all four
+                  answer options below the fold. The photo was decorative: the student has just
+                  spent 30 seconds watching the live animal, and the recording recap above is the
+                  thing the question actually asks them to read.
+                  🚫 Do not add an image back here without re-measuring. */}
               {/* Question + options */}
               <div className="zz-card">
-                <div style={{ color:'var(--zz-gold)', fontSize:'0.7rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:'0.75rem' }}>Make Your Call</div>
+                <div style={{ color:'var(--zz-gold)', fontSize:'0.7rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:'0.5rem' }}>Make Your Call</div>
                 {/* ⚠️ No "your first answer counts" caption here — tried on 2026-10-22 and
                     removed the same day at Cameron's call: it adds pressure at 9pm on a sleepover,
                     and ZooSnooz is deliberately the gentlest of the modes. The instant lock stays
                     unannounced. 🚫 Don't reintroduce it as a "helpful hint". */}
-                <p style={{ color:'var(--zz-text)', fontSize:'0.95rem', lineHeight:1.6, margin:'0 0 1rem', fontWeight:600 }}>{q}</p>
-                <div style={{ display:'flex', flexDirection:'column', gap:'0.55rem' }}>
+                <p style={{ color:'var(--zz-text)', fontSize:'0.95rem', lineHeight:1.45, margin:'0 0 0.7rem', fontWeight:600 }}>{q}</p>
+                <div style={{ display:'flex', flexDirection:'column', gap:'0.45rem' }}>
                   {opts.map((opt, i) => {
                     let bg = 'rgba(255,255,255,0.06)', border = 'rgba(255,255,255,0.14)';
                     if (mcqRevealed) {
@@ -2626,7 +2636,7 @@ export default function ZooSnoozScreen() {
                         // take-back that did not exist.
                         setMcqShowResult(true);
                       }}
-                      style={{ background:bg, border:`1.5px solid ${border}`, borderRadius:10, padding:'0.85rem 1rem', color:'var(--zz-text)', fontSize:'0.88rem', textAlign:'left', cursor: mcqRevealed ? 'default' : 'pointer', transition:'all 0.15s', lineHeight:1.5, width:'100%' }}>
+                      style={{ background:bg, border:`1.5px solid ${border}`, borderRadius:10, padding:'0.62rem 0.8rem', color:'var(--zz-text)', fontSize:'0.86rem', textAlign:'left', cursor: mcqRevealed ? 'default' : 'pointer', transition:'all 0.15s', lineHeight:1.4, width:'100%' }}>
                         {opt}
                       </button>
                     );
@@ -2678,7 +2688,7 @@ export default function ZooSnoozScreen() {
 
         {/* ── OBSERVATION ──────────────────────────────────────────────────── */}
         {zzPhase === 'observation' && (
-          <div style={{ display:'flex', flexDirection:'column', gap:'1rem', flex:1 }}>
+          <div style={{ display:'flex', flexDirection:'column', gap:'0.7rem', flex:1 }}>
             {!obsOpen ? (
               /* Countdown - full-width centred, matches live site */
               <div style={{ textAlign:'center', padding:'3rem 1rem 2rem' }}>
@@ -2734,8 +2744,14 @@ export default function ZooSnoozScreen() {
                         <span>Need a hint?</span>
                         <span style={{ fontSize:'0.7rem', opacity:0.7 }}>{hintsOpen ? '▲' : '▼'}</span>
                       </button>
+                      {/* ⚠️ maxHeight + its own scroll. The writing phase fits a 390×700 phone to
+                          within 2px, but opening this panel pushed it 190px over and shoved the
+                          textarea and the word count off-screen — at the exact moment a student
+                          wants the hint AND the box to type in. Capping it means the hint scrolls
+                          inside itself and the page behind it never moves.
+                          🚫 Do not remove the cap to "show the whole hint" — that is the bug. */}
                       {hintsOpen && (
-                        <div style={{ background:'rgba(46,125,85,0.07)', border:'1px solid rgba(74,158,107,0.3)', borderTop:'none', borderRadius:'0 0 10px 10px', padding:'0.75rem 1rem' }}>
+                        <div style={{ background:'rgba(46,125,85,0.07)', border:'1px solid rgba(74,158,107,0.3)', borderTop:'none', borderRadius:'0 0 10px 10px', padding:'0.7rem 0.85rem', maxHeight:'20vh', overflowY:'auto', overscrollBehavior:'contain' }}>
                           {tip.points && tip.points.length > 0 && (
                             <>
                               <p style={{ fontSize:'0.65rem', fontWeight:700, color:'#4A9E6B', textTransform:'uppercase', letterSpacing:'0.08em', margin:'0 0 0.35rem' }}>Your response should include:</p>
@@ -2757,7 +2773,7 @@ export default function ZooSnoozScreen() {
                       value={obsText}
                       onChange={e => setObsText(e.target.value)}
                       placeholder={placeholder}
-                      rows={8}
+                      rows={5}
                       style={{ width:'100%', boxSizing:'border-box', background:'rgba(255,255,255,0.05)', border:`1.5px solid ${wordCount >= minWords ? 'rgba(46,125,85,0.55)' : 'rgba(255,255,255,0.1)'}`, borderRadius:12, padding:'0.85rem 1rem', color:'var(--zz-text)', fontSize:'0.92rem', lineHeight:1.65, resize:'vertical', fontFamily:'DM Sans, sans-serif', outline:'none', transition:'border-color 0.2s' }}
                     />
                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:'-0.5rem' }}>
@@ -2784,7 +2800,7 @@ export default function ZooSnoozScreen() {
           <div style={{ display:'flex', flexDirection:'column', gap:'1rem' }}>
 
             {/* Filming guidance - compact */}
-            <div style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(46,125,85,0.2)', borderRadius:'10px', padding:'0.6rem 0.85rem' }}>
+            <div style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(46,125,85,0.2)', borderRadius:'10px', padding:'0.35rem 0.6rem' }}>
               <p style={{ fontSize:'0.58rem', fontWeight:800, color:'rgba(46,125,85,0.7)', textTransform:'uppercase', letterSpacing:'0.12em', margin:'0 0 0.25rem' }}>🎬 What to Capture</p>
               <p style={{ fontSize:'0.78rem', color:'var(--zz-muted)', lineHeight:1.5, margin:0 }}>{(zzAnimal.filmingGuidance||'').split('\n')[0]}</p>
             </div>
@@ -2804,7 +2820,7 @@ export default function ZooSnoozScreen() {
                 {/* Camera feed */}
                 {/* ⚠️ Shape comes from the film itself (ZZ_VIDEO_ASPECT), not a hand-written 3/4,
                     and `contain` matches the stitcher's letterboxing. See ZZ_VIDEO_ASPECT. */}
-                <div style={{ position:'relative', width:'100%', aspectRatio:String(ZZ_VIDEO_ASPECT), maxHeight:'28vh', overflow:'hidden', background:'#000' }}>
+                <div style={{ position:'relative', width:'100%', aspectRatio:String(ZZ_VIDEO_ASPECT), maxHeight:'20vh', overflow:'hidden', background:'#000' }}>
                   <video ref={zzVideoRef} muted playsInline style={{ width:'100%', height:'100%', objectFit:'contain', display:'block', transition:'filter 0.35s ease',
                     filter: nightVision ? 'grayscale(1) brightness(1.6) contrast(1.9) sepia(1) hue-rotate(80deg) saturate(3)' : 'none',
                     transform: zzFrontCam ? 'scaleX(-1)' : 'none',
@@ -2848,7 +2864,7 @@ export default function ZooSnoozScreen() {
                 </div>
 
                 {/* Bottom panel - inline editable, two-column */}
-                <div style={{ padding:'1.1rem 1rem 1.25rem', background:'rgba(6,8,6,0.98)', borderTop:'2px solid rgba(46,125,85,0.3)', position:'relative', overflow:'hidden', display:'flex', alignItems:'flex-start', gap:'0.85rem' }}>
+                <div style={{ padding:'0.75rem 0.85rem 0.85rem', background:'rgba(6,8,6,0.98)', borderTop:'2px solid rgba(46,125,85,0.3)', position:'relative', overflow:'hidden', display:'flex', alignItems:'flex-start', gap:'0.85rem' }}>
                   {[...Array(8)].map((_,i) => (
                     <div key={i} style={{ position:'absolute', left:`${(i*13+4)%96}%`, top:`${(i*19+6)%80}%`, width:'1.5px', height:'1.5px', borderRadius:'50%', background:'rgba(168,196,178,0.2)', pointerEvents:'none' }} />
                   ))}
@@ -2893,7 +2909,7 @@ export default function ZooSnoozScreen() {
                      margin to put it in on a phone, and the phone is the only device students
                      use. */}
               {!zzRecording && (
-                <div style={{ display:'flex', alignItems:'flex-start', gap:'0.6rem', background:'rgba(46,125,85,0.18)', border:'1.5px dashed rgba(168,196,178,0.55)', borderRadius:'12px', padding:'0.7rem 0.85rem', marginTop:'0.6rem' }}>
+                <div style={{ display:'flex', alignItems:'flex-start', gap:'0.6rem', background:'rgba(46,125,85,0.18)', border:'1.5px dashed rgba(168,196,178,0.55)', borderRadius:'12px', padding:'0.55rem 0.75rem', marginTop:'0.45rem' }}>
                   <span aria-hidden="true" style={{ fontSize:'1rem', lineHeight:1.3, flexShrink:0 }}>✏</span>
                   <p style={{ margin:0, fontSize:'0.78rem', lineHeight:1.4, color:'rgba(255,255,255,0.88)', fontWeight:600 }}>
                     Tap the title or the message above to fill them in
