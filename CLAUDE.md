@@ -67,52 +67,12 @@ checkout. Commit *and* deploy, and verify both.
 
 ### 🌙 ZooSnooz — what is waiting, ahead of the next block of work
 
-Collected 2026-10-18 while converting the media read paths. **Item 1 is fixed (2026-10-29); the
-rest are not.**
+Collected 2026-10-18 while converting the media read paths. **None of these is fixed.**
 
-1. ✅ **The crop is fixed (2026-10-29).** The stitcher no longer centre-crops. All three places
-   that decide the shape of a ZooSnooz clip now agree, which is the only way this holds:
-
-   | Where | Was | Now |
-   |---|---|---|
-   | `drawFrame` | centre crop to fill the band | contain the whole frame, letterbox on black |
-   | capture, both sites | `width 1280` **and** `height 720` | `width 1280` only |
-   | both previews | `aspectRatio 3/4`, `object-fit: cover` | `ZZ_VIDEO_ASPECT`, `object-fit: contain` |
-
-   **How much was being thrown away**, measured off the real geometry (band is 720×940, aspect
-   0.766) rather than estimated:
-
-   | Source clip | Old crop kept | Discarded |
-   |---|---|---|
-   | 1280×720 (16:9 — what the old constraint forced) | 43.1% | **56.9%** |
-   | 1280×960 (4:3, native on many phones) | 57.4% | 42.6% |
-   | 720×1280 (9:16, phone upright) | 73.4% | 26.6% |
-
-   ⚠️ **The capture constraint was half the bug, exactly as on Evolve.** `height: { ideal: 720 }`
-   next to the width pins the request to 16:9, and a natively-4:3 sensor satisfies it by cropping
-   its own vertical field of view — so the clip arrived tighter than the student framed it, before
-   stitching touched it. Evolve's was 9:16, which is worse; the mechanism is identical.
-   🚫 **Never add a `height`, an `aspectRatio` or a portrait resolution to a capture here.**
-
-   ⚠️ `ZZ_VIDEO_ASPECT` is now exported from `ZooSnoozScreen.jsx` and derived from
-   `ZZ_FILM_W/H/TOP/BOT`, which the stitcher also reads. The preview can no longer claim a
-   different shape from the film. 🚫 Do not hand-write a ratio for a preview again — that is the
-   bug Evolve shipped twice.
-
-   ⚠️ **The night-vision wash is now scoped to the footage, not the whole band.** It used to fill
-   the band, which was safe only because the crop guaranteed footage covered it. With letterboxing
-   that would have tinted the black bars green.
-
-   ⚠️⚠️ **STILL UNPROVEN BY PIXELS.** The geometry is proven by arithmetic only. Nobody has
-   watched a ZooSnooz documentary come out of the new code — see item 5, which this does **not**
-   close. CLAUDE.md's own rule applies: *extract the pixels before believing it*.
-
-1a. ✅ **`drawn++` now counts only draws that landed** (same commit). It incremented *above* the
-   `try`, so a clip whose every `drawImage` threw still reported a healthy frame rate and the
-   `[zoosnooz] … drew only N frames` warning could never fire. ⚠️ **The one instrument for this
-   pipeline's silent-failure class was itself reporting success** — which also means that warning
-   has never been a trustworthy all-clear on any past stitch. 🚫 Never increment a health counter
-   outside the `try` whose success it is supposed to measure.
+1. ⚠️⚠️ **The stitcher still centre-crops landscape clips.** This is item 0 of "Do these first"
+   and it is the same "the camera is zoomed in" complaint that cost two days on Evolve. 🚫 Fixing
+   it means changing **capture constraints AND `drawFrame` together** — do not do one without the
+   other. Its capture path has never been re-checked since.
 
 2. ⚠️ **No ZooSnooz souvenir link.** Evolve has `utils/evolveSouvenir.js` and a `?doc=` route, so
    a tag carries an **app** URL with a token and keeps working if the film is re-stitched. The
@@ -314,14 +274,10 @@ sections below.
 
 ### ⚠️ Do these first
 
-0. **Verify a ZooSnooz documentary end to end — this is now the ONLY thing left on the ZooSnooz
-   film path, and it needs a real device.** The crop and the capture constraints were fixed
-   2026-10-29 (see ZooSnooz item 1 above) and the stitcher reports failures like Evolve's, but
-   **no documentary has been watched out of the new code.** What a foreground run has to confirm:
-   footage fills the band's width with black bars above and below rather than being cropped; every
-   segment plays video and audio, not just title cards; the console carries no
-   `[zoosnooz] … drew only N frames` line. ⚠️ Automated testing cannot do this — a driven tab
-   reports itself hidden and manufactures the backgrounding bug under test (see item 4).
+0. **Verify a ZooSnooz documentary end to end.** Its stitcher now reports failures like Evolve's,
+   but it still **centre-crops landscape clips** (the "zoomed in" complaint applies to it) and its
+   capture has never been re-checked. Fixing the crop means the same pair of changes made to
+   Evolve — capture constraints AND `drawFrame` together. 🚫 Do not do one without the other.
 0a. ~~**`adminWipeAllData` deployed with no source in the repository.**~~ ✅ **FIXED 2026-10-04.**
    **Source and deployment now match exactly — 9 functions both sides.**
 

@@ -11,21 +11,6 @@ import { buildObservationScore } from '../utils/scoring';
 
 const INTER_DURATION = { tiger: 30, lion: 30, rhino: 0, binturong: 0, 'sun-bear': 0 };
 
-// ── Documentary geometry ────────────────────────────────────────────────────
-// The stitched film's canvas, and the band of it that actually shows footage. These live at
-// module scope for one reason: the capture preview reads ZZ_VIDEO_ASPECT so it can never again
-// claim a different shape from the film.
-//
-// ⚠️ THE PREVIEW MUST SHOW WHAT THE FILM WILL SHOW. Evolve learned this twice (see the comment
-// above `.ev-cam` in EvolveScreen.jsx): a preview that is a different shape, or that uses
-// `object-fit: cover`, has the student framing themselves inside a window tighter than the film
-// uses — and what they see while filming is the most zoomed-in view in the whole system.
-// 🚫 Do not hardcode a ratio for the preview, and do not set it back to `cover`, without
-//    changing `drawFrame` in this file to match.
-const ZZ_FILM_W = 720, ZZ_FILM_H = 1280;
-const ZZ_FILM_TOP = 80, ZZ_FILM_BOT = 260;
-export const ZZ_VIDEO_ASPECT = ZZ_FILM_W / (ZZ_FILM_H - ZZ_FILM_TOP - ZZ_FILM_BOT);
-
 // ── Instruction type ────────────────────────────────────────────────────────
 // The two places ZooSnooz tells a student what to DO — the mission brief on the insight
 // screen, and the prompt above the writing box. Both use Taronga Headline, applied with
@@ -333,15 +318,7 @@ export default function ZooSnoozScreen() {
     let stopped = false;
     (async () => {
       try {
-        // ⚠️⚠️ DO NOT CONSTRAIN THE SHAPE OF THE CAMERA. Ask for a width, never a height.
-        // `height: { ideal: 720 }` alongside the width pins the request to 16:9, and a sensor
-        // that is natively 4:3 satisfies it by DIGITALLY CROPPING ITS OWN VERTICAL FIELD OF
-        // VIEW — the clip arrives already tighter than the student framed it, before any
-        // stitching happens. This is the same fault that produced Evolve's "zoomed in" films
-        // (there it was 9:16, which is worse, but the mechanism is identical).
-        // 🚫 Never add a height, an aspectRatio, or a portrait resolution here. The stitcher
-        //    fits whatever shape arrives — see `drawFrame` in this file.
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: zzFacingModeRef.current, width: { ideal: 1280 } }, audio: true });
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: zzFacingModeRef.current, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: true });
         if (stopped) { stream.getTracks().forEach(t => t.stop()); return; }
         zzCamRef.current = stream;
         if (zzVideoRef.current) {
@@ -372,9 +349,7 @@ export default function ZooSnoozScreen() {
     zzCamRef.current = null;
     if (zzVideoRef.current) zzVideoRef.current.srcObject = null;
     navigator.mediaDevices.getUserMedia({
-      // ⚠️ Width only — no height. Same reason as the capture above; flipping the camera must
-      // not quietly reintroduce the 16:9 crop the main path just dropped.
-      video: { facingMode: newFront ? 'user' : 'environment', width: { ideal: 1280 } },
+      video: { facingMode: newFront ? 'user' : 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
       audio: true,
     }).then(stream => {
       zzCamRef.current = stream;
@@ -731,7 +706,7 @@ export default function ZooSnoozScreen() {
 
       if (!cancelled) setZzStitchError(null);
 
-      const W = ZZ_FILM_W, H = ZZ_FILM_H;
+      const W = 720, H = 1280;
       const cvs = document.createElement('canvas');
       cvs.width = W; cvs.height = H;
       const ctx = cvs.getContext('2d');
@@ -1007,7 +982,7 @@ export default function ZooSnoozScreen() {
           const nvUsed = badge?.nightVisionUsed || false;
           const videoTitle = badge?.videoTitle || animal.name;
           const conservMsg = badge?.conservationMsg || '';
-          const topH = ZZ_FILM_TOP, botH = ZZ_FILM_BOT, vidY = topH, vidH = H - topH - botH, botY = topH + vidH;
+          const topH = 80, botH = 260, vidY = topH, vidH = H - topH - botH, botY = topH + vidH;
           const rCX = W - 80, textMaxW = rCX - 40 - 26;
           const dStr = new Date().toLocaleDateString('en-AU',{day:'2-digit',month:'short',year:'numeric'}).toUpperCase();
 
@@ -1078,42 +1053,22 @@ export default function ZooSnoozScreen() {
               const now = performance.now();
               if (now - lastFrameTime < 33) return; // ~30fps cap
               lastFrameTime = now;
+              drawn++;
               drawBg();
               try {
                 const vW = videoEl.videoWidth || W, vH2 = videoEl.videoHeight || vidH;
-                const srcA = vW / vH2;
-                // ⚠️ CONTAIN, NEVER CROP, AND FILL WITH BLACK.
-                //
-                // This centre-cropped to fill the video band, which throws ~60% of the width away
-                // on a landscape clip — the "the camera is zoomed in" complaint that cost two days
-                // on Evolve. The whole frame the student filmed now survives, letterboxed on
-                // black. Black is quieter than a blurred enlargement of the frame itself, which
-                // Evolve tried and Cameron rejected: "I don't like how the bars for the background
-                // now are the actual video".
-                //
-                // 🚫 Do not reintroduce a crop here without also changing the capture constraints
-                //    and the preview's object-fit — all three have to agree. See ZZ_VIDEO_ASPECT.
-                const fitW = Math.min(W, vidH * srcA);
-                const fitH = fitW / srcA;
-                const dx = (W - fitW) / 2, dy = vidY + (vidH - fitH) / 2;
-                ctx.fillStyle = '#000';
-                ctx.fillRect(0, vidY, W, vidH);
+                const tgtA = W / vidH, srcA = vW / vH2;
+                let sx, sy, sw, sh;
+                if (srcA > tgtA) { sh = vH2; sw = sh*tgtA; sx = (vW-sw)/2; sy = 0; }
+                else { sw = vW; sh = sw/tgtA; sx = 0; sy = (vH2-sh)/2; }
                 if (nvUsed) {
                   ctx.filter = 'grayscale(1) brightness(1.6) contrast(1.9) sepia(1) hue-rotate(80deg) saturate(3)';
-                  ctx.drawImage(videoEl, 0, 0, vW, vH2, dx, dy, fitW, fitH); ctx.filter = 'none';
-                  // ⚠️ The night-vision wash is scoped to the FOOTAGE, not the whole band. It used
-                  // to cover the full band because the crop guaranteed footage filled it; with
-                  // letterboxing that would tint the black bars green.
+                  ctx.drawImage(videoEl, sx, sy, sw, sh, 0, vidY, W, vidH); ctx.filter = 'none';
                   ctx.save(); ctx.globalCompositeOperation = 'screen'; ctx.globalAlpha = 0.08;
-                  ctx.fillStyle = '#00E63C'; ctx.fillRect(dx, dy, fitW, fitH); ctx.restore();
+                  ctx.fillStyle = '#00E63C'; ctx.fillRect(0, vidY, W, vidH); ctx.restore();
                 } else {
-                  ctx.drawImage(videoEl, 0, 0, vW, vH2, dx, dy, fitW, fitH);
+                  ctx.drawImage(videoEl, sx, sy, sw, sh, 0, vidY, W, vidH);
                 }
-                // ⚠️ Counted only on a draw that actually landed. This used to increment above the
-                // try, so a clip whose every drawImage threw still reported a healthy frame rate
-                // and the "will look frozen" warning below could never fire — the one instrument
-                // for the silent-failure class this pipeline keeps producing, reporting success.
-                drawn++;
               } catch(e) {}
               ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(0,0,W,topH);
               ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 1;
@@ -1604,40 +1559,44 @@ export default function ZooSnoozScreen() {
           ))}
         </div>
 
-        {/* Header — phone-first, and deliberately NOT the shared `student-banner-mobile`.
-            ⚠️ MEASURED: under that class's `max-width:600px` rules the five children stacked into
-            a column 311px tall on a 700px viewport — 44% of the phone, permanently on screen —
-            leaving a 389px slot for animal cards that are ~380px each. Students browsed five
-            animals through a letterbox, with each card's tap target at the cut-off bottom edge.
-            ⚠️ Two of those mobile rules never applied here at all: they target `.submit-btn` and
-            `.points-card`, and ZooSnooz uses `.student-points-chip`. That class is
-            `text-align:right`, so stretched full width it rendered as a number jammed against
-            the right edge of an empty box — it read as broken, not minimal.
-            ⚠️ The header's "Submit Session" was a DUPLICATE of the "Finish Session" button below
-            the grid — same `completeSession` handler. The lower one is better: it is in the
-            right place chronologically and it shows progress. Only the duplicate was removed.
-            🚫 Do not put this back on `student-banner-mobile`. That class is MapScreen's, with
-               different children, and restyling it changes Tracka Trek at the same time. */}
-        <div className="student-header zz-map-header" style={{ position:'sticky', top:0, zIndex:100 }}>
-          <div className="zz-map-head">
-            <img className="zz-map-head-logo" src="images/logo.png" alt=""
-              onError={e=>e.target.style.display='none'} />
-            <div className="zz-map-head-text">
-              <div className="taronga-title zz-map-head-title">ZOOSNOOZ</div>
-              <div className="zz-map-head-sub">Nocturnal Wildlife Explorer</div>
-              {studentName && <div className="zz-map-head-name">👤 {studentName}</div>}
+        {/* Header - matches daily MapScreen style */}
+        <div className="student-header" style={{ position:'sticky', top:0, zIndex:100 }}>
+          <div className="student-banner-mobile student-header-inner">
+            <div className="logo-title-block" style={{ display:'flex', alignItems:'center', gap:'1rem' }}>
+              <img src="images/logo.png" alt="Taronga Tracka"
+                style={{ height:'72px', width:'auto', filter:'drop-shadow(0 0 14px rgba(46,125,85,0.7))' }}
+                onError={e=>e.target.style.display='none'} />
+              <div>
+                <h1 className="taronga-title" style={{ fontSize:'clamp(1.5rem,3vw,2rem)', color:'white', marginBottom:'0.15rem', letterSpacing:'0.06em', textShadow:'0 2px 16px rgba(46,125,85,0.6)' }}>
+                  ZOOSNOOZ
+                </h1>
+                <p style={{ color:'#4A9E6B', fontSize:'0.88rem', fontWeight:600, margin:0 }}>Nocturnal Wildlife Explorer</p>
+              </div>
             </div>
 
-            <button className="zz-map-head-chip" onClick={() => setZzScreen('collection')}
-              aria-label={`${zzTotalPoints} points, ${totalDone} of ${ZOOSNOOZ_ANIMALS.length} badges`}>
-              <div className="zz-map-head-pts">{zzTotalPoints}</div>
-              <div className="zz-map-head-badges">{totalDone}/{ZOOSNOOZ_ANIMALS.length}</div>
+            {studentName && (
+              <div className="student-name-pill" style={{ background:'rgba(255,255,255,0.12)', border:'1px solid rgba(255,255,255,0.22)', borderRadius:'var(--t-r-pill)', padding:'0.4rem 0.9rem', backdropFilter:'blur(10px)', WebkitBackdropFilter:'blur(10px)' }}>
+                <span style={{ color:'white', fontSize:'0.82rem', fontWeight:600 }}>👤 {studentName}</span>
+              </div>
+            )}
+
+            <button className="student-points-chip" onClick={() => setZzScreen('collection')}>
+              <div className="pts-value">{zzTotalPoints}</div>
+              <div className="pts-label">{totalDone}/{ZOOSNOOZ_ANIMALS.length} Badges</div>
             </button>
 
-            {/* Icon-only on a phone: the word "Home" cost ~62px of a 390px bar for a control
-                used once. The label lives on aria-label so it is still announced. */}
-            <button className="zz-map-head-home" onClick={() => { setSessionType('standard'); }}
-              aria-label="Home">🏠</button>
+            <button
+              onClick={() => { setSessionType('standard'); }}
+              style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(168,196,178,0.2)', color:'rgba(168,196,178,0.6)', padding:'0.4rem 0.75rem', borderRadius:'var(--t-r-pill)', cursor:'pointer', fontSize:'0.75rem', fontWeight:600, whiteSpace:'nowrap' }}>
+              🏠 Home
+            </button>
+
+            <button
+              onClick={completeSession}
+              disabled={zzSessionDone}
+              style={{ background: zzSessionDone ? 'rgba(46,125,85,0.45)' : 'linear-gradient(135deg,#2E7D55,#4C1D95)', border: zzSessionDone ? '1px solid rgba(255,255,255,0.25)' : '1.5px solid rgba(168,196,178,0.5)', color:'white', padding:'0.4rem 0.9rem', borderRadius:'var(--t-r-pill)', cursor: zzSessionDone ? 'not-allowed' : 'pointer', fontSize:'0.78rem', fontWeight:700, letterSpacing:'0.04em', opacity: zzSessionDone ? 0.65 : 1, textTransform:'uppercase', boxShadow: zzSessionDone ? 'none' : '0 4px 14px rgba(46,125,85,0.45)', backdropFilter:'blur(8px)', whiteSpace:'nowrap' }}>
+              {zzSessionDone ? '✓ Submitted' : '✓ Submit Session'}
+            </button>
           </div>
         </div>
 
@@ -1856,23 +1815,14 @@ export default function ZooSnoozScreen() {
       </div>
       </div>
 
-      {/* Phase content.
-          ⚠️ PHONE BUDGET. Measured on a 390×700 viewport the phases overflowed by 98px
-          (insight), 201px (quiz) and 91px (filming), so the button a student has to tap next
-          was below the fold on three of the six. The padding and gap here were desktop
-          spacing (1.25rem / 1rem) and are the cheapest place to buy height back, because they
-          apply to every phase at once.
-          🚫 Do not widen these back without re-measuring all six phases — see the table in
-             CLAUDE.md. A phase that fits is worth more than a phase that breathes. */}
-      <div style={{ flex:1, overflowY:'auto', padding:'0.8rem 0.9rem 1rem' }}>
-      <div style={{ maxWidth:'680px', margin:'0 auto', display:'flex', flexDirection:'column', gap:'0.7rem' }}>
+      {/* Phase content */}
+      <div style={{ flex:1, overflowY:'auto', padding:'1.25rem' }}>
+      <div style={{ maxWidth:'680px', margin:'0 auto', display:'flex', flexDirection:'column', gap:'1rem' }}>
 
         {/* ── INSIGHT ─────────────────────────────────────────────────────── */}
         {zzPhase === 'insight' && (
-          <div style={{ display:'flex', flexDirection:'column', gap:'0.7rem', flex:1 }}>
-            {/* 200px of a 700px phone for a decorative hero, above the text that carries the
-                science. 132px still reads as a photo and buys back the overflow. */}
-            <div style={{ height:'132px', borderRadius:16, overflow:'hidden', position:'relative', border:'1px solid var(--zz-border)' }}>
+          <div style={{ display:'flex', flexDirection:'column', gap:'1rem', flex:1 }}>
+            <div style={{ height:'200px', borderRadius:16, overflow:'hidden', position:'relative', border:'1px solid var(--zz-border)' }}>
               <img src={zzAnimal.image} alt={zzAnimal.name} style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:'center', filter:'brightness(0.55)', display:'block' }} />
               <div style={{ position:'absolute', inset:0, background:'linear-gradient(0deg,rgba(4,8,15,0.9) 0%,rgba(4,8,15,0.3) 100%)' }} />
               <div style={{ position:'absolute', bottom:'1rem', left:'1.25rem', right:'1.25rem' }}>
@@ -1892,7 +1842,7 @@ export default function ZooSnoozScreen() {
                 {stageData.keeperInsight || zzAnimal.keeperInsight}
               </p>
             </div>
-            <div style={{ background:'rgba(46,125,85,0.12)', border:'1.5px solid rgba(74,158,107,0.4)', borderRadius:'16px', padding:'1rem 0.9rem', textAlign:'center' }}>
+            <div style={{ background:'rgba(46,125,85,0.12)', border:'1.5px solid rgba(74,158,107,0.4)', borderRadius:'16px', padding:'1.5rem 1.25rem', textAlign:'center' }}>
               <div className="taronga-title" style={{ ...ZZ_KICKER, color:'rgba(168,196,178,0.85)', marginBottom:'0.6rem' }}>Your Mission</div>
               <p className="taronga-title" style={{ ...ZZ_MISSION, color:'white' }}>{zzAnimal.interaction.instruction}</p>
             </div>
@@ -1902,7 +1852,7 @@ export default function ZooSnoozScreen() {
 
         {/* ── INTERACTION ──────────────────────────────────────────────────── */}
         {zzPhase === 'interaction' && (
-          <div style={{ display:'flex', flexDirection:'column', gap:'0.7rem', flex:1 }}>
+          <div style={{ display:'flex', flexDirection:'column', gap:'1rem', flex:1 }}>
 
             {/* Tiger: Behaviour Analysis Tool */}
             {zzAnimal.id === 'tiger' && (() => {
@@ -2440,11 +2390,11 @@ export default function ZooSnoozScreen() {
           const activePct     = tlTotal > 0 ? Math.round((activeSamples / tlTotal) * 100) : 0;
           const stillPct      = 100 - activePct;
           return (
-            <div style={{ display:'flex', flexDirection:'column', gap:'0.7rem', flex:1 }}>
+            <div style={{ display:'flex', flexDirection:'column', gap:'1rem', flex:1 }}>
 
               {/* Tiger - recording data summary */}
               {zzAnimal.id === 'tiger' && (
-                <div style={{ background:'rgba(0,0,0,0.45)', border:'1px solid rgba(46,125,85,0.35)', borderRadius:'14px', padding:'0.7rem', fontFamily:'monospace' }}>
+                <div style={{ background:'rgba(0,0,0,0.45)', border:'1px solid rgba(46,125,85,0.35)', borderRadius:'14px', padding:'1rem', fontFamily:'monospace' }}>
                   <p style={{ fontSize:'0.6rem', fontWeight:700, color:'rgba(168,196,178,0.7)', textTransform:'uppercase', letterSpacing:'0.14em', margin:'0 0 0.6rem', fontFamily:'DM Sans, sans-serif' }}>Your 30-second recording</p>
                   <div style={{ display:'grid', gridTemplateColumns:'repeat(30,1fr)', gap:'2px', marginBottom:'0.6rem' }}>
                     {[...Array(60)].map((_,i) => (
@@ -2478,7 +2428,7 @@ export default function ZooSnoozScreen() {
                 const peakPct = Math.min(100, lionPeak);
                 const avgPct  = lionHistory.length > 0 ? Math.min(100, Math.round(lionHistory.reduce((a,b)=>a+b,0)/lionHistory.length)) : 0;
                 return (
-                  <div style={{ background:'rgba(0,0,0,0.45)', border:'1px solid rgba(46,125,85,0.35)', borderRadius:'14px', padding:'0.7rem', marginBottom:'0' }}>
+                  <div style={{ background:'rgba(0,0,0,0.45)', border:'1px solid rgba(46,125,85,0.35)', borderRadius:'14px', padding:'1rem', marginBottom:'0' }}>
                     <p style={{ fontSize:'0.6rem', fontWeight:700, color:'rgba(168,196,178,0.7)', textTransform:'uppercase', letterSpacing:'0.14em', margin:'0 0 0.6rem', fontFamily:'DM Sans, sans-serif' }}>Your 30-second recording</p>
                     <div style={{ display:'flex', gap:'2px', alignItems:'flex-end', height:'48px', background:'rgba(0,0,0,0.35)', borderRadius:'6px', padding:'4px 6px', marginBottom:'0.75rem' }}>
                       {[...Array(60)].map((_,i) => {
@@ -2505,7 +2455,7 @@ export default function ZooSnoozScreen() {
                 const habColor  = avgB<40?'#4ADE80':avgB<85?'#4A9E6B':avgB<130?'#FBBF24':avgB<190?'#FB923C':'#F87171';
                 const maxH = 36;
                 return (
-                  <div style={{ background:'rgba(0,0,0,0.45)', border:'1px solid rgba(46,125,85,0.35)', borderRadius:'14px', padding:'0.7rem', marginBottom:'0' }}>
+                  <div style={{ background:'rgba(0,0,0,0.45)', border:'1px solid rgba(46,125,85,0.35)', borderRadius:'14px', padding:'1rem', marginBottom:'0' }}>
                     <p style={{ fontSize:'0.6rem', fontWeight:700, color:'rgba(168,196,178,0.7)', textTransform:'uppercase', letterSpacing:'0.14em', margin:'0 0 0.65rem', fontFamily:'DM Sans, sans-serif' }}>Your Habitat Scan Results</p>
                     {bintuReadings.length > 1 && (
                       <div style={{ background:'rgba(5,13,7,0.9)', borderRadius:'8px', padding:'6px 8px', marginBottom:'0.65rem' }}>
@@ -2553,7 +2503,7 @@ export default function ZooSnoozScreen() {
                 const SW=240,SH=72;
                 if(pts.length>1){const rangeX=Math.max(1,maxX-minX),rangeY=Math.max(1,maxY-minY);const scale=Math.min((SW-16)/rangeX,(SH-12)/rangeY);const ox=(SW-rangeX*scale)/2-minX*scale,oy=(SH-rangeY*scale)/2-minY*scale;svgPath=pts.map(([px,py],i)=>`${i===0?'M':'L'}${(px*scale+ox).toFixed(1)},${(py*scale+oy).toFixed(1)}`).join(' ');}
                 return (
-                  <div style={{ background:'rgba(0,0,0,0.45)', border:'1px solid rgba(46,125,85,0.35)', borderRadius:'14px', padding:'0.7rem', marginBottom:'0' }}>
+                  <div style={{ background:'rgba(0,0,0,0.45)', border:'1px solid rgba(46,125,85,0.35)', borderRadius:'14px', padding:'1rem', marginBottom:'0' }}>
                     <p style={{ fontSize:'0.6rem', fontWeight:700, color:'rgba(168,196,178,0.7)', textTransform:'uppercase', letterSpacing:'0.14em', margin:'0 0 0.65rem', fontFamily:'DM Sans, sans-serif' }}>Your Movement Recording</p>
                     {svgPath && (
                       <div style={{ background:'rgba(5,13,7,0.9)', borderRadius:'8px', marginBottom:'0.65rem', overflow:'hidden' }}>
@@ -2581,7 +2531,7 @@ export default function ZooSnoozScreen() {
                 let dataUrl = null;
                 try { dataUrl = sketchRef.current?.toDataURL('image/png'); } catch(e) {}
                 return (
-                  <div style={{ background:'rgba(0,0,0,0.45)', border:'1px solid rgba(46,125,85,0.35)', borderRadius:'14px', padding:'0.7rem', marginBottom:'0' }}>
+                  <div style={{ background:'rgba(0,0,0,0.45)', border:'1px solid rgba(46,125,85,0.35)', borderRadius:'14px', padding:'1rem', marginBottom:'0' }}>
                     <p style={{ fontSize:'0.6rem', fontWeight:700, color:'rgba(168,196,178,0.7)', textTransform:'uppercase', letterSpacing:'0.14em', margin:'0 0 0.6rem', fontFamily:'DM Sans, sans-serif' }}>Your Foraging Adaptation Sketch</p>
                     {dataUrl && <img src={dataUrl} alt="Your sketch" style={{ width:'100%', borderRadius:'8px', background:'rgba(4,10,7,0.85)', display:'block', marginBottom:'0.5rem' }} />}
                     <p style={{ fontSize:'0.65rem', color:'rgba(255,255,255,0.35)', margin:0, fontFamily:'DM Sans, sans-serif', fontStyle:'italic' }}>Use what you sketched to answer the question below.</p>
@@ -2589,21 +2539,20 @@ export default function ZooSnoozScreen() {
                 );
               })()}
 
-              {/* ⚠️ The 140px animal photo that used to sit here is gone, on purpose. This phase
-                  measured 201px over a 390×700 phone — the worst of the six — which put all four
-                  answer options below the fold. The photo was decorative: the student has just
-                  spent 30 seconds watching the live animal, and the recording recap above is the
-                  thing the question actually asks them to read.
-                  🚫 Do not add an image back here without re-measuring. */}
+              {/* Animal image */}
+              <div style={{ height:'140px', borderRadius:12, overflow:'hidden' }}>
+                <img src={zzAnimal.image} alt={zzAnimal.name} style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:'center', display:'block' }} />
+              </div>
+
               {/* Question + options */}
               <div className="zz-card">
-                <div style={{ color:'var(--zz-gold)', fontSize:'0.7rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:'0.5rem' }}>Make Your Call</div>
+                <div style={{ color:'var(--zz-gold)', fontSize:'0.7rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:'0.75rem' }}>Make Your Call</div>
                 {/* ⚠️ No "your first answer counts" caption here — tried on 2026-10-22 and
                     removed the same day at Cameron's call: it adds pressure at 9pm on a sleepover,
                     and ZooSnooz is deliberately the gentlest of the modes. The instant lock stays
                     unannounced. 🚫 Don't reintroduce it as a "helpful hint". */}
-                <p style={{ color:'var(--zz-text)', fontSize:'0.95rem', lineHeight:1.45, margin:'0 0 0.7rem', fontWeight:600 }}>{q}</p>
-                <div style={{ display:'flex', flexDirection:'column', gap:'0.45rem' }}>
+                <p style={{ color:'var(--zz-text)', fontSize:'0.95rem', lineHeight:1.6, margin:'0 0 1rem', fontWeight:600 }}>{q}</p>
+                <div style={{ display:'flex', flexDirection:'column', gap:'0.55rem' }}>
                   {opts.map((opt, i) => {
                     let bg = 'rgba(255,255,255,0.06)', border = 'rgba(255,255,255,0.14)';
                     if (mcqRevealed) {
@@ -2636,7 +2585,7 @@ export default function ZooSnoozScreen() {
                         // take-back that did not exist.
                         setMcqShowResult(true);
                       }}
-                      style={{ background:bg, border:`1.5px solid ${border}`, borderRadius:10, padding:'0.62rem 0.8rem', color:'var(--zz-text)', fontSize:'0.86rem', textAlign:'left', cursor: mcqRevealed ? 'default' : 'pointer', transition:'all 0.15s', lineHeight:1.4, width:'100%' }}>
+                      style={{ background:bg, border:`1.5px solid ${border}`, borderRadius:10, padding:'0.85rem 1rem', color:'var(--zz-text)', fontSize:'0.88rem', textAlign:'left', cursor: mcqRevealed ? 'default' : 'pointer', transition:'all 0.15s', lineHeight:1.5, width:'100%' }}>
                         {opt}
                       </button>
                     );
@@ -2688,7 +2637,7 @@ export default function ZooSnoozScreen() {
 
         {/* ── OBSERVATION ──────────────────────────────────────────────────── */}
         {zzPhase === 'observation' && (
-          <div style={{ display:'flex', flexDirection:'column', gap:'0.7rem', flex:1 }}>
+          <div style={{ display:'flex', flexDirection:'column', gap:'1rem', flex:1 }}>
             {!obsOpen ? (
               /* Countdown - full-width centred, matches live site */
               <div style={{ textAlign:'center', padding:'3rem 1rem 2rem' }}>
@@ -2744,14 +2693,8 @@ export default function ZooSnoozScreen() {
                         <span>Need a hint?</span>
                         <span style={{ fontSize:'0.7rem', opacity:0.7 }}>{hintsOpen ? '▲' : '▼'}</span>
                       </button>
-                      {/* ⚠️ maxHeight + its own scroll. The writing phase fits a 390×700 phone to
-                          within 2px, but opening this panel pushed it 190px over and shoved the
-                          textarea and the word count off-screen — at the exact moment a student
-                          wants the hint AND the box to type in. Capping it means the hint scrolls
-                          inside itself and the page behind it never moves.
-                          🚫 Do not remove the cap to "show the whole hint" — that is the bug. */}
                       {hintsOpen && (
-                        <div style={{ background:'rgba(46,125,85,0.07)', border:'1px solid rgba(74,158,107,0.3)', borderTop:'none', borderRadius:'0 0 10px 10px', padding:'0.7rem 0.85rem', maxHeight:'20vh', overflowY:'auto', overscrollBehavior:'contain' }}>
+                        <div style={{ background:'rgba(46,125,85,0.07)', border:'1px solid rgba(74,158,107,0.3)', borderTop:'none', borderRadius:'0 0 10px 10px', padding:'0.75rem 1rem' }}>
                           {tip.points && tip.points.length > 0 && (
                             <>
                               <p style={{ fontSize:'0.65rem', fontWeight:700, color:'#4A9E6B', textTransform:'uppercase', letterSpacing:'0.08em', margin:'0 0 0.35rem' }}>Your response should include:</p>
@@ -2773,7 +2716,7 @@ export default function ZooSnoozScreen() {
                       value={obsText}
                       onChange={e => setObsText(e.target.value)}
                       placeholder={placeholder}
-                      rows={5}
+                      rows={8}
                       style={{ width:'100%', boxSizing:'border-box', background:'rgba(255,255,255,0.05)', border:`1.5px solid ${wordCount >= minWords ? 'rgba(46,125,85,0.55)' : 'rgba(255,255,255,0.1)'}`, borderRadius:12, padding:'0.85rem 1rem', color:'var(--zz-text)', fontSize:'0.92rem', lineHeight:1.65, resize:'vertical', fontFamily:'DM Sans, sans-serif', outline:'none', transition:'border-color 0.2s' }}
                     />
                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:'-0.5rem' }}>
@@ -2797,113 +2740,131 @@ export default function ZooSnoozScreen() {
         {/* ── VIDEO ────────────────────────────────────────────────────────── */}
         {/* ── VIDEO ────────────────────────────────────────────────────────── */}
         {zzPhase === 'video' && (
-          <div style={{ display:'flex', flexDirection:'column', gap:'0.9rem' }}>
+          <div style={{ display:'flex', flexDirection:'column', gap:'1rem' }}>
 
-            {/* ── Built on Evolve's filming screen, deliberately ──────────────────────
-                Cameron, after three failed attempts at squeezing the old layout:
-                "Can you make the film modal the same as the evolve... the zoosnooz is
-                too squished."
-
-                What was here was a mock-up of the finished film — branding bar, video,
-                caption panel, logo, hashtags — rendered full width with the editable
-                fields laid over it. On a phone that cannot work: the film is portrait
-                (720×1280), so a faithful mock is narrow, and a full-width one is the
-                wrong shape. Every fix traded one fault for another.
-
-                Evolve's answer, copied here: prompt, then ONE big centred camera at the
-                film's aspect, then the controls. The caption fields are an ordinary block
-                underneath instead of furniture drawn on a fake frame.
-                🚫 Do not reintroduce the simulated film card. See EvolveScreen `.ev-cam`. */}
-
-            {/* The prompt — Evolve's `.ev-say` */}
-            <div style={{ background:'rgba(46,125,85,0.08)', border:'1px solid rgba(74,158,107,0.28)', borderRadius:'12px', padding:'0.85rem 1rem' }}>
-              <div style={{ fontSize:'0.56rem', fontWeight:800, letterSpacing:'0.2em', textTransform:'uppercase', color:'rgba(168,196,178,0.8)', marginBottom:'0.4rem' }}>To camera</div>
-              <p style={{ fontSize:'clamp(1rem, 3.6vw, 1.15rem)', lineHeight:1.45, color:'var(--zz-text)', margin:0 }}>
-                {(zzAnimal.filmingGuidance||'').split('\n')[0]}
-              </p>
+            {/* Filming guidance - compact */}
+            <div style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(46,125,85,0.2)', borderRadius:'10px', padding:'0.6rem 0.85rem' }}>
+              <p style={{ fontSize:'0.58rem', fontWeight:800, color:'rgba(46,125,85,0.7)', textTransform:'uppercase', letterSpacing:'0.12em', margin:'0 0 0.25rem' }}>🎬 What to Capture</p>
+              <p style={{ fontSize:'0.78rem', color:'var(--zz-muted)', lineHeight:1.5, margin:0 }}>{(zzAnimal.filmingGuidance||'').split('\n')[0]}</p>
             </div>
 
-            {/* ⚠️ THE CAMERA — exactly Evolve's `.ev-cam` geometry.
-                `aspect-ratio` + `max-height` + `width:auto`, centred. With width AUTO the
-                clamped height transfers back to the width and the ratio holds. 🚫 Never
-                `width:100%` here: the cap then wins and the aspect is silently dropped,
-                which is how this screen once rendered a 362×140 strip for a 0.766 film. */}
-            <div style={{ position:'relative', aspectRatio:String(ZZ_VIDEO_ASPECT), maxHeight:'52vh', width:'auto', margin:'0 auto', borderRadius:'16px', overflow:'hidden', background:'#000', boxShadow:'0 14px 40px rgba(0,0,0,0.45)' }}>
-              <video ref={zzVideoRef} muted playsInline
-                style={{ width:'100%', height:'100%', objectFit:'contain', display:'block', background:'#050D07', transition:'filter 0.35s ease',
-                  filter: nightVision ? 'grayscale(1) brightness(1.6) contrast(1.9) sepia(1) hue-rotate(80deg) saturate(3)' : 'none' }} />
-              {nightVision && (
-                <div style={{ position:'absolute', inset:0, background:'rgba(0,230,60,0.07)', pointerEvents:'none', mixBlendMode:'screen' }} />
-              )}
-              {!vidReady && (
-                <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', color:'rgba(255,255,255,0.4)', fontSize:'0.85rem' }}>Starting camera…</div>
-              )}
-              {zzRecording && (
-                <div style={{ position:'absolute', top:'0.65rem', right:'0.65rem', background:'rgba(220,38,38,0.92)', color:'white', borderRadius:'999px', padding:'0.3rem 0.7rem', fontSize:'0.78rem', fontWeight:700, display:'flex', alignItems:'center', gap:'0.35rem', backdropFilter:'blur(4px)' }}>
-                  <span style={{ width:'7px', height:'7px', borderRadius:'50%', background:'white', animation:'bflDot 0.8s ease-in-out infinite' }} />
-                  REC {zzCountdown}s
-                </div>
-              )}
-              {/* Night vision stays ON the camera — it is a live filter, and you want to see
-                  what it does while you aim. Flip moved to the button row, as in Evolve. */}
-              <button onClick={() => setNightVision(v => !v)}
-                style={{ position:'absolute', bottom:'0.6rem', left:'0.65rem', zIndex:5, display:'flex', alignItems:'center', gap:'0.4rem', padding:'0.28rem 0.7rem 0.28rem 0.4rem', borderRadius:'999px', border: nightVision ? '1.5px solid rgba(0,230,60,0.6)' : '1.5px solid rgba(255,255,255,0.25)', background: nightVision ? 'rgba(0,230,60,0.18)' : 'rgba(0,0,0,0.55)', backdropFilter:'blur(6px)', cursor:'pointer', transition:'all 0.25s' }}>
-                <div style={{ position:'relative', width:'28px', height:'16px', borderRadius:'999px', background: nightVision ? 'rgba(0,230,60,0.5)' : 'rgba(255,255,255,0.18)', transition:'background 0.25s', flexShrink:0 }}>
-                  <div style={{ position:'absolute', top:'2px', left: nightVision ? '14px' : '2px', width:'12px', height:'12px', borderRadius:'50%', background: nightVision ? '#00E63C' : 'rgba(255,255,255,0.7)', boxShadow: nightVision ? '0 0 6px rgba(0,230,60,0.9)' : 'none', transition:'left 0.25s, background 0.25s, box-shadow 0.25s' }} />
-                </div>
-                <span style={{ fontSize:'0.62rem', fontWeight:700, color: nightVision ? '#00E63C' : 'rgba(255,255,255,0.65)', textTransform:'uppercase', letterSpacing:'0.1em', whiteSpace:'nowrap', transition:'color 0.25s' }}>
-                  Night Vision
-                </span>
-              </button>
-            </div>
+            {/* Social Media Night Frame Card */}
+            <div style={{ position:'relative' }}>
+              <div style={{ borderRadius:'22px', overflow:'hidden', background:'linear-gradient(160deg,#020D06 0%,#040F08 55%,#071E14 100%)', boxShadow:'0 16px 48px rgba(0,0,0,0.75), 0 0 0 1px rgba(46,125,85,0.3)', position:'relative' }}>
 
-            {/* Controls — Evolve's Flip + Record row */}
-            <div style={{ display:'flex', gap:'0.6rem' }}>
-              {!zzRecording ? (
-                <>
-                  <button onClick={flipZzCamera}
-                    style={{ padding:'0.9rem 1.1rem', borderRadius:'999px', border:'1px solid rgba(168,196,178,0.3)', background:'rgba(0,0,0,0.25)', color:'var(--zz-text)', fontWeight:700, cursor:'pointer', fontSize:'0.85rem', flexShrink:0 }}>
-                    ⟳ Flip
-                  </button>
-                  <button className="zz-btn" style={{ flex:1, margin:0 }} onClick={zzStartRecording}>⏺ Start Recording</button>
-                </>
-              ) : (
-                <button className="zz-btn" style={{ flex:1, margin:0, background:'linear-gradient(135deg,#DC2626,#991B1B)' }} onClick={zzStopRecording}>⏹ Stop Recording</button>
-              )}
-            </div>
-
-            {/* The two things the film prints over the footage. An ordinary block now, not
-                fields floated on a mock frame. ⚠️ These still feed `drawFrame` — see
-                `videoTitle` and `conservMsg` in the stitcher. */}
-            {!zzRecording && (
-              <div style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(168,196,178,0.18)', borderRadius:'12px', padding:'0.85rem 1rem' }}>
-                <div style={{ fontSize:'0.56rem', fontWeight:800, letterSpacing:'0.2em', textTransform:'uppercase', color:'rgba(168,196,178,0.7)', marginBottom:'0.55rem' }}>
-                  Caption on your film — optional
+                {/* Top bar */}
+                <div style={{ padding:'0.85rem 1.1rem', display:'flex', alignItems:'center', justifyContent:'space-between', background:'rgba(0,0,0,0.55)', borderBottom:'1px solid rgba(255,255,255,0.08)' }}>
+                  <span style={{ fontSize:'0.88rem', fontWeight:700, color:'rgba(255,255,255,0.88)', letterSpacing:'0.03em' }}>Taronga Zoo Sydney</span>
+                  <span style={{ fontSize:'0.75rem', color:'rgba(255,255,255,0.48)', letterSpacing:'0.05em' }}>
+                    {new Date().toLocaleDateString('en-AU',{day:'2-digit',month:'short',year:'numeric'}).toUpperCase()}
+                  </span>
                 </div>
-                <input
-                  value={zzVideoTitle}
-                  onChange={e => { if (e.target.value.length <= 40) setZzVideoTitle(e.target.value); }}
-                  placeholder={`✏ ${zzAnimal.name} After Dark…`}
-                  maxLength={40}
-                  style={{ display:'block', width:'100%', boxSizing:'border-box', background:'transparent', border:'none', borderBottom:'1.5px dashed rgba(46,125,85,0.5)', outline:'none', fontSize:'1rem', fontWeight:700, color:'#A8C4B2', fontFamily:'DM Sans, sans-serif', padding:'0 0 0.4rem', marginBottom:'0.6rem', cursor:'text' }}
-                />
-                <textarea
-                  value={zzConservationMsg}
-                  onChange={e => { if (e.target.value.length <= 200) setZzConservationMsg(e.target.value); }}
-                  placeholder={'✏ Conservation message or information…'}
-                  maxLength={200}
-                  rows={2}
-                  style={{ display:'block', width:'100%', boxSizing:'border-box', background:'transparent', border:'none', outline:'none', fontSize:'0.88rem', fontStyle:'italic', color:'rgba(255,255,255,0.75)', fontFamily:'DM Sans, sans-serif', padding:0, resize:'none', lineHeight:1.5, cursor:'text' }}
-                />
+
+                {/* Camera feed */}
+                <div style={{ position:'relative', width:'100%', aspectRatio:'3/4', maxHeight:'28vh', overflow:'hidden', background:'#000' }}>
+                  <video ref={zzVideoRef} muted playsInline style={{ width:'100%', height:'100%', objectFit:'cover', display:'block', transition:'filter 0.35s ease',
+                    filter: nightVision ? 'grayscale(1) brightness(1.6) contrast(1.9) sepia(1) hue-rotate(80deg) saturate(3)' : 'none',
+                    transform: zzFrontCam ? 'scaleX(-1)' : 'none',
+                  }} />
+                  {nightVision && (
+                    <div style={{ position:'absolute', inset:0, background:'rgba(0,230,60,0.08)', mixBlendMode:'screen', pointerEvents:'none', transition:'opacity 0.3s' }} />
+                  )}
+                  {/* Subtle star field overlay */}
+                  {[...Array(10)].map((_,i) => (
+                    <div key={i} style={{ position:'absolute', left:`${(i*9.3+5)%100}%`, top:`${(i*14.1+8)%100}%`, width:i%3===0?'2px':'1.5px', height:i%3===0?'2px':'1.5px', borderRadius:'50%', background:i%4===0?'#4A9E6B':'rgba(255,255,255,0.6)', opacity:0.35+(i%3)*0.1, pointerEvents:'none' }} />
+                  ))}
+                  {!vidReady && (
+                    <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', color:'rgba(255,255,255,0.4)', fontSize:'0.85rem' }}>Starting camera…</div>
+                  )}
+                  {zzRecording && (
+                    <div style={{ position:'absolute', top:'0.65rem', right:'0.65rem', background:'rgba(220,38,38,0.92)', color:'white', borderRadius:'999px', padding:'0.3rem 0.7rem', fontSize:'0.78rem', fontWeight:700, display:'flex', alignItems:'center', gap:'0.35rem', backdropFilter:'blur(4px)' }}>
+                      <span style={{ width:'7px', height:'7px', borderRadius:'50%', background:'white', animation:'bflDot 0.8s ease-in-out infinite' }} />
+                      REC {zzCountdown}s
+                    </div>
+                  )}
+                  {/* Night vision toggle + flip button */}
+                  <div style={{ position:'absolute', bottom:'0.6rem', left:'0.65rem', right:'0.65rem', display:'flex', alignItems:'center', justifyContent:'space-between', zIndex:5 }}>
+                    <button
+                      onClick={() => setNightVision(v => !v)}
+                      style={{ display:'flex', alignItems:'center', gap:'0.4rem', padding:'0.28rem 0.7rem 0.28rem 0.4rem', borderRadius:'999px', border: nightVision ? '1.5px solid rgba(0,230,60,0.6)' : '1.5px solid rgba(255,255,255,0.25)', background: nightVision ? 'rgba(0,230,60,0.18)' : 'rgba(0,0,0,0.55)', backdropFilter:'blur(6px)', cursor:'pointer', transition:'all 0.25s' }}
+                    >
+                      <div style={{ position:'relative', width:'28px', height:'16px', borderRadius:'999px', background: nightVision ? 'rgba(0,230,60,0.5)' : 'rgba(255,255,255,0.18)', transition:'background 0.25s', flexShrink:0 }}>
+                        <div style={{ position:'absolute', top:'2px', left: nightVision ? '14px' : '2px', width:'12px', height:'12px', borderRadius:'50%', background: nightVision ? '#00E63C' : 'rgba(255,255,255,0.7)', boxShadow: nightVision ? '0 0 6px rgba(0,230,60,0.9)' : 'none', transition:'left 0.25s, background 0.25s, box-shadow 0.25s' }} />
+                      </div>
+                      <span style={{ fontSize:'0.62rem', fontWeight:700, color: nightVision ? '#00E63C' : 'rgba(255,255,255,0.65)', textTransform:'uppercase', letterSpacing:'0.1em', whiteSpace:'nowrap', transition:'color 0.25s' }}>
+                        {nightVision ? '🟢 Night Vision' : 'Night Vision'}
+                      </span>
+                    </button>
+                    {!zzRecording && (
+                      <button onClick={flipZzCamera} style={{ width:'52px', height:'52px', borderRadius:'50%', border:'2.5px solid rgba(255,255,255,0.75)', background:'rgba(0,0,0,0.6)', backdropFilter:'blur(10px)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'0.05rem', cursor:'pointer', boxShadow:'0 4px 16px rgba(0,0,0,0.4)', flexShrink:0 }}>
+                        <span style={{ fontSize:'1.6rem', color:'white', lineHeight:1 }}>⟳</span>
+                        <span style={{ fontSize:'0.5rem', fontWeight:800, color:'rgba(255,255,255,0.9)', textTransform:'uppercase', letterSpacing:'0.1em' }}>Flip</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Bottom panel - inline editable, two-column */}
+                <div style={{ padding:'1.1rem 1rem 1.25rem', background:'rgba(6,8,6,0.98)', borderTop:'2px solid rgba(46,125,85,0.3)', position:'relative', overflow:'hidden', display:'flex', alignItems:'flex-start', gap:'0.85rem' }}>
+                  {[...Array(8)].map((_,i) => (
+                    <div key={i} style={{ position:'absolute', left:`${(i*13+4)%96}%`, top:`${(i*19+6)%80}%`, width:'1.5px', height:'1.5px', borderRadius:'50%', background:'rgba(168,196,178,0.2)', pointerEvents:'none' }} />
+                  ))}
+                  {/* Left: text content */}
+                  <div style={{ flex:1, minWidth:0, position:'relative' }}>
+                    <div className="taronga-title" style={{ fontSize:'clamp(1.5rem,5vw,2rem)', color:'white', letterSpacing:'0.1em', marginBottom:'0.35rem', lineHeight:1.05 }}>
+                      I WENT TO ZOOSNOOZ!
+                    </div>
+                    <input
+                      value={zzVideoTitle}
+                      onChange={e => { if (e.target.value.length <= 40) setZzVideoTitle(e.target.value); }}
+                      placeholder={`✏ ${zzAnimal.name} After Dark…`}
+                      maxLength={40}
+                      style={{ display:'block', width:'100%', boxSizing:'border-box', background:'transparent', border:'none', borderBottom:'2px dashed rgba(46,125,85,0.5)', outline:'none', fontSize:'1.05rem', fontWeight:700, color:'#A8C4B2', fontFamily:'DM Sans, sans-serif', padding:'0.05rem 0 0.25rem', marginBottom:'0.4rem', cursor:'text' }}
+                    />
+                    <textarea
+                      value={zzConservationMsg}
+                      onChange={e => { if (e.target.value.length <= 200) setZzConservationMsg(e.target.value); }}
+                      placeholder={'✏ Conservation message or information…'}
+                      maxLength={200}
+                      rows={3}
+                      style={{ display:'block', width:'100%', boxSizing:'border-box', background:'transparent', border:'none', outline:'none', fontSize:'0.9rem', fontStyle:'italic', color:'rgba(255,255,255,0.75)', fontFamily:'DM Sans, sans-serif', padding:0, resize:'none', lineHeight:1.6, cursor:'text' }}
+                    />
+                  </div>
+                  {/* Right: logo + hashtags */}
+                  <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'0.4rem', flexShrink:0, paddingTop:'0.15rem' }}>
+                    <img src="images/logo.png" alt="Taronga Tracka" style={{ height:'68px', filter:'brightness(0) invert(1)', opacity:0.88 }} onError={e=>e.target.style.display='none'} />
+                    <span style={{ fontSize:'0.62rem', color:'rgba(168,196,178,0.6)', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'center', lineHeight:1.6, whiteSpace:'pre-line' }}>{`#ZooSnooz\n#TarongaTracka`}</span>
+                  </div>
+                </div>
               </div>
-            )}
 
+              {/* ✏ Tap to fill in callout - hidden during recording */}
+              {!zzRecording && (
+                <div style={{ position:'absolute', right:0, bottom:'130px', transform:'translateX(calc(100% + 10px))', width:'118px', zIndex:20, pointerEvents:'none' }}>
+                  <svg width="44" height="70" viewBox="0 0 44 70" style={{ position:'absolute', left:'-44px', bottom:'18px', overflow:'visible' }}>
+                    <path d="M 38 8 C 20 8, 6 28, 6 62" fill="none" stroke="rgba(255,255,255,0.65)" strokeWidth="2" strokeDasharray="5,3" strokeLinecap="round"/>
+                    <polyline points="0,58 6,68 12,58" fill="none" stroke="rgba(255,255,255,0.65)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <div style={{ background:'rgba(46,125,85,0.25)', border:'1.5px dashed rgba(168,196,178,0.7)', borderRadius:'12px', padding:'0.65rem 0.7rem', backdropFilter:'blur(10px)' }}>
+                    <p style={{ fontSize:'0.7rem', color:'white', fontWeight:700, margin:'0 0 0.25rem', lineHeight:1.35 }}>✏ Tap to fill in</p>
+                    <p style={{ fontSize:'0.65rem', color:'rgba(184,212,192,0.9)', margin:'0 0 0.2rem', lineHeight:1.35 }}>your title &amp; conservation info!</p>
+                    <p style={{ fontSize:'0.55rem', color:'rgba(255,255,255,0.4)', margin:0, fontStyle:'italic' }}>Not recorded</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {!zzRecording
+              ? <button className="zz-btn" onClick={zzStartRecording}>⏺ Start Recording</button>
+              : <button className="zz-btn" style={{ background:'linear-gradient(135deg,#DC2626,#991B1B)' }} onClick={zzStopRecording}>⏹ Stop Recording</button>
+            }
             <button className="zz-btn-ghost" style={{ width:'100%', textAlign:'center' }} onClick={zzCompleteMission}>
               Skip video &amp; complete →
             </button>
           </div>
         )}
 
+        {/* ── PREVIEW ──────────────────────────────────────────────────────── */}
         {zzPhase === 'preview' && (() => {
           const animalId = zzAnimal.id;
           const up       = zzUploadProgress[animalId];
