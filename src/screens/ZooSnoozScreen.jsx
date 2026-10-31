@@ -88,7 +88,7 @@ function ZzDoneScreen({ classCode, studentName, onDone }) {
         <h2 className="taronga-title" style={{ fontSize:'2rem', color:'white', marginBottom:'0.5rem', letterSpacing:'0.06em' }}>Documentary Submitted!</h2>
         <p style={{ color:'#4A9E6B', marginBottom:'2rem', fontSize:'0.9rem', lineHeight:1.6 }}>Your night documentary has been sent to the Taronga team. Tap the NFC tag to watch it anytime.</p>
         <button onClick={onDone}
-          style={{ width:'100%', padding:'0.9rem', background:'linear-gradient(135deg,#2E7D55,#4C1D95)', border:'none', borderRadius:'var(--t-r-pill)', color:'white', fontSize:'1rem', fontWeight:800, cursor:'pointer', letterSpacing:'0.06em', textTransform:'uppercase', boxShadow:'0 6px 20px rgba(46,125,85,0.5)' }}>
+          style={{ width:'100%', padding:'0.75rem', background:'linear-gradient(135deg,#2E7D55,#4C1D95)', border:'none', borderRadius:'var(--t-r-pill)', color:'white', fontSize:'1rem', fontWeight:800, cursor:'pointer', letterSpacing:'0.06em', textTransform:'uppercase', boxShadow:'0 6px 20px rgba(46,125,85,0.5)' }}>
           Back to Home
         </button>
       </div>
@@ -1721,8 +1721,16 @@ export default function ZooSnoozScreen() {
         {zzBadgeAnimal && (() => {
           const { animal: ba, points: baPoints, quizCorrect: baQuiz, totalDone: baDone, runningTotal: baRunningTotal } = zzBadgeAnimal;
           const CONFETTI_COLOURS = ['#4A9E6B','#2E7D55','#A8C4B2','#00E63C','#FFD700','#F472B6','#38BDF8'];
+          // ⚠⚠ THIS OVERLAY MUST NEVER TRAP A STUDENT. It was `align-items:center` with
+          //    `overflow:hidden`, so a card taller than the screen was clipped at BOTH ends with
+          //    no way to scroll. Measured at 390x640: the card was 858px tall, and "Continue
+          //    Exploring" (623-670) and "Go Home" (680-716) were both off the bottom. Finishing
+          //    an animal on a normal phone was a DEAD END - the only way out was reloading.
+          //    `align-items:flex-start` + `margin:auto` on the card still centres it when it
+          //    fits, but lets it scroll when it does not.
+          // 🚫 Never put overflow:hidden back on this element.
           return (
-            <div style={{ position:'absolute', inset:0, zIndex:500, background:'linear-gradient(160deg,#020D06 0%,#040F08 55%,#071E14 100%)', display:'flex', alignItems:'center', justifyContent:'center', padding:'1.5rem', overflow:'hidden' }}>
+            <div style={{ position:'absolute', inset:0, zIndex:500, background:'linear-gradient(160deg,#020D06 0%,#040F08 55%,#071E14 100%)', display:'flex', alignItems:'flex-start', justifyContent:'center', padding:'1rem', overflowY:'auto', overscrollBehavior:'contain' }}>
               {/* Confetti */}
               <div style={{ position:'absolute', inset:0, pointerEvents:'none' }}>
                 {[...Array(55)].map((_,i) => (
@@ -1730,20 +1738,20 @@ export default function ZooSnoozScreen() {
                 ))}
               </div>
 
-              <div className="animate-scale-in" style={{ position:'relative', zIndex:10, background:'linear-gradient(160deg,rgba(20,10,50,0.98),rgba(10,5,30,0.99))', border:'1px solid rgba(46,125,85,0.45)', borderRadius:'28px', padding:'2rem 1.75rem', maxWidth:'420px', width:'100%', textAlign:'center', boxShadow:'0 24px 64px rgba(0,0,0,0.7), 0 0 0 1px rgba(168,196,178,0.12)' }}>
+              <div className="animate-scale-in" style={{ position:'relative', zIndex:10, background:'linear-gradient(160deg,rgba(20,10,50,0.98),rgba(10,5,30,0.99))', border:'1px solid rgba(46,125,85,0.45)', borderRadius:'24px', padding:'0.9rem 1rem 1rem', maxWidth:'420px', width:'100%', margin:'auto', textAlign:'center', boxShadow:'0 24px 64px rgba(0,0,0,0.7), 0 0 0 1px rgba(168,196,178,0.12)' }}>
                 {/* Badge with glow */}
-                <div style={{ position:'relative', width:'180px', height:'180px', margin:'0 auto 1.25rem' }}>
+                <div style={{ position:'relative', width:'94px', height:'94px', margin:'0 auto 0.45rem' }}>
                   <div style={{ position:'absolute', inset:'-12px', borderRadius:'50%', background:'radial-gradient(circle, rgba(46,125,85,0.35) 0%, transparent 70%)' }} />
                   <div style={{ width:'100%', height:'100%', borderRadius:'50%', backgroundImage:`url(images/badge-${ba.id}.webp)`, backgroundSize:'contain', backgroundRepeat:'no-repeat', backgroundPosition:'center', filter:'drop-shadow(0 0 20px rgba(46,125,85,0.6))' }} />
                 </div>
 
                 <div style={{ fontSize:'0.6rem', fontWeight:800, color:'rgba(168,196,178,0.7)', textTransform:'uppercase', letterSpacing:'0.18em', marginBottom:'0.3rem' }}>Mission Complete</div>
-                <h2 className="taronga-title" style={{ fontSize:'clamp(1.6rem,4vh,2.1rem)', color:'white', marginBottom:'0.2rem', letterSpacing:'0.05em' }}>{ba.name}</h2>
-                <p style={{ color:'#4A9E6B', fontSize:'0.85rem', fontWeight:600, margin:'0 0 1.25rem' }}>{ba.scientificName}</p>
+                <h2 className="taronga-title" style={{ fontSize:'clamp(1.25rem,3.3vh,1.65rem)', color:'white', marginBottom:'0.15rem', letterSpacing:'0.05em' }}>{ba.name}</h2>
+                <p style={{ color:'#4A9E6B', fontSize:'0.8rem', fontWeight:600, margin:'0 0 0.7rem' }}>{ba.scientificName}</p>
 
                 {/* Points earned */}
-                <div style={{ background:'linear-gradient(135deg,rgba(46,125,85,0.25),rgba(79,36,170,0.3))', border:'1px solid rgba(46,125,85,0.4)', borderRadius:'16px', padding:'1rem', marginBottom:'0.85rem' }}>
-                  <div style={{ fontSize:'clamp(2.2rem,5vh,3rem)', fontWeight:900, color:'#A8C4B2', letterSpacing:'-0.02em', lineHeight:1 }}>+{baPoints}</div>
+                <div style={{ background:'linear-gradient(135deg,rgba(46,125,85,0.25),rgba(79,36,170,0.3))', border:'1px solid rgba(46,125,85,0.4)', borderRadius:'16px', padding:'0.55rem', marginBottom:'0.5rem' }}>
+                  <div style={{ fontSize:'clamp(1.7rem,4vh,2.2rem)', fontWeight:900, color:'#A8C4B2', letterSpacing:'-0.02em', lineHeight:1 }}>+{baPoints}</div>
                   <div style={{ fontSize:'0.65rem', fontWeight:800, color:'rgba(168,196,178,0.6)', textTransform:'uppercase', letterSpacing:'0.12em', marginTop:'0.2rem' }}>Points Earned</div>
                   {baQuiz && <div style={{ fontSize:'0.72rem', color:'#4A9E6B', marginTop:'0.4rem' }}>+20 quiz bonus included</div>}
                 </div>
@@ -1799,7 +1807,7 @@ export default function ZooSnoozScreen() {
                     { key:'writing',   label:'Writing' },
                   ];
                   return (
-                    <div style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'14px', padding:'0.85rem 0.95rem', marginBottom:'1.25rem' }}>
+                    <div style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'14px', padding:'0.6rem 0.8rem', marginBottom:'0.6rem' }}>
                       <div style={{ fontSize:'0.58rem', fontWeight:800, color:'rgba(168,196,178,0.6)', textTransform:'uppercase', letterSpacing:'0.12em', marginBottom:'0.6rem', textAlign:'left' }}>How your writing scored</div>
                       {rows.map(({ key, label }) => {
                         const v = Math.max(0, Math.min(SCORE_MAX, obs[key] ?? 0));
@@ -1808,7 +1816,7 @@ export default function ZooSnoozScreen() {
                         //    "did well" threshold the feedback cards above use.
                         const col = v >= 3 ? '#4A9E6B' : '#FCD34D';
                         return (
-                          <div key={key} style={{ display:'flex', alignItems:'center', gap:'0.6rem', marginBottom:'0.45rem' }}>
+                          <div key={key} style={{ display:'flex', alignItems:'center', gap:'0.6rem', marginBottom:'0.28rem' }}>
                             <div style={{ flex:'0 0 7.5rem', fontSize:'0.72rem', color:'rgba(255,255,255,0.65)', textAlign:'left', lineHeight:1.2 }}>{label}</div>
                             <div style={{ flex:1, height:'7px', borderRadius:'999px', background:'rgba(255,255,255,0.08)', overflow:'hidden' }}>
                               <div style={{ width:`${(v / SCORE_MAX) * 100}%`, height:'100%', borderRadius:'999px', background:col, transition:'width 0.5s ease' }} />
@@ -1820,7 +1828,7 @@ export default function ZooSnoozScreen() {
                     </div>
                   );
                 })() : (
-                  <div style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'14px', padding:'0.85rem', marginBottom:'1.25rem', display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.5rem' }}>
+                  <div style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'14px', padding:'0.5rem', marginBottom:'0.5rem', display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.5rem' }}>
                     <div>
                       <div style={{ fontSize:'1.3rem', fontWeight:800, color:'white' }}>{baDone}/{ZOOSNOOZ_ANIMALS.length}</div>
                       <div style={{ fontSize:'0.62rem', color:'rgba(168,196,178,0.6)', textTransform:'uppercase', letterSpacing:'0.1em' }}>Animals Done</div>
@@ -1834,12 +1842,12 @@ export default function ZooSnoozScreen() {
 
                 <button
                   onClick={() => setZzBadgeAnimal(null)}
-                  style={{ width:'100%', padding:'0.9rem', background:'linear-gradient(135deg,#2E7D55,#4C1D95)', border:'none', borderRadius:'var(--t-r-pill)', color:'white', fontSize:'1rem', fontWeight:800, cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.09em', boxShadow:'0 6px 20px rgba(46,125,85,0.5)', marginBottom:'0.65rem' }}>
+                  style={{ width:'100%', padding:'0.9rem', background:'linear-gradient(135deg,#2E7D55,#4C1D95)', border:'none', borderRadius:'var(--t-r-pill)', color:'white', fontSize:'1rem', fontWeight:800, cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.09em', boxShadow:'0 6px 20px rgba(46,125,85,0.5)', marginBottom:'0.45rem' }}>
                   {baDone === ZOOSNOOZ_ANIMALS.length ? '🌙 View Your Night Journey' : 'Continue Exploring →'}
                 </button>
                 <button
                   onClick={() => { setZzBadgeAnimal(null); setSessionType('standard'); }}
-                  style={{ width:'100%', padding:'0.6rem', background:'transparent', border:'1px solid rgba(168,196,178,0.2)', borderRadius:'var(--t-r-pill)', color:'rgba(168,196,178,0.55)', fontSize:'0.78rem', fontWeight:600, cursor:'pointer', letterSpacing:'0.05em' }}>
+                  style={{ width:'100%', padding:'0.5rem', background:'transparent', border:'1px solid rgba(168,196,178,0.2)', borderRadius:'var(--t-r-pill)', color:'rgba(168,196,178,0.55)', fontSize:'0.78rem', fontWeight:600, cursor:'pointer', letterSpacing:'0.05em' }}>
                   ← Go Home
                 </button>
               </div>
