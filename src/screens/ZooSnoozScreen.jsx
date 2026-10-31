@@ -2729,24 +2729,27 @@ export default function ZooSnoozScreen() {
                   : classStage === 5
                   ? { header:'✓ Stage 5 - Explain and reason:', points:['What did you observe?','Why does this happen?','How does this help the animal or environment?'], starters:['Based on my observation…','This is significant because…','This adaptation allows the animal to…'] }
                   : { header:'✓ A strong response includes:', points:['A clear observation (what + where/what doing)','A relevant concept or feature','A simple explanation or link to survival'], starters:['I observed that…','This may help the animal because…'] };
-                const lastName = zzAnimal.name.split(' ').pop().toLowerCase();
-                const placeholder = classStage <= 2
-                  ? `I can see the ${lastName}… The keeper told me…`
-                  : classStage === 5
-                  ? `Describe the ${lastName}'s adaptations and behaviour. Then include what the keeper told you about "${keeperQ}"`
-                  : `Describe what you observe - what is the ${lastName} doing? What do you notice? Then write what the keeper said when you asked them your question.`;
+                // ⚠️ ONE SHORT PLACEHOLDER, every stage. There were three, and the Stage 3-4 one
+                //    ran to four lines inside the box — it restated the prompt that is already
+                //    on screen directly above, so the same instruction was being read twice and
+                //    the box looked full before a student had typed anything.
+                //    The scaffolding it carried (sentence starters, what to include) is not lost:
+                //    it lives in "Need a hint?", which is stage-aware already.
+                //    🚫 Do not put the task back in here. A placeholder is a label, not a brief.
                 return (
                   <>
-                    {/* Observation prompt — the instruction for the written task. See
-                        ZZ_INSTRUCTION at the top of this file before changing the type. */}
+                    {/* The task, in one card instead of two stacked boxes.
+                        ⚠️ These are two halves of the same instruction — what to write about, and
+                        what to ask the keeper — and as separate bordered panels they read as two
+                        unrelated demands and cost a whole block of height on a phone.
+                        ⚠️ The prompt stays in the display face: see ZZ_INSTRUCTION at the top of
+                        this file before changing the type. */}
                     <div className="zz-card">
                       <p className="taronga-title" style={{ ...ZZ_INSTRUCTION, color:'var(--zz-text)' }}>{obsPrompt}</p>
-                    </div>
-
-                    {/* Keeper question */}
-                    <div style={{ background:'rgba(46,125,85,0.12)', border:'1.5px solid rgba(74,158,107,0.4)', borderRadius:'12px', padding:'1rem 1.1rem' }}>
-                      <p style={{ fontSize:'0.58rem', fontWeight:800, color:'rgba(168,196,178,0.8)', textTransform:'uppercase', letterSpacing:'0.16em', margin:'0 0 0.45rem' }}>Ask a Taronga keeper</p>
-                      <p style={{ fontSize:'0.92rem', fontStyle:'italic', color:'white', lineHeight:1.5, margin:0 }}>"{keeperQ}"</p>
+                      <div style={{ marginTop:'0.8rem', paddingTop:'0.75rem', borderTop:'1px solid rgba(74,158,107,0.28)' }}>
+                        <p style={{ fontSize:'0.56rem', fontWeight:800, color:'rgba(168,196,178,0.8)', textTransform:'uppercase', letterSpacing:'0.16em', margin:'0 0 0.3rem' }}>Ask a Taronga keeper</p>
+                        <p style={{ fontSize:'0.9rem', fontStyle:'italic', color:'white', lineHeight:1.45, margin:0 }}>"{keeperQ}"</p>
+                      </div>
                     </div>
 
                     {/* Hint toggle */}
@@ -2757,8 +2760,12 @@ export default function ZooSnoozScreen() {
                         <span>Need a hint?</span>
                         <span style={{ fontSize:'0.7rem', opacity:0.7 }}>{hintsOpen ? '▲' : '▼'}</span>
                       </button>
+                      {/* ⚠️ The panel below is capped and scrolls inside itself. Opening it used
+                          to push the page 190px over, taking the textarea and the word count off
+                          screen at the exact moment a student wants the hint AND somewhere to
+                          type. 🚫 Do not remove the cap to "show the whole hint" — that is the bug. */}
                       {hintsOpen && (
-                        <div style={{ background:'rgba(46,125,85,0.07)', border:'1px solid rgba(74,158,107,0.3)', borderTop:'none', borderRadius:'0 0 10px 10px', padding:'0.75rem 1rem' }}>
+                        <div style={{ background:'rgba(46,125,85,0.07)', border:'1px solid rgba(74,158,107,0.3)', borderTop:'none', borderRadius:'0 0 10px 10px', padding:'0.7rem 0.9rem', maxHeight:'28vh', overflowY:'auto', overscrollBehavior:'contain' }}>
                           {tip.points && tip.points.length > 0 && (
                             <>
                               <p style={{ fontSize:'0.65rem', fontWeight:700, color:'#4A9E6B', textTransform:'uppercase', letterSpacing:'0.08em', margin:'0 0 0.35rem' }}>Your response should include:</p>
@@ -2771,6 +2778,7 @@ export default function ZooSnoozScreen() {
                           {tip.starters.map((s, i) => (
                             <p key={i} style={{ fontSize:'0.78rem', fontStyle:'italic', color:'rgba(255,255,255,0.55)', margin:'0.1rem 0' }}>"{s}"</p>
                           ))}
+                          <p style={{ fontSize:'0.7rem', color:'rgba(255,255,255,0.4)', margin:'0.5rem 0 0' }}>Using scientific language scores higher.</p>
                         </div>
                       )}
                     </div>
@@ -2779,13 +2787,12 @@ export default function ZooSnoozScreen() {
                     <textarea
                       value={obsText}
                       onChange={e => setObsText(e.target.value)}
-                      placeholder={placeholder}
-                      rows={8}
+                      placeholder="Write what you saw…"
+                      rows={5}
                       style={{ width:'100%', boxSizing:'border-box', background:'rgba(255,255,255,0.05)', border:`1.5px solid ${wordCount >= minWords ? 'rgba(46,125,85,0.55)' : 'rgba(255,255,255,0.1)'}`, borderRadius:12, padding:'0.85rem 1rem', color:'var(--zz-text)', fontSize:'0.92rem', lineHeight:1.65, resize:'vertical', fontFamily:'DM Sans, sans-serif', outline:'none', transition:'border-color 0.2s' }}
                     />
                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:'-0.5rem' }}>
                       <span style={{ color: wordCount >= minWords ? '#4A9E6B' : 'rgba(255,255,255,0.35)', fontSize:'0.75rem', fontWeight:600 }}>{wordCount}/{minWords} words {wordCount >= minWords ? '✓' : ''}</span>
-                      <span style={{ fontSize:'0.65rem', color:'rgba(255,255,255,0.3)' }}>Use scientific language to score higher</span>
                     </div>
 
                     <button
