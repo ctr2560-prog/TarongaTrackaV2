@@ -24,7 +24,14 @@ const INTER_DURATION = { tiger: 30, lion: 30, rhino: 0, binturong: 0, 'sun-bear'
 //    changing `drawFrame` in this file to match.
 const ZZ_FILM_W = 720, ZZ_FILM_H = 1280;
 const ZZ_FILM_TOP = 80, ZZ_FILM_BOT = 260;
-export const ZZ_VIDEO_ASPECT = ZZ_FILM_W / (ZZ_FILM_H - ZZ_FILM_TOP - ZZ_FILM_BOT);
+// ⚠️ THE FOOTAGE IS THE WHOLE FRAME NOW, so this is the canvas aspect, not a band.
+// The branding used to sit in solid bands above and below, which left the footage a
+// 720x940 slot (0.766). A phone held upright gives a 0.5625 feed, so it landed 529x940
+// with 95px black bars down each side — Cameron saw exactly that on a real handset.
+// The bands are gradient scrims painted OVER the footage now, so an upright phone fills
+// the frame completely. ZZ_FILM_TOP / ZZ_FILM_BOT survive as the scrim depths and as the
+// text layout origin, which is why the caption offsets below are unchanged.
+export const ZZ_VIDEO_ASPECT = ZZ_FILM_W / ZZ_FILM_H;
 
 // ── Instruction type ────────────────────────────────────────────────────────
 // The two places ZooSnooz tells a student what to DO — the mission brief on the insight
@@ -1009,7 +1016,7 @@ export default function ZooSnoozScreen() {
           const nvUsed = badge?.nightVisionUsed || false;
           const videoTitle = badge?.videoTitle || animal.name;
           const conservMsg = badge?.conservationMsg || '';
-          const topH = ZZ_FILM_TOP, botH = ZZ_FILM_BOT, vidY = topH, vidH = H - topH - botH, botY = topH + vidH;
+          const topH = ZZ_FILM_TOP, botH = ZZ_FILM_BOT, botY = H - botH;
           const rCX = W - 80, textMaxW = rCX - 40 - 26;
           const dStr = new Date().toLocaleDateString('en-AU',{day:'2-digit',month:'short',year:'numeric'}).toUpperCase();
 
@@ -1082,7 +1089,7 @@ export default function ZooSnoozScreen() {
               lastFrameTime = now;
               drawBg();
               try {
-                const vW = videoEl.videoWidth || W, vH2 = videoEl.videoHeight || vidH;
+                const vW = videoEl.videoWidth || W, vH2 = videoEl.videoHeight || H;
                 const srcA = vW / vH2;
                 // ⚠️ CONTAIN, NEVER CROP, AND FILL WITH BLACK.
                 //
@@ -1095,11 +1102,11 @@ export default function ZooSnoozScreen() {
                 //
                 // 🚫 Do not reintroduce a crop here without also changing the capture constraints
                 //    and the preview's object-fit — all three have to agree. See ZZ_VIDEO_ASPECT.
-                const fitW = Math.min(W, vidH * srcA);
+                const fitW = Math.min(W, H * srcA);
                 const fitH = fitW / srcA;
-                const dx = (W - fitW) / 2, dy = vidY + (vidH - fitH) / 2;
+                const dx = (W - fitW) / 2, dy = (H - fitH) / 2;
                 ctx.fillStyle = '#000';
-                ctx.fillRect(0, vidY, W, vidH);
+                ctx.fillRect(0, 0, W, H);
                 if (nvUsed) {
                   ctx.filter = 'grayscale(1) brightness(1.6) contrast(1.9) sepia(1) hue-rotate(80deg) saturate(3)';
                   ctx.drawImage(videoEl, 0, 0, vW, vH2, dx, dy, fitW, fitH); ctx.filter = 'none';
@@ -1117,16 +1124,29 @@ export default function ZooSnoozScreen() {
                 // for the silent-failure class this pipeline keeps producing, reporting success.
                 drawn++;
               } catch(e) {}
-              ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(0,0,W,topH);
-              ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 1;
-              ctx.beginPath(); ctx.moveTo(0,topH); ctx.lineTo(W,topH); ctx.stroke();
+              // ⚠️ Scrims, not bands. These are painted OVER the footage so the picture runs
+              // the full height of the frame. 🚫 Do not put solid fillRect bands back — that is
+              // what boxed the footage into 73% of the frame with bars down the sides.
+              {
+                const topScrim = ctx.createLinearGradient(0, 0, 0, topH + 70);
+                topScrim.addColorStop(0, 'rgba(0,0,0,0.72)'); topScrim.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = topScrim; ctx.fillRect(0, 0, W, topH + 70);
+              }
               ctx.fillStyle = 'rgba(255,255,255,0.88)'; ctx.font = '600 22px "DM Sans", sans-serif'; ctx.textAlign = 'left';
               ctx.fillText('Taronga Zoo Sydney', 24, topH/2 + 8);
               ctx.fillStyle = 'rgba(255,255,255,0.48)'; ctx.font = '400 20px "DM Sans", sans-serif'; ctx.textAlign = 'right';
               ctx.fillText(dStr, W-24, topH/2 + 8);
-              ctx.fillStyle = 'rgba(6,8,6,0.98)'; ctx.fillRect(0, botY, W, botH);
-              ctx.strokeStyle = 'rgba(46,125,85,0.3)'; ctx.lineWidth = 2;
-              ctx.beginPath(); ctx.moveTo(0,botY); ctx.lineTo(W,botY); ctx.stroke();
+              // ⚠️ The caption scrim starts 90px ABOVE botY so the text never begins on a hard
+              // edge. Every text offset below is still measured from botY and is unchanged from
+              // when this was a solid band — that layout was already proven, including the
+              // six-line cap on the quote.
+              {
+                const capScrim = ctx.createLinearGradient(0, botY - 90, 0, H);
+                capScrim.addColorStop(0, 'rgba(2,8,5,0)');
+                capScrim.addColorStop(0.42, 'rgba(2,8,5,0.80)');
+                capScrim.addColorStop(1, 'rgba(2,8,5,0.95)');
+                ctx.fillStyle = capScrim; ctx.fillRect(0, botY - 90, W, H - botY + 90);
+              }
               if (logoImg) {
                 const lH = 55, lW = logoImg.naturalWidth ? Math.round(logoImg.naturalWidth*(lH/logoImg.naturalHeight)) : lH;
                 ctx.save(); ctx.filter = 'brightness(0) invert(1)'; ctx.globalAlpha = 0.8;
@@ -1147,7 +1167,8 @@ export default function ZooSnoozScreen() {
               // separate field with maxLength 200 (~4 lines), but the observation it now prints
               // has a ten-word MINIMUM and no maximum, so a wordy student would have drawn
               // straight past the caption band and over their own footage.
-              // Only 6 lines fit: (botH 260 - 118 start) / 22 line height.
+              // Only 6 lines fit below botY: (botH 260 - 118 start) / 22 line height, and the
+              // frame ends at H, so an uncapped quote would run off the bottom of the film.
               // 🚫 Never wrap text into this band without a line cap.
               if (conservMsg) {
                 ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.font = 'italic 17px "DM Sans", sans-serif';
@@ -2859,7 +2880,20 @@ export default function ZooSnoozScreen() {
             </div>
 
             {/* Viewfinder */}
-            <div style={{ flex:1, minHeight:'170px', position:'relative', borderRadius:'18px', overflow:'hidden', background:'#000', boxShadow:'0 10px 34px rgba(0,0,0,0.5)' }}>
+            {/* ⚠️ THE VIEWFINDER CARRIES THE FILM'S SHAPE. When this became a camera app I
+                dropped the aspect and let it be whatever `flex:1` produced (~0.92 against a
+                film of 0.5625), so what a student framed was not what came out — Cameron
+                reported it as the film "zooming in" after processing. The stage below is
+                `flex:1` so it claims the height; the frame inside it takes that height and
+                derives its WIDTH from the film aspect, so the two can never disagree again.
+                🚫 Do not give the inner frame a width. */}
+            <div style={{ flex:1, minHeight:'170px', position:'relative' }}>
+            {/* ⚠️ ABSOLUTE with top:0/bottom:0, not a flex child. Two earlier attempts collapsed
+                to zero width: a percentage height does not resolve inside a `flex:1` parent, and
+                as a flex ITEM the main size comes from content, so `aspect-ratio` had nothing to
+                derive a width from. Pinning top and bottom gives a definite height, and the
+                aspect then produces the width. 🚫 Do not give this a width. */}
+            <div style={{ position:'absolute', top:0, bottom:0, left:'50%', transform:'translateX(-50%)', width:'auto', maxWidth:'100%', aspectRatio:String(ZZ_VIDEO_ASPECT), borderRadius:'18px', overflow:'hidden', background:'#000', boxShadow:'0 10px 34px rgba(0,0,0,0.5)' }}>
               {/* ⚠️ position:absolute + inset:0, NOT width/height:100%. The viewfinder gets its
                   height from `flex:1`, which is not a definite height, so a percentage height
                   on the video does not resolve — it fell back to its intrinsic size and sat
@@ -2880,6 +2914,8 @@ export default function ZooSnoozScreen() {
                   {zzCountdown}s
                 </div>
               )}
+            </div>
+
             </div>
 
             {/* Shutter row — night vision left, shutter centre, flip right. */}
