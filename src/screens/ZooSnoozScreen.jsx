@@ -2234,8 +2234,16 @@ export default function ZooSnoozScreen() {
                       ))}
                     </div>
                   )}
-                  <canvas ref={el => zzRhinoInitCanvas(el)} width={560} height={300}
-                    style={{ borderRadius:'10px', width:'100%', display:'block', touchAction:'none', cursor:rDone?'default':'crosshair' }} />
+                  {/* ⚠️ HEIGHT COMES FROM THE VIEWPORT, NOT THE CANVAS RATIO. With `width:100%`
+                      and no CSS height, a 560x300 canvas renders 169px tall on a 390px phone and
+                      the bottom half of the screen sat empty. The bitmap is now 560x620 and the
+                      CSS height is viewport-relative, so the pad is the screen's main event and
+                      grows on a bigger phone. The grid in drawBg and the pointer maths are both
+                      proportional, so neither cares about the new shape.
+                      🚫 Do not reintroduce a fixed aspect here — it is a drag surface, and a
+                         bigger one is a better one. */}
+                  <canvas ref={el => zzRhinoInitCanvas(el)} width={560} height={620}
+                    style={{ borderRadius:'10px', width:'100%', height:'clamp(210px, 50vh, 440px)', display:'block', touchAction:'none', cursor:rDone?'default':'crosshair' }} />
                   {!rStarted && <p style={{ fontSize:'0.63rem', color:'rgba(168,196,178,0.35)', textAlign:'center', margin:'0.45rem 0 0', fontFamily:'DM Sans, sans-serif', fontStyle:'italic' }}>Drag your finger across the pad - slow and heavy, like a 2,700 kg rhino</p>}
                   {rDone && <p style={{ fontSize:'0.63rem', color:'rgba(74,158,107,0.65)', textAlign:'center', margin:'0.45rem 0 0', fontFamily:'DM Sans, sans-serif' }}>{rFootfalls} footfall{rFootfalls!==1?'s':''} recorded · Use your data to answer the next question</p>}
                 </div>
@@ -2259,7 +2267,11 @@ export default function ZooSnoozScreen() {
                     {bintuDone && <div style={{ fontSize:'0.65rem', color:'#4ADE80', fontWeight:700, fontFamily:'DM Sans, sans-serif' }}>✓ Scan Complete</div>}
                     {!bintuScanning && !bintuDone && !bintuError && <div style={{ fontSize:'0.6rem', color:'rgba(74,158,107,0.5)', fontFamily:'DM Sans, sans-serif', animation:'zzNvPulse 2s ease-in-out infinite' }}>READY</div>}
                   </div>
-                  <div style={{ position:'relative', background:'#020806', aspectRatio:'16/9', overflow:'hidden' }}>
+                  {/* ⚠️ Viewport-relative, not `aspect-ratio:16/9`. The fixed ratio pinned the
+                      scanner to 196px on a 390px phone and left the bottom ~45% of the screen
+                      empty. This is a camera viewfinder the student points at an enclosure in
+                      the dark — bigger is strictly better. */}
+                  <div style={{ position:'relative', background:'#020806', height:'clamp(220px, 50vh, 430px)', overflow:'hidden' }}>
                     <video ref={lightVidRef} autoPlay playsInline muted style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover', filter:(bintuScanning||bintuDone)?'grayscale(100%) sepia(100%) hue-rotate(85deg) saturate(2.8) brightness(0.72)':'none', opacity:(bintuScanning||bintuDone)?1:0, transition:'opacity 0.6s' }} />
                     {!bintuScanning && !bintuDone && (
                       <div style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column', justifyContent:'center', alignItems:'center', background:'radial-gradient(ellipse at 50% 40%,#0A2F1F 0%,#040C06 65%,#020806 100%)' }}>
