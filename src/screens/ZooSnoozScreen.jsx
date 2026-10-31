@@ -1623,44 +1623,36 @@ export default function ZooSnoozScreen() {
           ))}
         </div>
 
-        {/* Header - matches daily MapScreen style */}
-        <div className="student-header" style={{ position:'sticky', top:0, zIndex:100 }}>
-          <div className="student-banner-mobile student-header-inner">
-            <div className="logo-title-block" style={{ display:'flex', alignItems:'center', gap:'1rem' }}>
-              <img src="images/logo.png" alt="Taronga Tracka"
-                style={{ height:'72px', width:'auto', filter:'drop-shadow(0 0 14px rgba(46,125,85,0.7))' }}
+        {/* Header — phone-first. Two rows, not five. Everything is still here, Submit
+            included. The full reasoning and the measurements are in global.css above
+            `.zz-map-header`. 🚫 Do not put this back on `student-banner-mobile`. */}
+        <div className="student-header zz-map-header" style={{ position:'sticky', top:0, zIndex:100 }}>
+          <div className="zz-map-head">
+
+            <div className="zz-map-head-top">
+              <img className="zz-map-head-logo" src="images/logo.png" alt=""
                 onError={e=>e.target.style.display='none'} />
-              <div>
-                <h1 className="taronga-title" style={{ fontSize:'clamp(1.5rem,3vw,2rem)', color:'white', marginBottom:'0.15rem', letterSpacing:'0.06em', textShadow:'0 2px 16px rgba(46,125,85,0.6)' }}>
-                  ZOOSNOOZ
-                </h1>
-                <p style={{ color:'#4A9E6B', fontSize:'0.88rem', fontWeight:600, margin:0 }}>Nocturnal Wildlife Explorer</p>
+              <div className="zz-map-head-text">
+                <div className="taronga-title zz-map-head-title">ZOOSNOOZ</div>
+                <div className="zz-map-head-sub">Nocturnal Wildlife Explorer</div>
+                {studentName && <div className="zz-map-head-name">👤 {studentName}</div>}
               </div>
+              <button className="zz-map-head-chip" onClick={() => setZzScreen('collection')}
+                aria-label={`${zzTotalPoints} points, ${totalDone} of ${ZOOSNOOZ_ANIMALS.length} badges`}>
+                <div className="zz-map-head-pts">{zzTotalPoints}</div>
+                <div className="zz-map-head-badges">{totalDone}/{ZOOSNOOZ_ANIMALS.length}</div>
+              </button>
             </div>
 
-            {studentName && (
-              <div className="student-name-pill" style={{ background:'rgba(255,255,255,0.12)', border:'1px solid rgba(255,255,255,0.22)', borderRadius:'var(--t-r-pill)', padding:'0.4rem 0.9rem', backdropFilter:'blur(10px)', WebkitBackdropFilter:'blur(10px)' }}>
-                <span style={{ color:'white', fontSize:'0.82rem', fontWeight:600 }}>👤 {studentName}</span>
-              </div>
-            )}
+            <div className="zz-map-head-actions">
+              <button className="zz-map-head-home" onClick={() => { setSessionType('standard'); }}>
+                🏠 Home
+              </button>
+              <button className="zz-map-head-submit" onClick={completeSession} disabled={zzSessionDone}>
+                {zzSessionDone ? '✓ Submitted' : '✓ Submit Session'}
+              </button>
+            </div>
 
-            <button className="student-points-chip" onClick={() => setZzScreen('collection')}>
-              <div className="pts-value">{zzTotalPoints}</div>
-              <div className="pts-label">{totalDone}/{ZOOSNOOZ_ANIMALS.length} Badges</div>
-            </button>
-
-            <button
-              onClick={() => { setSessionType('standard'); }}
-              style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(168,196,178,0.2)', color:'rgba(168,196,178,0.6)', padding:'0.4rem 0.75rem', borderRadius:'var(--t-r-pill)', cursor:'pointer', fontSize:'0.75rem', fontWeight:600, whiteSpace:'nowrap' }}>
-              🏠 Home
-            </button>
-
-            <button
-              onClick={completeSession}
-              disabled={zzSessionDone}
-              style={{ background: zzSessionDone ? 'rgba(46,125,85,0.45)' : 'linear-gradient(135deg,#2E7D55,#4C1D95)', border: zzSessionDone ? '1px solid rgba(255,255,255,0.25)' : '1.5px solid rgba(168,196,178,0.5)', color:'white', padding:'0.4rem 0.9rem', borderRadius:'var(--t-r-pill)', cursor: zzSessionDone ? 'not-allowed' : 'pointer', fontSize:'0.78rem', fontWeight:700, letterSpacing:'0.04em', opacity: zzSessionDone ? 0.65 : 1, textTransform:'uppercase', boxShadow: zzSessionDone ? 'none' : '0 4px 14px rgba(46,125,85,0.45)', backdropFilter:'blur(8px)', whiteSpace:'nowrap' }}>
-              {zzSessionDone ? '✓ Submitted' : '✓ Submit Session'}
-            </button>
           </div>
         </div>
 
