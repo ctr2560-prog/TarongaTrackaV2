@@ -1886,25 +1886,32 @@ export default function ZooSnoozScreen() {
         {/* ── INSIGHT ─────────────────────────────────────────────────────── */}
         {zzPhase === 'insight' && (
           <div style={{ display:'flex', flexDirection:'column', gap:'1rem', flex:1 }}>
-            <div style={{ height:'200px', borderRadius:16, overflow:'hidden', position:'relative', border:'1px solid var(--zz-border)' }}>
-              <img src={zzAnimal.image} alt={zzAnimal.name} style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:'center', filter:'brightness(0.55)', display:'block' }} />
-              <div style={{ position:'absolute', inset:0, background:'linear-gradient(0deg,rgba(4,8,15,0.9) 0%,rgba(4,8,15,0.3) 100%)' }} />
-              <div style={{ position:'absolute', bottom:'1rem', left:'1.25rem', right:'1.25rem' }}>
-                <div style={{ fontSize:'0.6rem', color:'rgba(168,196,178,0.8)', textTransform:'uppercase', letterSpacing:'0.14em', fontWeight:800, marginBottom:'0.25rem' }}>Keeper Insight</div>
-                <div style={{ fontSize:'1.05rem', fontWeight:700, color:'white', lineHeight:1.3 }}>{zzAnimal.name}</div>
-                <div style={{ fontSize:'0.75rem', color:'rgba(168,196,178,0.7)', fontStyle:'italic' }}>{zzAnimal.scientificName}</div>
+            {/* Photo and keeper insight in ONE block, the text sitting over the image.
+                ⚠️ They used to be a 200px photo and a separate card beneath it — about 410px
+                of a 700px phone before the mission brief and the button, so a student had to
+                scroll the moment they tapped an animal. Cameron asked for the text to go in
+                front of the photo to cut it down; this is that.
+                ⚠️ minHeight, NOT height. The copy runs from 56 to 301 characters across the 25
+                stage variants (the rhino's is the longest), so the block has to grow for the
+                long ones rather than clip them. 🚫 Never give this a fixed height.
+                ⚠️ The scrim is near-opaque at the bottom because this is reading text, not a
+                caption — the old 0.3 gradient top is nowhere near enough contrast for a
+                paragraph. The photo is atmosphere here; legibility wins.
+                ⚠️ Still the BODY face, deliberately, unlike the mission brief below it. This
+                carries the actual science and a display face makes it harder to read.
+                ⚠️ `whiteSpace: pre-line` is load-bearing — the copy is authored with \n breaks
+                per idea (see zoosnoozAnimals.js) and collapses into a block without it. */}
+            <div style={{ position:'relative', minHeight:'230px', borderRadius:16, overflow:'hidden', border:'1px solid var(--zz-border)', display:'flex', flexDirection:'column', justifyContent:'flex-end' }}>
+              <img src={zzAnimal.image} alt="" style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover', objectPosition:'center top', filter:'brightness(0.5)', display:'block' }} />
+              <div style={{ position:'absolute', inset:0, background:'linear-gradient(0deg,rgba(4,8,15,0.97) 0%,rgba(4,8,15,0.93) 42%,rgba(4,8,15,0.55) 72%,rgba(4,8,15,0.2) 100%)' }} />
+              <div style={{ position:'relative', padding:'1rem 1.1rem 1.05rem' }}>
+                <div style={{ fontSize:'0.58rem', color:'rgba(168,196,178,0.85)', textTransform:'uppercase', letterSpacing:'0.14em', fontWeight:800, marginBottom:'0.2rem' }}>Keeper Insight</div>
+                <div style={{ fontSize:'1.05rem', fontWeight:700, color:'white', lineHeight:1.25 }}>{zzAnimal.name}</div>
+                <div style={{ fontSize:'0.72rem', color:'rgba(168,196,178,0.7)', fontStyle:'italic', marginBottom:'0.55rem' }}>{zzAnimal.scientificName}</div>
+                <p style={{ color:'var(--zz-text)', fontSize:'0.95rem', lineHeight:1.5, margin:0, whiteSpace:'pre-line' }}>
+                  {stageData.keeperInsight || zzAnimal.keeperInsight}
+                </p>
               </div>
-            </div>
-            {/* Keeper insight — the two or three lines that set up the mission.
-                ⚠️ Stays in the BODY face on purpose, unlike the mission brief below it. This is
-                   reading text, several lines long and often carrying the actual science; a
-                   display face makes it harder to read, not more important.
-                ⚠️ `whiteSpace: pre-line` is load-bearing — the copy is authored with \n line
-                   breaks per idea (see zoosnoozAnimals.js) and collapses into a block without it. */}
-            <div className="zz-card">
-              <p style={{ color:'var(--zz-text)', fontSize:'clamp(1.05rem, 4.7vw, 1.25rem)', lineHeight:1.65, margin:0, whiteSpace:'pre-line' }}>
-                {stageData.keeperInsight || zzAnimal.keeperInsight}
-              </p>
             </div>
             <div style={{ background:'rgba(46,125,85,0.12)', border:'1.5px solid rgba(74,158,107,0.4)', borderRadius:'16px', padding:'1.5rem 1.25rem', textAlign:'center' }}>
               <div className="taronga-title" style={{ ...ZZ_KICKER, color:'rgba(168,196,178,0.85)', marginBottom:'0.6rem' }}>Your Mission</div>
