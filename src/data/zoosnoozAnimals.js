@@ -101,8 +101,8 @@ export const ZOOSNOOZ_ANIMALS =
 
         { id:'rhino', name:'Greater One-Horned Rhinoceros', scientificName:'Rhinoceros unicornis', image:'images/rhino.jpg',
           latitude:-33.844306, longitude:151.240667, radius:30,
-          keeperInsight:'The greater one-horned rhino weighs up to 2,700 kilograms - its size is both its armour and its engine.\nIts skin folds like plating. Its horn is solid keratin. It can charge at 50 km/h in a straight line.\nStructure drives everything about how this animal lives and behaves.',
-          interaction:{ type:'haptic', instruction:'Drag your finger across the pad to simulate the rhino\'s movement. Feel the weight - slow, heavy, powerful.' },
+          keeperInsight:'Up to 2,700 kg - its size is both armour and engine.\nSkin folds like plating; the horn is solid keratin.\nStructure shapes everything this animal does.',
+          interaction:{ type:'haptic', instruction:'Drag your finger across the pad. Feel the weight - slow, heavy, powerful.' },
           question:'A rhino\'s mass and thick skin are structures. How do they shape what it does?',
           options:['Its mass makes it too slow to defend itself well','Thick skin is only about keeping warm','Being large is a disadvantage for survival','Its bulk lets it defend with power and force'], correct:3,
           fact:'A greater one-horned rhino can weigh 2,700 kg and has skin up to 4 cm thick - and can still charge at 50 km/h.',
@@ -115,7 +115,7 @@ export const ZOOSNOOZ_ANIMALS =
           ideaWords:['horn','armour','endangered','conservation','habitat','mass','structure','momentum','function','plating'],
           byStage:{
             2:{
-              keeperInsight:'This rhino weighs about the same as a small truck!\nIts thick skin and big horn protect it like body armour.\nDrag your finger on the pad to feel how heavy and powerful its footsteps are.',
+              keeperInsight:'This rhino weighs as much as a small truck!\nIts thick skin and big horn work like body armour.\nDrag your finger on the pad to feel its heavy steps.',
               question:'A rhino has thick skin and a big horn. What do these help it do?',
               options:['Swim underwater to search for food','Stay warm on cold winter nights','Run faster than any other animal','Stay safe and scare off attackers'],
               correct:3,
@@ -123,7 +123,7 @@ export const ZOOSNOOZ_ANIMALS =
               keeperQ:'What do you think the horn is used for?',
             },
             3:{
-              keeperInsight:'The greater one-horned rhino can weigh up to 2,700 kg - about the same as a small car.\nIts thick skin acts like armour, and its horn is made of keratin - the same stuff as your fingernails.\nFeel the movement and weight as you drag - size and structure shape everything about how this animal behaves.',
+              keeperInsight:'This rhino can weigh 2,700 kg - as much as a small car.\nThick skin acts like armour; its horn is keratin, like fingernails.\nDrag to feel how size shapes the way it moves.',
               question:'A rhino\'s thick skin and mass are structures. How do they affect how it defends itself?',
               options:['Being large is a disadvantage for survival','It defends with power and weight, not speed','Thick skin only keeps the rhino warm','The horn does everything; bulk slows it down'],
               correct:1,
@@ -131,7 +131,7 @@ export const ZOOSNOOZ_ANIMALS =
               keeperQ:'How does the rhino\'s size and body structure affect the way it moves and defends itself?',
             },
             4:{
-              keeperInsight:'The greater one-horned rhino weighs up to 2,700 kilograms - its size is both its armour and its engine.\nIts skin folds like plating. Its horn is solid keratin. It can charge at 50 km/h in a straight line.\nStructure drives everything about how this animal lives and behaves.',
+              keeperInsight:'Up to 2,700 kg - its size is both armour and engine.\nSkin folds like plating; the horn is solid keratin.\nStructure shapes everything this animal does.',
               question:'A rhino\'s mass and thick skin are structures. Which best explains how they shape its behaviour?',
               options:['Its bulk mainly makes the rhino slow and clumsy','Its size and skin let it defend with momentum','Only the horn matters; skin is for temperature','It relies on camouflage rather than its body'],
               correct:1,
@@ -139,7 +139,7 @@ export const ZOOSNOOZ_ANIMALS =
               keeperQ:'How does the rhino\'s mass and skin thickness change the way it moves and defends itself?',
             },
             5:{
-              keeperInsight:'The greater one-horned rhino weighs up to 2,700 kilograms - its size is both its armour and its engine.\nIts skin folds like plating. Its horn is solid keratin. It can charge at 50 km/h in a straight line.\nStructure drives everything about how this animal lives and behaves.',
+              keeperInsight:'Up to 2,700 kg - its size is both armour and engine.\nSkin folds like plating; the horn is solid keratin.\nStructure shapes everything this animal does.',
               question:'A rhino\'s mass and thick skin are structures. How do they shape what it does?',
               options:['Its mass makes it too slow to defend itself well','Thick skin is only about keeping warm','Being large is a disadvantage for survival','Its bulk lets it defend with power and force'],
               correct:3,
@@ -150,8 +150,8 @@ export const ZOOSNOOZ_ANIMALS =
 
         { id:'binturong', name:'Binturong', scientificName:'Arctictis binturong', image:'images/binturong.jpg',
           latitude:-33.844944, longitude:151.239972, radius:30,
-          keeperInsight:'The binturong is built for the night canopy - dense dark fur, a prehensile tail, and slow deliberate movement.\nIn low light, it disappears into the branches.\nIn a clearing, it becomes visible instantly.\nThe environment doesn\'t just surround this animal - it shapes whether the animal survives.',
-          interaction:{ type:'light', instruction:'Activate the night scanner and point your camera at the binturong\'s environment. The tool will measure how well the binturong can hide in the current light.' },
+          keeperInsight:'Built for the night canopy - dark dense fur and slow, careful movement.\nIn low light it vanishes; in a clearing it stands out at once.\nThe habitat decides whether its camouflage works.',
+          interaction:{ type:'light', instruction:'Point your camera around the binturong. The scanner reads how well it can hide.' },
           question:'Your scan measured the light around the binturong. What does this show about adaptations and habitat?',
           options:['Dark fur hides the binturong in any environment','Camouflage works the same at every light level','Light changes behaviour but never survival','Camouflage only works if it matches the habitat'], correct:3,
           fact:'A binturong\'s dark fur hides it perfectly in the shadowy canopy. Out in a bright clearing, that same fur makes it easy to spot.',
@@ -164,7 +164,7 @@ export const ZOOSNOOZ_ANIMALS =
           ideaWords:['camouflage','habitat','nocturnal','canopy','adaptation','environment','survival','prehensile','dark','cover','light'],
           byStage:{
             2:{
-              keeperInsight:'The binturong has very dark fur to help it hide in dark forests.\nPoint your camera around the binturong to see if it is easy or hard to spot right now.\nDark fur only helps it hide when the light is low.',
+              keeperInsight:'The binturong has very dark fur to hide in dark forests.\nPoint your camera around it to see how easy it is to spot.\nDark fur only hides it when the light is low.',
               question:'The binturong has dark fur. When does it hide best?',
               options:['Dark fur hides it no matter where it goes','In a dark place, where dark fur blends in','When bright sunshine is shining on it','Dark fur does not help it hide at all'],
               correct:1,
@@ -172,7 +172,7 @@ export const ZOOSNOOZ_ANIMALS =
               keeperQ:'Is the binturong easy to see from where you are right now?',
             },
             3:{
-              keeperInsight:'The binturong has dense dark fur that works as camouflage in low-light forest environments.\nIn a bright clearing, that same fur makes it very easy to spot.\nScan the light level around it - the reading will tell you how well camouflaged it is right now.',
+              keeperInsight:'Dense dark fur camouflages the binturong in low-light forest.\nIn a bright clearing, that same fur makes it easy to spot.\nScan the light level to see how hidden it is right now.',
               question:'Your scan showed the light around the binturong. What does it show about camouflage?',
               options:['Dark fur works equally well in any light','Camouflage affects being seen, not surviving','Any dark animal is hidden at night','It only works where the habitat matches'],
               correct:3,
@@ -180,7 +180,7 @@ export const ZOOSNOOZ_ANIMALS =
               keeperQ:'How does the light level here compare to the binturong\'s natural forest home?',
             },
             4:{
-              keeperInsight:'The binturong is built for the night canopy - dense dark fur, a prehensile tail, and slow deliberate movement.\nIn low light, it disappears into the branches.\nIn a clearing, it becomes visible instantly.\nThe environment doesn\'t just surround this animal - it shapes whether the animal survives.',
+              keeperInsight:'Built for the night canopy - dark dense fur and slow, careful movement.\nIn low light it vanishes; in a clearing it stands out at once.\nThe habitat decides whether its camouflage works.',
               question:'Your scan showed the light level. What does this reveal about how dark fur works?',
               options:['Dark fur camouflages it at every light level','Light changes behaviour, not whether fur works','Dark fur hides it only where it is dark','Dark fur is for warmth, not for hiding'],
               correct:2,
@@ -188,7 +188,7 @@ export const ZOOSNOOZ_ANIMALS =
               keeperQ:'How does the light level in this enclosure compare to the binturong\'s natural forest canopy?',
             },
             5:{
-              keeperInsight:'The binturong is built for the night canopy - dense dark fur, a prehensile tail, and slow deliberate movement.\nIn low light, it disappears into the branches.\nIn a clearing, it becomes visible instantly.\nThe environment doesn\'t just surround this animal - it shapes whether the animal survives.',
+              keeperInsight:'Built for the night canopy - dark dense fur and slow, careful movement.\nIn low light it vanishes; in a clearing it stands out at once.\nThe habitat decides whether its camouflage works.',
               question:'Your scan measured the light around the binturong. What does this show about adaptations and habitat?',
               options:['Dark fur hides the binturong in any environment','Camouflage works the same at every light level','Light changes behaviour but never survival','Camouflage only works if it matches the habitat'],
               correct:3,
