@@ -1881,7 +1881,7 @@ export default function ZooSnoozScreen() {
 
       {/* Phase content */}
       <div style={{ flex:1, overflowY:'auto', padding:'1.25rem' }}>
-      <div style={{ maxWidth:'680px', margin:'0 auto', display:'flex', flexDirection:'column', gap:'1rem' }}>
+      <div style={{ maxWidth:'680px', margin:'0 auto', minHeight:'100%', display:'flex', flexDirection:'column', gap:'1rem' }}>
 
         {/* ── INSIGHT ─────────────────────────────────────────────────────── */}
         {zzPhase === 'insight' && (
@@ -2831,39 +2831,42 @@ export default function ZooSnoozScreen() {
         {/* ── VIDEO ────────────────────────────────────────────────────────── */}
         {/* ── VIDEO ────────────────────────────────────────────────────────── */}
         {zzPhase === 'video' && (
-          <div style={{ display:'flex', flexDirection:'column', gap:'0.55rem' }}>
+          <div style={{ flex:1, minHeight:0, display:'flex', flexDirection:'column', gap:'0.5rem' }}>
 
-            {/* ── Evolve's model: film the clip, let the STITCHER add the furniture ──────
-                Cameron: "I feel it is too small for the screen... similar to evolve where
-                the film is made and then the header and footer are added in the stitching?"
+            {/* ── A camera app, not a form ──────────────────────────────────────
+                Cameron: "I just want the film modal to look similar as if you opened a
+                camera in iPhone (and have the same sort of buttons)."
 
-                That is already what happens. `drawFrame` paints the "Taronga Zoo Sydney"
-                bar and the whole caption band — I WENT TO ZOOSNOOZ, the animal, the
-                student's writing, the logo, the hashtags — onto every frame of the film.
-                The card that used to sit on this screen was a MOCK-UP of that, so the
-                camera was squeezed into a fraction of a phone to make room for furniture
-                the student never needed to see being assembled.
+                So: the viewfinder takes all the height going (`flex:1`), and the controls
+                sit under it as a shutter row — big round shutter centred, flip on the
+                right, night vision on the left. Everything else is one line or gone.
 
-                Removing the mock costs nothing: the film is identical. What changes is
-                that the camera now gets the screen, as it does in Evolve.
-                🚫 Do not rebuild the card preview here. If the framing needs checking, the
-                   place for it is the clip playback on the summary screen. */}
+                ⚠️ `flex:1` only works because the shared phase column above now carries
+                `minHeight:100%`. Without it that column is content-height and the
+                viewfinder collapses to nothing. 🚫 Do not remove that minHeight.
 
-            <div style={{ background:'rgba(46,125,85,0.08)', border:'1px solid rgba(74,158,107,0.28)', borderRadius:'12px', padding:'0.55rem 0.8rem' }}>
-              <div style={{ fontSize:'0.55rem', fontWeight:800, letterSpacing:'0.2em', textTransform:'uppercase', color:'rgba(168,196,178,0.8)', marginBottom:'0.3rem' }}>To camera</div>
-              <p style={{ fontSize:'0.9rem', lineHeight:1.4, color:'var(--zz-text)', margin:0 }}>
+                ⚠️ The video is `object-fit: contain` on black, NOT `cover`. A camera app can
+                crop its preview because the photo is whatever the sensor gives; here the
+                preview has to predict a stitched film, and `cover` would hide the edges
+                that end up in it. Black bars in the viewfinder are honest — they are the
+                bars the film will have. 🚫 Never switch this to cover. */}
+
+            <div style={{ flexShrink:0, display:'flex', alignItems:'baseline', gap:'0.5rem', padding:'0 0.15rem' }}>
+              <span style={{ fontSize:'0.55rem', fontWeight:800, letterSpacing:'0.18em', textTransform:'uppercase', color:'rgba(168,196,178,0.8)', flexShrink:0 }}>To camera</span>
+              <span style={{ fontSize:'0.78rem', lineHeight:1.35, color:'rgba(243,237,226,0.75)' }}>
                 {(zzAnimal.filmingGuidance||'').split('\n')[0]}
-              </p>
+              </span>
             </div>
 
-            {/* ⚠️ THE CAMERA — Evolve's `.ev-cam` geometry exactly: aspect-ratio +
-                max-height + width AUTO, centred. With width auto the clamped height
-                transfers back into the width and the ratio holds.
-                🚫 Never `width:100%` here. The cap then wins, the aspect is silently
-                   dropped, and this screen once rendered a 362x140 strip for a 0.766 film. */}
-            <div style={{ position:'relative', aspectRatio:String(ZZ_VIDEO_ASPECT), maxHeight:'49vh', width:'auto', margin:'0 auto', borderRadius:'16px', overflow:'hidden', background:'#000', boxShadow:'0 14px 40px rgba(0,0,0,0.45)' }}>
+            {/* Viewfinder */}
+            <div style={{ flex:1, minHeight:'170px', position:'relative', borderRadius:'18px', overflow:'hidden', background:'#000', boxShadow:'0 10px 34px rgba(0,0,0,0.5)' }}>
+              {/* ⚠️ position:absolute + inset:0, NOT width/height:100%. The viewfinder gets its
+                  height from `flex:1`, which is not a definite height, so a percentage height
+                  on the video does not resolve — it fell back to its intrinsic size and sat
+                  pinned to the TOP of the box with dead black beneath it. Absolute inset makes
+                  the element fill the box, and `contain` then centres the picture inside it. */}
               <video ref={zzVideoRef} muted playsInline
-                style={{ width:'100%', height:'100%', objectFit:'contain', display:'block', background:'#050D07', transition:'filter 0.35s ease',
+                style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'contain', display:'block', background:'#000', transition:'filter 0.35s ease',
                   filter: nightVision ? 'grayscale(1) brightness(1.6) contrast(1.9) sepia(1) hue-rotate(80deg) saturate(3)' : 'none' }} />
               {nightVision && (
                 <div style={{ position:'absolute', inset:0, background:'rgba(0,230,60,0.07)', pointerEvents:'none', mixBlendMode:'screen' }} />
@@ -2872,49 +2875,49 @@ export default function ZooSnoozScreen() {
                 <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', color:'rgba(255,255,255,0.4)', fontSize:'0.85rem' }}>Starting camera…</div>
               )}
               {zzRecording && (
-                <div style={{ position:'absolute', top:'0.65rem', right:'0.65rem', background:'rgba(220,38,38,0.92)', color:'white', borderRadius:'999px', padding:'0.3rem 0.7rem', fontSize:'0.78rem', fontWeight:700, display:'flex', alignItems:'center', gap:'0.35rem', backdropFilter:'blur(4px)' }}>
+                <div style={{ position:'absolute', top:'0.7rem', left:'50%', transform:'translateX(-50%)', background:'rgba(220,38,38,0.92)', color:'white', borderRadius:'999px', padding:'0.28rem 0.75rem', fontSize:'0.78rem', fontWeight:700, display:'flex', alignItems:'center', gap:'0.35rem', backdropFilter:'blur(4px)' }}>
                   <span style={{ width:'7px', height:'7px', borderRadius:'50%', background:'white', animation:'bflDot 0.8s ease-in-out infinite' }} />
-                  REC {zzCountdown}s
+                  {zzCountdown}s
                 </div>
               )}
-              {/* Night vision stays ON the camera — it is a live filter and you want to see
-                  what it does while you aim. Flip moved to the button row, as in Evolve. */}
-              <button onClick={() => setNightVision(v => !v)}
-                style={{ position:'absolute', bottom:'0.6rem', left:'0.6rem', zIndex:5, display:'flex', alignItems:'center', gap:'0.4rem', padding:'0.28rem 0.7rem 0.28rem 0.4rem', borderRadius:'999px', border: nightVision ? '1.5px solid rgba(0,230,60,0.6)' : '1.5px solid rgba(255,255,255,0.25)', background: nightVision ? 'rgba(0,230,60,0.18)' : 'rgba(0,0,0,0.55)', backdropFilter:'blur(6px)', cursor:'pointer', transition:'all 0.25s' }}>
-                <div style={{ position:'relative', width:'28px', height:'16px', borderRadius:'999px', background: nightVision ? 'rgba(0,230,60,0.5)' : 'rgba(255,255,255,0.18)', transition:'background 0.25s', flexShrink:0 }}>
-                  <div style={{ position:'absolute', top:'2px', left: nightVision ? '14px' : '2px', width:'12px', height:'12px', borderRadius:'50%', background: nightVision ? '#00E63C' : 'rgba(255,255,255,0.7)', boxShadow: nightVision ? '0 0 6px rgba(0,230,60,0.9)' : 'none', transition:'left 0.25s, background 0.25s, box-shadow 0.25s' }} />
-                </div>
-                <span style={{ fontSize:'0.62rem', fontWeight:700, color: nightVision ? '#00E63C' : 'rgba(255,255,255,0.65)', textTransform:'uppercase', letterSpacing:'0.1em', whiteSpace:'nowrap', transition:'color 0.25s' }}>
-                  Night Vision
-                </span>
+            </div>
+
+            {/* Shutter row — night vision left, shutter centre, flip right. */}
+            <div style={{ flexShrink:0, display:'grid', gridTemplateColumns:'1fr auto 1fr', alignItems:'center', padding:'0.15rem 0.25rem' }}>
+              <div style={{ justifySelf:'start' }}>
+                <button onClick={() => setNightVision(v => !v)} aria-pressed={nightVision}
+                  style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'0.15rem', background:'none', border:'none', cursor:'pointer', padding:'0.2rem' }}>
+                  <span style={{ width:'44px', height:'44px', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.15rem', background: nightVision ? 'rgba(0,230,60,0.22)' : 'rgba(255,255,255,0.09)', border: nightVision ? '1.5px solid rgba(0,230,60,0.65)' : '1.5px solid rgba(255,255,255,0.18)', transition:'all 0.25s' }}>🌙</span>
+                  <span style={{ fontSize:'0.52rem', fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color: nightVision ? '#00E63C' : 'rgba(255,255,255,0.45)' }}>Night</span>
+                </button>
+              </div>
+
+              {/* The shutter. White ring, filled circle inside; a red square while recording. */}
+              <button onClick={zzRecording ? zzStopRecording : zzStartRecording}
+                aria-label={zzRecording ? 'Stop recording' : 'Start recording'}
+                style={{ justifySelf:'center', width:'76px', height:'76px', borderRadius:'50%', background:'transparent', border:'4px solid rgba(255,255,255,0.9)', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', padding:0 }}>
+                <span style={{ display:'block', background:'#E5484D', transition:'all 0.22s ease',
+                  width: zzRecording ? '28px' : '58px', height: zzRecording ? '28px' : '58px',
+                  borderRadius: zzRecording ? '7px' : '50%' }} />
               </button>
-            </div>
 
-            <div style={{ display:'flex', gap:'0.55rem' }}>
-              {!zzRecording ? (
-                <>
-                  <button onClick={flipZzCamera}
-                    style={{ flexShrink:0, padding:'0.85rem 1rem', borderRadius:'999px', border:'1px solid rgba(168,196,178,0.3)', background:'rgba(0,0,0,0.25)', color:'var(--zz-text)', fontWeight:700, cursor:'pointer', fontSize:'0.85rem' }}>
-                    ⟳ Flip
+              <div style={{ justifySelf:'end' }}>
+                {!zzRecording && (
+                  <button onClick={flipZzCamera} aria-label="Flip camera"
+                    style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'0.15rem', background:'none', border:'none', cursor:'pointer', padding:'0.2rem' }}>
+                    <span style={{ width:'44px', height:'44px', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.15rem', background:'rgba(255,255,255,0.09)', border:'1.5px solid rgba(255,255,255,0.18)', color:'rgba(255,255,255,0.8)' }}>⟳</span>
+                    <span style={{ fontSize:'0.52rem', fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'rgba(255,255,255,0.45)' }}>Flip</span>
                   </button>
-                  <button className="zz-btn" style={{ flex:1, margin:0 }} onClick={zzStartRecording}>⏺ Start Recording</button>
-                </>
-              ) : (
-                <button className="zz-btn" style={{ flex:1, margin:0, background:'linear-gradient(135deg,#DC2626,#991B1B)' }} onClick={zzStopRecording}>⏹ Stop Recording</button>
-              )}
+                )}
+              </div>
             </div>
 
-            {/* What the stitcher will caption it with. One quiet line, not a mock-up — the
-                student does not set these any more, so there is nothing to interact with. */}
             {!zzRecording && (
-              <p style={{ margin:0, fontSize:'0.68rem', lineHeight:1.45, color:'rgba(168,196,178,0.5)', textAlign:'center' }}>
-                Your film will be captioned <strong style={{ color:'rgba(168,196,178,0.75)', fontWeight:700 }}>{zzAnimal.name}</strong> with your writing underneath.
-              </p>
+              <button onClick={zzCompleteMission}
+                style={{ flexShrink:0, background:'none', border:'none', color:'rgba(168,196,178,0.5)', fontSize:'0.76rem', fontWeight:600, cursor:'pointer', padding:'0.1rem 0 0.2rem' }}>
+                Skip video &amp; complete →
+              </button>
             )}
-
-            <button className="zz-btn-ghost" style={{ width:'100%', textAlign:'center' }} onClick={zzCompleteMission}>
-              Skip video &amp; complete →
-            </button>
           </div>
         )}
 
