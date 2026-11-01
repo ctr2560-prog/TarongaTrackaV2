@@ -12,16 +12,15 @@ import { buildObservationScore } from '../utils/scoring';
 const INTER_DURATION = { tiger: 30, lion: 30, rhino: 0, binturong: 0, 'sun-bear': 0 };
 
 // ── Documentary geometry ────────────────────────────────────────────────────
-// The stitched film's canvas, and the band of it that actually shows footage. These live at
-// module scope for one reason: the capture preview reads ZZ_VIDEO_ASPECT so it can never again
-// claim a different shape from the film.
+// The stitched film's canvas. ⚠️ Read the Capture geometry block below before using any of this
+// for a preview — since 2026-11-01 the previews are deliberately NOT on the film's shape.
 //
-// ⚠️ THE PREVIEW MUST SHOW WHAT THE FILM WILL SHOW. Evolve learned this twice (see the comment
-// above `.ev-cam` in EvolveScreen.jsx): a preview that is a different shape, or that uses
-// `object-fit: cover`, has the student framing themselves inside a window tighter than the film
-// uses — and what they see while filming is the most zoomed-in view in the whole system.
-// 🚫 Do not hardcode a ratio for the preview, and do not set it back to `cover`, without
-//    changing `drawFrame` in this file to match.
+// ⚠️ The rule this block used to state — "the preview must show what the film will show" — was
+// Evolve's hard-won lesson and it is still the right default. It was overridden here by an
+// explicit decision, not forgotten: a 9:16 viewfinder is a 219px sliver on a phone, and Cameron
+// chose 56% more picture over an exact match. What survives of the rule, and must not be given
+// up: 🚫 never use `object-fit: cover` on a preview, and never let the two surfaces a STUDENT
+// sees (the viewfinder and the clip card) disagree with each other.
 const ZZ_FILM_W = 720, ZZ_FILM_H = 1280;
 const ZZ_FILM_TOP = 80, ZZ_FILM_BOT = 260;
 // ⚠️ THE FOOTAGE IS THE WHOLE FRAME NOW, so this is the canvas aspect, not a band.
@@ -31,6 +30,10 @@ const ZZ_FILM_TOP = 80, ZZ_FILM_BOT = 260;
 // The bands are gradient scrims painted OVER the footage now, so an upright phone fills
 // the frame completely. ZZ_FILM_TOP / ZZ_FILM_BOT survive as the scrim depths and as the
 // text layout origin, which is why the caption offsets below are unchanged.
+// ⚠️ NOTHING READS THIS ANY MORE — the viewfinder and the clip card moved to
+// ZZ_CAPTURE_ASPECT on 2026-11-01, and the bundler tree-shakes this out. It is kept because it
+// names drawFrame's actual output shape, which is still 720x1280, and because the arithmetic in
+// the comments below is expressed in it. 🚫 Do not re-point a preview at it to tidy it away.
 export const ZZ_VIDEO_ASPECT = ZZ_FILM_W / ZZ_FILM_H;
 
 // ── Capture geometry ────────────────────────────────────────────────────────
@@ -1203,7 +1206,10 @@ export default function ZooSnoozScreen() {
                 // now are the actual video".
                 //
                 // 🚫 Do not reintroduce a crop here without also changing the capture constraints
-                //    and the preview's object-fit — all three have to agree. See ZZ_VIDEO_ASPECT.
+                //    and the preview's object-fit. ⚠️ Those three NO LONGER all agree: the
+                //    previews are on ZZ_CAPTURE_ASPECT by decision (see Capture geometry at the
+                //    top). What must still hold is that this stays `contain` so nothing is lost
+                //    beyond the student's own zoom factor.
                 // ⚠️ `* zoom` is the student's framing choice, re-applied. It is the same
                 //    operation as the CSS `transform: scale()` on the viewfinder: enlarge the
                 //    contained rect about its centre and let the frame clip it. The canvas
@@ -3152,10 +3158,12 @@ export default function ZooSnoozScreen() {
                     🚫 Never put `aspect-ratio` and `max-height` on the same element and expect the
                        aspect to hold. Give a parent a definite height and pin the aspect box
                        inside it with top:0/bottom:0, which is what the viewfinder does.
-                    ⚠️ CONTAIN, NOT COVER, and on `ZZ_VIDEO_ASPECT` — this card has to predict the
-                       stitched film, so it shows exactly what the film will contain: an upright
-                       clip fills it, a sideways one letterboxes, same as the film. 🚫 Do not
-                       switch this to cover; cropping here is a promise the film does not keep. */}
+                    ⚠️ CONTAIN, NOT COVER. 🚫 Do not switch this to cover — cropping here is a
+                       promise the film does not keep.
+                    ⚠️ It is on ZZ_CAPTURE_ASPECT, the same constant as the viewfinder, NOT on the
+                       film's shape. So this card no longer predicts the film exactly; it shows
+                       what was framed. That is the 2026-11-01 decision, and the thing it does
+                       guarantee is that the card and the viewfinder always agree. */}
                 {/* ⚠️ The space either side of an upright clip is the CARD's own gradient, not
                     black. Black there reads as a broken or half-loaded video; the gradient reads
                     as the card the frame is sitting in. The frame itself stays black, because
