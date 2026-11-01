@@ -971,6 +971,39 @@ export default function ZooSnoozScreen() {
         setZzStitchProgress(100);
         setZzStitchPhase('preview');
       };
+      // ── Title card art ──────────────────────────────────────────────────
+      // ⚠️⚠️ THIS MUST STAY ABOVE `mr.start()`. The documentary is captured in REAL TIME, so
+      //    anything awaited after the recorder starts is recorded — as a frozen frame. Loading
+      //    ~1.5MB of photos on zoo wifi would paint a still black gap into the opening of every
+      //    student's film, and nothing would report it. Before the recorder starts, the same
+      //    wait is just a moment longer on the progress screen.
+      // ⚠️ One parallel batch, never inside the per-animal loop, for the same reason.
+      // ⚠️ Every load resolves to null rather than rejecting, and every use is guarded, so a
+      //    missing or renamed file costs a photo and NOT the documentary. These are the same
+      //    same-origin assets the map screen already shows, so they are usually cached and this
+      //    resolves instantly; the film is the wrong place to discover a 404.
+      // ⚠️ Capped at 2.5s each. A request that hangs rather than fails — a captive portal on
+      //    school wifi is the classic — would otherwise hold the whole stitch open with no
+      //    message on screen. A null here costs one photo.
+      const loadImg = src => new Promise(r => {
+        const i = new Image();
+        let settled = false;
+        const done = v => { if (!settled) { settled = true; r(v); } };
+        const bail = setTimeout(() => done(null), 2500);
+        i.onload = () => { clearTimeout(bail); done(i); };
+        i.onerror = () => { clearTimeout(bail); done(null); };
+        i.src = src;
+      });
+      const cardArt = {};
+      await Promise.all(videosToStitch.map(async a => {
+        const [photo, badge] = await Promise.all([
+          loadImg(a.image),
+          loadImg(`images/badge-${a.id}.webp`),
+        ]);
+        cardArt[a.id] = { photo, badge };
+        if (!photo) issues.push(`${a.id}: title card photo did not load`);
+      }));
+
       mr.start(500);
       await new Promise(res => setTimeout(res, 80)); // let MediaRecorder settle before first frame
 
@@ -1080,30 +1113,100 @@ export default function ZooSnoozScreen() {
         setZzStitchAnimalIdx(i);
         setZzStitchProgress(Math.round(((i + 1) / TOTAL) * 100));
 
-        // Entry card (3s) - measure name size once before the rAF loop
-        const bandY = H/2 - 190, bandH = 380;
-        let nameSize = 72;
+        // ── Entry card (3s) ───────────────────────────────────────────────
+        // It was a flat gradient with a translucent green band and centred text. Cameron, after
+        // the first documentary that came out whole: "with the animal cards in the stitching - is
+        // there any way we can make these look better please? I want them to look awesome without
+        // destroying the stitcher". So: the animal's own photo full bleed and darkened, a slow
+        // push in across the 3 seconds, its badge as a medallion, the name in the Taronga face.
+        //
+        // ⚠️ NOTHING STRUCTURAL CHANGED. Same `drawCardFor(fn, 3000)`, same canvas, same
+        //    duration, same place in the sequence. The stitcher's timing, recorder and audio
+        //    graph are untouched — this is only what gets painted.
+        // ⚠️ The name size is measured ONCE, out here, not inside the draw. Running the shrink
+        //    loop 90 times across the card would re-measure text on every frame for no reason.
+        const art = cardArt[animal.id] || {};
+        let nameSize = 78;
         ctx.font = `bold ${nameSize}px "Taronga Headline", sans-serif`;
-        while (ctx.measureText(animal.name).width > W - 80 && nameSize > 36) { nameSize -= 4; ctx.font = `bold ${nameSize}px "Taronga Headline", sans-serif`; }
+        while (ctx.measureText(animal.name).width > W - 110 && nameSize > 34) { nameSize -= 3; ctx.font = `bold ${nameSize}px "Taronga Headline", sans-serif`; }
         const finalNameSize = nameSize;
+        const cardStart = activeMs();
         await drawCardFor(() => {
+          // ⚠️ Progress runs on activeMs(), the visible-time clock, like everything else the
+          //    stitch times. On the wall clock a backgrounded tab would finish the push in
+          //    while nothing was being recorded, and the student would never see it.
+          const t = Math.min(1, Math.max(0, (activeMs() - cardStart) / 3000));
           drawBg();
-          ctx.fillStyle = 'rgba(26,82,56,0.40)'; ctx.fillRect(0, bandY, W, bandH);
-          ctx.save(); ctx.strokeStyle = 'rgba(46,125,85,0.65)'; ctx.lineWidth = 3;
-          ctx.beginPath(); ctx.moveTo(0,bandY); ctx.lineTo(W,bandY); ctx.stroke();
-          ctx.beginPath(); ctx.moveTo(0,bandY+bandH); ctx.lineTo(W,bandY+bandH); ctx.stroke(); ctx.restore();
-          const entryGlow = ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,260);
-          entryGlow.addColorStop(0,'rgba(46,125,85,0.18)'); entryGlow.addColorStop(1,'rgba(46,125,85,0)');
-          ctx.fillStyle = entryGlow; ctx.fillRect(0,bandY,W,bandH);
+          if (art.photo) {
+            const z = 1 + 0.06 * t;
+            const pa = art.photo.naturalWidth / art.photo.naturalHeight, fa = W / H;
+            let dw, dh;
+            if (pa > fa) { dh = H * z; dw = dh * pa; } else { dw = W * z; dh = dw / pa; }
+            ctx.save(); ctx.filter = 'brightness(0.46) saturate(0.85)';
+            ctx.drawImage(art.photo, (W - dw) / 2, (H - dh) / 2, dw, dh);
+            ctx.restore();
+            const vig = ctx.createRadialGradient(W/2, H*0.42, 80, W/2, H*0.42, H*0.72);
+            vig.addColorStop(0, 'rgba(2,13,6,0)'); vig.addColorStop(1, 'rgba(2,13,6,0.85)');
+            ctx.fillStyle = vig; ctx.fillRect(0, 0, W, H);
+          }
+          const ramp = ctx.createLinearGradient(0, H*0.40, 0, H);
+          ramp.addColorStop(0, 'rgba(2,13,6,0)'); ramp.addColorStop(0.55, 'rgba(2,13,6,0.82)'); ramp.addColorStop(1, 'rgba(2,13,6,0.97)');
+          ctx.fillStyle = ramp; ctx.fillRect(0, H*0.40, W, H*0.60);
+          const topRamp = ctx.createLinearGradient(0, 0, 0, 220);
+          topRamp.addColorStop(0, 'rgba(0,0,0,0.70)'); topRamp.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = topRamp; ctx.fillRect(0, 0, W, 220);
+
+          ctx.textAlign = 'left';
+          // ⚠️ ctx.letterSpacing is ignored on engines that do not support it, which degrades to
+          //    unspaced caps rather than failing. It is part of the canvas state, so save/restore
+          //    is what keeps it off every other label on this card.
+          ctx.save();
+          ctx.fillStyle = 'rgba(168,196,178,0.75)'; ctx.font = '700 22px "DM Sans", sans-serif';
+          ctx.letterSpacing = '6px';
+          ctx.fillText(`ANIMAL ${i+1} OF ${videosToStitch.length}`, 54, 74);
+          ctx.restore();
+          ctx.fillStyle = 'rgba(168,196,178,0.4)'; ctx.font = '400 20px "DM Sans", sans-serif';
+          ctx.fillText('🌙 ZooSnooz', 54, 108);
+
+          const by = H * 0.54;
+          if (art.badge) {
+            const bs = 168;
+            ctx.save();
+            const halo = ctx.createRadialGradient(W/2, by, 0, W/2, by, bs*0.78);
+            halo.addColorStop(0, 'rgba(46,125,85,0.42)'); halo.addColorStop(1, 'rgba(46,125,85,0)');
+            ctx.fillStyle = halo; ctx.beginPath(); ctx.arc(W/2, by, bs*0.78, 0, Math.PI*2); ctx.fill();
+            ctx.drawImage(art.badge, W/2 - bs/2, by - bs/2, bs, bs);
+            ctx.restore();
+          }
+
           ctx.textAlign = 'center';
-          ctx.fillStyle = '#A8C4B2'; ctx.font = '400 30px "DM Sans", sans-serif';
-          ctx.fillText(`Animal ${i+1} of ${videosToStitch.length}`, W/2, H/2 - 115);
+          const nameY = by + 150 + finalNameSize * 0.34;
+          ctx.save();
+          ctx.shadowColor = 'rgba(0,0,0,0.75)'; ctx.shadowBlur = 18; ctx.shadowOffsetY = 3;
           ctx.fillStyle = 'white'; ctx.font = `bold ${finalNameSize}px "Taronga Headline", sans-serif`;
-          ctx.fillText(animal.name, W/2, H/2 + 10);
-          ctx.fillStyle = '#A8C4B2'; ctx.font = 'italic 28px "DM Sans", sans-serif';
-          ctx.fillText(animal.scientificName || '', W/2, H/2 + 80);
-          ctx.fillStyle = 'rgba(168,196,178,0.35)'; ctx.font = '400 24px "DM Sans", sans-serif';
-          ctx.fillText('🌙 ZooSnooz', W/2, bandY + bandH - 22);
+          ctx.fillText(animal.name, W/2, nameY);
+          ctx.restore();
+
+          const ruleY = nameY + 34;
+          ctx.save(); ctx.strokeStyle = 'rgba(168,196,178,0.45)'; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.moveTo(W/2 - 44, ruleY); ctx.lineTo(W/2 + 44, ruleY); ctx.stroke(); ctx.restore();
+          ctx.fillStyle = 'rgba(168,196,178,0.92)'; ctx.font = 'italic 30px "DM Sans", sans-serif';
+          ctx.fillText(animal.scientificName || '', W/2, ruleY + 46);
+
+          // Where you are in the film. Reads as a series rather than five separate cards.
+          const pr = 7, gap = 26, py = H - 82, spread = (videosToStitch.length - 1) * gap;
+          for (let k = 0; k < videosToStitch.length; k++) {
+            const x = W/2 - spread/2 + k*gap;
+            ctx.beginPath();
+            if (k === i) {
+              ctx.fillStyle = '#4ADE80'; ctx.arc(x, py, pr, 0, Math.PI*2); ctx.fill();
+              ctx.beginPath(); ctx.strokeStyle = 'rgba(74,222,128,0.45)'; ctx.lineWidth = 2;
+              ctx.arc(x, py, pr + 7, 0, Math.PI*2); ctx.stroke();
+            } else {
+              ctx.fillStyle = k < i ? 'rgba(168,196,178,0.55)' : 'rgba(255,255,255,0.16)';
+              ctx.arc(x, py, pr - 1, 0, Math.PI*2); ctx.fill();
+            }
+          }
           ctx.textAlign = 'left';
         }, 3000);
 
@@ -3156,77 +3259,68 @@ export default function ZooSnoozScreen() {
                🚫 Do not give the stage a fixed height; that is what forced the scroll. */
             <div style={{ display:'flex', flexDirection:'column', gap:'1rem', flex:1, minHeight:0 }}>
 
-              {/* Social Media Night Frame - Preview */}
-              <div style={{ borderRadius:'22px', overflow:'hidden', background:'linear-gradient(160deg,#020D06 0%,#040F08 55%,#071E14 100%)', boxShadow:'0 16px 48px rgba(0,0,0,0.75), 0 0 0 1px rgba(46,125,85,0.3)', position:'relative', display:'flex', flexDirection:'column', flex:1, minHeight:0 }}>
+              {/* ⚠️⚠️ THE FILM'S LOOK, NOT A CARD WITH BARS. Until 2026-11-01 this was a solid
+                  top bar, a video box, and a solid bottom panel — the design the film used to
+                  have. drawFrame now paints the branding as GRADIENT SCRIMS over full-bleed
+                  footage, Cameron saw the result ("the stitching for the video was amazing and I
+                  love the header and footer part with it") and asked for this card to match:
+                  "the preview video at the end of the video ... currently has the old one".
+                  🚫 Do not put solid bars back here. The whole point is that this card and the
+                     film are now the same object in two sizes.
+                  ⚠️ It keeps ZZ_CAPTURE_ASPECT, not the film's 0.5625 — the shape decision from
+                     earlier today stands, so this adopts the film's STYLING at the capture shape.
+                  ⚠️ The scrims are sized by their CONTENT, not by the film's fixed 150px / 350px
+                     depths. Scaled proportionally, a six-line quote would run straight off the
+                     bottom of a 399px card: the film has 350px of caption band to play with and
+                     this card has about 108px. A gradient that grows with the text is the only
+                     version that stays readable at both sizes. */}
+              <div style={{ position:'relative', flex:1, minHeight:'150px', background:'linear-gradient(160deg,#020D06 0%,#071E14 100%)' }}>
+              <div style={{ position:'absolute', top:0, bottom:0, left:'50%', transform:'translateX(-50%)', width:'auto', maxWidth:'100%', maxHeight:`calc((min(100vw, 680px) - 2.5rem) / ${ZZ_CAPTURE_ASPECT})`, aspectRatio:String(ZZ_CAPTURE_ASPECT), overflow:'hidden', borderRadius:'22px', background:'#000', boxShadow:'0 16px 48px rgba(0,0,0,0.75), 0 0 0 1px rgba(46,125,85,0.3)' }}>
 
-                {/* Top bar */}
-                <div style={{ flexShrink:0, padding:'0.5rem 0.9rem', display:'flex', alignItems:'center', justifyContent:'space-between', background:'rgba(0,0,0,0.55)', borderBottom:'1px solid rgba(255,255,255,0.08)' }}>
-                  <span style={{ fontSize:'0.65rem', fontWeight:700, color:'rgba(255,255,255,0.85)', letterSpacing:'0.03em' }}>Taronga Zoo Sydney</span>
-                  <span style={{ fontSize:'0.58rem', color:'rgba(255,255,255,0.45)', letterSpacing:'0.05em' }}>
+                {/* The footage, full bleed. CONTAIN, never cover — same rule as the viewfinder. */}
+                {zzVideoURLs[animalId]
+                  ? <video src={zzVideoURLs[animalId]} controls playsInline style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'contain', display:'block', background:'#000', transform:`scale(${zzZoom})`, transformOrigin:'center' }} />
+                  : <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', color:'var(--zz-muted)', fontSize:'0.85rem' }}>No video recorded</div>
+                }
+
+                {[...Array(10)].map((_,i) => (
+                  <div key={i} style={{ position:'absolute', left:`${(i*9.3+5)%100}%`, top:`${(i*14.1+8)%100}%`, width:i%3===0?'2px':'1.5px', height:i%3===0?'2px':'1.5px', borderRadius:'50%', background:i%4===0?'#4A9E6B':'rgba(255,255,255,0.6)', opacity:0.3+(i%3)*0.1, pointerEvents:'none' }} />
+                ))}
+
+                {/* Top scrim — the same 0.72 → 0 ramp drawFrame paints. */}
+                {/* ⚠️ pointerEvents:none on both scrims, or they swallow the taps meant for the
+                    video's own controls, which sit underneath them. */}
+                <div style={{ position:'absolute', top:0, left:0, right:0, padding:'0.5rem 0.85rem 1.6rem', display:'flex', alignItems:'baseline', justifyContent:'space-between', pointerEvents:'none', background:'linear-gradient(to bottom, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0) 100%)' }}>
+                  <span style={{ fontSize:'0.65rem', fontWeight:700, color:'rgba(255,255,255,0.88)', letterSpacing:'0.03em', textShadow:'0 1px 3px rgba(0,0,0,0.6)' }}>Taronga Zoo Sydney</span>
+                  <span style={{ fontSize:'0.56rem', color:'rgba(255,255,255,0.48)', letterSpacing:'0.05em', textShadow:'0 1px 3px rgba(0,0,0,0.6)' }}>
                     {new Date().toLocaleDateString('en-AU',{day:'2-digit',month:'short',year:'numeric'}).toUpperCase()}
                   </span>
                 </div>
 
-                {/* Video — WHAT WAS FILMED, WHOLE, between the header and the footer. */}
-                {/* ⚠⚠ THIS BOX WAS NOT THE SHAPE IT SAID IT WAS. It read
-                    `aspectRatio:'3/4', maxHeight:'38vh', width:'100%'` — and `max-height` wins
-                    over `aspect-ratio`, so on a 390x640 phone it rendered 390x243, aspect 1.60:
-                    LANDSCAPE. `object-fit: cover` then scaled an upright 9:16 clip to fill it and
-                    threw away 65% of the frame. That is the "it goes zoomed in" Cameron reported
-                    on the card with the header and footer, and it is the SAME `aspect-ratio` +
-                    `max-height` trap that collapsed the viewfinder three times.
-                    🚫 Never put `aspect-ratio` and `max-height` on the same element and expect the
-                       aspect to hold. Give a parent a definite height and pin the aspect box
-                       inside it with top:0/bottom:0, which is what the viewfinder does.
-                    ⚠️ CONTAIN, NOT COVER. 🚫 Do not switch this to cover — cropping here is a
-                       promise the film does not keep.
-                    ⚠️ It is on ZZ_CAPTURE_ASPECT, the same constant as the viewfinder, NOT on the
-                       film's shape. So this card no longer predicts the film exactly; it shows
-                       what was framed. That is the 2026-11-01 decision, and the thing it does
-                       guarantee is that the card and the viewfinder always agree. */}
-                {/* ⚠️ The space either side of an upright clip is the CARD's own gradient, not
-                    black. Black there reads as a broken or half-loaded video; the gradient reads
-                    as the card the frame is sitting in. The frame itself stays black, because
-                    those bars are real — they are the ones the film will have. */}
-                <div style={{ position:'relative', flex:1, minHeight:'150px', background:'linear-gradient(160deg,#020D06 0%,#071E14 100%)' }}>
-                <div style={{ position:'absolute', top:0, bottom:0, left:'50%', transform:'translateX(-50%)', width:'auto', maxWidth:'100%', aspectRatio:String(ZZ_CAPTURE_ASPECT), overflow:'hidden', background:'#000' }}>
-                  {zzVideoURLs[animalId]
-                    ? <video src={zzVideoURLs[animalId]} controls playsInline style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'contain', display:'block', background:'#000', transform:`scale(${zzZoom})`, transformOrigin:'center' }} />
-                    : <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', color:'var(--zz-muted)', fontSize:'0.85rem' }}>No video recorded</div>
-                  }
-                  {[...Array(10)].map((_,i) => (
-                    <div key={i} style={{ position:'absolute', left:`${(i*9.3+5)%100}%`, top:`${(i*14.1+8)%100}%`, width:i%3===0?'2px':'1.5px', height:i%3===0?'2px':'1.5px', borderRadius:'50%', background:i%4===0?'#4A9E6B':'rgba(255,255,255,0.6)', opacity:0.3+(i%3)*0.1, pointerEvents:'none' }} />
-                  ))}
-                </div>
-                </div>
-
-                {/* Bottom panel */}
-                <div style={{ flexShrink:0, padding:'0.75rem 1rem 0.9rem', background:'rgba(6,8,6,0.98)', borderTop:'2px solid rgba(46,125,85,0.3)', position:'relative', overflow:'hidden', display:'flex', alignItems:'flex-start', gap:'0.75rem' }}>
-                  {[...Array(6)].map((_,i) => (
-                    <div key={i} style={{ position:'absolute', left:`${(i*17+4)%96}%`, top:`${(i*23+6)%80}%`, width:'1.5px', height:'1.5px', borderRadius:'50%', background:'rgba(168,196,178,0.2)', pointerEvents:'none' }} />
-                  ))}
+                {/* Caption scrim — drawFrame's 0 → 0.80 at 42% → 0.95 ramp, bottom-anchored. */}
+                <div style={{ position:'absolute', left:0, right:0, bottom:0, padding:'2.2rem 0.85rem 0.7rem', display:'flex', alignItems:'flex-end', gap:'0.6rem', pointerEvents:'none', background:'linear-gradient(to top, rgba(2,8,5,0.95) 0%, rgba(2,8,5,0.80) 58%, rgba(2,8,5,0) 100%)' }}>
                   <div style={{ flex:1, minWidth:0 }}>
-                    <div className="taronga-title" style={{ fontSize:'clamp(1.1rem,4vw,1.5rem)', color:'white', letterSpacing:'0.1em', marginBottom:'0.25rem', lineHeight:1.1 }}>
+                    <div className="taronga-title" style={{ fontSize:'clamp(0.95rem,3.4vw,1.3rem)', color:'white', letterSpacing:'0.1em', marginBottom:'0.15rem', lineHeight:1.1, textShadow:'0 2px 6px rgba(0,0,0,0.7)' }}>
                       I WENT TO ZOOSNOOZ!
                     </div>
-                    <div style={{ fontSize:'0.9rem', fontWeight:700, color:'#A8C4B2', marginBottom:'0.2rem' }}>
+                    <div style={{ fontSize:'0.8rem', fontWeight:700, color:'#A8C4B2', marginBottom:'0.15rem', textShadow:'0 1px 4px rgba(0,0,0,0.7)' }}>
                       {zzAnimal.name}
                     </div>
                     {/* ⚠️ Capped at 6 lines, the SAME cap drawFrame applies to this quote. The
                         observation has a ten-word minimum and no maximum, so uncapped a wordy
-                        student pushed the card past the viewport and "Complete Mission" off the
-                        bottom. 🚫 Do not uncap this without re-measuring the card. */}
+                        student would bury their own footage under text. */}
                     {obsText.trim() && (
-                      <div style={{ fontSize:'0.75rem', color:'rgba(255,255,255,0.65)', fontStyle:'italic', lineHeight:1.5, wordBreak:'break-word', display:'-webkit-box', WebkitLineClamp:6, WebkitBoxOrient:'vertical', overflow:'hidden' }}>
+                      <div style={{ fontSize:'0.68rem', color:'rgba(255,255,255,0.72)', fontStyle:'italic', lineHeight:1.45, wordBreak:'break-word', textShadow:'0 1px 4px rgba(0,0,0,0.8)', display:'-webkit-box', WebkitLineClamp:6, WebkitBoxOrient:'vertical', overflow:'hidden' }}>
                         &ldquo;{obsText.trim()}&rdquo;
                       </div>
                     )}
                   </div>
-                  <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'0.3rem', flexShrink:0, paddingTop:'0.2rem' }}>
-                    <img src="images/logo.png" alt="Taronga Tracka" style={{ height:'40px', filter:'brightness(0) invert(1)', opacity:0.88 }} onError={e=>e.target.style.display='none'} />
-                    <span style={{ fontSize:'0.5rem', color:'rgba(168,196,178,0.6)', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'center', lineHeight:1.5, whiteSpace:'pre-line' }}>{`#ZooSnooz\n#TarongaTracka`}</span>
+                  <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'0.2rem', flexShrink:0 }}>
+                    <img src="images/logo.png" alt="Taronga Tracka" style={{ height:'34px', filter:'brightness(0) invert(1) drop-shadow(0 1px 3px rgba(0,0,0,0.8))', opacity:0.85 }} onError={e=>e.target.style.display='none'} />
+                    <span style={{ fontSize:'0.46rem', color:'rgba(168,196,178,0.65)', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'center', lineHeight:1.5, whiteSpace:'pre-line', textShadow:'0 1px 3px rgba(0,0,0,0.8)' }}>{`#ZooSnooz\n#TarongaTracka`}</span>
                   </div>
                 </div>
+              </div>
               </div>
 
               {/* Upload status */}
