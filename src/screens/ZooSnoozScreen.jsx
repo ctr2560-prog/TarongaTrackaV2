@@ -33,6 +33,25 @@ const ZZ_FILM_TOP = 80, ZZ_FILM_BOT = 260;
 // text layout origin, which is why the caption offsets below are unchanged.
 export const ZZ_VIDEO_ASPECT = ZZ_FILM_W / ZZ_FILM_H;
 
+// ── Capture geometry ────────────────────────────────────────────────────────
+// ⚠️⚠️ THE CAPTURE SHAPE IS DELIBERATELY NOT THE FILM SHAPE, as of 2026-11-01. This is
+// Cameron's call and it overrides the rule above, so read this before "fixing" it back.
+//
+// The film is 9:16 (0.5625). On a 390x640 phone that gives a viewfinder of 219x389 — a narrow
+// sliver, because a 9:16 box in a short space can only be that wide. The finished card is a much
+// roomier shape, and he asked for the viewfinder to be a scaled-up version of it: "the film modal
+// should be the same aspect ratio as the card ... a bit bigger ... for the visibility". Measured:
+// 341x389, which is 56% more picture.
+//
+// He accepted the consequence in the same breath — "at this point I don't even care if the zoom
+// is a thing with the film modal" — so capture and film no longer agree on shape, on purpose.
+// 🚫 Do not re-point the viewfinder or the clip card at ZZ_VIDEO_ASPECT to make them "consistent".
+//    That is a 56% reduction in what a student can see while filming, and it was asked for.
+// ⚠️ The viewfinder and the clip card must stay on the SAME constant as each other, so the two
+//    things a student actually looks at never disagree. Only the film differs.
+const ZZ_CARD_W = 390, ZZ_CARD_H = 445;
+export const ZZ_CAPTURE_ASPECT = ZZ_CARD_W / ZZ_CARD_H;
+
 // ── Instruction type ────────────────────────────────────────────────────────
 // The two places ZooSnooz tells a student what to DO — the mission brief on the insight
 // screen, and the prompt above the writing box. Both use Taronga Headline, applied with
@@ -2904,7 +2923,7 @@ export default function ZooSnoozScreen() {
                 as a flex ITEM the main size comes from content, so `aspect-ratio` had nothing to
                 derive a width from. Pinning top and bottom gives a definite height, and the
                 aspect then produces the width. 🚫 Do not give this a width. */}
-            <div style={{ position:'absolute', top:0, bottom:0, left:'50%', transform:'translateX(-50%)', width:'auto', maxWidth:'100%', aspectRatio:String(ZZ_VIDEO_ASPECT), borderRadius:'18px', overflow:'hidden', background:'#000', boxShadow:'0 10px 34px rgba(0,0,0,0.5)' }}>
+            <div style={{ position:'absolute', top:0, bottom:0, left:'50%', transform:'translateX(-50%)', width:'auto', maxWidth:'100%', aspectRatio:String(ZZ_CAPTURE_ASPECT), borderRadius:'18px', overflow:'hidden', background:'#000', boxShadow:'0 10px 34px rgba(0,0,0,0.5)' }}>
               {/* ⚠️ position:absolute + inset:0, NOT width/height:100%. The viewfinder gets its
                   height from `flex:1`, which is not a definite height, so a percentage height
                   on the video does not resolve — it fell back to its intrinsic size and sat
@@ -3011,7 +3030,7 @@ export default function ZooSnoozScreen() {
                     as the card the frame is sitting in. The frame itself stays black, because
                     those bars are real — they are the ones the film will have. */}
                 <div style={{ position:'relative', flex:1, minHeight:'150px', background:'linear-gradient(160deg,#020D06 0%,#071E14 100%)' }}>
-                <div style={{ position:'absolute', top:0, bottom:0, left:'50%', transform:'translateX(-50%)', width:'auto', maxWidth:'100%', aspectRatio:String(ZZ_VIDEO_ASPECT), overflow:'hidden', background:'#000' }}>
+                <div style={{ position:'absolute', top:0, bottom:0, left:'50%', transform:'translateX(-50%)', width:'auto', maxWidth:'100%', aspectRatio:String(ZZ_CAPTURE_ASPECT), overflow:'hidden', background:'#000' }}>
                   {zzVideoURLs[animalId]
                     ? <video src={zzVideoURLs[animalId]} controls playsInline style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'contain', display:'block', background:'#000' }} />
                     : <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', color:'var(--zz-muted)', fontSize:'0.85rem' }}>No video recorded</div>
