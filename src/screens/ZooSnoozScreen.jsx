@@ -1742,8 +1742,19 @@ export default function ZooSnoozScreen() {
           //    `align-items:flex-start` + `margin:auto` on the card still centres it when it
           //    fits, but lets it scroll when it does not.
           // 🚫 Never put overflow:hidden back on this element.
+          //
+          // ⚠⚠ AND IT MUST BE `fixed`, NOT `absolute`. There is no positioned ancestor in this
+          //    tree (the map wrapper is a plain `minHeight:100vh` div), so `absolute; inset:0`
+          //    sized itself to the INITIAL CONTAINING BLOCK and anchored at the top of the
+          //    DOCUMENT - viewport-sized, but scrolling with the page. The card fits on most
+          //    phones, so the overlay has nothing to scroll, the drag went to the page instead,
+          //    and the overlay slid up to reveal the map's animal cards underneath it. Cameron:
+          //    "I can scroll down slightly and see the animals from the map screen". The star
+          //    field 100 lines above was already `fixed` for the same reason.
+          // 🚫 Do not change this back to absolute, and do not add a transform or filter to any
+          //    ancestor - either would make this fixed element scroll again.
           return (
-            <div style={{ position:'absolute', inset:0, zIndex:500, background:'linear-gradient(160deg,#020D06 0%,#040F08 55%,#071E14 100%)', display:'flex', alignItems:'flex-start', justifyContent:'center', padding:'1rem', overflowY:'auto', overscrollBehavior:'contain' }}>
+            <div style={{ position:'fixed', inset:0, zIndex:500, background:'linear-gradient(160deg,#020D06 0%,#040F08 55%,#071E14 100%)', display:'flex', alignItems:'flex-start', justifyContent:'center', padding:'1rem', overflowY:'auto', overscrollBehavior:'contain' }}>
               {/* Confetti */}
               <div style={{ position:'absolute', inset:0, pointerEvents:'none' }}>
                 {[...Array(55)].map((_,i) => (
