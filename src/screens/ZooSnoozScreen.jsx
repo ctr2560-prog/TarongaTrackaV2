@@ -2591,7 +2591,26 @@ export default function ZooSnoozScreen() {
             })()}
 
             {/* Next button - locked until timed analysis done for tiger/lion/rhino/binturong */}
+            {/* ⚠️⚠️ STICKY, AND THAT IS THE WHOLE POINT. This button does not exist until the
+                activity finishes, so it APPEARS below the fold — the instruments are tall (the
+                rhino drag pad alone is up to 50vh) and the content grows at the exact moment the
+                button is created. Cameron on the rhino: "once complete I have to scroll down (i
+                didn't know and i know kids will get lost with it)". A student who cannot see a
+                button that was not there a second ago has no reason to look for it.
+                `marginTop:auto` puts it at the foot of the column when the content is short;
+                `position:sticky, bottom:0` keeps it on screen when the content is tall. The
+                scrim is needed because the instrument scrolls underneath it.
+                ⚠️ This is the shared button for ALL FIVE animals, so it fixes tiger, lion and
+                binturong too — they have the same tall-instrument-then-button shape.
+                🚫 Do not "fix" this by auto-advancing to the MCQ instead. The done state carries
+                   the student's own numbers ("N footfalls recorded - use your data to answer the
+                   next question") and skipping past it throws away the link between the activity
+                   and the question it exists to set up. */}
+            {/* ⚠️ The condition wraps the STICKY DIV, not just the button. Inside it, the wrapper
+                would still render its padding and scrim as a stray strip at the foot of every
+                unfinished activity. */}
             {(['tiger','lion','rhino','binturong'].includes(zzAnimal.id) ? interDone : true) && (
+              <div style={{ marginTop:'auto', position:'sticky', bottom:0, zIndex:20, paddingTop:'1rem', paddingBottom:'0.25rem', background:'linear-gradient(to bottom, rgba(11,15,20,0) 0%, rgba(11,15,20,0.88) 45%, var(--zz-bg) 100%)' }}>
               <button
                 onClick={() => setZzPhase('mcq')}
                 disabled={zzAnimal.id === 'sun-bear' ? !hasDrawn : false}
@@ -2605,6 +2624,7 @@ export default function ZooSnoozScreen() {
                   : zzAnimal.id === 'sun-bear'  ? (hasDrawn ? 'Analyse Adaptations →' : 'Draw something to continue')
                   : 'Continue →'}
               </button>
+              </div>
             )}
           </div>
         )}
