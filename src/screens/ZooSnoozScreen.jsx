@@ -220,6 +220,25 @@ export default function ZooSnoozScreen() {
   const [zzVideoURLs,   setZzVideoURLs]   = useState({});    // { [animalId]: blobURL }
   const [nightVision,   setNightVision]   = useState(false);
   const [zzFrontCam,    setZzFrontCam]    = useState(false);
+  // ── Framing control ───────────────────────────────────────────────────────
+  // ⚠️ TWO DIFFERENT MECHANISMS BEHIND ONE ROW OF BUTTONS, and they are not interchangeable.
+  //
+  //  1x and up is DIGITAL: a CSS scale on the preview, the identical factor re-applied by
+  //  drawFrame, so the clip is untouched and the framing decision travels with it as a number.
+  //  It crops, which Cameron accepted on 2026-11-01 ("I don't even care if the zoom is a thing").
+  //
+  //  0.5x is a DIFFERENT CAMERA. It cannot be digital: at 1x the viewfinder is `contain`, so the
+  //  student is already seeing the whole sensor frame and there is no more picture to uncover —
+  //  a digital 0.5x would only shrink the image into the middle and pad it with black. Real 0.5x
+  //  means the ULTRA-WIDE LENS, which is a separate videoinput device.
+  // 🚫 Never offer 0.5x as a digital factor. It would look like a wide shot and deliver a small
+  //    one, and the recording would be worse, not wider.
+  // ⚠️ The 0.5x button only renders when an ultra-wide was actually found on this device, because
+  //    most devices do not have one. Same rule as the Wildest Dreams animal sounds: a control
+  //    that does nothing teaches a student that controls do nothing.
+  const [zzZoom,        setZzZoom]        = useState(1);
+  const [zzWideId,      setZzWideId]      = useState(null);   // ultra-wide deviceId, or null
+  const [zzOnWide,      setZzOnWide]      = useState(false);
   const zzVideoRef    = useRef(null);  // camera <video> element
   const zzCamRef      = useRef(null);  // camera stream
   const zzMediaRef    = useRef(null);  // MediaRecorder
@@ -392,6 +411,11 @@ export default function ZooSnoozScreen() {
     const newFront = !zzFrontCam;
     zzFacingModeRef.current = newFront ? 'user' : 'environment';
     setZzFrontCam(newFront);
+    // ⚠️ The ultra-wide is a REAR lens. Flipping to the front camera has to drop it, or the
+    //    0.5x pill stays lit while the front camera is running and the next tap on "1x" would
+    //    look like it changed nothing.
+    setZzOnWide(false);
+    setZzZoom(1);
     zzCamRef.current?.getTracks().forEach(t => t.stop());
     zzCamRef.current = null;
     if (zzVideoRef.current) zzVideoRef.current.srcObject = null;
@@ -404,6 +428,53 @@ export default function ZooSnoozScreen() {
       zzCamRef.current = stream;
       if (zzVideoRef.current) { zzVideoRef.current.srcObject = stream; zzVideoRef.current.play().catch(() => {}); }
     }).catch(() => {});
+  };
+
+  // ── Video phase: find an ultra-wide lens, if this device has one ─────────
+  // ⚠️ Runs only AFTER the stream is live (`vidReady`). enumerateDevices returns empty labels
+  //    until camera permission has been granted, so probing earlier finds nothing and the 0.5x
+  //    button would never appear on a device that has the lens.
+  useEffect(() => {
+    if (zzPhase !== 'video' || !vidReady) return;
+    let dead = false;
+    navigator.mediaDevices?.enumerateDevices?.().then(ds => {
+      if (dead) return;
+      // ⚠️⚠️ MATCH "ultra", NEVER just "wide". Apple calls the MAIN rear camera "Back Wide
+      //    Camera" and the ultra-wide "Back Ultra Wide Camera", so a /wide/ test picks the
+      //    main lens and the 0.5x button silently does nothing at all.
+      const wide = ds.find(d => d.kind === 'videoinput' && /ultra/i.test(d.label || ''));
+      setZzWideId(wide ? wide.deviceId : null);
+    }).catch(() => {});
+    return () => { dead = true; };
+  }, [zzPhase, vidReady]);
+
+  // ── Video phase: switch between the main and ultra-wide rear lens ────────
+  const zzUseLens = (wide) => {
+    if (zzRecording) return;
+    if (wide && !zzWideId) return;
+    setZzOnWide(wide);
+    setZzZoom(1);
+    zzCamRef.current?.getTracks().forEach(t => t.stop());
+    zzCamRef.current = null;
+    if (zzVideoRef.current) zzVideoRef.current.srcObject = null;
+    // ⚠️ Width only, no height — the same rule as the two capture paths above. A lens switch
+    //    must not quietly reintroduce the 16:9 sensor crop.
+    const video = wide
+      ? { deviceId: { exact: zzWideId }, width: { ideal: 1280 } }
+      : { facingMode: zzFacingModeRef.current, width: { ideal: 1280 } };
+    navigator.mediaDevices.getUserMedia({ video, audio: true }).then(stream => {
+      zzCamRef.current = stream;
+      if (zzVideoRef.current) { zzVideoRef.current.srcObject = stream; zzVideoRef.current.play().catch(() => {}); }
+    }).catch(() => {
+      // Falling back to the main lens matters more than reporting it: a student left with a dead
+      // viewfinder cannot film at all, and the ultra-wide is a nicety.
+      setZzOnWide(false);
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: zzFacingModeRef.current, width: { ideal: 1280 } }, audio: true })
+        .then(stream => {
+          zzCamRef.current = stream;
+          if (zzVideoRef.current) { zzVideoRef.current.srcObject = stream; zzVideoRef.current.play().catch(() => {}); }
+        }).catch(() => {});
+    });
   };
 
   // ── Start mission ─────────────────────────────────────────────────────────
@@ -427,6 +498,8 @@ export default function ZooSnoozScreen() {
     setMcqFirstOk(null);
     setMcqRevealed(false);
     setMcqShowResult(false);
+    setZzZoom(1);
+    setZzOnWide(false);
     setObsText('');
     setObsLock(20);
     setObsOpen(false);
@@ -489,6 +562,10 @@ export default function ZooSnoozScreen() {
       videoTitle,
       conservationMsg,
       nightVisionUsed: nightVision,
+      // ⚠️ The framing decision has to travel WITH the clip, because the clip itself is
+      //    untouched — a digital zoom is never recorded into the file. drawFrame re-applies
+      //    this number at stitch time. An old record has no field, so it reads as 1.
+      videoZoom: zzZoom,
       completed: true,
       timestamp: new Date().toISOString(),
     };
@@ -1033,6 +1110,12 @@ export default function ZooSnoozScreen() {
         if (videoSrc) {
           const badge = completed[animal.id];
           const nvUsed = badge?.nightVisionUsed || false;
+          // ⚠️ Clamped at 1 and sanity-checked. A digital zoom can only ever ENLARGE here; a
+          //    value below 1 would shrink the footage and pad the frame with black, which is
+          //    never what anybody asked for, and a NaN from a corrupt record would blank the
+          //    whole clip silently — the exact failure class this pipeline keeps producing.
+          const zoomRaw = Number(badge?.videoZoom);
+          const zoom = Number.isFinite(zoomRaw) ? Math.min(Math.max(zoomRaw, 1), 4) : 1;
           const videoTitle = badge?.videoTitle || animal.name;
           const conservMsg = badge?.conservationMsg || '';
           const topH = ZZ_FILM_TOP, botH = ZZ_FILM_BOT, botY = H - botH;
@@ -1121,7 +1204,14 @@ export default function ZooSnoozScreen() {
                 //
                 // 🚫 Do not reintroduce a crop here without also changing the capture constraints
                 //    and the preview's object-fit — all three have to agree. See ZZ_VIDEO_ASPECT.
-                const fitW = Math.min(W, H * srcA);
+                // ⚠️ `* zoom` is the student's framing choice, re-applied. It is the same
+                //    operation as the CSS `transform: scale()` on the viewfinder: enlarge the
+                //    contained rect about its centre and let the frame clip it. The canvas
+                //    clips for free, so nothing else is needed.
+                // ⚠️ The frame here is 0.5625 and the viewfinder is ZZ_CAPTURE_ASPECT, so the
+                //    two show different amounts of the source at the same factor. That is the
+                //    shape trade Cameron took on 2026-11-01, not a bug to chase.
+                const fitW = Math.min(W, H * srcA) * zoom;
                 const fitH = fitW / srcA;
                 const dx = (W - fitW) / 2, dy = (H - fitH) / 2;
                 ctx.fillStyle = '#000';
@@ -2923,14 +3013,34 @@ export default function ZooSnoozScreen() {
                 as a flex ITEM the main size comes from content, so `aspect-ratio` had nothing to
                 derive a width from. Pinning top and bottom gives a definite height, and the
                 aspect then produces the width. 🚫 Do not give this a width. */}
-            <div style={{ position:'absolute', top:0, bottom:0, left:'50%', transform:'translateX(-50%)', width:'auto', maxWidth:'100%', aspectRatio:String(ZZ_CAPTURE_ASPECT), borderRadius:'18px', overflow:'hidden', background:'#000', boxShadow:'0 10px 34px rgba(0,0,0,0.5)' }}>
+            {/* ⚠️ maxHeight AND maxWidth, deliberately redundant. `top:0/bottom:0` gives the
+                height, `aspect-ratio` derives the width, and `max-width` then clamps it — at
+                which point the aspect only survives if the engine recomputes the height from the
+                clamped width. Chrome does (measured 0.8764 at viewport heights 560, 640 and
+                844). 🚫 Do not rely on that alone: WebKit is the engine that matters here and
+                has not been tested. maxHeight is the SAME bound expressed on the other axis, so
+                the two constraints agree numerically and the shape holds whichever one the
+                engine applies first. If it ever does drift, it degrades to a taller narrower box
+                rather than a collapsed one. 680px is the column's max-width, 2.5rem its padding. */}
+            <div style={{ position:'absolute', top:0, bottom:0, left:'50%', transform:'translateX(-50%)', width:'auto', maxWidth:'100%', maxHeight:`calc((min(100vw, 680px) - 2.5rem) / ${ZZ_CAPTURE_ASPECT})`, aspectRatio:String(ZZ_CAPTURE_ASPECT), borderRadius:'18px', overflow:'hidden', background:'#000', boxShadow:'0 10px 34px rgba(0,0,0,0.5)' }}>
               {/* ⚠️ position:absolute + inset:0, NOT width/height:100%. The viewfinder gets its
                   height from `flex:1`, which is not a definite height, so a percentage height
                   on the video does not resolve — it fell back to its intrinsic size and sat
                   pinned to the TOP of the box with dead black beneath it. Absolute inset makes
                   the element fill the box, and `contain` then centres the picture inside it. */}
+              {/* ⚠️ `transform: scale` on a CONTAINED video inside an overflow:hidden box is the
+                  same OPERATION drawFrame performs: enlarge the fitted rect about its centre and
+                  let the frame clip it. 🚫 If you change one, change the other.
+                  ⚠️ It is NOT the same RESULT, and do not describe it as one. This box is
+                  ZZ_CAPTURE_ASPECT and the film frame is 0.5625, so at the same factor the two
+                  keep different amounts of the source — the film keeps more height and less
+                  width. The factor travels faithfully; the crop cannot, while the shapes differ.
+                  Measured for a 0.8764 source: 1x leaves 229px bars in the film, and it takes
+                  1.56x to fill it, which is why the pills are round numbers rather than a
+                  "fills the frame" step — that factor depends on the device's sensor shape. */}
               <video ref={zzVideoRef} muted playsInline
-                style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'contain', display:'block', background:'#000', transition:'filter 0.35s ease',
+                style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'contain', display:'block', background:'#000', transition:'filter 0.35s ease, transform 0.18s ease',
+                  transform:`scale(${zzZoom})`, transformOrigin:'center',
                   filter: nightVision ? 'grayscale(1) brightness(1.6) contrast(1.9) sepia(1) hue-rotate(80deg) saturate(3)' : 'none' }} />
               {nightVision && (
                 <div style={{ position:'absolute', inset:0, background:'rgba(0,230,60,0.07)', pointerEvents:'none', mixBlendMode:'screen' }} />
@@ -2946,6 +3056,27 @@ export default function ZooSnoozScreen() {
               )}
             </div>
 
+            </div>
+
+            {/* Framing row. 0.5x appears only if an ultra-wide lens was actually found. */}
+            <div style={{ flexShrink:0, display:'flex', justifyContent:'center', gap:'0.3rem', padding:'0 0.25rem' }}>
+              {zzWideId && !zzFrontCam && (
+                <button onClick={() => zzUseLens(true)} disabled={zzRecording} aria-pressed={zzOnWide}
+                  style={{ minWidth:'44px', padding:'0.3rem 0.5rem', borderRadius:'999px', fontSize:'0.72rem', fontWeight:700, cursor: zzRecording ? 'not-allowed' : 'pointer',
+                    background: zzOnWide ? 'rgba(0,230,60,0.22)' : 'rgba(255,255,255,0.09)',
+                    border: zzOnWide ? '1.5px solid rgba(0,230,60,0.65)' : '1.5px solid rgba(255,255,255,0.18)',
+                    color: zzOnWide ? '#00E63C' : 'rgba(255,255,255,0.75)', opacity: zzRecording ? 0.4 : 1 }}>0.5&times;</button>
+              )}
+              {[1, 1.5, 2, 3].map(z => {
+                const on = !zzOnWide && zzZoom === z;
+                return (
+                  <button key={z} onClick={() => { if (zzOnWide) zzUseLens(false); setZzZoom(z); }} disabled={zzRecording} aria-pressed={on}
+                    style={{ minWidth:'44px', padding:'0.3rem 0.5rem', borderRadius:'999px', fontSize:'0.72rem', fontWeight:700, cursor: zzRecording ? 'not-allowed' : 'pointer',
+                      background: on ? 'rgba(0,230,60,0.22)' : 'rgba(255,255,255,0.09)',
+                      border: on ? '1.5px solid rgba(0,230,60,0.65)' : '1.5px solid rgba(255,255,255,0.18)',
+                      color: on ? '#00E63C' : 'rgba(255,255,255,0.75)', opacity: zzRecording ? 0.4 : 1 }}>{z}&times;</button>
+                );
+              })}
             </div>
 
             {/* Shutter row — night vision left, shutter centre, flip right. */}
@@ -3032,7 +3163,7 @@ export default function ZooSnoozScreen() {
                 <div style={{ position:'relative', flex:1, minHeight:'150px', background:'linear-gradient(160deg,#020D06 0%,#071E14 100%)' }}>
                 <div style={{ position:'absolute', top:0, bottom:0, left:'50%', transform:'translateX(-50%)', width:'auto', maxWidth:'100%', aspectRatio:String(ZZ_CAPTURE_ASPECT), overflow:'hidden', background:'#000' }}>
                   {zzVideoURLs[animalId]
-                    ? <video src={zzVideoURLs[animalId]} controls playsInline style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'contain', display:'block', background:'#000' }} />
+                    ? <video src={zzVideoURLs[animalId]} controls playsInline style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'contain', display:'block', background:'#000', transform:`scale(${zzZoom})`, transformOrigin:'center' }} />
                     : <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', color:'var(--zz-muted)', fontSize:'0.85rem' }}>No video recorded</div>
                   }
                   {[...Array(10)].map((_,i) => (
