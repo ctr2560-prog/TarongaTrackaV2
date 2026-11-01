@@ -2973,32 +2973,57 @@ export default function ZooSnoozScreen() {
           const up       = zzUploadProgress[animalId];
           const uploading = up !== undefined && up !== 'done' && up !== 'error';
           return (
-            <div style={{ display:'flex', flexDirection:'column', gap:'1rem' }}>
+            /* ⚠️ `flex:1` + `minHeight:0` all the way down to the video stage, so the footage gets
+               exactly the room left over after the bars, the upload note and the button — and the
+               card can never push "Complete Mission" off the screen. A fixed `vh` height was
+               tried first and overflowed by 59-149px once a student wrote more than a line.
+               🚫 Do not give the stage a fixed height; that is what forced the scroll. */
+            <div style={{ display:'flex', flexDirection:'column', gap:'1rem', flex:1, minHeight:0 }}>
 
               {/* Social Media Night Frame - Preview */}
-              <div style={{ borderRadius:'22px', overflow:'hidden', background:'linear-gradient(160deg,#020D06 0%,#040F08 55%,#071E14 100%)', boxShadow:'0 16px 48px rgba(0,0,0,0.75), 0 0 0 1px rgba(46,125,85,0.3)', position:'relative' }}>
+              <div style={{ borderRadius:'22px', overflow:'hidden', background:'linear-gradient(160deg,#020D06 0%,#040F08 55%,#071E14 100%)', boxShadow:'0 16px 48px rgba(0,0,0,0.75), 0 0 0 1px rgba(46,125,85,0.3)', position:'relative', display:'flex', flexDirection:'column', flex:1, minHeight:0 }}>
 
                 {/* Top bar */}
-                <div style={{ padding:'0.5rem 0.9rem', display:'flex', alignItems:'center', justifyContent:'space-between', background:'rgba(0,0,0,0.55)', borderBottom:'1px solid rgba(255,255,255,0.08)' }}>
+                <div style={{ flexShrink:0, padding:'0.5rem 0.9rem', display:'flex', alignItems:'center', justifyContent:'space-between', background:'rgba(0,0,0,0.55)', borderBottom:'1px solid rgba(255,255,255,0.08)' }}>
                   <span style={{ fontSize:'0.65rem', fontWeight:700, color:'rgba(255,255,255,0.85)', letterSpacing:'0.03em' }}>Taronga Zoo Sydney</span>
                   <span style={{ fontSize:'0.58rem', color:'rgba(255,255,255,0.45)', letterSpacing:'0.05em' }}>
                     {new Date().toLocaleDateString('en-AU',{day:'2-digit',month:'short',year:'numeric'}).toUpperCase()}
                   </span>
                 </div>
 
-                {/* Video */}
-                <div style={{ position:'relative', aspectRatio:'3/4', maxHeight:'38vh', overflow:'hidden', background:'#000', width:'100%' }}>
+                {/* Video — WHAT WAS FILMED, WHOLE, between the header and the footer. */}
+                {/* ⚠⚠ THIS BOX WAS NOT THE SHAPE IT SAID IT WAS. It read
+                    `aspectRatio:'3/4', maxHeight:'38vh', width:'100%'` — and `max-height` wins
+                    over `aspect-ratio`, so on a 390x640 phone it rendered 390x243, aspect 1.60:
+                    LANDSCAPE. `object-fit: cover` then scaled an upright 9:16 clip to fill it and
+                    threw away 65% of the frame. That is the "it goes zoomed in" Cameron reported
+                    on the card with the header and footer, and it is the SAME `aspect-ratio` +
+                    `max-height` trap that collapsed the viewfinder three times.
+                    🚫 Never put `aspect-ratio` and `max-height` on the same element and expect the
+                       aspect to hold. Give a parent a definite height and pin the aspect box
+                       inside it with top:0/bottom:0, which is what the viewfinder does.
+                    ⚠️ CONTAIN, NOT COVER, and on `ZZ_VIDEO_ASPECT` — this card has to predict the
+                       stitched film, so it shows exactly what the film will contain: an upright
+                       clip fills it, a sideways one letterboxes, same as the film. 🚫 Do not
+                       switch this to cover; cropping here is a promise the film does not keep. */}
+                {/* ⚠️ The space either side of an upright clip is the CARD's own gradient, not
+                    black. Black there reads as a broken or half-loaded video; the gradient reads
+                    as the card the frame is sitting in. The frame itself stays black, because
+                    those bars are real — they are the ones the film will have. */}
+                <div style={{ position:'relative', flex:1, minHeight:'150px', background:'linear-gradient(160deg,#020D06 0%,#071E14 100%)' }}>
+                <div style={{ position:'absolute', top:0, bottom:0, left:'50%', transform:'translateX(-50%)', width:'auto', maxWidth:'100%', aspectRatio:String(ZZ_VIDEO_ASPECT), overflow:'hidden', background:'#000' }}>
                   {zzVideoURLs[animalId]
-                    ? <video src={zzVideoURLs[animalId]} controls playsInline style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
+                    ? <video src={zzVideoURLs[animalId]} controls playsInline style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'contain', display:'block', background:'#000' }} />
                     : <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', color:'var(--zz-muted)', fontSize:'0.85rem' }}>No video recorded</div>
                   }
                   {[...Array(10)].map((_,i) => (
                     <div key={i} style={{ position:'absolute', left:`${(i*9.3+5)%100}%`, top:`${(i*14.1+8)%100}%`, width:i%3===0?'2px':'1.5px', height:i%3===0?'2px':'1.5px', borderRadius:'50%', background:i%4===0?'#4A9E6B':'rgba(255,255,255,0.6)', opacity:0.3+(i%3)*0.1, pointerEvents:'none' }} />
                   ))}
                 </div>
+                </div>
 
                 {/* Bottom panel */}
-                <div style={{ padding:'0.75rem 1rem 0.9rem', background:'rgba(6,8,6,0.98)', borderTop:'2px solid rgba(46,125,85,0.3)', position:'relative', overflow:'hidden', display:'flex', alignItems:'flex-start', gap:'0.75rem' }}>
+                <div style={{ flexShrink:0, padding:'0.75rem 1rem 0.9rem', background:'rgba(6,8,6,0.98)', borderTop:'2px solid rgba(46,125,85,0.3)', position:'relative', overflow:'hidden', display:'flex', alignItems:'flex-start', gap:'0.75rem' }}>
                   {[...Array(6)].map((_,i) => (
                     <div key={i} style={{ position:'absolute', left:`${(i*17+4)%96}%`, top:`${(i*23+6)%80}%`, width:'1.5px', height:'1.5px', borderRadius:'50%', background:'rgba(168,196,178,0.2)', pointerEvents:'none' }} />
                   ))}
@@ -3009,8 +3034,12 @@ export default function ZooSnoozScreen() {
                     <div style={{ fontSize:'0.9rem', fontWeight:700, color:'#A8C4B2', marginBottom:'0.2rem' }}>
                       {zzAnimal.name}
                     </div>
+                    {/* ⚠️ Capped at 6 lines, the SAME cap drawFrame applies to this quote. The
+                        observation has a ten-word minimum and no maximum, so uncapped a wordy
+                        student pushed the card past the viewport and "Complete Mission" off the
+                        bottom. 🚫 Do not uncap this without re-measuring the card. */}
                     {obsText.trim() && (
-                      <div style={{ fontSize:'0.75rem', color:'rgba(255,255,255,0.65)', fontStyle:'italic', lineHeight:1.5, wordBreak:'break-word' }}>
+                      <div style={{ fontSize:'0.75rem', color:'rgba(255,255,255,0.65)', fontStyle:'italic', lineHeight:1.5, wordBreak:'break-word', display:'-webkit-box', WebkitLineClamp:6, WebkitBoxOrient:'vertical', overflow:'hidden' }}>
                         &ldquo;{obsText.trim()}&rdquo;
                       </div>
                     )}
