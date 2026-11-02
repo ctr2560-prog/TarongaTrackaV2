@@ -1368,6 +1368,10 @@ export default function ZooSnoozScreen() {
             videoEl.src = videoSrc; videoEl.playsInline = true; videoEl.muted = true; videoEl.preload = 'auto';
             let rafId = null, nextId = null, watchdog = null, abSrc = null;
             let lastFrameTime = 0, started = false, done = false, drawn = 0, startedAt = 0;
+            // ⚠️ The FIRST drawImage failure for this clip, kept so the student and the
+            //    console get a reason instead of silence. One per clip, not per frame —
+            //    this runs 30 times a second.
+            let drawError = null;
             // Counted in VISIBLE time, so a student who looks away for two minutes no longer has
             // the clip cut short underneath them.
             let guardUntil = activeMs() + 20000;
@@ -1395,8 +1399,11 @@ export default function ZooSnoozScreen() {
                 // ⚠️ Started and drew nothing. Before this the pipeline recorded NOTHING for the
                 //    single most confusing outcome it can produce, so the student met a bare
                 //    accusation with no reason attached. Name it per animal.
-                issues.push(`${animal.id}: the clip played but no picture was captured${resumeFailed ? ' (playback would not restart after the screen went off)' : ''}`);
-                console.warn(`[zoosnooz] "${animal.id}" started but drew 0 frames; resumeFailed=${resumeFailed}`);
+                const reason = drawError
+                  ? ` — ${drawError}`
+                  : resumeFailed ? ' (playback would not restart after the screen went off)' : '';
+                issues.push(`${animal.id}: the clip played but no picture was captured${reason}`);
+                console.warn(`[zoosnooz] "${animal.id}" started but drew 0 frames; resumeFailed=${resumeFailed}; drawError=${drawError || 'none'}`);
               }
               if (started && secs > 0.5 && drawn / secs < 5) {
                 console.warn(`[zoosnooz] "${animal.id}" drew only ${drawn} frames in ${secs.toFixed(1)}s (~${(drawn / secs).toFixed(1)}fps) - its footage will look frozen.`);
@@ -1434,7 +1441,19 @@ export default function ZooSnoozScreen() {
               lastFrameTime = now;
               drawBg();
               try {
-                const vW = videoEl.videoWidth || W, vH2 = videoEl.videoHeight || H;
+                // ⚠️⚠️ `|| W` IS A TRAP AND IT IS WHY THIS COULD FAIL SILENTLY FOREVER. If the
+                //    element reports 0x0 — no decodable video track, or metadata not in yet —
+                //    the fallback makes the SOURCE rectangle 720x1280 on a 0x0 image, and
+                //    drawImage throws IndexSizeError on every single frame into an empty catch.
+                //    A clip with no dimensions cannot be drawn at all; say so and stop.
+                if (!videoEl.videoWidth || !videoEl.videoHeight) {
+                  if (!drawError) {
+                    drawError = `the video has no picture track (reports ${videoEl.videoWidth}x${videoEl.videoHeight}, readyState ${videoEl.readyState})`;
+                    console.warn(`[zoosnooz] "${animal.id}" ${drawError}`);
+                  }
+                  return;
+                }
+                const vW = videoEl.videoWidth, vH2 = videoEl.videoHeight;
                 const srcA = vW / vH2;
                 // ⚠️ CONTAIN, NEVER CROP, AND FILL WITH BLACK.
                 //
@@ -1478,7 +1497,15 @@ export default function ZooSnoozScreen() {
                 // and the "will look frozen" warning below could never fire — the one instrument
                 // for the silent-failure class this pipeline keeps producing, reporting success.
                 drawn++;
-              } catch(e) {}
+              } catch(e) {
+                // 🚫 THIS WAS AN EMPTY CATCH, against this file's own standing rule, and it hid
+                //    the cause of three separate investigations. Record the first failure per
+                //    clip with the element's state at the time — that is what names the fault.
+                if (!drawError) {
+                  drawError = `${e?.name || 'error'}: ${e?.message || e} (video ${videoEl.videoWidth}x${videoEl.videoHeight}, readyState ${videoEl.readyState})`;
+                  console.warn(`[zoosnooz] "${animal.id}" could not be drawn — ${drawError}`);
+                }
+              }
               // ⚠️ Scrims, not bands. These are painted OVER the footage so the picture runs
               // the full height of the frame. 🚫 Do not put solid fillRect bands back — that is
               // what boxed the footage into 73% of the frame with bars down the sides.
