@@ -7,6 +7,7 @@ import { doc, setDoc, updateDoc, serverTimestamp, collection, query, where, getD
 import { ref as storageRef, uploadBytesResumable } from 'firebase/storage';
 import { db, storage } from '../firebase';
 import { normaliseCode, safeStudentId, getMinWords } from '../utils/helpers';
+import { clipKey, saveClip, loadClip, clearClips } from '../utils/zzClipStore';
 import { buildObservationScore } from '../utils/scoring';
 
 const INTER_DURATION = { tiger: 30, lion: 30, rhino: 0, binturong: 0, 'sun-bear': 0 };
@@ -653,6 +654,16 @@ export default function ZooSnoozScreen() {
       const localUrl = URL.createObjectURL(blob);
       const animalId = zzAnimal?.id;
       if (animalId) setZzVideoURLs(prev => ({ ...prev, [animalId]: localUrl }));
+      // ⚠️ A durable copy on the device, written before the upload and independent of it. The
+      //    object URL above points at page memory, and the OS reclaims that when the screen
+      //    locks — which is how a student reached the stitch with five clips counted and none
+      //    playable. Fire and forget: this must never delay the student or block the upload.
+      if (animalId && studentName && classCode) {
+        const key = clipKey(normaliseCode(classCode), studentName.trim().replace(/[^a-zA-Z0-9_-]/g, '_'), animalId);
+        saveClip(key, blob).then(ok => {
+          if (!ok) console.warn('[zoosnooz] could not keep a local copy of', animalId, '- a screen lock may cost this clip');
+        });
+      }
       setZzRecording(false);
       setZzPhase('preview');
 
@@ -810,14 +821,28 @@ export default function ZooSnoozScreen() {
       actx.resume();
       zzAudioCtxRef.current = actx;
     } catch(e) { zzAudioCtxRef.current = null; }
-    zzStitchDataRef.current = { videoURLs: { ...zzVideoURLs }, completed: { ...zzCompleted } };
+    // ⚠️ classCode and studentKey are SNAPSHOTTED here, not read from the closure in the stitch
+    //    effect. Reading them there makes them effect dependencies, and the only honest way to
+    //    satisfy that is to add them to `[zzScreen, zzStitchPhase]` — which would let a stitch
+    //    RESTART if either ever changed. This ref is already the pattern for exactly that.
+    // ⚠️ studentKey must use the UPLOAD's sanitiser, not safeStudentId. They differ: the Storage
+    //    folder strips anything outside [a-zA-Z0-9_-] while the Firestore doc id keeps spaces.
+    zzStitchDataRef.current = {
+      videoURLs: { ...zzVideoURLs },
+      completed: { ...zzCompleted },
+      classCode: normaliseCode(classCode || ''),
+      studentKey: (studentName || '').trim().replace(/[^a-zA-Z0-9_-]/g, '_'),
+    };
     setZzStitchPhase('stitching');
     setZzStitchProgress(0);
     setZzStitchAnimalIdx(-1);
     setZzStitchedURL(null);
     zzStitchedBlobRef.current = null;
     setZzScreen('stitch');
-  }, [zzCompleted, zzVideoURLs, setZzScreen]);
+  // ⚠️ classCode / studentName are real dependencies now that the snapshot above carries the
+  //    student's identity. Safe to list: this is a button handler, not an effect, so
+  //    recreating it cannot restart anything.
+  }, [zzCompleted, zzVideoURLs, setZzScreen, classCode, studentName]);
 
   // ── Canvas stitching effect ────────────────────────────────────────────────
   useEffect(() => {
@@ -826,8 +851,10 @@ export default function ZooSnoozScreen() {
     // Declared out here so the effect cleanup can reach them — leaving a visibilitychange
     // listener or a wake lock behind would outlive the stitch.
     let detachVisibility = null, releaseWakeLock = null;
-    const { videoURLs, completed } = zzStitchDataRef.current;
-    const videosToStitch = ZOOSNOOZ_ANIMALS.filter(a => videoURLs[a.id]);
+    const { videoURLs, completed, classCode: stitchCode, studentKey } = zzStitchDataRef.current;
+    // ⚠️ `let`, not `const`: recovery below can ADD clips that page memory had lost, and a
+    //    reload leaves `videoURLs` empty entirely. Recomputed after the recovery pass.
+    let videosToStitch = ZOOSNOOZ_ANIMALS.filter(a => videoURLs[a.id]);
 
     (async () => {
       // Hold the screen awake for the whole stitch. Best effort — unsupported on some browsers,
@@ -1039,31 +1066,50 @@ export default function ZooSnoozScreen() {
       }));
       if (artIssues.length) console.warn('[zoosnooz] title card art:', artIssues);
 
-      // ── Are the clips still readable? ───────────────────────────────────
+      // ── Recover any clip page memory has lost ───────────────────────────
       // ⚠️⚠️ A CLIP IS A `blob:` URL POINTING AT PAGE MEMORY, and the OS can take that memory
       //    back. Cameron, 2026-11-02: his phone locked after filming, he carried on, the preview
       //    said 5/5 clips, and the finished documentary had none of them. The URLs were all
-      //    still in the map — what had gone was what they pointed AT.
-      // ⚠️ Checked BEFORE the recorder starts, so a dead clip is known in 50ms instead of after
-      //    45 seconds of recording a film that cannot contain it.
-      // 🚫 Do not "fix" a dead clip by skipping it quietly. The recording itself is safe in
-      //    Storage; what failed is this tab's handle on it, and the student must be told that
-      //    rather than handed a film with gaps.
-      await Promise.all(videosToStitch.map(async a => {
-        const u = videoURLs[a.id];
-        if (!u || !u.startsWith('blob:')) return;        // a stored URL is checked by the player
-        try {
-          const r = await fetch(u);
-          if (!r.ok) deadClips.push(a.id);
-        } catch {
-          // A revoked or reclaimed object URL rejects here. That is the signal.
+      //    still in the map — what had gone was what they pointed AT. A reload does the same by
+      //    another route, since `zzVideoURLs` is never rehydrated.
+      // ⚠️ Every clip is also written to IndexedDB as it is recorded (utils/zzClipStore.js), so
+      //    a lost one is restored here from the device. Read that file before changing this —
+      //    it records why the Storage copy is NOT the recovery route.
+      // ⚠️ Checked BEFORE the recorder starts: a dead clip is known in milliseconds rather than
+      //    after 45 seconds spent recording a film that cannot contain it.
+      // ⚠️ Candidates are every animal with a COMPLETED mission, not just those holding a URL —
+      //    after a reload the map is empty and the clips are still on the device.
+      // 🚫 Do not skip a clip quietly. If recovery fails too, the student is told, because the
+      //    recording is still safe in Storage and their teacher has it.
+      const playURLs = { ...videoURLs };
+      const candidates = ZOOSNOOZ_ANIMALS.filter(a => videoURLs[a.id] || completed[a.id]?.videoCompleted);
+      const recovered = [];
+      await Promise.all(candidates.map(async a => {
+        const u = playURLs[a.id];
+        let alive = false;
+        if (u && u.startsWith('blob:')) {
+          try { alive = (await fetch(u)).ok; } catch { alive = false; }
+        } else if (u) {
+          alive = true;                                   // a stored URL — the player checks it
+        }
+        if (alive) return;
+        if (!studentKey || !stitchCode) { deadClips.push(a.id); return; }
+        const blob = await loadClip(clipKey(stitchCode, studentKey, a.id));
+        if (blob) {
+          playURLs[a.id] = URL.createObjectURL(blob);
+          recovered.push(a.id);
+        } else {
           deadClips.push(a.id);
         }
       }));
+      if (recovered.length) console.warn('[zoosnooz] restored from the device:', recovered.join(', '));
       if (deadClips.length) {
-        console.warn('[zoosnooz] clips no longer readable from memory:', deadClips.join(', '));
-        issues.push(`${deadClips.join(', ')}: the clip was dropped from this device's memory before the documentary was built`);
+        console.warn('[zoosnooz] gone from memory AND not on the device:', deadClips.join(', '));
+        issues.push(`${deadClips.join(', ')}: the clip was dropped from this device before the documentary was built`);
       }
+      // ⚠️ Recomputed from playURLs so a recovered clip is actually included, and so the counts
+      //    in the failure messages describe what was really attempted.
+      videosToStitch = ZOOSNOOZ_ANIMALS.filter(a => playURLs[a.id]);
 
       mr.start(500);
       await new Promise(res => setTimeout(res, 80)); // let MediaRecorder settle before first frame
@@ -1273,7 +1319,7 @@ export default function ZooSnoozScreen() {
 
         // Video playback to canvas
         if (cancelled) break;
-        const videoSrc = videoURLs[animal.id];
+        const videoSrc = playURLs[animal.id];   // the recovered copy where memory lost it
         if (videoSrc) {
           const badge = completed[animal.id];
           const nvUsed = badge?.nightVisionUsed || false;
@@ -1610,6 +1656,15 @@ export default function ZooSnoozScreen() {
           snap.forEach(d => { setDoc(d.ref, { documentaryURL: docURL }, { merge: true }).catch(()=>{}); });
         } catch(e) { console.warn('ZZ NFC stamp error:', e); }
       }
+
+      // ⚠️ Only once the documentary is SUBMITTED. Clearing any earlier would throw away the
+      //    one copy that survives a screen lock, which is the whole reason it is kept.
+      // ⚠️ Prefix-scoped to this student in this class: these tablets are shared, and a blanket
+      //    clear would delete the next child's clips mid-session.
+      // 🚫 Never treat a failure here as a submit failure — it is housekeeping. The documentary
+      //    is already saved by this point.
+      clearClips(`${code}/${(studentName || '').trim().replace(/[^a-zA-Z0-9_-]/g, '_')}/`)
+        .catch(() => { /* a full or unavailable store is not the student's problem */ });
 
       setZzSessionDone(true);
       setZzStitchPhase('done');
