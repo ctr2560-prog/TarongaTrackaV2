@@ -1031,6 +1031,69 @@ export default function ZooSnoozScreen() {
         setZzStitchProgress(100);
         setZzStitchPhase('preview');
       };
+      // ── Title card art ──────────────────────────────────────────────────
+      // ⚠️⚠️ THIS MUST STAY ABOVE `mr.start()`. The documentary is captured in REAL TIME, so
+      //    anything awaited after the recorder starts is recorded — as a frozen frame. Loading
+      //    ~1.5MB of photos on zoo wifi would paint a still black gap into the opening of every
+      //    student's film, and nothing would report it. Before the recorder starts, the same
+      //    wait is just a moment longer on the progress screen.
+      // ⚠️ One parallel batch, never inside the per-animal loop, for the same reason.
+      // ⚠️ Every load resolves to null rather than rejecting, and every use is guarded, so a
+      //    missing or renamed file costs a photo and NOT the documentary. These are the same
+      //    same-origin assets the map screen already shows, so they are usually cached and this
+      //    resolves instantly; the film is the wrong place to discover a 404.
+      // ⚠️ Capped at 2.5s each. A request that hangs rather than fails — a captive portal on
+      //    school wifi is the classic — would otherwise hold the whole stitch open with no
+      //    message on screen. A null here costs one photo.
+      const loadImg = src => new Promise(r => {
+        const i = new Image();
+        let settled = false;
+        const done = v => { if (!settled) { settled = true; r(v); } };
+        const bail = setTimeout(() => done(null), 2500);
+        i.onload = () => { clearTimeout(bail); done(i); };
+        i.onerror = () => { clearTimeout(bail); done(null); };
+        i.src = src;
+      });
+      const artIssues = [];
+      const cardArt = {};
+      // ⚠️ A CAP, NOT A SHRINK, and the difference was measured rather than assumed. The first
+      //    attempt downscaled every photo to half the film's size on a theory that holding ten
+      //    decoded bitmaps was starving the video decoder. Measured: the animal photos are
+      //    1200x630, so the whole preload holds about 14MB — nowhere near enough to starve
+      //    anything, and the theory was wrong.
+      // 🚫 It also made the cards worse, which is the part worth remembering. The photo is
+      //    COVER-cropped into a 0.5625 frame, so a 1200x630 source is already being drawn at
+      //    2432x1280 — upscaled roughly 2x before anything else happens. Downscaling it first
+      //    took that to 6.8x and the card went soft. Never shrink a source that is already
+      //    being enlarged.
+      // ⚠️ What is left is a ceiling that does nothing to today's assets and protects against
+      //    someone dropping a 4000px photo into images/ later. Returns the Image untouched
+      //    when no resize is needed, so the common path allocates nothing at all.
+      const capSize = (img, maxW, maxH) => {
+        if (!img || !img.naturalWidth || !img.naturalHeight) return null;
+        const r = Math.min(1, maxW / img.naturalWidth, maxH / img.naturalHeight);
+        if (r >= 1) return img;
+        const c = document.createElement('canvas');
+        c.width = Math.max(1, Math.round(img.naturalWidth * r));
+        c.height = Math.max(1, Math.round(img.naturalHeight * r));
+        try { c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); } catch { return null; }
+        return c;
+      };
+      await Promise.all(videosToStitch.map(async a => {
+        const [photoImg, badgeImg] = await Promise.all([
+          loadImg(a.image),
+          loadImg(`images/badge-${a.id}.webp`),
+        ]);
+        const photo = capSize(photoImg, 1600, 1600);
+        const badge = capSize(badgeImg, 512, 512);
+        cardArt[a.id] = { photo, badge };
+        // ⚠️ artIssues, NOT issues. `issues[0]` is shown to the STUDENT as the explanation for a
+        //    film with no footage, so a cosmetic missing photo must never land in it — it would
+        //    be quoted back as the reason their documentary failed. Console only.
+        if (!photo) artIssues.push(`${a.id}: title card photo did not load`);
+      }));
+      if (artIssues.length) console.warn('[zoosnooz] title card art:', artIssues);
+
       // ── Recover any clip page memory has lost ───────────────────────────
       // ⚠️⚠️ A CLIP IS A `blob:` URL POINTING AT PAGE MEMORY, and the OS can take that memory
       //    back. Cameron, 2026-11-02: his phone locked after filming, he carried on, the preview
@@ -1206,37 +1269,119 @@ export default function ZooSnoozScreen() {
         setZzStitchAnimalIdx(i);
         setZzStitchProgress(Math.round(((i + 1) / TOTAL) * 100));
 
-        // ⚠️⚠️ THIS IS THE CARD AS IT WAS ON 04b6cfe, RESTORED 2026-11-02.
-        //    A photo-led replacement shipped in 51d05bd and Cameron liked it, but the stitch
-        //    stopped producing footage from that commit onward and four attempts at the cause
-        //    all failed. The known-good card is back so the documentary works; the new design
-        //    is in git (51d05bd) and can be reinstated once the fault is actually understood.
-        // 🚫 Do not re-apply 51d05bd's card without first reproducing a working stitch WITH it.
-        //    What is still unexplained: every clip reaches `started`, then draws zero frames.
-        // Entry card (3s) - measure name size once before the rAF loop
-        const bandY = H/2 - 190, bandH = 380;
-        let nameSize = 72;
+        // ── Entry card (3s) ───────────────────────────────────────────────
+        // ⚠️⚠️ THIS CARD WAS BLAMED FOR A BUG IT DID NOT CAUSE, and reverted on 2026-11-02
+        //    before being restored the next day. Do not repeat that investigation.
+        //    Symptom: every clip reached `started` and then drew ZERO frames, so the film came
+        //    out as cards with no footage. It began in the same commit as this card, so the
+        //    regression window was one commit wide and pointed straight here.
+        //    ACTUAL CAUSE: the browser. Cameron had switched to CHROME ON iOS. Safari on the
+        //    same phone, same build, same clips, stitches correctly. Chrome on iOS runs in
+        //    WKWebView, where a playing video is composited in a separate layer and drawImage
+        //    into a canvas can return no pixels - the clip plays perfectly on screen while the
+        //    canvas gets nothing, which is exactly `started` true and `drawn` zero.
+        // 🚫 A one-commit regression window is not a cause. Ask which BROWSER changed before
+        //    rewriting the code that happened to ship that day - CLAUDE.md already warns that
+        //    Chrome and Safari on iOS are not interchangeable, and that assuming otherwise has
+        //    cost time here before.
+        // It was a flat gradient with a translucent green band and centred text. Cameron, after
+        // the first documentary that came out whole: "with the animal cards in the stitching - is
+        // there any way we can make these look better please? I want them to look awesome without
+        // destroying the stitcher". So: the animal's own photo full bleed and darkened, a slow
+        // push in across the 3 seconds, its badge as a medallion, the name in the Taronga face.
+        //
+        // ⚠️ NOTHING STRUCTURAL CHANGED. Same `drawCardFor(fn, 3000)`, same canvas, same
+        //    duration, same place in the sequence. The stitcher's timing, recorder and audio
+        //    graph are untouched — this is only what gets painted.
+        // ⚠️ The name size is measured ONCE, out here, not inside the draw. Running the shrink
+        //    loop 90 times across the card would re-measure text on every frame for no reason.
+        const art = cardArt[animal.id] || {};
+        let nameSize = 78;
         ctx.font = `bold ${nameSize}px "Taronga Headline", sans-serif`;
-        while (ctx.measureText(animal.name).width > W - 80 && nameSize > 36) { nameSize -= 4; ctx.font = `bold ${nameSize}px "Taronga Headline", sans-serif`; }
+        while (ctx.measureText(animal.name).width > W - 110 && nameSize > 34) { nameSize -= 3; ctx.font = `bold ${nameSize}px "Taronga Headline", sans-serif`; }
         const finalNameSize = nameSize;
+        const cardStart = activeMs();
         await drawCardFor(() => {
+          // ⚠️ Progress runs on activeMs(), the visible-time clock, like everything else the
+          //    stitch times. On the wall clock a backgrounded tab would finish the push in
+          //    while nothing was being recorded, and the student would never see it.
+          const t = Math.min(1, Math.max(0, (activeMs() - cardStart) / 3000));
           drawBg();
-          ctx.fillStyle = 'rgba(26,82,56,0.40)'; ctx.fillRect(0, bandY, W, bandH);
-          ctx.save(); ctx.strokeStyle = 'rgba(46,125,85,0.65)'; ctx.lineWidth = 3;
-          ctx.beginPath(); ctx.moveTo(0,bandY); ctx.lineTo(W,bandY); ctx.stroke();
-          ctx.beginPath(); ctx.moveTo(0,bandY+bandH); ctx.lineTo(W,bandY+bandH); ctx.stroke(); ctx.restore();
-          const entryGlow = ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,260);
-          entryGlow.addColorStop(0,'rgba(46,125,85,0.18)'); entryGlow.addColorStop(1,'rgba(46,125,85,0)');
-          ctx.fillStyle = entryGlow; ctx.fillRect(0,bandY,W,bandH);
+          if (art.photo) {
+            const z = 1 + 0.06 * t;
+            // ⚠️ capSize returns the Image untouched when it is already small enough, and a
+            //    canvas when it had to resize. An Image exposes naturalWidth, a canvas only
+            //    width — read both or the aspect comes out NaN and nothing draws.
+            const pw = art.photo.naturalWidth || art.photo.width;
+            const ph = art.photo.naturalHeight || art.photo.height;
+            const pa = pw / ph, fa = W / H;
+            let dw, dh;
+            if (pa > fa) { dh = H * z; dw = dh * pa; } else { dw = W * z; dh = dw / pa; }
+            ctx.save(); ctx.filter = 'brightness(0.46) saturate(0.85)';
+            ctx.drawImage(art.photo, (W - dw) / 2, (H - dh) / 2, dw, dh);
+            ctx.restore();
+            const vig = ctx.createRadialGradient(W/2, H*0.42, 80, W/2, H*0.42, H*0.72);
+            vig.addColorStop(0, 'rgba(2,13,6,0)'); vig.addColorStop(1, 'rgba(2,13,6,0.85)');
+            ctx.fillStyle = vig; ctx.fillRect(0, 0, W, H);
+          }
+          const ramp = ctx.createLinearGradient(0, H*0.40, 0, H);
+          ramp.addColorStop(0, 'rgba(2,13,6,0)'); ramp.addColorStop(0.55, 'rgba(2,13,6,0.82)'); ramp.addColorStop(1, 'rgba(2,13,6,0.97)');
+          ctx.fillStyle = ramp; ctx.fillRect(0, H*0.40, W, H*0.60);
+          const topRamp = ctx.createLinearGradient(0, 0, 0, 220);
+          topRamp.addColorStop(0, 'rgba(0,0,0,0.70)'); topRamp.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = topRamp; ctx.fillRect(0, 0, W, 220);
+
+          ctx.textAlign = 'left';
+          // ⚠️ ctx.letterSpacing is ignored on engines that do not support it, which degrades to
+          //    unspaced caps rather than failing. It is part of the canvas state, so save/restore
+          //    is what keeps it off every other label on this card.
+          ctx.save();
+          ctx.fillStyle = 'rgba(168,196,178,0.75)'; ctx.font = '700 22px "DM Sans", sans-serif';
+          ctx.letterSpacing = '6px';
+          ctx.fillText(`ANIMAL ${i+1} OF ${videosToStitch.length}`, 54, 74);
+          ctx.restore();
+          ctx.fillStyle = 'rgba(168,196,178,0.4)'; ctx.font = '400 20px "DM Sans", sans-serif';
+          ctx.fillText('🌙 ZooSnooz', 54, 108);
+
+          const by = H * 0.54;
+          if (art.badge) {
+            const bs = 168;
+            ctx.save();
+            const halo = ctx.createRadialGradient(W/2, by, 0, W/2, by, bs*0.78);
+            halo.addColorStop(0, 'rgba(46,125,85,0.42)'); halo.addColorStop(1, 'rgba(46,125,85,0)');
+            ctx.fillStyle = halo; ctx.beginPath(); ctx.arc(W/2, by, bs*0.78, 0, Math.PI*2); ctx.fill();
+            ctx.drawImage(art.badge, W/2 - bs/2, by - bs/2, bs, bs);
+            ctx.restore();
+          }
+
           ctx.textAlign = 'center';
-          ctx.fillStyle = '#A8C4B2'; ctx.font = '400 30px "DM Sans", sans-serif';
-          ctx.fillText(`Animal ${i+1} of ${videosToStitch.length}`, W/2, H/2 - 115);
+          const nameY = by + 150 + finalNameSize * 0.34;
+          ctx.save();
+          ctx.shadowColor = 'rgba(0,0,0,0.75)'; ctx.shadowBlur = 18; ctx.shadowOffsetY = 3;
           ctx.fillStyle = 'white'; ctx.font = `bold ${finalNameSize}px "Taronga Headline", sans-serif`;
-          ctx.fillText(animal.name, W/2, H/2 + 10);
-          ctx.fillStyle = '#A8C4B2'; ctx.font = 'italic 28px "DM Sans", sans-serif';
-          ctx.fillText(animal.scientificName || '', W/2, H/2 + 80);
-          ctx.fillStyle = 'rgba(168,196,178,0.35)'; ctx.font = '400 24px "DM Sans", sans-serif';
-          ctx.fillText('🌙 ZooSnooz', W/2, bandY + bandH - 22);
+          ctx.fillText(animal.name, W/2, nameY);
+          ctx.restore();
+
+          const ruleY = nameY + 34;
+          ctx.save(); ctx.strokeStyle = 'rgba(168,196,178,0.45)'; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.moveTo(W/2 - 44, ruleY); ctx.lineTo(W/2 + 44, ruleY); ctx.stroke(); ctx.restore();
+          ctx.fillStyle = 'rgba(168,196,178,0.92)'; ctx.font = 'italic 30px "DM Sans", sans-serif';
+          ctx.fillText(animal.scientificName || '', W/2, ruleY + 46);
+
+          // Where you are in the film. Reads as a series rather than five separate cards.
+          const pr = 7, gap = 26, py = H - 82, spread = (videosToStitch.length - 1) * gap;
+          for (let k = 0; k < videosToStitch.length; k++) {
+            const x = W/2 - spread/2 + k*gap;
+            ctx.beginPath();
+            if (k === i) {
+              ctx.fillStyle = '#4ADE80'; ctx.arc(x, py, pr, 0, Math.PI*2); ctx.fill();
+              ctx.beginPath(); ctx.strokeStyle = 'rgba(74,222,128,0.45)'; ctx.lineWidth = 2;
+              ctx.arc(x, py, pr + 7, 0, Math.PI*2); ctx.stroke();
+            } else {
+              ctx.fillStyle = k < i ? 'rgba(168,196,178,0.55)' : 'rgba(255,255,255,0.16)';
+              ctx.arc(x, py, pr - 1, 0, Math.PI*2); ctx.fill();
+            }
+          }
           ctx.textAlign = 'left';
         }, 3000);
 
