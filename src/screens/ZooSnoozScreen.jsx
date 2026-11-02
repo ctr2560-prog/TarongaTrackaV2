@@ -923,6 +923,11 @@ export default function ZooSnoozScreen() {
       //    ReferenceError gets shipped past both the build and the linter. This file has done
       //    that once already.
       const deadClips = [];
+      // ⚠️ Declared up here with the others because `mr.onstop` reads it, and that handler
+      //    is written ~140 lines above where the probe sets it. It only RUNS after the
+      //    stitch, so a later `let` would happen to work — this file has already shipped
+      //    one temporal-dead-zone ReferenceError that passed the build and the linter.
+      let canvasBlind = false;
       const hostOf = u => { try { return new URL(u).host; } catch(e) { return String(u).slice(0, 24); } };
       let played = 0;
 
@@ -1014,6 +1019,8 @@ export default function ZooSnoozScreen() {
           } else if (played === 0 && deadClips.length === videosToStitch.length) {
             // Every clip's memory was reclaimed. Say what actually happened and what survives.
             setZzStitchError('Your recordings are all safely saved, but this device dropped them from memory - locking the screen or switching apps during a session can do it. The documentary could not include them. Tell your teacher, who still has every clip.');
+          } else if (played === 0 && canvasBlind) {
+            setZzStitchError('This browser will not let the app read your video, so the documentary came out without it. Every clip you filmed is safely saved. Open the app in Safari and make the documentary again - nothing has been lost.');
           } else if (played === 0) {
             // ⚠️ EVERY reason, not just the first. With one slot, a five-clip failure showed one
             //    line and the rest were invisible, and a failure that recorded NO reason showed
@@ -1138,6 +1145,53 @@ export default function ZooSnoozScreen() {
       // ⚠️ Recomputed from playURLs so a recovered clip is actually included, and so the counts
       //    in the failure messages describe what was really attempted.
       videosToStitch = ZOOSNOOZ_ANIMALS.filter(a => playURLs[a.id]);
+
+      // ── Can this browser draw video into a canvas at all? ───────────────
+      // ⚠️⚠️ TWO SECONDS HERE SAVES A STUDENT'S WHOLE NIGHT. Chrome on iOS plays a clip
+      //    perfectly and hands the canvas nothing, so the fault only shows up at the END —
+      //    after five animals are filmed, after a 45 second stitch, as a film of cards. This
+      //    draws ONE frame from the first clip first and checks a pixel actually arrived.
+      // ⚠️ The probe element follows the same rules as the real one: attached, rendered, not
+      //    hidden. A detached probe would fail on Safari too and send everyone away wrongly.
+      // 🚫 Never fail the stitch on this check alone. It answers "did a pixel arrive", and a
+      //    black opening frame is a legitimate answer on a night programme — so a negative
+      //    result only sets a flag used to explain a failure that then actually happens.
+      if (videosToStitch.length) {
+        const probeSrc = playURLs[videosToStitch[0].id];
+        canvasBlind = await new Promise(resolve => {
+          let settled = false;
+          const el = document.createElement('video');
+          const finishProbe = v => {
+            if (settled) return; settled = true;
+            try { el.pause(); el.removeAttribute('src'); el.load(); el.remove(); } catch { /* gone */ }
+            resolve(v);
+          };
+          const bail = setTimeout(() => finishProbe(false), 4000);   // inconclusive, not blind
+          el.muted = true; el.playsInline = true; el.preload = 'auto';
+          el.setAttribute('playsinline', ''); el.setAttribute('webkit-playsinline', '');
+          el.style.cssText = 'position:fixed;left:0;bottom:0;width:2px;height:2px;opacity:0.01;pointer-events:none;z-index:-1;';
+          el.onerror = () => { clearTimeout(bail); finishProbe(false); };
+          el.oncanplay = () => {
+            el.play().then(() => setTimeout(() => {
+              clearTimeout(bail);
+              try {
+                const pc = document.createElement('canvas');
+                pc.width = 32; pc.height = 32;
+                const px = pc.getContext('2d', { willReadFrequently: true });
+                px.drawImage(el, 0, 0, 32, 32);
+                const d = px.getImageData(0, 0, 32, 32).data;
+                let lit = 0;
+                for (let i = 0; i < d.length; i += 4) if (d[i] || d[i+1] || d[i+2]) { lit++; if (lit > 8) break; }
+                finishProbe(lit <= 8);          // nothing came through
+              } catch { finishProbe(true); }    // drawImage or getImageData refused outright
+            }, 350)).catch(() => { clearTimeout(bail); finishProbe(false); });
+          };
+          try { document.body.appendChild(el); } catch { /* probe inconclusive */ }
+          el.src = probeSrc;
+          el.load();
+        });
+        if (canvasBlind) console.warn('[zoosnooz] this browser returned no pixels when drawing a clip into a canvas');
+      }
 
       mr.start(500);
       await new Promise(res => setTimeout(res, 80)); // let MediaRecorder settle before first frame
@@ -1410,6 +1464,21 @@ export default function ZooSnoozScreen() {
             // out as cards only. Requires the CORS policy in cors.json to be live on the bucket.
             videoEl.crossOrigin = 'anonymous';
             videoEl.src = videoSrc; videoEl.playsInline = true; videoEl.muted = true; videoEl.preload = 'auto';
+            // ⚠️⚠️ THE ELEMENT MUST BE IN THE DOCUMENT, AND MUST BE RENDERED. It was created
+            //    detached and never attached, which Safari tolerates — it decodes anyway — and
+            //    which WKWebView does not. Chrome on iOS IS WKWebView, and there a detached
+            //    video gets no drawable surface: playback reports perfectly healthy while
+            //    drawImage receives nothing. That is the whole "every clip reached `started`
+            //    and then drew ZERO frames" fault, and it cost two days.
+            // 🚫 Never use display:none, visibility:hidden, or zero width/height to hide it.
+            //    Each of those stops the decode on iOS just as surely as being detached. It has
+            //    to be laid out and painted, so: a real 1px box, barely visible, behind
+            //    everything and ignoring input.
+            // ⚠️ `webkit-playsinline` as well as the property, for older iOS.
+            videoEl.setAttribute('playsinline', '');
+            videoEl.setAttribute('webkit-playsinline', '');
+            videoEl.style.cssText = 'position:fixed;left:0;bottom:0;width:2px;height:2px;opacity:0.01;pointer-events:none;z-index:-1;';
+            try { document.body.appendChild(videoEl); } catch { /* stitch can still try detached */ }
             let rafId = null, nextId = null, watchdog = null, abSrc = null;
             let lastFrameTime = 0, started = false, done = false, drawn = 0, startedAt = 0;
             // ⚠️ The FIRST drawImage failure for this clip, kept so the student and the
@@ -1443,9 +1512,11 @@ export default function ZooSnoozScreen() {
                 // ⚠️ Started and drew nothing. Before this the pipeline recorded NOTHING for the
                 //    single most confusing outcome it can produce, so the student met a bare
                 //    accusation with no reason attached. Name it per animal.
-                const reason = drawError
-                  ? ` — ${drawError}`
-                  : resumeFailed ? ' (playback would not restart after the screen went off)' : '';
+                const reason = canvasBlind
+                  ? ' — this browser will not let the app read your video. Open the app in Safari and make the documentary again.'
+                  : drawError
+                    ? ` — ${drawError}`
+                    : resumeFailed ? ' (playback would not restart after the screen went off)' : '';
                 issues.push(`${animal.id}: the clip played but no picture was captured${reason}`);
                 console.warn(`[zoosnooz] "${animal.id}" started but drew 0 frames; resumeFailed=${resumeFailed}; drawError=${drawError || 'none'}`);
               }
@@ -1455,6 +1526,9 @@ export default function ZooSnoozScreen() {
               if (active.video === videoEl) active.video = null;
               // Release the media element so the browser's decoder pool frees up for the next clip
               try { videoEl.pause(); videoEl.removeAttribute('src'); videoEl.load(); } catch(e) {}
+              // ⚠️ Take it back out, or five of these accumulate in the body over one stitch and
+              //    stay there for the rest of the session.
+              try { videoEl.remove(); } catch { /* never attached */ }
               resolve();
             }
             function startAudio() {
