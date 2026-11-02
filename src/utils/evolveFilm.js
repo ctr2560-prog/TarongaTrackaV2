@@ -42,7 +42,12 @@ export const EVOLVE_FILM_H = 1280;
 //    EVOLVE_VIDEO_ASPECT, which the capture preview reads — that is the point of it.
 export const EVOLVE_FILM_TOP = 120;   // branding strip
 export const EVOLVE_FILM_BOT = 320;   // chapter caption panel, and the pledge
-export const EVOLVE_VIDEO_ASPECT = EVOLVE_FILM_W / (EVOLVE_FILM_H - EVOLVE_FILM_TOP - EVOLVE_FILM_BOT);
+// ⚠️ THE FOOTAGE IS THE WHOLE FRAME NOW (2026-11-03), matching ZooSnooz. The branding used to
+// sit in solid bands, leaving the footage a 720x840 slot (0.857) — a phone held upright gives
+// 0.5625, so it landed boxed with bars down each side. The bands are gradient scrims painted
+// OVER the footage now. EVOLVE_FILM_TOP / _BOT survive as the scrim depths and as the text
+// layout origin, which is why every caption offset below is unchanged.
+export const EVOLVE_VIDEO_ASPECT = EVOLVE_FILM_W / EVOLVE_FILM_H;
 
 export function describeMime(mimeType) {
   const isMP4 = String(mimeType || '').includes('mp4');
@@ -305,6 +310,41 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
     };
   });
   mr.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+  // ── Chapter card art ────────────────────────────────────────────────────
+  // ⚠️⚠️ ABOVE mr.start(). The film is captured in REAL TIME, so anything awaited after the
+  //    recorder starts is recorded — as a frozen frame at the head of the film, reported by
+  //    nothing. Before the recorder, the same wait is a moment longer on the building screen.
+  // ⚠️ Each load is capped at 2.5s and resolves to null, and every use is guarded, so a missing
+  //    file costs a photo and not the film.
+  const loadCardImg = src => new Promise(r => {
+    const i = new Image();
+    let settled = false;
+    const done = v => { if (!settled) { settled = true; r(v); } };
+    const bail = setTimeout(() => done(null), 2500);
+    i.onload = () => { clearTimeout(bail); done(i); };
+    i.onerror = () => { clearTimeout(bail); done(null); };
+    i.src = src;
+  });
+  // ⚠️ A ceiling, not a shrink. The photo is COVER-cropped into a 0.5625 frame, so a 1200px
+  //    source is already being enlarged; downscaling first makes the card soft. ZooSnooz learned
+  //    that on 2026-11-02. Returns the Image untouched when it already fits.
+  const capCardImg = (img, max) => {
+    if (!img || !img.naturalWidth || !img.naturalHeight) return null;
+    const r = Math.min(1, max / img.naturalWidth, max / img.naturalHeight);
+    if (r >= 1) return img;
+    const cv = document.createElement('canvas');
+    cv.width = Math.max(1, Math.round(img.naturalWidth * r));
+    cv.height = Math.max(1, Math.round(img.naturalHeight * r));
+    try { cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height); } catch { return null; }
+    return cv;
+  };
+  const cardArt = {};
+  await Promise.all(clips.map(async c => {
+    const img = c.image ? await loadCardImg(c.image) : null;
+    cardArt[c.id] = capCardImg(img, 1600);
+    if (!cardArt[c.id]) console.warn('[evolveFilm] chapter card photo did not load:', c.id);
+  }));
+
   mr.start(500);
   await wait(80);
 
@@ -431,27 +471,86 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
     if (cancelled()) break;
     const c = clips[i];
     onProgress?.(Math.round(((i + 1) / TOTAL) * 100), i);
-
-    const bandY = H / 2 - 190, bandH = 380;
-    let titleSize = 64;
+    // ── Chapter card ──────────────────────────────────────────────────
+    // Photo-led, matching the ZooSnooz title cards Cameron asked for, in Evolve's warm
+    // palette. ⚠️ NOTHING STRUCTURAL CHANGED: same drawCardFor(fn, 2600), same canvas, same
+    // place in the sequence. Only what gets painted.
+    // ⚠️ Title size measured ONCE out here, never inside the draw — that loop would otherwise
+    //    re-measure text on all ~78 frames of the card.
+    const cardPhoto = cardArt[c.id] || null;
+    let titleSize = 70;
     ctx.font = `bold ${titleSize}px "Taronga Headline", sans-serif`;
-    while (ctx.measureText(c.chapter).width > W - 80 && titleSize > 30) {
-      titleSize -= 4; ctx.font = `bold ${titleSize}px "Taronga Headline", sans-serif`;
+    while (ctx.measureText(c.chapter).width > W - 110 && titleSize > 30) {
+      titleSize -= 3; ctx.font = `bold ${titleSize}px "Taronga Headline", sans-serif`;
     }
     const finalTitleSize = titleSize;
+    const cardStart = activeMs();
     await drawCardFor(() => {
+      // ⚠️ Progress runs on activeMs(), the visible-time clock, so a backgrounded tab does not
+      //    finish the push-in while nothing is being recorded.
+      const t = Math.min(1, Math.max(0, (activeMs() - cardStart) / 2600));
       drawBg();
-      ctx.fillStyle = 'rgba(30,17,9,0.45)'; ctx.fillRect(0, bandY, W, bandH);
-      ctx.save(); ctx.strokeStyle = 'rgba(232,179,60,0.6)'; ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.moveTo(0, bandY); ctx.lineTo(W, bandY); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(0, bandY + bandH); ctx.lineTo(W, bandY + bandH); ctx.stroke(); ctx.restore();
+      if (cardPhoto) {
+        const z = 1 + 0.06 * t;
+        const pw = cardPhoto.naturalWidth || cardPhoto.width;
+        const ph = cardPhoto.naturalHeight || cardPhoto.height;
+        const pa = pw / ph, fa = W / H;
+        let dw, dh;
+        if (pa > fa) { dh = H * z; dw = dh * pa; } else { dw = W * z; dh = dw / pa; }
+        ctx.save(); ctx.filter = 'brightness(0.44) saturate(0.82)';
+        ctx.drawImage(cardPhoto, (W - dw) / 2, (H - dh) / 2, dw, dh);
+        ctx.restore();
+        const vig = ctx.createRadialGradient(W / 2, H * 0.42, 80, W / 2, H * 0.42, H * 0.72);
+        vig.addColorStop(0, 'rgba(20,11,6,0)'); vig.addColorStop(1, 'rgba(20,11,6,0.86)');
+        ctx.fillStyle = vig; ctx.fillRect(0, 0, W, H);
+      }
+      const ramp = ctx.createLinearGradient(0, H * 0.40, 0, H);
+      ramp.addColorStop(0, 'rgba(20,11,6,0)'); ramp.addColorStop(0.55, 'rgba(20,11,6,0.84)');
+      ramp.addColorStop(1, 'rgba(20,11,6,0.97)');
+      ctx.fillStyle = ramp; ctx.fillRect(0, H * 0.40, W, H * 0.60);
+      const topRamp = ctx.createLinearGradient(0, 0, 0, 220);
+      topRamp.addColorStop(0, 'rgba(0,0,0,0.70)'); topRamp.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = topRamp; ctx.fillRect(0, 0, W, 220);
+
+      ctx.textAlign = 'left';
+      // ⚠️ ctx.letterSpacing is part of the canvas state, so save/restore keeps it off every
+      //    other label. Engines without it ignore it, degrading to unspaced caps.
+      ctx.save();
+      ctx.fillStyle = 'rgba(232,179,60,0.85)'; ctx.font = '700 22px "DM Sans", sans-serif';
+      ctx.letterSpacing = '6px';
+      ctx.fillText(`CHAPTER ${(EVOLVE_CHAPTER_WORDS[c.order - 1] || c.order).toUpperCase()}`, 54, 74);
+      ctx.restore();
+      ctx.fillStyle = 'rgba(246,232,210,0.45)'; ctx.font = '400 20px "DM Sans", sans-serif';
+      ctx.fillText('Evolve', 54, 108);
+
       ctx.textAlign = 'center';
-      ctx.fillStyle = '#E8B33C'; ctx.font = '400 28px "DM Sans", sans-serif';
-      ctx.fillText(`Chapter ${EVOLVE_CHAPTER_WORDS[c.order - 1] || c.order}`, W / 2, H / 2 - 118);
+      const titleY = H * 0.70;
+      ctx.save();
+      ctx.shadowColor = 'rgba(0,0,0,0.75)'; ctx.shadowBlur = 18; ctx.shadowOffsetY = 3;
       ctx.fillStyle = '#F6E8D2'; ctx.font = `bold ${finalTitleSize}px "Taronga Headline", sans-serif`;
-      ctx.fillText(c.chapter, W / 2, H / 2 + 6);
-      ctx.fillStyle = 'rgba(246,232,210,0.6)'; ctx.font = 'italic 26px "DM Sans", sans-serif';
-      ctx.fillText(c.animalName, W / 2, H / 2 + 74);
+      ctx.fillText(c.chapter, W / 2, titleY);
+      ctx.restore();
+
+      const ruleY = titleY + 34;
+      ctx.save(); ctx.strokeStyle = 'rgba(232,179,60,0.5)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(W / 2 - 44, ruleY); ctx.lineTo(W / 2 + 44, ruleY); ctx.stroke(); ctx.restore();
+      ctx.fillStyle = 'rgba(246,232,210,0.9)'; ctx.font = 'italic 28px "DM Sans", sans-serif';
+      ctx.fillText(c.animalName, W / 2, ruleY + 44);
+
+      // Where you are in the film, so five cards read as one set.
+      const pr = 7, gap = 26, py = H - 82, spread = (clips.length - 1) * gap;
+      for (let k = 0; k < clips.length; k++) {
+        const x = W / 2 - spread / 2 + k * gap;
+        ctx.beginPath();
+        if (k === i) {
+          ctx.fillStyle = '#E8B33C'; ctx.arc(x, py, pr, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.strokeStyle = 'rgba(232,179,60,0.45)'; ctx.lineWidth = 2;
+          ctx.arc(x, py, pr + 7, 0, Math.PI * 2); ctx.stroke();
+        } else {
+          ctx.fillStyle = k < i ? 'rgba(246,232,210,0.5)' : 'rgba(246,232,210,0.16)';
+          ctx.arc(x, py, pr - 1, 0, Math.PI * 2); ctx.fill();
+        }
+      }
       ctx.textAlign = 'left';
     }, 2600);
 
@@ -459,7 +558,10 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
     const src = clipURLs[c.id];
     if (!src) continue;
 
-    const topH = EVOLVE_FILM_TOP, botH = EVOLVE_FILM_BOT, vidY = topH, vidH = H - topH - botH, botY = topH + vidH;
+    // ⚠️ `vidY` and `vidH` are gone with the bands — there is no video band any more, the
+    //    footage fills the frame. topH and botH are the SCRIM depths now, and botY is
+    //    still the caption's layout origin, so every text offset below is untouched.
+    const topH = EVOLVE_FILM_TOP, botH = EVOLVE_FILM_BOT, botY = H - botH;
     const dStr = new Date().toLocaleDateString('en-AU', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
     // ⚠️ EVERY chapter prints its OWN writing, not just the pledge. It was pledge-only first, and
     //    that left the enlarged footer empty under four of the five chapters. The student wrote
@@ -589,12 +691,14 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
           // leftover space was filled with a blurred enlargement of the frame itself — Cameron:
           // "I don't like how the bars for the background now are the actual video". Black is
           // quieter, reads as deliberate, and never competes with the footage.
-          const fitW = Math.min(W, vidH * srcA);
+          // ⚠️ Contained into the FULL canvas now, not the old video band, and the black fill
+          //    covers the whole frame.
+          const fitW = Math.min(W, H * srcA);
           const fitH = fitW / srcA;
           ctx.fillStyle = '#000';
-          ctx.fillRect(0, vidY, W, vidH);
+          ctx.fillRect(0, 0, W, H);
           ctx.drawImage(videoEl, 0, 0, vW, vH2,
-                        (W - fitW) / 2, vidY + (vidH - fitH) / 2, fitW, fitH);
+                        (W - fitW) / 2, (H - fitH) / 2, fitW, fitH);
           drawn++;
         } catch (e) {
           // 🚫 THIS WAS A SWALLOWED CATCH ("frame not ready"), and the identical one in ZooSnooz
@@ -606,15 +710,28 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
           }
         }
 
-        ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(0, 0, W, topH);
+        // ⚠️ SCRIMS, NOT BANDS. 🚫 Do not put solid fillRect bands back — that is what boxed
+        //    the footage into the middle of the frame with bars down the sides.
+        {
+          const topScrim = ctx.createLinearGradient(0, 0, 0, topH + 70);
+          topScrim.addColorStop(0, 'rgba(0,0,0,0.72)'); topScrim.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = topScrim; ctx.fillRect(0, 0, W, topH + 70);
+        }
         ctx.fillStyle = 'rgba(246,232,210,0.88)'; ctx.font = '600 22px "DM Sans", sans-serif'; ctx.textAlign = 'left';
         ctx.fillText('Taronga Zoo Sydney', 24, topH / 2 + 8);
         ctx.fillStyle = 'rgba(246,232,210,0.45)'; ctx.font = '400 20px "DM Sans", sans-serif'; ctx.textAlign = 'right';
         ctx.fillText(dStr, W - 24, topH / 2 + 8);
 
-        ctx.fillStyle = 'rgba(20,11,6,0.97)'; ctx.fillRect(0, botY, W, botH);
-        ctx.strokeStyle = 'rgba(232,179,60,0.35)'; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.moveTo(0, botY); ctx.lineTo(W, botY); ctx.stroke();
+        // ⚠️ The caption scrim starts 110px ABOVE botY so the text never begins on a hard edge.
+        //    Deeper than ZooSnooz's 90 because this panel also carries the student's reflection.
+        //    Every offset below is still measured from botY and is unchanged.
+        {
+          const capScrim = ctx.createLinearGradient(0, botY - 110, 0, H);
+          capScrim.addColorStop(0, 'rgba(20,11,6,0)');
+          capScrim.addColorStop(0.42, 'rgba(20,11,6,0.82)');
+          capScrim.addColorStop(1, 'rgba(20,11,6,0.96)');
+          ctx.fillStyle = capScrim; ctx.fillRect(0, botY - 110, W, H - botY + 110);
+        }
         ctx.textAlign = 'left';
         ctx.fillStyle = '#E8B33C'; ctx.font = '600 20px "DM Sans", sans-serif';
         ctx.fillText(`CHAPTER ${(EVOLVE_CHAPTER_WORDS[c.order - 1] || c.order).toUpperCase()}`, 24, botY + 40);
