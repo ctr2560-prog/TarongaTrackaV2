@@ -23,6 +23,140 @@ region: `australia-southeast1`. ⚠️ See **Build & Deploy** — these two drif
 
 ---
 
+## Where we left off (2026-11-01 → 11-03) — the ZooSnooz phone pass
+
+A long run of phone-first work on ZooSnooz, ending in **the first documentary ever verified end
+to end on a real handset** — in Safari AND Chrome on iOS, with a screen lock mid-session and
+again mid-stitch. That had never been true before; item 5 of the ZooSnooz list below said so for
+a month.
+
+### ⚠️⚠️⚠️ THE TWO-DAY BUG: A DETACHED `<video>` GIVES A CANVAS NO PIXELS ON iOS
+
+**Symptom.** The documentary came out as cards with no footage. Every clip reached `started`, so
+each one loaded and began playing, and then drew **ZERO frames**. All five identically. No screen
+lock required. The clips themselves were perfect and played fine on the preview card.
+
+**Cause.** The stitcher built its player with `document.createElement('video')` and **never
+attached it to the document**. Safari decodes a detached video anyway. **WKWebView does not** — it
+gives the element no drawable surface, so playback reports perfectly healthy while `drawImage`
+receives nothing. **Chrome on iOS IS WKWebView.** Cameron had switched browsers between the run
+that worked and the run that did not.
+
+**Fix.** Append it, laid out and painted: a 2px box at `opacity:0.01`, `z-index:-1`,
+`pointer-events:none`, with `playsinline` and `webkit-playsinline` set, removed again in
+`finish()`. ✅ Verified by Cameron on Chrome on iOS.
+
+🚫 **Never hide that element with `display:none`, `visibility:hidden` or zero width/height.** Each
+stops the decode on iOS exactly as dead as being detached.
+
+⚠️ **THE OPPO HANDSETS ARE ANDROID**, where Chrome is real Chromium and none of this applies. All
+119 Evolve clips in the bucket are VP9/Opus, which only Chromium produces. 🚫 Do not read "Chrome
+is broken" into this — Chrome on iPhone is Safari's engine under another name, and the two share
+nothing but a logo.
+
+### ⚠️⚠️ HOW TWO DAYS WERE LOST, WHICH IS THE MORE USEFUL LESSON
+
+Four fixes were built and shipped against four wrong theories: dead blob URLs, a rejected
+`play()`, decoder starvation from an image preload, and canvas state leaking out of a title card.
+Two of them chased a **screen lock that a later no-lock test proved was never involved.** The new
+title cards were reverted on suspicion and restored the next day, innocent.
+
+**The reasoning that produced all four was a one-commit regression window.** The stitch worked on
+`04b6cfe` and failed from `51d05bd` onward, and `51d05bd` was the only commit touching the
+stitcher in between. That looks conclusive and is not.
+
+🚫 **A one-commit regression window is not a cause.** Ask what else changed — the device, the
+browser, the network, what was filmed. "Which browser were you using?" was one line and would have
+ended it on the first evening. ⚠️ This document **already** warned that Chrome and Safari on iOS
+are not interchangeable (see the iOS capture section) and it was not consulted.
+
+🚫 **And never debug a pipeline through an empty `catch`.** `} catch(e) {}` around the `drawImage`
+hid the real exception through three investigations. It is the fifth silent failure recorded in
+this one pipeline and, like the previous four, it was a swallowed error in code trying to be
+forgiving. It now records the first failure per clip with the element's
+`videoWidth × videoHeight` and `readyState`.
+
+### ⚠️ `play()` RETURNS A PROMISE AND `try/catch` DOES NOT CATCH IT
+
+Found while chasing the above; real, and still worth having.
+
+```js
+try { active.video?.play(); } catch { /* nothing to resume */ }   // 🚫 catches nothing
+```
+
+A rejection escapes as an unhandled rejection and the video stays **paused**. `drawFrame` opens
+with `if (videoEl.paused) return;`, so the clip contributes nothing while still counting as
+started. iOS rejects `play()` with `NotAllowedError` routinely once a page has been backgrounded.
+Now handled, with the watchdog retrying every 500ms while the page is visible.
+
+🚫 Never call `play()`, `resume()` or `suspend()` without handling the promise. A `try/catch`
+around them is not error handling, it only looks like it. Audited: two more bare `AudioContext`
+calls were fixed at the same time. `mr.resume()` is synchronous and was already correct.
+
+### What else shipped in this run
+
+- **`utils/zzClipStore.js`** — every clip is written to IndexedDB as it is recorded, and the
+  stitch restores any whose page memory the OS has reclaimed. Covers a screen lock and a reload.
+  ✅ Verified by Cameron with a lock after filming.
+  🚫 **The Storage copy is NOT the recovery route, and cannot be** — see the `getMediaUrl` bug
+  below. Read the header of that file before changing any of this.
+- **A canvas-blind pre-flight.** Before the recorder starts, one frame of the first clip is drawn
+  into a 32×32 canvas and the pixels read back. If nothing arrives the student is told their clips
+  are safe and to open the app in Safari — two seconds and an instruction, instead of 45 seconds
+  and a ruined keepsake. 🚫 It never fails the stitch by itself; a black opening frame is a
+  legitimate answer on a night programme, so it only explains a failure that then happens.
+- **Honest failure messages.** An empty clip list is no longer reported as "your clips would not
+  play" (that is a reload, and `zzVideoURLs` is never rehydrated); every reason is listed rather
+  than just `issues[0]`; and a failure that recorded no reason now says so.
+- **`ZZ_CAPTURE_ASPECT`** — the viewfinder and clip card are deliberately **not** the film's
+  shape any more (0.8764 vs 0.5625). A 9:16 viewfinder is a 219px sliver on a phone; Cameron chose
+  56% more picture over an exact match. 🚫 Do not "fix" them back to `ZZ_VIDEO_ASPECT`.
+- **A framing control** — `0.5× / 1× / 1.5× / 2× / 3×`. 1× and up is digital, stored on the clip
+  as `videoZoom` and re-applied by `drawFrame`. **0.5× is a different LENS** and only appears when
+  an ultra-wide is actually found. 🚫 It can never be digital: at 1× the viewfinder is `contain`,
+  so the whole sensor frame is already visible and there is nothing to uncover. ⚠️ Match
+  `/ultra/i`, never `/wide/i` — Apple calls the MAIN rear camera "Back Wide Camera".
+- **The badge overlay is `position:fixed`**, not `absolute`. There is no positioned ancestor, so
+  it was sized to the viewport but anchored to the document and scrolled away to reveal the map.
+- **The activity's continue button is sticky.** It does not exist until the activity finishes, so
+  it was being created below the fold on all five animals.
+- Photo-led title cards, and the clip card now wears the film's gradient scrims instead of solid
+  bars.
+
+### 🔴 `getMediaUrl` IS BROKEN FOR HALF OF ALL STUDENTS — found 2026-11-02, NOT FIXED
+
+Its student branch uses **one `studentId` for two incompatible things**:
+
+```
+classes/{code}/students/{studentId}      ← the Firestore doc id: safeStudentId(), keeps spaces
+path must contain /{code}/{studentId}/   ← the Storage folder: ZooSnooz writes
+                                           name.replace(/[^a-zA-Z0-9_-]/g, '_')
+```
+
+For `Quoll` they agree. For `Sumatran Tiger` they cannot both be satisfied, so it is a 404 or a
+403 whichever value is sent. **15 of the 30 aliases in `constants/animals.js` contain a space.**
+
+⚠️ Evolve escapes this only because it stores the alias unsanitised. ⚠️ This blocks any
+student-side read-back of their own media, which is why the clip cache above is a device store
+and not a Storage fetch. Fixing it means changing and redeploying a security-sensitive Cloud
+Function — do it as its own piece of work, and re-run the security sweep after.
+
+### 🔴 EVOLVE AND WILDEST DREAMS STILL CARRY THESE BUGS
+
+🚫 **The three stitchers are deliberate copies and a fix in one does NOT reach the others.**
+
+| | detached `<video>` | broken `play()` catch | visibility handling |
+|---|---|---|---|
+| ZooSnooz | ✅ fixed | ✅ fixed | ✅ |
+| **Evolve** (`utils/evolveFilm.js`) | 🔴 same fault | 🔴 line ~343 | ✅ |
+| **Wildest Dreams** (`modes/wildest-dreams/film.js`) | 🔴 same fault | — | 🔴 **none at all** |
+
+⚠️ Evolve runs on student phones at a twilight excursion, which is precisely the exposure. It has
+**never** been proven on a phone — every clip in the bucket is Chromium-encoded, so every
+"iPhone" test on record was a laptop or device emulation.
+
+---
+
 ## Where we left off (2026-10-16 → 10-18)
 
 ### Three things shipped, and one security fix that had been sitting uncommitted
@@ -69,10 +203,11 @@ checkout. Commit *and* deploy, and verify both.
 
 Collected 2026-10-18 while converting the media read paths. **None of these is fixed.**
 
-1. ⚠️⚠️ **The stitcher still centre-crops landscape clips.** This is item 0 of "Do these first"
-   and it is the same "the camera is zoomed in" complaint that cost two days on Evolve. 🚫 Fixing
-   it means changing **capture constraints AND `drawFrame` together** — do not do one without the
-   other. Its capture path has never been re-checked since.
+1. ✅ **FIXED 2026-10-29.** The stitcher contains rather than crops, and the capture constraints
+   went with it. ⚠️ Since 2026-11-01 the CAPTURE shape is deliberately not the FILM shape — see
+   `ZZ_CAPTURE_ASPECT` in the 11-01 → 11-03 section. 🚫 Do not "restore consistency" by pointing
+   the viewfinder back at `ZZ_VIDEO_ASPECT`; that is a 56% reduction in what a student can see
+   while filming, and it was asked for.
 
 2. ⚠️ **No ZooSnooz souvenir link.** Evolve has `utils/evolveSouvenir.js` and a `?doc=` route, so
    a tag carries an **app** URL with a token and keeps working if the film is re-stitched. The
@@ -143,9 +278,10 @@ Collected 2026-10-18 while converting the media read paths. **None of these is f
    completely different prompt, which is the same mistake by another route. 🚫 **Reusing an
    animalId across modes silently inherits that animal's vocabulary list.**
 
-5. ⚠️ **No documentary has been verified end to end since the pipeline changed.** Uploads store
-   paths (2026-10-04) and the stitcher reports failures like Evolve's, but nobody has watched one
-   come out whole.
+5. ✅ **A ZooSnooz documentary HAS now been verified end to end (2026-11-03)** — on a real
+   handset, in Safari and in Chrome on iOS, with a screen lock both after filming and mid-stitch.
+   See the 2026-11-01 → 11-03 section at the top for what had to be fixed to get there.
+   ⚠️ Still unverified: a five-clip film on a low-end Android, and anything at class scale.
 
 6. **Where the data lives is not where you would guess** — see "ZooSnooz student data location"
    below before writing any query.
@@ -274,10 +410,13 @@ sections below.
 
 ### ⚠️ Do these first
 
-0. **Verify a ZooSnooz documentary end to end.** Its stitcher now reports failures like Evolve's,
-   but it still **centre-crops landscape clips** (the "zoomed in" complaint applies to it) and its
-   capture has never been re-checked. Fixing the crop means the same pair of changes made to
-   Evolve — capture constraints AND `drawFrame` together. 🚫 Do not do one without the other.
+0. ✅ **DONE 2026-11-03 — a ZooSnooz documentary is verified end to end on a phone**, in both
+   Safari and Chrome on iOS, with screen locks. The crop was fixed on 10-29 and the reason it
+   still produced empty films for two days afterwards is in the 11-01 → 11-03 section: a detached
+   `<video>` gets no canvas pixels in WKWebView.
+   🔴 **The replacement for this item: port those fixes to EVOLVE.** It has the same detached
+   element and the same swallowed `play()` rejection, it runs on student phones at a twilight
+   excursion, and no iPhone has ever produced an Evolve clip.
 0a. ~~**`adminWipeAllData` deployed with no source in the repository.**~~ ✅ **FIXED 2026-10-04.**
    **Source and deployment now match exactly — 9 functions both sides.**
 
@@ -420,7 +559,11 @@ sections below.
    Replacing is a file drop into `public/voice/` with the same names — no code change.
    `scripts/generate-wd-voice.sh` lists all 22 keys and their exact lines.
 
-4. **The ZooSnooz backgrounded-tab fix is LIVE BUT UNPROVEN.** Ported 2026-09-24 and pushed, but
+4. ✅ **The ZooSnooz backgrounded-tab fix is PROVEN (2026-11-03)** — a screen lock mid-stitch
+   now pauses and resumes correctly, verified on a handset. ⚠️ Getting there needed the `play()`
+   promise fix; the original port had a rejection escaping a `try/catch`, which left the video
+   paused for good. See the 11-01 → 11-03 section. (Original note below.)
+4b. (was) **The ZooSnooz backgrounded-tab fix is LIVE BUT UNPROVEN.** Ported 2026-09-24 and pushed, but
    never validated by a real stitch. Automated testing cannot prove it — a driven tab reports
    itself hidden and manufactures the very bug under test. Needs a foreground run before the next
    ZooSnooz night: build a documentary from 2–3 clips, switch away ~10s mid-way, confirm every
@@ -1714,6 +1857,42 @@ other — a fix in one needs applying to the other by hand.**
 
 Every rule below was learned by shipping something broken. None of it is stylistic.
 
+### 0z. ⚠️⚠️⚠️ THE `<video>` YOU DRAW FROM MUST BE IN THE DOCUMENT (2026-11-03)
+
+The single most expensive bug this pipeline has produced. Two days.
+
+```js
+const videoEl = document.createElement('video');   // 🚫 and never appended
+```
+
+Safari decodes a detached video anyway. **WKWebView does not** — no drawable surface, so playback
+reports perfectly healthy and `drawImage` receives nothing. **Chrome on iOS is WKWebView**, so the
+film came out as cards with every clip reaching `started` and drawing zero frames.
+
+**The rule:** append it, laid out and painted. 🚫 `display:none`, `visibility:hidden` and zero
+width/height each stop the decode on iOS exactly as dead as being detached.
+
+```js
+videoEl.setAttribute('playsinline', '');
+videoEl.setAttribute('webkit-playsinline', '');
+videoEl.style.cssText = 'position:fixed;left:0;bottom:0;width:2px;height:2px;'
+                      + 'opacity:0.01;pointer-events:none;z-index:-1;';
+document.body.appendChild(videoEl);     // and .remove() it when the clip is done
+```
+
+⚠️ **`evolveFilm.js` and `modes/wildest-dreams/film.js` still do it the broken way.**
+
+⚠️ **How to tell this fault from the others:** every clip reaches `started` and draws **0** frames,
+all of them identically, with no screen lock involved and the clips playing fine on the preview
+card. If one clip fails and others do not, it is not this.
+
+🚫 **And the method lesson, which is worth more than the fix.** The failure began in the same
+commit as an unrelated visual change, so a one-commit regression window pointed straight at it and
+four fixes were built against that theory. **A regression window is not a cause.** Ask what else
+changed — above all, **which browser**. One line would have replaced two days.
+
+---
+
 ### 0aa. ⚠️⚠️ THE CARDS-ONLY FILM, AND THE FOURTH SILENT FAILURE (2026-10-03)
 
 **Symptom:** the film builds, plays, and contains the title card and every chapter card — and
@@ -1852,10 +2031,9 @@ and the same `videoEl.onerror = finish`. It now records `issues`, counts `played
 `[zoosnooz] …` with the error code and the URL host, and the preview screen shows the reason above
 a documentary that rendered without footage.
 
-⚠️ **ZooSnooz still has the CROP half of the problem, and it was deliberately left alone.** Its
-capture asks for `1280x720` **landscape** while its stitcher composes a **720x1280 portrait**
-canvas, so it centre-crops exactly as Evolve did before 2026-10-03 — the "zoomed in" complaint
-applies to ZooSnooz documentaries too. Fixing it means the same two changes made to Evolve (drop
+✅ **ZooSnooz's crop was fixed on 2026-10-29** — capture constraints and `drawFrame` together,
+as required. ⚠️ Its viewfinder deliberately differs in SHAPE from the film since 2026-11-01
+(`ZZ_CAPTURE_ASPECT`); that is a decision, not the old bug returning. Fixing it means the same two changes made to Evolve (drop
 the shape constraint at capture, contain-with-black in `drawFrame`) and it has not been done
 because ZooSnooz is live and was not what was asked for. 🚫 Do not half-do it: changing the
 capture without changing the crop makes the framing worse, not better.
