@@ -1056,11 +1056,36 @@ export default function ZooSnoozScreen() {
       });
       const artIssues = [];
       const cardArt = {};
+      // ⚠️ A CAP, NOT A SHRINK, and the difference was measured rather than assumed. The first
+      //    attempt downscaled every photo to half the film's size on a theory that holding ten
+      //    decoded bitmaps was starving the video decoder. Measured: the animal photos are
+      //    1200x630, so the whole preload holds about 14MB — nowhere near enough to starve
+      //    anything, and the theory was wrong.
+      // 🚫 It also made the cards worse, which is the part worth remembering. The photo is
+      //    COVER-cropped into a 0.5625 frame, so a 1200x630 source is already being drawn at
+      //    2432x1280 — upscaled roughly 2x before anything else happens. Downscaling it first
+      //    took that to 6.8x and the card went soft. Never shrink a source that is already
+      //    being enlarged.
+      // ⚠️ What is left is a ceiling that does nothing to today's assets and protects against
+      //    someone dropping a 4000px photo into images/ later. Returns the Image untouched
+      //    when no resize is needed, so the common path allocates nothing at all.
+      const capSize = (img, maxW, maxH) => {
+        if (!img || !img.naturalWidth || !img.naturalHeight) return null;
+        const r = Math.min(1, maxW / img.naturalWidth, maxH / img.naturalHeight);
+        if (r >= 1) return img;
+        const c = document.createElement('canvas');
+        c.width = Math.max(1, Math.round(img.naturalWidth * r));
+        c.height = Math.max(1, Math.round(img.naturalHeight * r));
+        try { c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); } catch { return null; }
+        return c;
+      };
       await Promise.all(videosToStitch.map(async a => {
-        const [photo, badge] = await Promise.all([
+        const [photoImg, badgeImg] = await Promise.all([
           loadImg(a.image),
           loadImg(`images/badge-${a.id}.webp`),
         ]);
+        const photo = capSize(photoImg, 1600, 1600);
+        const badge = capSize(badgeImg, 512, 512);
         cardArt[a.id] = { photo, badge };
         // ⚠️ artIssues, NOT issues. `issues[0]` is shown to the STUDENT as the explanation for a
         //    film with no footage, so a cosmetic missing photo must never land in it — it would
@@ -1270,7 +1295,12 @@ export default function ZooSnoozScreen() {
           drawBg();
           if (art.photo) {
             const z = 1 + 0.06 * t;
-            const pa = art.photo.naturalWidth / art.photo.naturalHeight, fa = W / H;
+            // ⚠️ capSize returns the Image untouched when it is already small enough, and a
+            //    canvas when it had to resize. An Image exposes naturalWidth, a canvas only
+            //    width — read both or the aspect comes out NaN and nothing draws.
+            const pw = art.photo.naturalWidth || art.photo.width;
+            const ph = art.photo.naturalHeight || art.photo.height;
+            const pa = pw / ph, fa = W / H;
             let dw, dh;
             if (pa > fa) { dh = H * z; dw = dh * pa; } else { dw = W * z; dh = dw / pa; }
             ctx.save(); ctx.filter = 'brightness(0.46) saturate(0.85)';
@@ -1440,6 +1470,14 @@ export default function ZooSnoozScreen() {
               if (now - lastFrameTime < 33) return; // ~30fps cap
               lastFrameTime = now;
               drawBg();
+              // ⚠️ The title card sets ctx.filter, shadows, textAlign and letterSpacing. Those
+              //    are canvas STATE: if a save/restore is ever unbalanced, or an engine does not
+              //    restore `filter` (WebKit has been inconsistent about it), the leftovers land
+              //    on the footage. Resetting here costs nothing and removes a whole class of
+              //    cross-contamination between the cards and the clips.
+              ctx.filter = 'none';
+              ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+              ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
               try {
                 // ⚠️⚠️ `|| W` IS A TRAP AND IT IS WHY THIS COULD FAIL SILENTLY FOREVER. If the
                 //    element reports 0x0 — no decodable video track, or metadata not in yet —
