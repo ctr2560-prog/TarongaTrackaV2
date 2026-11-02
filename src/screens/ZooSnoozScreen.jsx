@@ -887,6 +887,12 @@ export default function ZooSnoozScreen() {
       //    URL, a CORS miss, a container the browser will not decode) and BOTH were swallowed.
       //    So every swallowed failure records a line here. See evolveFilm.js for the full story.
       const issues = [];
+      // ⚠️ Declared HERE, beside `issues`, because `mr.onstop` reads it — and that handler is
+      //    written ~70 lines above where this gets filled. It only RUNS after the stitch, so a
+      //    later `const` would happen to work, but relying on that is how a temporal-dead-zone
+      //    ReferenceError gets shipped past both the build and the linter. This file has done
+      //    that once already.
+      const deadClips = [];
       const hostOf = u => { try { return new URL(u).host; } catch(e) { return String(u).slice(0, 24); } };
       let played = 0;
 
@@ -962,8 +968,32 @@ export default function ZooSnoozScreen() {
           // ⚠️ A documentary with every card and no footage is NOT a success, and showing it as
           //    one is how this goes unexplained: the student sees a film, nothing says otherwise,
           //    and the evidence is gone. `played` counts clips that actually drew picture.
-          if (played === 0) {
-            setZzStitchError(`Your clips would not play, so the documentary has the cards but none of your footage. ${issues[0] || ''}`.trim());
+          // ⚠️⚠️ AN EMPTY CLIP LIST IS NOT A PLAYBACK FAILURE, and conflating them told Cameron
+          //    on 2026-11-02 that his clips "would not play" when every one of them was safely
+          //    saved. `played === 0` is true in BOTH cases, so this used to accuse the footage
+          //    whenever there was none to accuse.
+          //    ⚠️ zzVideoURLs is ONLY ever written by recording in the current session (the
+          //    upload handler, one place). It is never rehydrated, so a page reload between
+          //    filming and stitching empties it while the clips sit safely in Storage — and the
+          //    stitch then runs on the intro and outro cards alone and reports a disaster.
+          // 🚫 Never word this as a failure of the student's footage without checking there WAS
+          //    some. A message that says their work would not play, when it is all saved, is the
+          //    most alarming thing this screen can say and it is not true.
+          if (videosToStitch.length === 0) {
+            setZzStitchError('This documentary was built without your clips, because none are loaded in this session. Your recordings are all still saved. Reloading the page clears them from the app\'s memory, so make the documentary without reloading, or ask your teacher.');
+          } else if (played === 0 && deadClips.length === videosToStitch.length) {
+            // Every clip's memory was reclaimed. Say what actually happened and what survives.
+            setZzStitchError('Your recordings are all safely saved, but this device dropped them from memory - locking the screen or switching apps during a session can do it. The documentary could not include them. Tell your teacher, who still has every clip.');
+          } else if (played === 0) {
+            // ⚠️ EVERY reason, not just the first. With one slot, a five-clip failure showed one
+            //    line and the rest were invisible, and a failure that recorded NO reason showed
+            //    a bare accusation with nothing to act on. The no-reason case is itself a
+            //    diagnosis: the clips started and drew nothing, which points at the screen
+            //    sleeping during the build rather than at the clips.
+            const why = issues.length
+              ? issues.join(' · ')
+              : 'No error was reported for any clip, which usually means the screen slept or the app was in the background while the documentary was being built.';
+            setZzStitchError(`Your clips would not play, so the documentary has the cards but none of your footage. ${why}`);
           } else if (played < videosToStitch.length) {
             setZzStitchError(`${videosToStitch.length - played} of your ${videosToStitch.length} clips would not play and are missing from the documentary.`);
           }
@@ -994,6 +1024,7 @@ export default function ZooSnoozScreen() {
         i.onerror = () => { clearTimeout(bail); done(null); };
         i.src = src;
       });
+      const artIssues = [];
       const cardArt = {};
       await Promise.all(videosToStitch.map(async a => {
         const [photo, badge] = await Promise.all([
@@ -1001,8 +1032,38 @@ export default function ZooSnoozScreen() {
           loadImg(`images/badge-${a.id}.webp`),
         ]);
         cardArt[a.id] = { photo, badge };
-        if (!photo) issues.push(`${a.id}: title card photo did not load`);
+        // ⚠️ artIssues, NOT issues. `issues[0]` is shown to the STUDENT as the explanation for a
+        //    film with no footage, so a cosmetic missing photo must never land in it — it would
+        //    be quoted back as the reason their documentary failed. Console only.
+        if (!photo) artIssues.push(`${a.id}: title card photo did not load`);
       }));
+      if (artIssues.length) console.warn('[zoosnooz] title card art:', artIssues);
+
+      // ── Are the clips still readable? ───────────────────────────────────
+      // ⚠️⚠️ A CLIP IS A `blob:` URL POINTING AT PAGE MEMORY, and the OS can take that memory
+      //    back. Cameron, 2026-11-02: his phone locked after filming, he carried on, the preview
+      //    said 5/5 clips, and the finished documentary had none of them. The URLs were all
+      //    still in the map — what had gone was what they pointed AT.
+      // ⚠️ Checked BEFORE the recorder starts, so a dead clip is known in 50ms instead of after
+      //    45 seconds of recording a film that cannot contain it.
+      // 🚫 Do not "fix" a dead clip by skipping it quietly. The recording itself is safe in
+      //    Storage; what failed is this tab's handle on it, and the student must be told that
+      //    rather than handed a film with gaps.
+      await Promise.all(videosToStitch.map(async a => {
+        const u = videoURLs[a.id];
+        if (!u || !u.startsWith('blob:')) return;        // a stored URL is checked by the player
+        try {
+          const r = await fetch(u);
+          if (!r.ok) deadClips.push(a.id);
+        } catch {
+          // A revoked or reclaimed object URL rejects here. That is the signal.
+          deadClips.push(a.id);
+        }
+      }));
+      if (deadClips.length) {
+        console.warn('[zoosnooz] clips no longer readable from memory:', deadClips.join(', '));
+        issues.push(`${deadClips.join(', ')}: the clip was dropped from this device's memory before the documentary was built`);
+      }
 
       mr.start(500);
       await new Promise(res => setTimeout(res, 80)); // let MediaRecorder settle before first frame
