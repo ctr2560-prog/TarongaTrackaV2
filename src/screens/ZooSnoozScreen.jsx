@@ -56,6 +56,23 @@ export const ZZ_VIDEO_ASPECT = ZZ_FILM_W / ZZ_FILM_H;
 const ZZ_CARD_W = 390, ZZ_CARD_H = 445;
 export const ZZ_CAPTURE_ASPECT = ZZ_CARD_W / ZZ_CARD_H;
 
+// ── Rhino instrument calibration ────────────────────────────────────────────
+// ⚠️ ONE SOURCE OF TRUTH, because there were two and they disagreed. The live pad called
+// anything over 1.2 a CHARGE while the summary screen used 0.55, so the same drag could read
+// WALK during the activity and CHARGE on the card afterwards.
+// ⚠️ `speed` is canvas units per millisecond, straight from the pointer events.
+// Cameron, 2026-11-03: "make it harder for a charge action (they are generally pretty slow)".
+// A charge now needs a genuinely fast swipe rather than an ordinary drag.
+const ZZ_RHINO_TROT = 1.2, ZZ_RHINO_CHARGE = 3.0;
+// Canvas units per metre. Was 8, which turned a normal 20-second drag into 40m+ of rhino. The
+// pad is 560x620, so a brisk session covers a few thousand units; 20 keeps a plausible
+// enclosure-sized distance on screen.
+const ZZ_RHINO_UNITS_PER_M = 20;
+const zzRhinoGait = (maxSpeed) =>
+  maxSpeed >= ZZ_RHINO_CHARGE ? { label: 'CHARGE', col: '#FBBF24' }
+  : maxSpeed >= ZZ_RHINO_TROT ? { label: 'TROT',   col: '#A8C4B2' }
+  : { label: 'WALK', col: '#4A9E6B' };
+
 // ── Instruction type ────────────────────────────────────────────────────────
 // The two places ZooSnooz tells a student what to DO — the mission brief on the insight
 // screen, and the prompt above the writing box. Both use Taronga Headline, applied with
@@ -1962,7 +1979,7 @@ export default function ZooSnoozScreen() {
     return (
       <div style={{ position:'fixed', inset:0, background:'linear-gradient(160deg,#020D06,#040F08,#071E14)', display:'flex', flexDirection:'column', overflowY:'auto' }}>
         <div style={{ maxWidth:'500px', margin:'0 auto', width:'100%', padding:'1.5rem 1.25rem 3rem', display:'flex', flexDirection:'column', gap:'1rem' }}>
-          <div>
+          <div style={{ textAlign:'center' }}>
             <div style={{ fontSize:'0.6rem', fontWeight:800, color:'rgba(168,196,178,0.6)', textTransform:'uppercase', letterSpacing:'0.16em', marginBottom:'0.3rem' }}>Your ZooSnooz Documentary</div>
             <h2 className="taronga-title" style={{ fontSize:'1.7rem', color:'white', letterSpacing:'0.05em', margin:0 }}>Preview</h2>
           </div>
@@ -1975,9 +1992,21 @@ export default function ZooSnoozScreen() {
             </div>
           )}
           {zzStitchedURL ? (
-            <div style={{ borderRadius:'18px', overflow:'hidden', background:'#000', boxShadow:'0 16px 48px rgba(0,0,0,0.7), 0 0 0 1px rgba(46,125,85,0.3)', aspectRatio:'9/16', maxHeight:'55vh' }}>
-              <video src={zzStitchedURL} controls playsInline autoPlay
-                style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }} />
+            /* ⚠️⚠️ THE THIRD TIME `aspect-ratio` + `max-height` HAS BITTEN IN THIS FILE, so this
+               uses the construction already proven on the viewfinder and the clip card.
+               What was here: `aspectRatio:'9/16', maxHeight:'55vh'` on a flex item. The clamp
+               gives it a definite size, so it stops stretching and falls to the START edge — it
+               rendered the right shape, left-aligned, against full-width stats beneath it.
+               🚫 `alignSelf:'center'` is NOT the fix. It centres the box and then the box
+                  shrink-wraps its content, measured at 26px wide in a harness.
+               ✅ The fix: a parent with a DEFINITE height, and the aspect box pinned inside it
+                  with top:0/bottom:0 so the height produces the width. 🚫 Do not give the inner
+                  box a width. */
+            <div style={{ height:'55vh', minHeight:'260px', position:'relative' }}>
+              <div style={{ position:'absolute', top:0, bottom:0, left:'50%', transform:'translateX(-50%)', width:'auto', maxWidth:'100%', aspectRatio:'9/16', borderRadius:'18px', overflow:'hidden', background:'#000', boxShadow:'0 16px 48px rgba(0,0,0,0.7), 0 0 0 1px rgba(46,125,85,0.3)' }}>
+                <video src={zzStitchedURL} controls playsInline autoPlay
+                  style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'contain', display:'block' }} />
+              </div>
             </div>
           ) : (
             <div style={{ borderRadius:'18px', background:'rgba(46,125,85,0.08)', border:'1px solid rgba(46,125,85,0.25)', padding:'2rem', textAlign:'center' }}>
@@ -2672,8 +2701,9 @@ export default function ZooSnoozScreen() {
               const rDist      = rs?.totalDist || 0;
               const rMaxSpeed  = rs?.maxSpeed  || 0;
               const rFootfalls = rs?.footfalls || 0;
-              const speedLabel = rMaxSpeed>=1.2?'CHARGE':rMaxSpeed>=0.5?'TROT':rStarted?'WALK':' - ';
-              const speedColor = rMaxSpeed>=1.2?'#FBBF24':rMaxSpeed>=0.5?'#A8C4B2':'#4A9E6B';
+              const gait       = zzRhinoGait(rMaxSpeed);
+              const speedLabel = rStarted ? gait.label : ' - ';
+              const speedColor = gait.col;
 
               function drawFootprint(ctx, x, y, angle, sn) {
                 ctx.save(); ctx.globalAlpha = 0.42+sn*0.25; ctx.fillStyle = '#1A5238';
@@ -2774,7 +2804,7 @@ export default function ZooSnoozScreen() {
                   </div>
                   {rStarted && (
                     <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'0.35rem', marginBottom:'0.65rem' }}>
-                      {[{label:'FOOTFALLS',val:rFootfalls,col:'#4A9E6B'},{label:'DISTANCE',val:`${Math.round(rDist/8)}m`,col:'#A8C4B2'},{label:'GAIT',val:speedLabel,col:speedColor}].map(s=>(
+                      {[{label:'FOOTFALLS',val:rFootfalls,col:'#4A9E6B'},{label:'DISTANCE',val:`${Math.round(rDist/ZZ_RHINO_UNITS_PER_M)}m`,col:'#A8C4B2'},{label:'GAIT',val:speedLabel,col:speedColor}].map(s=>(
                         <div key={s.label} style={{ background:'rgba(0,0,0,0.45)', borderRadius:'8px', padding:'0.38rem 0.4rem', textAlign:'center' }}>
                           <div style={{ fontSize:'0.52rem', color:'rgba(168,196,178,0.45)', fontFamily:'DM Sans, sans-serif', letterSpacing:'0.1em', marginBottom:'0.1rem' }}>{s.label}</div>
                           <div style={{ fontSize:'0.9rem', fontWeight:800, color:s.col, fontFamily:'monospace', lineHeight:1.1 }}>{s.val}</div>
@@ -3155,8 +3185,9 @@ export default function ZooSnoozScreen() {
                 const rFootfalls = rs?.footfalls || 0;
                 const rMaxSpeed  = rs?.maxSpeed  || 0;
                 const rDist      = rs?.totalDist || 0;
-                const speedLabel = rMaxSpeed>=0.55?'CHARGE':rMaxSpeed>=0.28?'TROT':'WALK';
-                const speedColor = rMaxSpeed>=0.55?'#FBBF24':rMaxSpeed>=0.28?'#A8C4B2':'#4A9E6B';
+                const gait       = zzRhinoGait(rMaxSpeed);
+                const speedLabel = gait.label;
+                const speedColor = gait.col;
                 let svgPath=''; let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
                 pts.forEach(([px,py])=>{if(px<minX)minX=px;if(px>maxX)maxX=px;if(py<minY)minY=py;if(py>maxY)maxY=py;});
                 const SW=240,SH=72;
@@ -3173,7 +3204,7 @@ export default function ZooSnoozScreen() {
                       </div>
                     )}
                     <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'0.4rem', marginBottom:'0.5rem' }}>
-                      {[{label:'FOOTFALLS',val:rFootfalls,col:'#4A9E6B'},{label:'DISTANCE',val:`${Math.round(rDist/8)}m`,col:'#A8C4B2'},{label:'PEAK GAIT',val:speedLabel,col:speedColor}].map(s=>(
+                      {[{label:'FOOTFALLS',val:rFootfalls,col:'#4A9E6B'},{label:'DISTANCE',val:`${Math.round(rDist/ZZ_RHINO_UNITS_PER_M)}m`,col:'#A8C4B2'},{label:'PEAK GAIT',val:speedLabel,col:speedColor}].map(s=>(
                         <div key={s.label} style={{ background:'rgba(0,0,0,0.4)', borderRadius:'7px', padding:'0.35rem 0.4rem', textAlign:'center' }}>
                           <div style={{ fontSize:'0.52rem', color:'rgba(168,196,178,0.45)', fontFamily:'DM Sans, sans-serif', letterSpacing:'0.1em' }}>{s.label}</div>
                           <div style={{ fontSize:'0.9rem', fontWeight:800, color:s.col, fontFamily:'monospace' }}>{s.val}</div>
@@ -3300,13 +3331,38 @@ export default function ZooSnoozScreen() {
           <div style={{ display:'flex', flexDirection:'column', gap:'0.75rem', flex:1 }}>
             {!obsOpen ? (
               /* Countdown - full-width centred, matches live site */
-              <div style={{ textAlign:'center', padding:'3rem 1rem 2rem' }}>
-                <div style={{ fontSize:'4.5rem', fontWeight:800, color:'#4A9E6B', lineHeight:1, marginBottom:'0.65rem', fontVariantNumeric:'tabular-nums' }}>{obsLock}</div>
-                <div style={{ fontSize:'0.85rem', color:'var(--zz-muted)', lineHeight:1.7, marginBottom:'1.75rem' }}>
-                  Observe carefully before recording your thoughts.<br/>Watch the {zzAnimal.name} - don't write yet.
+              /* ⚠️ A DIAL, not a number over a hairline. Cameron, 2026-11-03: "make the timer
+                 bigger and cooler". It is also the same shape as Evolve's 60-second watch dial,
+                 which students meet five times in that mode — one idea, learned once.
+                 ⚠️ The ring is an SVG circle with a dash offset, rotated -90deg so it empties
+                 from 12 o'clock. `pathLength={1}` normalises the dash maths to fractions, so the
+                 radius can change without touching any of the numbers. 🚫 Do not hardcode the
+                 circumference; that is what pathLength exists to avoid.
+                 ⚠️ `transition` is 1s linear to match the 1s tick, so it sweeps smoothly rather
+                 than stepping. */
+              <div style={{ textAlign:'center', padding:'1.75rem 1rem 1.5rem', display:'flex', flexDirection:'column', alignItems:'center' }}>
+                <div style={{ position:'relative', width:'min(62vw, 230px)', aspectRatio:'1', marginBottom:'1.5rem' }}>
+                  <svg viewBox="0 0 100 100" style={{ position:'absolute', inset:0, width:'100%', height:'100%', transform:'rotate(-90deg)', overflow:'visible' }}>
+                    <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="6" />
+                    <circle cx="50" cy="50" r="44" fill="none" stroke="url(#zzDial)" strokeWidth="6"
+                      strokeLinecap="round" pathLength={1}
+                      strokeDasharray="1 1" strokeDashoffset={1 - (obsLock / 20)}
+                      style={{ transition:'stroke-dashoffset 1s linear', filter:'drop-shadow(0 0 7px rgba(74,158,107,0.75))' }} />
+                    <defs>
+                      <linearGradient id="zzDial" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stopColor="#2E7D55" />
+                        <stop offset="60%" stopColor="#4A9E6B" />
+                        <stop offset="100%" stopColor="#A8C4B2" />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                  <div style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'0.1rem' }}>
+                    <div style={{ fontSize:'clamp(3.2rem, 17vw, 4.6rem)', fontWeight:800, color:'white', lineHeight:0.95, fontVariantNumeric:'tabular-nums', textShadow:'0 0 26px rgba(74,158,107,0.55)' }}>{obsLock}</div>
+                    <div style={{ fontSize:'0.55rem', fontWeight:800, letterSpacing:'0.22em', textTransform:'uppercase', color:'rgba(168,196,178,0.6)' }}>seconds</div>
+                  </div>
                 </div>
-                <div style={{ height:'4px', borderRadius:'999px', background:'rgba(255,255,255,0.08)', overflow:'hidden', marginBottom:'1.5rem' }}>
-                  <div style={{ height:'100%', width:`${((20 - obsLock) / 20) * 100}%`, background:'linear-gradient(90deg,#2E7D55,#4A9E6B)', transition:'width 1s linear', borderRadius:'999px' }} />
+                <div style={{ fontSize:'0.85rem', color:'var(--zz-muted)', lineHeight:1.7, marginBottom:'1.5rem', maxWidth:'34ch' }}>
+                  Observe carefully before recording your thoughts.<br/>Watch the {zzAnimal.name} - don't write yet.
                 </div>
                 <button
                   onClick={() => setObsOpen(true)}
