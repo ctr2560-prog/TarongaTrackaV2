@@ -49,6 +49,16 @@ export const EVOLVE_FILM_BOT = 320;   // chapter caption panel, and the pledge
 // layout origin, which is why every caption offset below is unchanged.
 export const EVOLVE_VIDEO_ASPECT = EVOLVE_FILM_W / EVOLVE_FILM_H;
 
+// ── Capture geometry ────────────────────────────────────────────────────────
+// ⚠️⚠️ THE CAPTURE SHAPE IS DELIBERATELY NOT THE FILM SHAPE, matching the decision ZooSnooz took
+// on 2026-11-01. A 9:16 viewfinder is a ~219px sliver on a phone; the finished card is a far
+// roomier shape and gives about 56% more picture to frame yourself in. Cameron chose that for
+// ZooSnooz and asked for Evolve's filming screen to match it.
+// 🚫 Do not re-point the viewfinder at EVOLVE_VIDEO_ASPECT to make the two "consistent". That is
+//    a large reduction in what a student can see while filming, and it was asked for.
+// ⚠️ The consequence, accepted: the film crops or letterboxes relative to what was framed.
+export const EVOLVE_CAPTURE_ASPECT = 390 / 445;
+
 export function describeMime(mimeType) {
   const isMP4 = String(mimeType || '').includes('mp4');
   return {

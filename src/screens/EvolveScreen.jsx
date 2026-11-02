@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
 import { useStudent } from '../context/StudentContext';
 import { EVOLVE_CHAPTERS, EVOLVE_STORY_ORDER, EVOLVE_CHAPTER_WORDS as WORDS, EVOLVE_THEME as T, EVOLVE_MIN_WORDS } from '../data/evolveAnimals';
-import { buildEvolveFilm, startChapterRecording, describeMime, EVOLVE_VIDEO_ASPECT } from '../utils/evolveFilm';
+import { buildEvolveFilm, startChapterRecording, describeMime, EVOLVE_VIDEO_ASPECT, EVOLVE_CAPTURE_ASPECT } from '../utils/evolveFilm';
 import { doc, getDoc, updateDoc, setDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { ref as storageRef, uploadBytesResumable } from 'firebase/storage';
 import { db, storage } from '../firebase';
@@ -82,7 +82,7 @@ function Shell({ children, onHome, scroll = true }) {
       <style>{`
         /* ⚠️ Driven from the film's own geometry (see EVOLVE_VIDEO_ASPECT) so the preview can never
            disagree with what the film shows. It was hard-coded 9/16 while the film used 0.706. */
-        :root { --ev-video-aspect: ${EVOLVE_VIDEO_ASPECT}; }
+        :root { --ev-video-aspect: ${EVOLVE_VIDEO_ASPECT}; --ev-capture-aspect: ${EVOLVE_CAPTURE_ASPECT}; }
         .ev-horizon {
           position: fixed; left: 0; right: 0; bottom: 0; height: 55vh; pointer-events: none; z-index: 0;
           background: radial-gradient(135% 78% at 50% 100%, rgba(255,183,77,0.42) 0%, rgba(216,110,64,0.20) 34%, rgba(120,60,90,0.10) 58%, transparent 78%);
@@ -286,13 +286,47 @@ function Shell({ children, onHome, scroll = true }) {
           padding-top: 0.6rem; border-top: 1px solid rgba(232,179,60,0.18);
         }
 
+        /* ⚠️⚠️ aspect-ratio + max-height ON THE SAME ELEMENT DOES NOT HOLD THE ASPECT. The
+           width stretches, the aspect sets a height, max-height clamps it, and the shape is
+           gone — ZooSnooz hit this three separate times (viewfinder, clip card, film player).
+           The fix there, and here: a stage with a DEFINITE height, and the aspect box pinned
+           inside it with top:0/bottom:0 so the height produces the width.
+           🚫 Do not give .ev-cam a width.
+           ⚠️ NO BACKTICKS ANYWHERE IN THIS BLOCK. It lives inside a JS template literal, so a
+           backtick in a comment ends the string and the build fails on the CSS below it. */
+        /* ⚠️ 46vh, not 58. At 58 the record screen overflowed by 103px on a 390x640 phone
+           and the student had to scroll to reach the shutter — the exact complaint ZooSnooz
+           got. The max-height is the same bound the box uses, so the stage never asks for more
+           height than the available WIDTH can satisfy at this aspect. */
+        .ev-cam-stage { position: relative; height: 44vh; min-height: 190px;
+          max-height: calc((min(100vw, 620px) - 2.5rem) / var(--ev-capture-aspect));
+          margin: 0 0 0.45rem; }
+        .ev-cam-stage.is-play { height: 42vh; margin-bottom: 0.9rem; }
         .ev-cam {
-          position: relative; aspect-ratio: var(--ev-video-aspect); max-height: 58vh; width: auto; margin: 0 auto 0.9rem;
+          position: absolute; top: 0; bottom: 0; left: 50%; transform: translateX(-50%);
+          width: auto; max-width: 100%;
+          /* ⚠️ The same bound on the other axis, so the two agree numerically and the shape
+             holds whichever one the engine applies first. WebKit is the engine that matters and
+             its clamp-then-recompute behaviour is not something to bet a film on. */
+          max-height: calc((min(100vw, 620px) - 2.5rem) / var(--ev-capture-aspect));
+          aspect-ratio: var(--ev-capture-aspect);
           border-radius: 16px; overflow: hidden; background: #000;
           box-shadow: 0 14px 40px rgba(0,0,0,0.45);
         }
-        .ev-cam video { width: 100%; height: 100%; object-fit: contain; display: block; background: #0B0A12; }
-        .ev-cam-play { max-height: 62vh; }
+        /* ⚠️ absolute + inset, NOT width/height 100%. A percentage height does not resolve
+           against a box whose height came from the aspect, so the video sits at its intrinsic
+           size pinned to the top with dead black beneath. */
+        .ev-cam video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; display: block; background: #0B0A12; }
+
+        /* The shutter row, deliberately the camera-app shape ZooSnooz uses. */
+        .ev-shutter { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 0.15rem 0.25rem; margin-bottom: 0.4rem; }
+        .ev-shutter-btn { display: flex; flex-direction: column; align-items: center; gap: 0.15rem; background: none; border: none; cursor: pointer; padding: 0.2rem; }
+        .ev-shutter-ring { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+          font-size: 1.15rem; background: rgba(255,255,255,0.09); border: 1.5px solid rgba(255,255,255,0.18); color: rgba(246,232,210,0.85); }
+        .ev-shutter-lbl { font-size: 0.52rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(246,232,210,0.45); }
+        .ev-shutter-big { justify-self: center; width: 76px; height: 76px; border-radius: 50%; background: transparent;
+          border: 4px solid rgba(246,232,210,0.9); display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
+        .ev-shutter-big span { display: block; background: #C1272D; transition: all 0.22s ease; }
 
         .ev-write {
           border: 1.5px solid rgba(232,179,60,0.35); border-radius: 14px;
@@ -1447,45 +1481,58 @@ export default function EvolveScreen() {
                 <p className="ev-say-ask">{chapter.filmPrompt}</p>
                 <p className="ev-say-link">{chapter.filmLink}</p>
               </div>
-              <div className="ev-cam">
-                <video ref={videoRef} playsInline muted autoPlay style={{ transform: frontCam ? 'scaleX(-1)' : 'none' }} />
-                {recording && (
-                  <div style={{ position:'absolute', top:10, left:10, background:'rgba(200,30,30,0.9)', color:'white', padding:'0.25rem 0.7rem', borderRadius:999, fontSize:'0.78rem', fontWeight:800 }}>
-                    ● {countdown}s
-                  </div>
-                )}
+              {/* ⚠️ The stage carries the height; .ev-cam derives its width from the capture
+                  aspect. 🚫 Do not collapse these two back into one element — see the comment
+                  on .ev-cam above. */}
+              <div className="ev-cam-stage">
+                <div className="ev-cam">
+                  <video ref={videoRef} playsInline muted autoPlay style={{ transform: frontCam ? 'scaleX(-1)' : 'none' }} />
+                  {recording && (
+                    <div style={{ position:'absolute', top:'0.7rem', left:'50%', transform:'translateX(-50%)', background:'rgba(193,39,45,0.92)', color:'white', padding:'0.28rem 0.75rem', borderRadius:999, fontSize:'0.78rem', fontWeight:700, display:'flex', alignItems:'center', gap:'0.35rem', backdropFilter:'blur(4px)' }}>
+                      <span style={{ width:'7px', height:'7px', borderRadius:'50%', background:'white', animation:'bflDot 0.8s ease-in-out infinite' }} />
+                      {countdown}s
+                    </div>
+                  )}
+                </div>
               </div>
               {camError && <p style={{ color:'#FCA5A5', fontSize:'0.85rem', marginBottom:'0.8rem' }}>{camError}</p>}
               <p style={{ color:T.textDim, fontSize:'0.78rem', lineHeight:1.5, marginBottom:'0.9rem' }}>
                 It's twilight, so hold your torch up near your face so the camera can see you.
               </p>
-              <div style={{ display:'flex', gap:'0.6rem' }}>
-                {!recording ? (
-                  <>
-                    <button onClick={() => setFrontCam(f => !f)}
-                      style={{ padding:'0.9rem 1rem', borderRadius:999, border:`1px solid ${T.border}`, background:'rgba(0,0,0,0.25)', color:T.text, fontWeight:700, cursor:'pointer', fontSize:'0.85rem' }}>
-                      Flip
+              {/* ⚠️ The camera-app shutter row Cameron asked for: one big round shutter in the
+                  centre, flip on the right, nothing competing with them. The shutter becomes a
+                  red square while recording, which is the universal stop affordance — the same
+                  control does both, so there is never a moment with two primary buttons. */}
+              <div className="ev-shutter">
+                <div />
+                <button className="ev-shutter-big" onClick={recording ? endRecord : beginRecord}
+                  aria-label={recording ? 'Stop recording' : `Record ${CLIP_SECONDS} seconds`}>
+                  <span style={{ width: recording ? '28px' : '58px', height: recording ? '28px' : '58px', borderRadius: recording ? '7px' : '50%' }} />
+                </button>
+                <div style={{ justifySelf:'end' }}>
+                  {!recording && (
+                    <button className="ev-shutter-btn" onClick={() => setFrontCam(f => !f)} aria-label="Flip camera">
+                      <span className="ev-shutter-ring">⟳</span>
+                      <span className="ev-shutter-lbl">Flip</span>
                     </button>
-                    <button onClick={beginRecord}
-                      style={{ flex:1, padding:'0.95rem', borderRadius:999, border:'none', background:T.accent, color:'#241503', fontWeight:800, cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.06em' }}>
-                      Record {CLIP_SECONDS}s
-                    </button>
-                  </>
-                ) : (
-                  <button onClick={endRecord}
-                    style={{ flex:1, padding:'0.95rem', borderRadius:999, border:'none', background:'#C1272D', color:'white', fontWeight:800, cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.06em' }}>
-                    Stop
-                  </button>
-                )}
+                  )}
+                </div>
               </div>
+              {!recording && (
+                <p style={{ textAlign:'center', color:'rgba(246,232,210,0.45)', fontSize:'0.76rem', margin:'0 0 0.4rem' }}>
+                  Tap the circle to record {CLIP_SECONDS} seconds
+                </p>
+              )}
             </>
           )}
 
           {phase === 'preview' && (
             <>
               {clipURLs[chapter.id] && (
-                <div className="ev-cam ev-cam-play">
-                  <video src={clipURLs[chapter.id]} controls playsInline />
+                <div className="ev-cam-stage is-play">
+                  <div className="ev-cam">
+                    <video src={clipURLs[chapter.id]} controls playsInline />
+                  </div>
                 </div>
               )}
               {(() => {
