@@ -333,14 +333,33 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
     hiddenSince = performance.now();
     try { if (mr.state === 'recording') mr.pause(); } catch { /* not supported — degrades to old behaviour */ }
     try { active.video?.pause(); } catch { /* nothing playing */ }
-    try { audioCtx?.suspend(); } catch { /* no audio graph */ }
+    Promise.resolve(audioCtx?.suspend()).catch(() => { /* no audio graph */ });
   }
+  // ⚠️⚠️ `play()` RETURNS A PROMISE AND try/catch DOES NOT CATCH IT. This read
+  //    `try { active.video?.play(); } catch {}`, which catches nothing a rejected promise
+  //    throws — it escapes as an unhandled rejection and the video stays PAUSED. `drawFrame`
+  //    begins `if (videoEl.paused) return;`, so from that point the chapter contributes no
+  //    frames while still counting as "started": a film of cards with no error recorded
+  //    anywhere. iOS rejects play() with NotAllowedError routinely once a page has been
+  //    backgrounded, so a phone locking mid-stitch triggers it every time.
+  // 🚫 Never call play(), resume() or suspend() without handling the promise.
+  //    Ported from ZooSnooz 2026-11-03, where this cost two days.
+  let resumeFailed = false;
+  const tryPlay = (el) => {
+    const pr = el?.play();
+    if (pr && typeof pr.catch === 'function') {
+      pr.then(() => { resumeFailed = false; }).catch(err => {
+        resumeFailed = true;
+        console.warn('[evolveFilm] playback would not resume:', err?.name || err);
+      });
+    }
+  };
   function resumeFromHidden() {
     if (!hiddenSince) return;
     hiddenTotal += performance.now() - hiddenSince;
     hiddenSince = 0;
-    try { audioCtx?.resume(); } catch { /* no audio graph */ }
-    try { active.video?.play(); } catch { /* nothing to resume */ }
+    Promise.resolve(audioCtx?.resume()).catch(() => { /* no audio graph */ });
+    try { tryPlay(active.video); } catch { /* nothing to resume */ }
     try { if (mr.state === 'paused') mr.resume(); } catch { /* not supported */ }
   }
   const onVisibility = () => (document.hidden ? pauseForHidden() : resumeFromHidden());
@@ -454,7 +473,22 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
       // Requires the CORS policy in cors.json to be live on the bucket; see Build & Deploy.
       videoEl.crossOrigin = 'anonymous';
       videoEl.src = src; videoEl.playsInline = true; videoEl.muted = true; videoEl.preload = 'auto';
+      // ⚠️⚠️ THE ELEMENT MUST BE IN THE DOCUMENT, AND MUST BE RENDERED. Created detached and
+      //    never attached, which Safari tolerates — it decodes anyway — and which WKWebView
+      //    does not: there a detached video gets no drawable surface, so playback reports
+      //    perfectly healthy while drawImage receives nothing. CHROME ON iOS IS WKWebView.
+      //    This exact fault produced two days of empty ZooSnooz documentaries (2026-11-01 → 03)
+      //    and Evolve carried an identical copy of it. Fixed here 2026-11-03.
+      // 🚫 Never hide it with display:none, visibility:hidden or zero width/height — each stops
+      //    the decode on iOS as surely as being detached. It has to be laid out and painted.
+      videoEl.setAttribute('playsinline', '');
+      videoEl.setAttribute('webkit-playsinline', '');
+      videoEl.style.cssText = 'position:fixed;left:0;bottom:0;width:2px;height:2px;opacity:0.01;pointer-events:none;z-index:-1;';
+      try { document.body.appendChild(videoEl); } catch { /* can still try detached */ }
       let rafId = null, nextId = null, watchdog = null, abSrc = null, started = false, done = false;
+      // ⚠️ First draw failure for this chapter, so the reason reaches the console instead of
+      //    being discarded. One per chapter, not per frame — this runs 30 times a second.
+      let drawError = null;
       let drawn = 0, startedAt = 0, lastDrawAt = 0;
       // Safety net for a clip that never fires `ended`. Counted in VISIBLE time, so being away
       // for two minutes no longer cuts the chapter short.
@@ -483,6 +517,13 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
           }
         } else if (drawn > 0) {
           played++;
+        } else {
+          // ⚠️ Started and drew nothing — the single most confusing outcome this pipeline can
+          //    produce, and it used to record NOTHING at all.
+          const why = drawError ? ` — ${drawError}`
+            : resumeFailed ? ' (playback would not restart after the screen went off)' : '';
+          issues.push(`${c.id}: the clip played but no picture was captured${why}`);
+          console.warn(`[evolveFilm] "${c.id}" started but drew 0 frames; resumeFailed=${resumeFailed}; drawError=${drawError || 'none'}`);
         }
         if (started && __secs > 0.5 && drawn / __secs < 5) {
           console.warn(`[evolveFilm] "${c.id}" drew only ${drawn} frames in ${__secs.toFixed(1)}s (~${(drawn / __secs).toFixed(1)}fps) - its footage will look frozen. The screen most likely slept or the tab was backgrounded.`);
@@ -490,6 +531,8 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
         if (active.video === videoEl) active.video = null;
         // Release the element so the decoder pool frees up before the next chapter.
         try { videoEl.pause(); videoEl.removeAttribute('src'); videoEl.load(); } catch { /* noop */ }
+        // ⚠️ Take it back out, or one accumulates in the body per chapter and stays for the session.
+        try { videoEl.remove(); } catch { /* never attached */ }
         resolve();
       }
       function startAudio() {
@@ -526,7 +569,18 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
         lastDrawAt = nowMs;
         drawBg();
         try {
-          const vW = videoEl.videoWidth || W, vH2 = videoEl.videoHeight || vidH;
+          // ⚠️⚠️ `|| W` IS A TRAP. If the element reports 0x0 — no decodable video track, or
+          //    metadata not in yet — the fallback makes the SOURCE rectangle 720x840 over a 0x0
+          //    image and drawImage throws IndexSizeError on every frame, into the catch below.
+          //    A chapter with no dimensions cannot be drawn at all; say so and stop.
+          if (!videoEl.videoWidth || !videoEl.videoHeight) {
+            if (!drawError) {
+              drawError = `the video has no picture track (reports ${videoEl.videoWidth}x${videoEl.videoHeight}, readyState ${videoEl.readyState})`;
+              console.warn(`[evolveFilm] "${c.id}" ${drawError}`);
+            }
+            return;
+          }
+          const vW = videoEl.videoWidth, vH2 = videoEl.videoHeight;
           const srcA = vW / vH2;
           // ⚠️ CONTAIN, NEVER CROP, AND FILL WITH BLACK.
           //
@@ -542,7 +596,15 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
           ctx.drawImage(videoEl, 0, 0, vW, vH2,
                         (W - fitW) / 2, vidY + (vidH - fitH) / 2, fitW, fitH);
           drawn++;
-        } catch { /* frame not ready */ }
+        } catch (e) {
+          // 🚫 THIS WAS A SWALLOWED CATCH ("frame not ready"), and the identical one in ZooSnooz
+          //    hid the cause of three separate investigations. Record the first failure per
+          //    chapter with the element's state — that is what names the fault.
+          if (!drawError) {
+            drawError = `${e?.name || 'error'}: ${e?.message || e} (video ${videoEl.videoWidth}x${videoEl.videoHeight}, readyState ${videoEl.readyState})`;
+            console.warn(`[evolveFilm] "${c.id}" could not be drawn — ${drawError}`);
+          }
+        }
 
         ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(0, 0, W, topH);
         ctx.fillStyle = 'rgba(246,232,210,0.88)'; ctx.font = '600 22px "DM Sans", sans-serif'; ctx.textAlign = 'left';
@@ -619,6 +681,12 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
           tick();
           watchdog = setInterval(() => {
             if (done) return;
+            // ⚠️ SELF-HEAL. One rejected play() used to end the chapter's contribution for good.
+            //    If we are visible and it is still paused, ask again — iOS usually allows it
+            //    once the page is properly foregrounded.
+            if (!document.hidden && !hiddenSince && videoEl.paused && !videoEl.ended) {
+              try { tryPlay(videoEl); } catch { /* asked again next tick */ }
+            }
             if (performance.now() - lastDrawAt > 400) {
               if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
               if (nextId) { clearTimeout(nextId); nextId = null; }
