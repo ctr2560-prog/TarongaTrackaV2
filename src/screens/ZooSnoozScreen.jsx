@@ -818,7 +818,10 @@ export default function ZooSnoozScreen() {
     // Create AudioContext synchronously inside the gesture so iOS unlocks audio
     try {
       const actx = new (window.AudioContext || window.webkitAudioContext)();
-      actx.resume();
+      // ⚠️ resume() is a promise. Bare, a rejection escapes the surrounding try/catch entirely
+      //    as an unhandled rejection — the same mistake that left a paused video silently
+      //    killing the documentary. The try/catch here only guards the constructor.
+      actx.resume().catch(() => { /* iOS can refuse until a gesture; the stitch resumes it */ });
       zzAudioCtxRef.current = actx;
     } catch(e) { zzAudioCtxRef.current = null; }
     // ⚠️ classCode and studentKey are SNAPSHOTTED here, not read from the closure in the stitch
@@ -1148,14 +1151,35 @@ export default function ZooSnoozScreen() {
         hiddenSince = performance.now();
         try { if (mr.state === 'recording') mr.pause(); } catch { /* unsupported — degrades to the old behaviour */ }
         try { active.video?.pause(); } catch { /* nothing playing */ }
-        try { audioCtx?.suspend(); } catch { /* no audio graph */ }
+        Promise.resolve(audioCtx?.suspend()).catch(() => { /* no audio graph */ });
       }
+      // ⚠️⚠️ `play()` RETURNS A PROMISE AND try/catch DOES NOT CATCH IT. This line used to read
+      //    `try { active.video?.play(); } catch {}`, which catches nothing a rejected promise
+      //    throws — it escapes as an unhandled rejection and the video stays PAUSED. `drawFrame`
+      //    begins `if (videoEl.paused) return;`, so from that moment the clip contributes no
+      //    frames at all while still counting as "started".
+      //    That is a cards-only documentary with NO error recorded anywhere, which is exactly
+      //    what Cameron hit on 2026-11-02: "No error was reported for any clip". iOS rejects
+      //    play() with NotAllowedError routinely after a page has been backgrounded, so a phone
+      //    locking mid-stitch triggered it every time.
+      // 🚫 Never call play() without a .catch(). Same for any other promise-returning media
+      //    call: suspend(), resume(), and MediaRecorder's own methods on some builds.
+      let resumeFailed = false;
+      const tryPlay = (el) => {
+        const p = el?.play();
+        if (p && typeof p.catch === 'function') {
+          p.then(() => { resumeFailed = false; }).catch(err => {
+            resumeFailed = true;
+            console.warn('[zoosnooz] playback would not resume:', err?.name || err);
+          });
+        }
+      };
       function resumeFromHidden() {
         if (!hiddenSince) return;
         hiddenTotal += performance.now() - hiddenSince;
         hiddenSince = 0;
-        try { audioCtx?.resume(); } catch { /* no audio graph */ }
-        try { active.video?.play(); } catch { /* nothing to resume */ }
+        Promise.resolve(audioCtx?.resume()).catch(() => { /* no audio graph */ });
+        try { tryPlay(active.video); } catch { /* nothing to resume */ }
         try { if (mr.state === 'paused') mr.resume(); } catch { /* unsupported */ }
       }
       const onVisibility = () => (document.hidden ? pauseForHidden() : resumeFromHidden());
@@ -1367,6 +1391,12 @@ export default function ZooSnoozScreen() {
                 }
               } else if (drawn > 0) {
                 played++;
+              } else {
+                // ⚠️ Started and drew nothing. Before this the pipeline recorded NOTHING for the
+                //    single most confusing outcome it can produce, so the student met a bare
+                //    accusation with no reason attached. Name it per animal.
+                issues.push(`${animal.id}: the clip played but no picture was captured${resumeFailed ? ' (playback would not restart after the screen went off)' : ''}`);
+                console.warn(`[zoosnooz] "${animal.id}" started but drew 0 frames; resumeFailed=${resumeFailed}`);
               }
               if (started && secs > 0.5 && drawn / secs < 5) {
                 console.warn(`[zoosnooz] "${animal.id}" drew only ${drawn} frames in ${secs.toFixed(1)}s (~${(drawn / secs).toFixed(1)}fps) - its footage will look frozen.`);
@@ -1546,6 +1576,13 @@ export default function ZooSnoozScreen() {
                 tick();
                 watchdog = setInterval(() => {
                   if (done) return;
+                  // ⚠️ SELF-HEAL. One rejected play() used to end the clip's contribution for
+                  //    good. If we are visible and the clip is still paused, ask again — iOS
+                  //    usually allows it once the page is properly foregrounded, and the retry
+                  //    costs nothing when playback is already running.
+                  if (!document.hidden && !hiddenSince && videoEl.paused && !videoEl.ended) {
+                    try { tryPlay(videoEl); } catch { /* asked again next tick */ }
+                  }
                   if (performance.now() - lastFrameTime > 400) {
                     if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
                     if (nextId) { clearTimeout(nextId); nextId = null; }
