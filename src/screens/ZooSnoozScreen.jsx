@@ -2308,9 +2308,10 @@ export default function ZooSnoozScreen() {
           const CONFETTI_COLOURS = ['#4A9E6B','#2E7D55','#A8C4B2','#00E63C','#FFD700','#F472B6','#38BDF8'];
           // ⚠⚠ THIS OVERLAY MUST NEVER TRAP A STUDENT. It was `align-items:center` with
           //    `overflow:hidden`, so a card taller than the screen was clipped at BOTH ends with
-          //    no way to scroll. Measured at 390x640: the card was 858px tall, and "Continue
-          //    Exploring" (623-670) and "Go Home" (680-716) were both off the bottom. Finishing
-          //    an animal on a normal phone was a DEAD END - the only way out was reloading.
+          //    no way to scroll. Measured at 390x640: the card was 858px tall and BOTH exits were
+          //    off the bottom. Finishing an animal on a normal phone was a DEAD END - the only
+          //    way out was reloading. ⚠️ There is only ONE exit now ("Continue Exploring"), so
+          //    this screen must stay scrollable or that dead end comes straight back.
           //    `align-items:flex-start` + `margin:auto` on the card still centres it when it
           //    fits, but lets it scroll when it does not.
           // 🚫 Never put overflow:hidden back on this element.
@@ -2441,11 +2442,12 @@ export default function ZooSnoozScreen() {
                   style={{ width:'100%', padding:'0.9rem', background:'linear-gradient(135deg,#2E7D55,#4C1D95)', border:'none', borderRadius:'var(--t-r-pill)', color:'white', fontSize:'1rem', fontWeight:800, cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.09em', boxShadow:'0 6px 20px rgba(46,125,85,0.5)', marginBottom:'0.45rem' }}>
                   {baDone === ZOOSNOOZ_ANIMALS.length ? '🌙 View Your Night Journey' : 'Continue Exploring →'}
                 </button>
-                <button
-                  onClick={() => { setZzBadgeAnimal(null); setSessionType('standard'); }}
-                  style={{ width:'100%', padding:'0.5rem', background:'transparent', border:'1px solid rgba(168,196,178,0.2)', borderRadius:'var(--t-r-pill)', color:'rgba(168,196,178,0.55)', fontSize:'0.78rem', fontWeight:600, cursor:'pointer', letterSpacing:'0.05em' }}>
-                  ← Go Home
-                </button>
+                {/* 🚫 THERE IS NO "GO HOME" HERE, DELIBERATELY (removed 2026-11-08). It called
+                    `setSessionType('standard')`, which does not navigate home so much as drop
+                    the student out of ZooSnooz altogether, mid-session, from a screen they reach
+                    after EVERY animal. Cameron asked for it gone. A student who wants to stop
+                    goes back to the map and uses Finish Session, which saves their work; this
+                    button bypassed that. 🚫 Do not add a second exit to this screen. */}
               </div>
             </div>
           );
