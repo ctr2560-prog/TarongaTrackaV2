@@ -54,6 +54,14 @@ export function calculateZzBehaviourScore(text) {
     'roar','growl','grunt','call','vocalis','vocaliz',
     'stalk','prowl','pounce','mark','spray','rub','roll','swing','hang','wade',
     'patrol','survey','investigate','explore',
+    // ⚠️ HIDING IS A BEHAVIOUR, and its absence was a scoring bug rather than a style choice.
+    //    The binturong mission is ENTIRELY about whether the animal can be seen, so a correct
+    //    answer — "it is hiding in the dark and not moving" — matched nothing here and scored
+    //    behaviour 1/5, the floor. Measured on real Stage 2 phrasing before this was added.
+    // 🚫 Fourth time a prompt and its word list have disagreed (the lion 2026-10-22, ZooYard
+    //    2026-10-26, the ZooYard rewrite 2026-10-28, this). Rewriting a prompt means scoring a
+    //    real answer against it before shipping.
+    'hid','blend','camouflag','freeze','froze','creep','crept',
   ];
   const matches = behaviourRoots.filter(root => lower.includes(root));
   if (matches.length === 0) return 1;

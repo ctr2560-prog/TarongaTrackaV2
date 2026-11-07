@@ -20,7 +20,11 @@ export const ZOOSNOOZ_ANIMALS =
               question:'Your tracker showed the tiger was mostly still. Why does staying still help?',
               options:['It is resting because it only hunts in the day','It saves energy so it can pounce quickly','It is frightened by loud noises at night','It is trying to keep itself warm'],
               correct:1,
-              observationPrompt:'Describe what the tiger is doing right now — is it moving or staying still?',
+              observationPrompt:'What is the tiger doing right now? Is it moving or keeping still?',
+              // ⚠️ Stage 2 override. The shared one above is written for Stages 3-5.
+              fact:'Tigers hunt by surprise. Staying still saves energy and keeps them hidden. Then they can pounce fast.',
+              // ⚠️ Stage 2 override. The shared one above is written for Stages 3-5.
+              filmingGuidance:'Film how the tiger moves and how it keeps still.\nThe still moments are the tiger saving its energy.',
               keeperQ:'Does the tiger like to stay still or move around a lot?',
             },
             3:{
@@ -70,7 +74,9 @@ export const ZOOSNOOZ_ANIMALS =
               question:'You tracked the sounds near the lion. Why do lions roar?',
               options:['Because they are scared of the dark','To make prey freeze so they are easy to catch','To call their family and say where they are','To scare away the people visiting the zoo'],
               correct:2,
-              observationPrompt:'Describe what the lion is doing right now — is it sitting, lying down, or moving?',
+              observationPrompt:'What is the lion doing right now? Is it sitting, lying down or moving?',
+              // ⚠️ Stage 2 override. The shared one above is written for Stages 3-5.
+              fact:'Lions are the only big cats that live in families. A roar can be heard 8 km away. Working as a team, a pride catches more food.',
               keeperQ:'Do the lions make sounds at night? What kind of sounds?',
             },
             3:{
@@ -119,7 +125,9 @@ export const ZOOSNOOZ_ANIMALS =
               question:'A rhino has thick skin and a big horn. What do these help it do?',
               options:['Swim underwater to search for food','Stay warm on cold winter nights','Run faster than any other animal','Stay safe and scare off attackers'],
               correct:3,
-              observationPrompt:'Describe what you notice about the rhino\'s body — can you see its horn, its thick skin, or how it moves?',
+              observationPrompt:'Look at the rhino\'s horn and thick skin. What is it doing right now?',
+              // ⚠️ Stage 2 override. The shared one above is written for Stages 3-5.
+              fact:'A rhino can weigh 2,700 kg. Its skin is up to 4 cm thick. It can still run at 50 km an hour.',
               keeperQ:'What do you think the horn is used for?',
             },
             3:{
@@ -168,7 +176,11 @@ export const ZOOSNOOZ_ANIMALS =
               question:'The binturong has dark fur. When does it hide best?',
               options:['Dark fur hides it no matter where it goes','In a dark place, where dark fur blends in','When bright sunshine is shining on it','Dark fur does not help it hide at all'],
               correct:1,
-              observationPrompt:'Describe whether the binturong is easy to spot from where you\'re standing — does the light make it easier or harder to see?',
+              observationPrompt:'Can you see the binturong easily? Write what it is doing and where it is hiding.',
+              // ⚠️ Stage 2 override. The shared one above is written for Stages 3-5.
+              fact:'A binturong\'s dark fur hides it well up in the shady trees. Out in a bright open space, that same fur makes it easy to see.',
+              // ⚠️ Stage 2 override. The shared one above is written for Stages 3-5.
+              filmingGuidance:'Film the binturong in the dark cover.\nThen film a moment when the light hits it. The difference tells the story.',
               keeperQ:'Is the binturong easy to see from where you are right now?',
             },
             3:{
@@ -200,7 +212,7 @@ export const ZOOSNOOZ_ANIMALS =
         { id:'sun-bear', name:'Sun Bear', scientificName:'Helarctos malayanus', image:'images/sun-bear.jpg',
           latitude:-33.844111, longitude:151.240111, radius:30,
           keeperInsight:'The sun bear is the smallest bear in the world - but it is all muscle.\nAt night it forages actively, using its long tongue to find insects and honey.\nWatch for the chest patch - it may be used in displays.',
-          interaction:{ type:'sketch', instruction:'Sketch what you observe - focus on the sun bear\'s physical features used for finding food. Label claws, tongue, or body shape.' },
+          interaction:{ type:'sketch', instruction:'Draw what you can see. Look at the sun bear\'s claws, tongue and body shape. Label them.' },
           question:'Which pair of adaptations lets a sun bear reach insects and honey inside logs?',
           options:['A thick fur coat and large ears','An orange chest patch and very sharp teeth','Long curved claws and a very long tongue','Padded paws and a short sniffing snout'], correct:2,
           fact:'Sun bears have the longest tongue of any bear - up to 25 cm - and curved claws for ripping open logs. Claws to break in, tongue to reach deep inside.',
@@ -213,11 +225,13 @@ export const ZOOSNOOZ_ANIMALS =
           ideaWords:['smallest','tongue','claw','honey','insect','tropical','endangered','chest','patch','nocturnal'],
           byStage:{
             2:{
-              keeperInsight:'The sun bear is the smallest bear in the world.\nIt uses its very long tongue to lick up insects and honey - like using a very long spoon!\nDraw what you can see - look closely for its claws and its chest patch.',
+              keeperInsight:'The sun bear is the smallest bear in the world.\nIt has a very long tongue for licking up insects and honey.\nDraw what you can see. Look at its claws and its chest patch.',
               question:'A sun bear uses two body parts together to find food. Which two?',
               options:['Big ears to listen and a flat nose to smell','An orange chest patch and sharp biting teeth','Long claws to rip logs and a long tongue','Padded paws and a very short snout'],
               correct:2,
-              observationPrompt:'Describe what you notice about the sun bear\'s body — can you see its claws or any other special features?',
+              observationPrompt:'Look at the sun bear\'s claws and tongue. What is it doing with them?',
+              // ⚠️ Stage 2 override. The shared one above is written for Stages 3-5.
+              fact:'Sun bears have the longest tongue of any bear, up to 25 cm. Their curved claws rip open logs. Claws to break in, tongue to reach inside.',
               keeperQ:'What body parts does the sun bear use to find food?',
             },
             3:{

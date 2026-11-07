@@ -3299,7 +3299,12 @@ export default function ZooSnoozScreen() {
                     </h2>
                     {isRight ? (
                       <p style={{ color:'rgba(168,196,178,0.92)', fontSize:'clamp(1.1rem, 5vw, 1.4rem)', lineHeight:1.5, maxWidth:'360px', marginBottom:'2rem' }}>
-                        {zzAnimal.fact}
+                        {/* ⚠️ Stage first, then the shared text. `fact` and
+                            `filmingGuidance` were the only student-facing strings read
+                            straight off the animal with no per-stage override, so a Stage 2
+                            rewrite would have reached Stage 5 as well. Every other string
+                            here already resolves through byStage. */}
+                        {stageData.fact || zzAnimal.fact}
                       </p>
                     ) : (
                       <p style={{ color:'rgba(255,255,255,0.55)', fontSize:'0.92rem', lineHeight:1.7, maxWidth:'320px', marginBottom:'2rem' }}>
@@ -3486,7 +3491,10 @@ export default function ZooSnoozScreen() {
             <div style={{ flexShrink:0, display:'flex', alignItems:'baseline', gap:'0.5rem', padding:'0 0.15rem' }}>
               <span style={{ fontSize:'0.55rem', fontWeight:800, letterSpacing:'0.18em', textTransform:'uppercase', color:'rgba(168,196,178,0.8)', flexShrink:0 }}>To camera</span>
               <span style={{ fontSize:'0.78rem', lineHeight:1.35, color:'rgba(243,237,226,0.75)' }}>
-                {(zzAnimal.filmingGuidance||'').split('\n')[0]}
+                {/* ⚠️ Stage first — see the note on `fact` above.
+                    ⚠️ Only the FIRST LINE is shown here, so line 1 has to carry the
+                       instruction on its own. */}
+                {((stageData.filmingGuidance || zzAnimal.filmingGuidance)||'').split('\n')[0]}
               </span>
             </div>
 
