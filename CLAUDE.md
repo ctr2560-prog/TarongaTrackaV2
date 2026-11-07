@@ -23,6 +23,108 @@ region: `australia-southeast1`. ⚠️ See **Build & Deploy** — these two drif
 
 ---
 
+## Where we left off (2026-11-03 → 11-07) — Evolve catches up, and consent
+
+Three strands, all following from the ZooSnooz work in the section below.
+
+### ✅ EVOLVE NOW HAS EVERYTHING ZOOSNOOZ LEARNED
+
+🚫 **The three stitchers are deliberate copies and a fix in one does NOT reach the others.** That
+is why Evolve was still carrying every fault, character for character, after ZooSnooz was fixed.
+
+**`utils/evolveFilm.js`, all five ported (`7013b3c`):** the detached `<video>` (see rule 0z), the
+`play()` promise escaping `try/catch`, the watchdog self-heal, the swallowed
+`catch { /* frame not ready */ }`, and the `|| W` dimension fallback that throws IndexSizeError
+every frame on a 0×0 element. A chapter that starts and draws nothing now names itself.
+
+**The film takes ZooSnooz's look (`93d8a36`).** `EVOLVE_VIDEO_ASPECT` 0.857 → **0.5625**: the
+footage is the whole frame and the solid bands are gradient scrims over it. Photo-led chapter
+cards with a push-in and progress pips, in Evolve's gold-and-cream palette. `EVOLVE_FILM_TOP` /
+`_BOT` survive as scrim depths and the caption origin, so the footer still carries the student's
+reflection unchanged. ⚠️ `vidY` / `vidH` are gone — there is no video band.
+
+**The filming screen is the camera app (`775af41`).** `EVOLVE_CAPTURE_ASPECT` (390/445) is its own
+constant. ⚠️ **Without it the previous commit would have shrunk the viewfinder to a ~209px
+sliver**, because the viewfinder reads the film aspect. Measured 309px instead.
+
+⚠️ **`.ev-cam` had `aspect-ratio` + `max-height` on one element — the FOURTH time that trap has
+bitten.** See the rule below. Rebuilt with the pinned-box construction.
+⚠️ Stage height is **44vh by measurement**: at 58vh the record screen overflowed by 103px at
+390×640 and the student had to scroll to reach the shutter. Now 0px at 640 and 844.
+⚠️ **No backticks in that CSS block** — it lives in a JS template literal and a backtick in a
+comment ends the string. The build failed on exactly that.
+
+⚠️ **UNTESTED ON A DEVICE.** ZooSnooz's equivalents are verified on a handset; Evolve's are the
+same edits, unproven. No iPhone has ever produced an Evolve clip.
+⚠️ **`lion.jpg` (710×347) and `tiger.jpg` (1200×630) are too small for a full-bleed card** and
+will look soft — 3.7× and 2.0× upscale. A file drop into `public/images/`, no code change.
+
+### ⚠️⚠️ `aspect-ratio` + `max-height` ON ONE ELEMENT DOES NOT HOLD THE ASPECT
+
+Four separate occurrences now, so it belongs here rather than in a commit message. The width
+stretches, the aspect derives a height, `max-height` clamps it, and the shape is gone — or the
+element stops stretching, gets a definite size, and falls to the start edge.
+
+| Where | How it showed |
+|---|---|
+| ZooSnooz viewfinder | collapsed to zero, three attempts |
+| ZooSnooz clip card | rendered **landscape 1.60** while declaring 3/4, and `cover` threw away 65% |
+| ZooSnooz documentary player | correct shape, **left-aligned** against full-width stats |
+| Evolve `.ev-cam` | would have become a 209px sliver |
+
+✅ **The construction that works, every time:** a parent with a **definite height**, and the aspect
+box pinned inside it with `top:0; bottom:0` so the height produces the width. Give the inner box
+`max-width:100%` and the same bound expressed as `max-height`, so the two agree numerically and
+the shape holds whichever one the engine applies first.
+🚫 `align-self:center` is NOT the fix for the left-aligned case — it centres the box and the box
+then shrink-wraps its content. Measured at 26px wide.
+🚫 Never give the inner box a width.
+
+### Consent, and a letter that did not exist (2026-11-07)
+
+**The checkbox is a commitment now, not a claim.** It read *"I confirm that appropriate consent
+has been obtained"*, which asks a teacher to attest to something they have usually not done at
+the point of creating the class. It now reads **"I confirm that I will obtain…"**.
+
+⚠️ **The Privacy Policy described the old wording** and misdescribed the product the moment that
+shipped — on a clause about filming children. 🚫 **Never change what a control asserts without
+grepping for the places that describe it.** `LegalModal.jsx` is not near `CreateClassScreen.jsx`
+and nothing links them; it was caught by grepping the deployed bundle afterwards.
+
+**All three filming modes are covered**, through one `FILMING_MODES` descriptor so the block, the
+letter link and the validation message cannot drift. 🚫 **A new mode that records video must be
+added there**, or it creates classes with no consent step — which is exactly how Evolve and
+Wildest Dreams went without one. ⚠️ ZooYard is deliberately absent: it photographs the schoolyard
+and the student's build, not the student.
+
+**`public/wildest-dreams-notification.html` is new.** Wildest Dreams had no parent letter at all.
+A copy of the Evolve letter, not a shared template, per the standing rule that the letters are
+independent so one cannot break the other.
+
+⚠️⚠️ **ITS OPT-OUT CANNOT PROMISE WHAT EVOLVE'S DOES.** Evolve's says an opted-out student takes
+part in full; Wildest Dreams is video from end to end with no written alternative, so the slip
+says plainly that the student takes part as the **camera operator** for their group. 🚫 Do not
+"align" the two letters by copying Evolve's promise into it.
+⚠️ Written against what the mode actually does, read out of the code. 🚫 A letter may only state
+what the system proves — the ZooSnooz letter once promised 48-hour deletion that was never built
+and had already gone home to families.
+⚠️ Caught in review: the opt-out header was dark-on-dark. Evolve styles `.optout-header p`, and
+the text had been put straight in the div.
+
+### Three ZooSnooz tweaks (`f57c0e7`)
+
+- **The documentary player was left-aligned** — the aspect trap above. Centred, 248×441.
+- **The observation timer is a 230px dial**, the same shape as Evolve's 60-second watch dial, so
+  a student meets one idea rather than two. Uses `pathLength={1}` so the dash maths is in
+  fractions; 🚫 do not hardcode the circumference.
+- **The rhino reads like a rhino**: 20 canvas units per metre (was 8, which made an ordinary drag
+  40m+), and a CHARGE needs 3.0 units/ms (was 1.2). ⚠️ **The live pad and the summary card used
+  DIFFERENT thresholds** — the same drag could read WALK during the activity and CHARGE on the
+  card. Both now read one `zzRhinoGait()` helper.
+  ⚠️ Those numbers are judgement, not measured against a real finger on a real pad.
+
+---
+
 ## Where we left off (2026-11-01 → 11-03) — the ZooSnooz phone pass
 
 A long run of phone-first work on ZooSnooz, ending in **the first documentary ever verified end
@@ -148,8 +250,12 @@ Function — do it as its own piece of work, and re-run the security sweep after
 | | detached `<video>` | broken `play()` catch | visibility handling |
 |---|---|---|---|
 | ZooSnooz | ✅ fixed | ✅ fixed | ✅ |
-| **Evolve** (`utils/evolveFilm.js`) | 🔴 same fault | 🔴 line ~343 | ✅ |
+| **Evolve** (`utils/evolveFilm.js`) | ✅ fixed 11-03 | ✅ fixed 11-03 | ✅ |
 | **Wildest Dreams** (`modes/wildest-dreams/film.js`) | 🔴 same fault | — | 🔴 **none at all** |
+
+🔴 **WILDEST DREAMS IS THE LAST ONE LEFT**, and it is the worst of the three: the detached element
+AND no visibility handling at all, so a hidden tab still stops redrawing and produces a film of
+cards. It is a mode for support units, where a half-finished change is worse than none.
 
 ⚠️ Evolve runs on student phones at a twilight excursion, which is precisely the exposure. It has
 **never** been proven on a phone — every clip in the bucket is Chromium-encoded, so every
@@ -414,9 +520,10 @@ sections below.
    Safari and Chrome on iOS, with screen locks. The crop was fixed on 10-29 and the reason it
    still produced empty films for two days afterwards is in the 11-01 → 11-03 section: a detached
    `<video>` gets no canvas pixels in WKWebView.
-   🔴 **The replacement for this item: port those fixes to EVOLVE.** It has the same detached
-   element and the same swallowed `play()` rejection, it runs on student phones at a twilight
-   excursion, and no iPhone has ever produced an Evolve clip.
+   ✅ **Evolve was ported on 2026-11-03** — all five fixes, plus the film's look and the camera
+   screen. ⚠️ Still untested on a device, and no iPhone has ever produced an Evolve clip.
+   🔴 **The replacement for this item: WILDEST DREAMS.** It has the detached element and no
+   visibility handling whatsoever, and it is entirely video.
 0a. ~~**`adminWipeAllData` deployed with no source in the repository.**~~ ✅ **FIXED 2026-10-04.**
    **Source and deployment now match exactly — 9 functions both sides.**
 
@@ -1123,6 +1230,11 @@ auto-cleanup leaves them unable to save. **Class Details → "New device"** clea
    owns, and "what does an opted-out student do" is a teaching decision, not a database field.
    Wildest Dreams is entirely video and has no non-filming version, which is precisely why this
    belongs with the teacher.
+   ⚠️ **Updated 2026-11-07.** There IS a teacher-level checkbox on Create Class, now on all three
+   filming modes, and it is a **commitment to obtain** consent rather than a claim that it
+   exists. That is an attestation by the teacher, not a per-student flag, so the decision above
+   stands. Wildest Dreams finally has its own parent letter; its opt-out makes the student the
+   camera operator, because there is nothing else it could honestly promise.
 4. **No consent record.** Filming opt-out is a verbal arrangement with the teacher; nothing in the
    data marks a student as not-to-be-filmed, so moderation has nothing to filter on.
 5. Open writes on `accessCodes` (90 teacher invite codes), `settings`, `schools`, `prePostLinks`.
