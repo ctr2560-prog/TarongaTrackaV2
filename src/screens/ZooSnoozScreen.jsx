@@ -8,6 +8,7 @@ import { ref as storageRef, uploadBytesResumable } from 'firebase/storage';
 import { db, storage } from '../firebase';
 import { normaliseCode, safeStudentId, getMinWords } from '../utils/helpers';
 import { clipKey, saveClip, loadClip, clearClips } from '../utils/zzClipStore';
+import { labelRecording } from '../utils/containerSniff';
 import { buildObservationScore } from '../utils/scoring';
 
 const INTER_DURATION = { tiger: 30, lion: 30, rhino: 0, binturong: 0, 'sun-bear': 0 };
@@ -655,14 +656,23 @@ export default function ZooSnoozScreen() {
       return;
     }
     mr.ondataavailable = e => { if (e.data.size > 0) zzChunksRef.current.push(e.data); };
-    mr.onstop = () => {
-      // Ask the recorder and the chunk what was really produced; only these know on iOS.
-      const actual      = zzChunksRef.current[0]?.type || mr.mimeType || mimeType;
-      const isMP4       = String(actual).includes('mp4');
-      const blobType    = actual || 'video/webm';
-      const fileExt     = isMP4 ? 'mp4' : 'webm';
-      const contentType = isMP4 ? 'video/mp4' : 'video/webm';
-      const blob = new Blob(zzChunksRef.current, { type: blobType });
+    mr.onstop = async () => {
+      // ⚠️⚠️ ASK THE BYTES, NOT THE BROWSER. This used to read
+      //      `const blobType = actual || 'video/webm'` — and on iOS all three sources of
+      //      `actual` can be empty, so it labelled the file webm while MediaRecorder was
+      //      recording MP4. mp4 bytes served as video/webm upload fine, download fine, and no
+      //      browser will decode them. Cameron hit it on Chrome for iOS 2026-11-07: the
+      //      documentary had no footage AND the teacher could not play the clips either, which
+      //      is the tell that the RECORDING is broken rather than the stitcher.
+      // 🚫 Never label a recording from a default, and never from isTypeSupported — that
+      //    answers what the browser COULD record, not what it DID.
+      const claimed     = zzChunksRef.current[0]?.type || mr.mimeType || '';
+      const probe       = new Blob(zzChunksRef.current);
+      const label       = await labelRecording(probe, claimed);
+      const fileExt     = label.ext;
+      const contentType = label.contentType;
+      if (label.source !== 'bytes') console.warn('[zoosnooz] clip labelled from', label.source, '-', contentType);
+      const blob = new Blob(zzChunksRef.current, { type: contentType });
       if (blob.size < 500) {
         alert('Recording failed - no video was captured. Please try again.');
         setZzRecording(false);
@@ -998,7 +1008,10 @@ export default function ZooSnoozScreen() {
         return;
       }
       mr.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
-      mr.onstop = () => {
+      // ⚠️ async because the label is now read from the blob's bytes. Nothing awaits this
+      //    handler — MediaRecorder does not — so the only effect is that the preview
+      //    appears a few milliseconds later, after a 12-byte read.
+      mr.onstop = async () => {
         if (cancelled) return;
         // ⚠️⚠️ THE iOS TRAP, AND IT WAS STILL LIVE HERE until 2026-10-03. The recorders were fixed
         //    and this stitcher output was not, so an iPhone's finished DOCUMENTARY was still mp4
@@ -1009,7 +1022,13 @@ export default function ZooSnoozScreen() {
         // 🚫 Label the film from what the recorder ACTUALLY produced. The upload a few hundred
         //    lines below derives its extension and contentType from `blob.type`, so getting this
         //    right is what makes the stored file playable.
-        const actual = chunks[0]?.type || mr.mimeType || mimeType || 'video/webm';
+        // ⚠️ Same trap as the clip recorder, and it bit here too in October: the finished
+        //    DOCUMENTARY was mp4 bytes labelled webm, and the upload below derives its
+        //    extension and contentType from blob.type. Ask the bytes.
+        const claimedOut = chunks[0]?.type || mr.mimeType || '';
+        const outLabel   = await labelRecording(new Blob(chunks), claimedOut);
+        const actual     = outLabel.contentType;
+        if (outLabel.source !== 'bytes') console.warn('[zoosnooz] film labelled from', outLabel.source, '-', actual);
         const blob = new Blob(chunks, { type: actual });
         zzStitchedBlobRef.current = blob;
         if (issues.length) console.warn('[zoosnooz] finished with issues:', issues);
