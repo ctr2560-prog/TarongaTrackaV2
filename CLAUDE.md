@@ -247,11 +247,11 @@ Function — do it as its own piece of work, and re-run the security sweep after
 
 🚫 **The three stitchers are deliberate copies and a fix in one does NOT reach the others.**
 
-| | detached `<video>` | broken `play()` catch | visibility handling |
-|---|---|---|---|
-| ZooSnooz | ✅ fixed | ✅ fixed | ✅ |
-| **Evolve** (`utils/evolveFilm.js`) | ✅ fixed 11-03 | ✅ fixed 11-03 | ✅ |
-| **Wildest Dreams** (`modes/wildest-dreams/film.js`) | 🔴 same fault | — | 🔴 **none at all** |
+| | detached `<video>` | broken `play()` catch | visibility handling | iOS label trap |
+|---|---|---|---|---|
+| ZooSnooz | ✅ fixed | ✅ fixed | ✅ | ✅ fixed 11-07 |
+| **Evolve** (`utils/evolveFilm.js`) | ✅ fixed 11-03 | ✅ fixed 11-03 | ✅ | 🔴 `\|\| 'video/webm'` |
+| **Wildest Dreams** (`modes/wildest-dreams/film.js`) | 🔴 same fault | — | 🔴 **none at all** | 🔴 same |
 
 🔴 **WILDEST DREAMS IS THE LAST ONE LEFT**, and it is the worst of the three: the detached element
 AND no visibility handling at all, so a hidden tab still stops redrawing and produces a film of
@@ -516,8 +516,10 @@ sections below.
 
 ### ⚠️ Do these first
 
-0. ✅ **DONE 2026-11-03 — a ZooSnooz documentary is verified end to end on a phone**, in both
-   Safari and Chrome on iOS, with screen locks. The crop was fixed on 10-29 and the reason it
+0. ✅ **DONE — a ZooSnooz documentary is verified end to end on a phone**, in Safari and in
+   Chrome on iOS, with screen locks. ⚠️ It took TWO separate faults, found four days apart: the
+   detached `<video>` (rule 0z, 11-03) and the iOS label trap that was never really fixed (rule
+   0y, 11-07). Confirmed working by Cameron on Chrome for iOS on 2026-11-07. The crop was fixed on 10-29 and the reason it
    still produced empty films for two days afterwards is in the 11-01 → 11-03 section: a detached
    `<video>` gets no canvas pixels in WKWebView.
    ✅ **Evolve was ported on 2026-11-03** — all five fixes, plus the film's look and the camera
@@ -1968,6 +1970,53 @@ abstraction, so changing Evolve can never regress live ZooSnooz. **They do not i
 other — a fix in one needs applying to the other by hand.**
 
 Every rule below was learned by shipping something broken. None of it is stylistic.
+
+### 0y. ⚠️⚠️⚠️ THE iOS LABEL TRAP WAS NEVER ACTUALLY FIXED (found and fixed 2026-11-07)
+
+✅ **Verified working by Cameron on Chrome for iOS.** This is the second of the two faults that
+made ZooSnooz unusable on a phone; rule 0z below is the first.
+
+**The symptom that identifies it, and it is the only one that does:** the film comes out as cards
+with no footage **AND the teacher cannot play the individual clips either**. That second half is
+everything. A stitcher fault cannot stop a clip playing in the staff portal, so the moment both
+are true the problem is the RECORDING and nothing in the stitcher will fix it.
+
+**What was still there**, in BOTH ZooSnooz recorders, despite this document carrying a rule
+against it since 2026-10-03:
+
+```js
+const actual   = chunks[0]?.type || mr.mimeType || mimeType;
+const blobType = actual || 'video/webm';        // 🚫 a guessed default
+const fileExt  = isMP4 ? 'mp4' : 'webm';
+```
+
+On iOS `MediaRecorder.isTypeSupported` returns false for **every** candidate, so `mimeType` is
+empty — and `chunks[0].type` and `mr.mimeType` can be empty too. All three empty falls through to
+**webm**, while MediaRecorder given no mimeType records **MP4**. mp4 bytes stored and served as
+`video/webm` upload fine, download fine, fetch 200, and no browser will decode them.
+
+⚠️ **The October fix was recorded as "fixed in all six places" and it was not.** Deriving from
+`chunks[0]?.type` is correct *as far as it goes*, and the `|| 'video/webm'` on the end quietly
+undid it in exactly the case that matters. 🚫 Do not trust "fixed everywhere" on this fault —
+grep for `|| 'video/webm'` and for any default beside a label.
+
+**The fix: ask the bytes.** `utils/containerSniff.js` reads the first 12 bytes —
+`1A 45 DF A3` is WebM/Matroska, `ftyp` at offset 4 is MP4 — then falls back to the recorder's own
+claim, and only then to a default, which now warns. Both `mr.onstop` handlers are `async` for the
+12-byte read; nothing awaits them.
+
+🚫 **Never label a recording from a default, and never from a capability probe.**
+`isTypeSupported` answers "what could this browser record?" — the right question when building a
+MediaRecorder, the wrong one when holding a finished blob.
+
+🔴 **STILL CARRYING THIS FAULT: `utils/evolveFilm.js` and `modes/wildest-dreams/film.js`.** Evolve
+films on student phones at a twilight excursion.
+
+⚠️ **Clips already recorded on a phone stay broken.** The bytes are fine and only the stored
+`contentType` is wrong, so they remain unplayable until it is corrected in Storage. The fix
+applies to new recordings only — re-film rather than retrying an old clip.
+
+---
 
 ### 0z. ⚠️⚠️⚠️ THE `<video>` YOU DRAW FROM MUST BE IN THE DOCUMENT (2026-11-03)
 
