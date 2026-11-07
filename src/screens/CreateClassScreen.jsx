@@ -139,7 +139,9 @@ export default function CreateClassScreen() {
 
   const createClass = async () => {
     if (!newClassName.trim() || !schoolName) return;
-    if (isZooSnooz && !zzConsentChecked) { setCreateError('Please confirm student filming consent before creating a ZooSnooz class.'); return; }
+    // ⚠️ Wording tracks the checkbox above — it is a commitment to obtain consent, not a claim
+    //    that it already exists.
+    if (isZooSnooz && !zzConsentChecked) { setCreateError('Please confirm you will obtain filming consent before creating a ZooSnooz class.'); return; }
     setCreateError('');
     setCreatingClass(true);
     try {
@@ -324,9 +326,35 @@ export default function CreateClassScreen() {
                     <input type="checkbox" checked={zzConsentChecked} onChange={e => setZzConsentChecked(e.target.checked)}
                       style={{ marginTop:'3px', accentColor:'#1B6B3A', width:'15px', height:'15px', flexShrink:0 }} />
                     <span style={{ fontSize:'0.8rem', color:'#1a4a2a', lineHeight:1.6 }}>
-                      I confirm that appropriate consent for video filming has been obtained for all participating students in accordance with my school's policies.
+                      {/* ⚠️ FUTURE TENSE, DELIBERATELY. This read "consent ... has been obtained",
+                          which asks a teacher to attest to something they have usually not done
+                          yet at the point of creating the class — so it was either a lie or a
+                          reason to stop. Cameron, 2026-11-07: "putting it back on teacher".
+                          The obligation is now a commitment to obtain it, which is honest at
+                          this moment and still places the duty with the school.
+                          🚫 Do not turn this into a per-student consent flag. CLAUDE.md records
+                             that as a closed decision: filming consent lives with the school,
+                             both parent letters run an opt-out model, and a student who may not
+                             be filmed becomes the crew. */}
+                      I confirm that I will obtain appropriate consent for video filming from the
+                      families of all participating students, in accordance with my school&rsquo;s policies.
                     </span>
                   </label>
+                  {/* ⚠️ The letter is HTML, not a PDF, and that is the house pattern — every
+                      printable in this app is a self-contained page the browser prints or saves
+                      as a PDF. 🚫 Do not add a separate PDF copy: it would be a second version
+                      of the same letter to keep in step, and this one already went home to
+                      families with a claim that had to be corrected once.
+                      ⚠️ Same path ClassDetailsScreen opens for a ZooSnooz class, so there is one
+                      letter and one place to change it. */}
+                  <a href="/zoosnooz-notification.html" target="_blank" rel="noopener noreferrer"
+                    style={{ display:'inline-flex', alignItems:'center', gap:'0.4rem', marginTop:'0.6rem', marginLeft:'2rem',
+                      fontSize:'0.78rem', fontWeight:700, color:'#1B6B3A', textDecoration:'underline' }}>
+                    Parent information &amp; opt-out letter ↗
+                  </a>
+                  <div style={{ fontSize:'0.72rem', color:'#4a7a5a', lineHeight:1.5, marginTop:'0.3rem', marginLeft:'2rem' }}>
+                    Print it or save it as a PDF from your browser, and send it home before the night.
+                  </div>
                 </div>
               )}
 
