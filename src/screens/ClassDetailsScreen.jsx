@@ -307,6 +307,9 @@ export default function ClassDetailsScreen() {
   const isZZ = cls.sessionType === 'zoosnooz';
   const isZY = cls.sessionType === 'zooyard';
   const isEV = cls.sessionType === 'evolve';
+  // ⚠️ Wildest Dreams films students from end to end and had no parent letter at all until
+  //    2026-11-07, which is why it was missing from the notification buttons below.
+  const isWD = cls.sessionType === 'wildest-dreams';
   const totalStudents  = students.length;
   const avgPoints      = totalStudents > 0 ? Math.round(students.reduce((s,st)=>s+(st.totalPoints||0),0)/totalStudents) : 0;
   const totalBadges    = students.reduce((s,st)=>s+(st.badges?.length||0),0);
@@ -551,6 +554,11 @@ export default function ClassDetailsScreen() {
             )}
             {isEV && (
               <button className="lms-nav-item" onClick={() => window.open('/evolve-notification.html', '_blank')}>
+                <span className="lms-nav-icon"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M11.5 2.5l2 2-7.5 7.5H4v-2l7.5-7.5z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/></svg></span> Notification Template
+              </button>
+            )}
+            {isWD && (
+              <button className="lms-nav-item" onClick={() => window.open('/wildest-dreams-notification.html', '_blank')}>
                 <span className="lms-nav-icon"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M11.5 2.5l2 2-7.5 7.5H4v-2l7.5-7.5z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/></svg></span> Notification Template
               </button>
             )}

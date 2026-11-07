@@ -136,12 +136,29 @@ export default function CreateClassScreen() {
   const isZooYard  = newLocation === 'school';
   const isEvolve   = newLocation === 'evolve-sydney';
   const isWildest  = newLocation === 'wildest-dreams-sydney';
+  // ⚠️ THE THREE MODES THAT FILM STUDENTS, each with its own parent letter. 🚫 Adding a mode
+  //    that records video means adding it here, or it creates classes with no consent step —
+  //    which is exactly how Evolve and Wildest Dreams went without one.
+  // ⚠️ ZooYard photographs the schoolyard and the student's build, not the student, so it is
+  //    deliberately absent.
+  const FILMING_MODES = {
+    zoosnooz: { label: 'ZooSnooz', letter: '/zoosnooz-notification.html' },
+    evolve:   { label: 'Evolve',   letter: '/evolve-notification.html' },
+    wildest:  { label: 'Wildest Dreams', letter: '/wildest-dreams-notification.html' },
+  };
+  const filmingMode = isZooSnooz ? FILMING_MODES.zoosnooz
+    : isEvolve ? FILMING_MODES.evolve
+    : isWildest ? FILMING_MODES.wildest
+    : null;
 
   const createClass = async () => {
     if (!newClassName.trim() || !schoolName) return;
     // ⚠️ Wording tracks the checkbox above — it is a commitment to obtain consent, not a claim
     //    that it already exists.
-    if (isZooSnooz && !zzConsentChecked) { setCreateError('Please confirm you will obtain filming consent before creating a ZooSnooz class.'); return; }
+    // ⚠️ ALL THREE FILMING MODES, not just ZooSnooz. Evolve films a piece to camera at every
+    //    chapter and Wildest Dreams is video from end to end; both were creating classes with no
+    //    consent step at all until 2026-11-07.
+    if (filmingMode && !zzConsentChecked) { setCreateError(`Please confirm you will obtain filming consent before creating a ${filmingMode.label} class.`); return; }
     setCreateError('');
     setCreatingClass(true);
     try {
@@ -320,7 +337,7 @@ export default function CreateClassScreen() {
               <input type="text" value={newClassName} onChange={e => setNewClassName(e.target.value)} placeholder="e.g. 7A, Biology, Koala Crew"
                 style={inputStyle} onFocus={e => e.target.style.borderColor='var(--t-mid)'} onBlur={e => e.target.style.borderColor='var(--t-stone)'} />
 
-              {isZooSnooz && (
+              {filmingMode && (
                 <div style={{ background:'#f0f7f2', border:'1px solid #b6d9c3', borderRadius:'10px', padding:'0.9rem 1rem', marginBottom:'1rem' }}>
                   <label style={{ display:'flex', gap:'0.65rem', alignItems:'flex-start', cursor:'pointer' }}>
                     <input type="checkbox" checked={zzConsentChecked} onChange={e => setZzConsentChecked(e.target.checked)}
@@ -347,13 +364,13 @@ export default function CreateClassScreen() {
                       families with a claim that had to be corrected once.
                       ⚠️ Same path ClassDetailsScreen opens for a ZooSnooz class, so there is one
                       letter and one place to change it. */}
-                  <a href="/zoosnooz-notification.html" target="_blank" rel="noopener noreferrer"
+                  <a href={filmingMode.letter} target="_blank" rel="noopener noreferrer"
                     style={{ display:'inline-flex', alignItems:'center', gap:'0.4rem', marginTop:'0.6rem', marginLeft:'2rem',
                       fontSize:'0.78rem', fontWeight:700, color:'#1B6B3A', textDecoration:'underline' }}>
                     Parent information &amp; opt-out letter ↗
                   </a>
                   <div style={{ fontSize:'0.72rem', color:'#4a7a5a', lineHeight:1.5, marginTop:'0.3rem', marginLeft:'2rem' }}>
-                    Print it or save it as a PDF from your browser, and send it home before the night.
+                    Print it or save it as a PDF from your browser, and send it home before the excursion.
                   </div>
                 </div>
               )}
