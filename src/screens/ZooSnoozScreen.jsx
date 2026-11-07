@@ -2439,6 +2439,37 @@ export default function ZooSnoozScreen() {
   // MISSION VIEW
   // ─────────────────────────────────────────────────────────────────────────
   const stageData = zzAnimal.byStage?.[classStage] || zzAnimal.byStage?.[5] || {};
+
+  // ── Stage 2 plain language for the instrument readouts ──────────────────
+  // ⚠️ The activity screens are written as scientific instruments, which is deliberate and
+  //    worth keeping for Stages 3-5 — it is what makes ZooSnooz feel like real field science.
+  //    But "understory", "detectable", "momentum" and "vocalisation" are secondary-school
+  //    words, and none of this text had a per-stage version: a Year 3 read exactly what a
+  //    Year 11 read.
+  // ⚠️ ONLY the strings that say what to DO or what a RESULT MEANS are swapped. The instrument
+  //    TITLES are left alone on purpose — a student can ignore a title and still do the
+  //    activity, and the titles are where the atmosphere lives.
+  // 🚫 Do not extend this into a general translation layer. If a whole screen needs different
+  //    wording per stage, it belongs in byStage in zoosnoozAnimals.js like everything else.
+  const ZZ_PLAIN_S2 = {
+    // binturong — the readouts that tell a student how well hidden the animal is
+    'Binturong well-camouflaged - dark fur matches this environment': 'Well hidden - its dark fur matches this dark place',
+    'Partial camouflage - binturong detectable at close range': 'Half hidden - you could still spot it up close',
+    'Binturong exposed - dark fur stands out against bright light': 'Easy to see - its dark fur stands out in the bright light',
+    'CAMOUFLAGE EFFECTIVENESS': 'HOW WELL HIDDEN',
+    'HABITAT ZONE': 'HOW DARK IT IS',
+    'Partially visible': 'Half hidden',
+    'DEEP CANOPY': 'VERY DARK', 'FOREST EDGE': 'DARK', 'UNDERSTORY': 'A BIT DARK',
+    'CLEARING': 'BRIGHT', 'OPEN TERRAIN': 'VERY BRIGHT',
+    // rhino
+    'Press and drag to simulate movement': 'Press and drag to move',
+    'FOOTFALLS': 'STEPS',
+    // lion
+    'Microphone unavailable - tap continue and observe quietly.': 'The microphone is not working - tap continue and just watch quietly.',
+    // sun bear
+    'Sketch claws, tongue, body shape, or food sources': 'Draw the claws, tongue or body shape',
+  };
+  const plain = (t) => (classStage <= 2 && ZZ_PLAIN_S2[t]) || t;
   const minWords  = getMinWords(classStage);
   const wordCount = obsText.trim().match(/\b\w+\b/g)?.length || 0;
 
@@ -2677,7 +2708,7 @@ export default function ZooSnoozScreen() {
                       ))}
                     </div>
                   </div>
-                  {lionError && <div style={{ fontSize:'0.78rem', color:'#F87171', marginBottom:'0.75rem', textAlign:'center' }}>Microphone unavailable - tap continue and observe quietly.</div>}
+                  {lionError && <div style={{ fontSize:'0.78rem', color:'#F87171', marginBottom:'0.75rem', textAlign:'center' }}>{plain('Microphone unavailable - tap continue and observe quietly.')}</div>}
                   {!lionMonitoring && !done && !lionError && (
                     <button className="zz-btn" style={{ marginBottom:'0.5rem', fontSize:'1rem', padding:'0.9rem' }} onClick={zzStartMic}>▶ Start 30-Second Recording</button>
                   )}
@@ -2724,7 +2755,7 @@ export default function ZooSnoozScreen() {
                   for (let i=1;i<14;i++){const px=(i/14)*canvas.width;ctx.beginPath();ctx.moveTo(px,0);ctx.lineTo(px,canvas.height);ctx.stroke();}
                   if (withPrompt) {
                     ctx.fillStyle='rgba(168,196,178,0.32)'; ctx.font='bold 13px DM Sans,sans-serif'; ctx.textAlign='center';
-                    ctx.fillText('Press and drag to simulate movement',canvas.width/2,canvas.height/2-10);
+                    ctx.fillText(plain('Press and drag to simulate movement'),canvas.width/2,canvas.height/2-10);
                     ctx.font='11px DM Sans,sans-serif'; ctx.fillStyle='rgba(168,196,178,0.18)';
                     ctx.fillText('Slow · Heavy · Powerful',canvas.width/2,canvas.height/2+12); ctx.textAlign='left';
                   }
@@ -2804,7 +2835,7 @@ export default function ZooSnoozScreen() {
                   </div>
                   {rStarted && (
                     <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'0.35rem', marginBottom:'0.65rem' }}>
-                      {[{label:'FOOTFALLS',val:rFootfalls,col:'#4A9E6B'},{label:'DISTANCE',val:`${Math.round(rDist/ZZ_RHINO_UNITS_PER_M)}m`,col:'#A8C4B2'},{label:'GAIT',val:speedLabel,col:speedColor}].map(s=>(
+                      {[{label:plain('FOOTFALLS'),val:rFootfalls,col:'#4A9E6B'},{label:'DISTANCE',val:`${Math.round(rDist/ZZ_RHINO_UNITS_PER_M)}m`,col:'#A8C4B2'},{label:'GAIT',val:speedLabel,col:speedColor}].map(s=>(
                         <div key={s.label} style={{ background:'rgba(0,0,0,0.45)', borderRadius:'8px', padding:'0.38rem 0.4rem', textAlign:'center' }}>
                           <div style={{ fontSize:'0.52rem', color:'rgba(168,196,178,0.45)', fontFamily:'DM Sans, sans-serif', letterSpacing:'0.1em', marginBottom:'0.1rem' }}>{s.label}</div>
                           <div style={{ fontSize:'0.9rem', fontWeight:800, color:s.col, fontFamily:'monospace', lineHeight:1.1 }}>{s.val}</div>
@@ -2830,10 +2861,10 @@ export default function ZooSnoozScreen() {
 
             {/* Binturong: Canopy Night Vision Scanner */}
             {zzAnimal.id === 'binturong' && (() => {
-              const habClass = bintuBrightness<40?'DEEP CANOPY':bintuBrightness<85?'FOREST EDGE':bintuBrightness<130?'UNDERSTORY':bintuBrightness<190?'CLEARING':'OPEN TERRAIN';
+              const habClass = plain(bintuBrightness<40?'DEEP CANOPY':bintuBrightness<85?'FOREST EDGE':bintuBrightness<130?'UNDERSTORY':bintuBrightness<190?'CLEARING':'OPEN TERRAIN');
               const habColor = bintuBrightness<40?'#4ADE80':bintuBrightness<85?'#4A9E6B':bintuBrightness<130?'#FBBF24':bintuBrightness<190?'#FB923C':'#F87171';
               const camColor = bintuCamIdx>70?'#4ADE80':bintuCamIdx>40?'#FBBF24':'#F87171';
-              const camLabel = bintuCamIdx>70?'Well hidden':bintuCamIdx>40?'Partially visible':'Exposed';
+              const camLabel = plain(bintuCamIdx>70?'Well hidden':bintuCamIdx>40?'Partially visible':'Exposed');
               return (
                 <div style={{ background:'rgba(0,0,0,0.55)', border:'1px solid rgba(46,125,85,0.35)', borderRadius:'16px', overflow:'hidden', marginBottom:'1rem' }}>
                   <div style={{ background:'rgba(5,18,10,0.95)', padding:'0.6rem 0.85rem', display:'flex', justifyContent:'space-between', alignItems:'center', borderBottom:'1px solid rgba(46,125,85,0.18)' }}>
@@ -2901,7 +2932,7 @@ export default function ZooSnoozScreen() {
                     {bintuScanning && (
                       <div style={{ position:'absolute', bottom:'8px', left:'8px', right:'8px', display:'flex', gap:'5px', pointerEvents:'none' }}>
                         <div style={{ flex:1, background:'rgba(0,0,0,0.75)', backdropFilter:'blur(6px)', borderRadius:'7px', padding:'0.28rem 0.5rem', border:'1px solid rgba(74,158,107,0.2)' }}>
-                          <div style={{ fontSize:'0.45rem', color:'rgba(168,196,178,0.45)', letterSpacing:'0.12em', fontFamily:'DM Sans, sans-serif' }}>HABITAT ZONE</div>
+                          <div style={{ fontSize:'0.45rem', color:'rgba(168,196,178,0.45)', letterSpacing:'0.12em', fontFamily:'DM Sans, sans-serif' }}>{plain('HABITAT ZONE')}</div>
                           <div style={{ fontSize:'0.68rem', fontWeight:800, color:habColor, fontFamily:'monospace', lineHeight:1.25 }}>{habClass}</div>
                         </div>
                         <div style={{ background:'rgba(0,0,0,0.75)', backdropFilter:'blur(6px)', borderRadius:'7px', padding:'0.28rem 0.55rem', border:'1px solid rgba(74,158,107,0.2)' }}>
@@ -2925,13 +2956,13 @@ export default function ZooSnoozScreen() {
                     {bintuScanning && (
                       <div>
                         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'0.35rem' }}>
-                          <span style={{ fontSize:'0.58rem', color:'rgba(168,196,178,0.5)', fontFamily:'DM Sans, sans-serif', letterSpacing:'0.1em' }}>CAMOUFLAGE EFFECTIVENESS</span>
+                          <span style={{ fontSize:'0.58rem', color:'rgba(168,196,178,0.5)', fontFamily:'DM Sans, sans-serif', letterSpacing:'0.1em' }}>{plain('CAMOUFLAGE EFFECTIVENESS')}</span>
                           <span style={{ fontSize:'0.62rem', color:camColor, fontFamily:'monospace', fontWeight:700 }}>{bintuCamIdx}%</span>
                         </div>
                         <div style={{ height:'7px', borderRadius:'999px', background:'rgba(255,255,255,0.07)', overflow:'hidden', marginBottom:'0.45rem' }}>
                           <div style={{ height:'100%', width:`${bintuCamIdx}%`, background:bintuCamIdx>70?'linear-gradient(90deg,#2E7D55,#4ADE80)':bintuCamIdx>40?'linear-gradient(90deg,#B45309,#FBBF24)':'linear-gradient(90deg,#991B1B,#F87171)', borderRadius:'999px', transition:'width 0.4s ease' }} />
                         </div>
-                        <p style={{ fontSize:'0.6rem', color:'rgba(255,255,255,0.28)', margin:0, fontFamily:'DM Sans, sans-serif', fontStyle:'italic' }}>{bintuCamIdx>70?'Binturong well-camouflaged - dark fur matches this environment':bintuCamIdx>40?'Partial camouflage - binturong detectable at close range':'Binturong exposed - dark fur stands out against bright light'}</p>
+                        <p style={{ fontSize:'0.6rem', color:'rgba(255,255,255,0.28)', margin:0, fontFamily:'DM Sans, sans-serif', fontStyle:'italic' }}>{plain(bintuCamIdx>70?'Binturong well-camouflaged - dark fur matches this environment':bintuCamIdx>40?'Partial camouflage - binturong detectable at close range':'Binturong exposed - dark fur stands out against bright light')}</p>
                       </div>
                     )}
                     {bintuDone && <p style={{ fontSize:'0.63rem', color:'rgba(74,158,107,0.65)', fontFamily:'DM Sans, sans-serif', textAlign:'center', margin:0 }}>Habitat scan complete · {bintuReadings.length} light readings captured · Analyse your results below</p>}
@@ -2994,7 +3025,7 @@ export default function ZooSnoozScreen() {
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'0.75rem' }}>
                     <div>
                       <p style={{ fontSize:'0.58rem', fontWeight:700, color:'rgba(168,196,178,0.7)', textTransform:'uppercase', letterSpacing:'0.14em', margin:'0 0 0.1rem', fontFamily:'DM Sans, sans-serif' }}>Foraging Adaptation Field Sketch</p>
-                      <p style={{ fontSize:'0.7rem', color:'rgba(255,255,255,0.45)', margin:0, fontFamily:'DM Sans, sans-serif' }}>Sketch claws, tongue, body shape, or food sources</p>
+                      <p style={{ fontSize:'0.7rem', color:'rgba(255,255,255,0.45)', margin:0, fontFamily:'DM Sans, sans-serif' }}>{plain('Sketch claws, tongue, body shape, or food sources')}</p>
                     </div>
                     {hasDrawn && <button onClick={zzSunClear} style={{ fontSize:'0.65rem', color:'rgba(168,196,178,0.55)', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'6px', padding:'0.25rem 0.55rem', cursor:'pointer', fontFamily:'DM Sans, sans-serif' }}>Clear</button>}
                   </div>
@@ -3159,7 +3190,7 @@ export default function ZooSnoozScreen() {
                       </div>
                     )}
                     <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'0.4rem', marginBottom:'0.5rem' }}>
-                      {[{label:'HABITAT ZONE',val:habLabel,col:habColor,small:true},{label:'AVG CAMOUFLAGE',val:`${avgCamIdx}%`,col:camColor},{label:'LIGHT RANGE',val:`${Math.round((bintuMin/255)*100)}–${Math.round((bintuPeak/255)*100)}%`,col:'#A8C4B2'}].map(s=>(
+                      {[{label:plain('HABITAT ZONE'),val:habLabel,col:habColor,small:true},{label:'AVG CAMOUFLAGE',val:`${avgCamIdx}%`,col:camColor},{label:'LIGHT RANGE',val:`${Math.round((bintuMin/255)*100)}–${Math.round((bintuPeak/255)*100)}%`,col:'#A8C4B2'}].map(s=>(
                         <div key={s.label} style={{ background:'rgba(0,0,0,0.4)', borderRadius:'7px', padding:'0.35rem 0.4rem', textAlign:'center' }}>
                           <div style={{ fontSize:'0.48rem', color:'rgba(168,196,178,0.45)', fontFamily:'DM Sans, sans-serif', letterSpacing:'0.08em' }}>{s.label}</div>
                           <div style={{ fontSize:s.small?'0.62rem':'0.88rem', fontWeight:800, color:s.col, fontFamily:'monospace', lineHeight:1.2 }}>{s.val}</div>
@@ -3204,7 +3235,7 @@ export default function ZooSnoozScreen() {
                       </div>
                     )}
                     <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'0.4rem', marginBottom:'0.5rem' }}>
-                      {[{label:'FOOTFALLS',val:rFootfalls,col:'#4A9E6B'},{label:'DISTANCE',val:`${Math.round(rDist/ZZ_RHINO_UNITS_PER_M)}m`,col:'#A8C4B2'},{label:'PEAK GAIT',val:speedLabel,col:speedColor}].map(s=>(
+                      {[{label:plain('FOOTFALLS'),val:rFootfalls,col:'#4A9E6B'},{label:'DISTANCE',val:`${Math.round(rDist/ZZ_RHINO_UNITS_PER_M)}m`,col:'#A8C4B2'},{label:'PEAK GAIT',val:speedLabel,col:speedColor}].map(s=>(
                         <div key={s.label} style={{ background:'rgba(0,0,0,0.4)', borderRadius:'7px', padding:'0.35rem 0.4rem', textAlign:'center' }}>
                           <div style={{ fontSize:'0.52rem', color:'rgba(168,196,178,0.45)', fontFamily:'DM Sans, sans-serif', letterSpacing:'0.1em' }}>{s.label}</div>
                           <div style={{ fontSize:'0.9rem', fontWeight:800, color:s.col, fontFamily:'monospace' }}>{s.val}</div>
