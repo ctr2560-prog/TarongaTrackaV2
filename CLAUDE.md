@@ -128,6 +128,12 @@ the finished film on Submit. The practical instruction is the same; the reason i
 member told the wrong one will panic when a student with no bars cannot finish.
 This is in §11, "The running order", which is the page to hand someone who has never run a night.
 
+⚠️ **Section numbers, page numbers and the page count are DERIVED at build time** from
+document order (`_renumber()` at the foot of the script). They were hand-written, and the first
+time a page was inserted they silently went out of step: two sections both numbered 04, and three
+footers still reading "of 6" on an 8-page document. 🚫 Do not hand-number anything in there; the
+numerals in the source are placeholders.
+
 ⚠️ **No em dashes anywhere in it** (Cameron, 2026-11-08). The house style already recorded for
 Evolve and ZooYard student copy applies to staff documents too. 🚫 Do not "fix" this with a blind
 character swap to a comma: half of them were a clause break that a comma cannot carry, and each one

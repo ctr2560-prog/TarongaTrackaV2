@@ -43,7 +43,7 @@ def shot(n): return b64(SHOTS / f'{n}.jpg', 'image/jpeg')
 
 S = {n: shot(n) for n in [
     's1-map','s2-insight','s3-instrument','s4-question','s5-answer','s6-watch',
-    's7-write','s8-film','s9-clipcard','s10-badge','s11-documentary']}
+    's7-write','s8-film','s9-clipcard','s10-badge','s11-documentary','s12-signup']}
 
 def fig(key, num, title, body):
     return f'''<figure class="shot">
@@ -214,6 +214,8 @@ ol.run li::before {{
   font-size:8pt; font-weight:800; display:flex; align-items:center; justify-content:center;
 }}
 ol.run li:last-child {{ margin-bottom:0; }}
+ol.run.tight li {{ margin-bottom:1.6mm; padding-left:8mm; min-height:5.8mm; }}
+ol.run.tight li::before {{ width:5.8mm; height:5.8mm; font-size:7.2pt; }}
 .fix {{ margin-top:3.4mm; }}
 .fix {{ background:var(--cream); border:1px solid var(--stone); border-left:3.5px solid var(--euc);
   border-radius:0 2.5mm 2.5mm 0; padding:3mm 4mm; }}
@@ -255,7 +257,7 @@ ol.run li:last-child {{ margin-bottom:0; }}
 <body>
 
 <div class="bar">
-  <span>ZooSnooz staff operations guide, six pages. Print double-sided, or save as a PDF from your browser.</span>
+  <span>ZooSnooz staff operations guide, {{PAGE_COUNT}} pages. Print double-sided, or save as a PDF from your browser.</span>
   <button onclick="window.print()">Save as PDF / Print</button>
 </div>
 
@@ -335,11 +337,73 @@ ol.run li:last-child {{ margin-bottom:0; }}
  <div class="page-body">
   <div class="runhead">
     <span class="l">ZooSnooz &middot; Staff Operations Guide</span>
+    <span class="r display">Before the night</span>
+  </div>
+
+  <section>
+    <h2><span class="num">04</span>The teacher makes an account</h2>
+    <div class="split">
+      <figure class="shot">
+        <img src="{S['s12-signup']}" alt="The Taronga Education sign-up form">
+        <figcaption><span class="shot-n">B</span><b>One account, both products</b>tarongatracka.com.au
+        &rsaquo; Teacher Portal &rsaquo; Create one free.</figcaption>
+      </figure>
+      <div>
+        <p>Four fields, no invite code, no approval step. They can do it in the car park if they
+        have to, though it is a far better conversation a week out.</p>
+        <ol class="run tight">
+          <li><b>Email address.</b> Their school address is fine.</li>
+          <li><b>A password</b>, at least six characters, typed twice.</li>
+          <li><b>Their school</b>, picked from the list. If it is not there, the
+          <b>+ Add</b> option takes it as typed.</li>
+          <li>An optional tick for Taronga education updates. Nothing depends on it.</li>
+        </ol>
+        <div class="note">The same email and password also sign them into <b>Wildly by Taronga</b>.
+        One login, both products. <b>Forgot password?</b> on the sign-in screen emails a reset, so
+        there is never a code for anyone to chase.</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="num">05</span>Then the class</h2>
+    <p>Teacher Dashboard &rsaquo; <b>Create a New Class</b>. Four decisions, and one of them matters
+    more than the others.</p>
+    <ol class="run">
+      <li><b>Location: pick ZooSnooz.</b> The subject menu disappears when they do, which is
+      correct. ZooSnooz is science, and choosing it is not a decision they have to make.</li>
+      <li><b>NSW Stage, 1 to 5. This is the one that matters.</b> It sets the reading level of every
+      prompt and question on the night, and the bar their writing is marked against. A Stage 2 class
+      gets shorter prompts, simpler questions and gentler marking. <b>Get this wrong and a Year 3
+      meets Year 10 wording in the dark.</b></li>
+      <li><b>Class name.</b> Anything that identifies the group to them later.</li>
+      <li><b>Tick the filming consent box.</b> The class will not be created without it. It commits
+      the teacher to obtaining consent from families under their own school&rsquo;s policy, and the
+      parent letter is linked beside it, ready to print. The same letter stays on the class page
+      afterwards, so it can be reprinted any time.</li>
+    </ol>
+    <div class="note warn"><b>The class code is generated for them</b>, six characters, once the
+    class is made. That code is the only thing a student needs to join: no account, no email
+    address, no password, no real name.</div>
+  </section>
+ </div>
+ <div class="foot">
+   <span>Taronga Tracka, an education program by Taronga Zoo Sydney</span>
+   <img src="{WILD}" alt="Taronga, For the Wild">
+   <span class="pg">Page 2 of 6</span>
+ </div>
+</div>
+
+<!-- ══════════════════════════ PAGE 3 ══════════════════════════ -->
+<div class="page">
+ <div class="page-body">
+  <div class="runhead">
+    <span class="l">ZooSnooz &middot; Staff Operations Guide</span>
     <span class="r display">The five animals</span>
   </div>
 
   <section>
-    <h2><span class="num">04</span>What each animal asks for</h2>
+    <h2><span class="num">06</span>What each animal asks for</h2>
     <table>
       <thead><tr><th style="width:27%">Animal</th><th style="width:17%">Instrument</th><th style="width:13%">Timing</th><th>What the student does</th></tr></thead>
       <tbody>
@@ -365,11 +429,11 @@ ol.run li:last-child {{ margin-bottom:0; }}
   </section>
 
   <section>
-    <h2><span class="num">05</span>Reading the animal, then measuring it</h2>
+    <h2><span class="num">07</span>Reading the animal, then measuring it</h2>
     <div class="shots shots-3">
-      {fig('s2-insight', 'B', 'Keeper insight', 'Three lines on what this animal is doing tonight and why, then the mission. Worth reading aloud before a group scatters.')}
-      {fig('s3-instrument', 'C', 'The instrument', 'The tiger energy tracker, finished. The student held the button while it moved and released when it was still.')}
-      {fig('s4-question', 'D', 'One question', 'Their own reading sits above the question, so it is about what they measured rather than what they remember.')}
+      {fig('s2-insight', 'C', 'Keeper insight', 'Three lines on what this animal is doing tonight and why, then the mission. Worth reading aloud before a group scatters.')}
+      {fig('s3-instrument', 'D', 'The instrument', 'The tiger energy tracker, finished. The student held the button while it moved and released when it was still.')}
+      {fig('s4-question', 'E', 'One question', 'Their own reading sits above the question, so it is about what they measured rather than what they remember.')}
     </div>
   </section>
  </div>
@@ -380,7 +444,7 @@ ol.run li:last-child {{ margin-bottom:0; }}
  </div>
 </div>
 
-<!-- ══════════════════════════ PAGE 3 ══════════════════════════ -->
+<!-- ══════════════════════════ PAGE 4 ══════════════════════════ -->
 <div class="page">
  <div class="page-body">
   <div class="runhead">
@@ -389,16 +453,16 @@ ol.run li:last-child {{ margin-bottom:0; }}
   </div>
 
   <section>
-    <h2><span class="num">06</span>From the answer to the writing</h2>
+    <h2><span class="num">08</span>From the answer to the writing</h2>
     <div class="shots shots-3">
-      {fig('s5-answer', 'E', 'The answer, then why', 'Right or wrong, they get the explanation. A wrong answer can be retried: it still teaches, it just does not score.')}
-      {fig('s6-watch', 'F', 'Twenty seconds of watching', 'The writing box stays shut for twenty seconds so they look at the animal first. There is a quiet skip if you need to move a group on.')}
-      {fig('s7-write', 'G', 'The observation', 'A keeper question to steer them, an optional hint, and a word count. This part carries most of the marks.')}
+      {fig('s5-answer', 'F', 'The answer, then why', 'Right or wrong, they get the explanation. A wrong answer can be retried: it still teaches, it just does not score.')}
+      {fig('s6-watch', 'G', 'Twenty seconds of watching', 'The writing box stays shut for twenty seconds so they look at the animal first. There is a quiet skip if you need to move a group on.')}
+      {fig('s7-write', 'H', 'The observation', 'A keeper question to steer them, an optional hint, and a word count. This part carries most of the marks.')}
     </div>
   </section>
 
   <section>
-    <h2><span class="num">07</span>How points work</h2>
+    <h2><span class="num">09</span>How points work</h2>
     <p>Each animal is worth up to <b>120 points</b>. The written observation is marked out of 15 across
     three areas and scaled to 100; a question answered correctly first time adds 20.</p>
     <table>
@@ -421,7 +485,7 @@ ol.run li:last-child {{ margin-bottom:0; }}
  </div>
 </div>
 
-<!-- ══════════════════════════ PAGE 4 ══════════════════════════ -->
+<!-- ══════════════════════════ PAGE 5 ══════════════════════════ -->
 <div class="page">
  <div class="page-body">
   <div class="runhead">
@@ -430,11 +494,11 @@ ol.run li:last-child {{ margin-bottom:0; }}
   </div>
 
   <section>
-    <h2><span class="num">08</span>The camera</h2>
+    <h2><span class="num">10</span>The camera</h2>
     <div class="split">
       <figure class="shot">
         <img src="{S['s8-film']}" alt="The ZooSnooz filming screen">
-        <figcaption><span class="shot-n">H</span><b>A camera app, deliberately</b>Zoom, a night mode,
+        <figcaption><span class="shot-n">I</span><b>A camera app, deliberately</b>Zoom, a night mode,
         and a flip. Skip is always there.</figcaption>
       </figure>
       <div>
@@ -456,36 +520,67 @@ ol.run li:last-child {{ margin-bottom:0; }}
   </section>
 
   <section>
-    <h2><span class="num">09</span>What they get back</h2>
-    <div class="shots shots-2">
-      {fig('s9-clipcard', 'I', 'Their clip, carded', 'The moment recording stops, the clip is wrapped in the Taronga card with their own writing beneath it, exactly as it appears in the finished film.')}
-      {fig('s10-badge', 'J', 'The badge', 'Points, the quiz bonus, and the writing scored in three bars, with one thing done well and one to try next time.')}
+    <h2><span class="num">99</span>Tell them they are the presenter</h2>
+    <p>This is the single thing that most improves what comes back. A student asked to
+    &ldquo;record something&rdquo; mumbles at the glass. <b>A student told they are presenting a
+    wildlife documentary stands up straight and performs.</b> It is their film, with their name on
+    it, and they keep it.</p>
+    <div class="cols">
+      <div class="card">
+        <h3>What to say to them</h3>
+        <ul>
+          <li><b>&ldquo;Tell us what you can see, right now.&rdquo;</b> Present tense, out loud,
+          like someone reporting from where they are standing.</li>
+          <li><b>&ldquo;Start with where you are.&rdquo;</b> <i>I&rsquo;m here at the Sumatran
+          tigers, and&hellip;</i> It gives the clip an opening and it sounds like television.</li>
+          <li><b>&ldquo;One thing, not five.&rdquo;</b> A single detail described properly beats a
+          list every time.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>And what to hold them to</h3>
+        <ul>
+          <li><b>Ten seconds is plenty.</b> The clip stops itself. Short and certain beats long and
+          mumbled.</li>
+          <li><b>Quiet voice.</b> It is night, the animals are close, and the microphone is nearer
+          than they think.</li>
+          <li><b>Not everyone has to be on camera.</b> Anyone who would rather not is the camera
+          operator, and every documentary has one.</li>
+        </ul>
+      </div>
     </div>
-    <div class="note warn"><b>Red torches, not white.</b> Red preserves night vision, disturbs the
-    animals far less, and is the difference between usable footage and a black rectangle.</div>
   </section>
+
  </div>
  <div class="foot">
    <span>Taronga Tracka, an education program by Taronga Zoo Sydney</span>
    <img src="{WILD}" alt="Taronga, For the Wild">
-   <span class="pg">Page 4 of 6</span>
+   <span class="pg">Page 0 of 0</span>
  </div>
 </div>
 
-<!-- ══════════════════════════ PAGE 5 ══════════════════════════ -->
+<!-- ══════════════════════════ PAGE 6 ══════════════════════════ -->
 <div class="page">
  <div class="page-body">
   <div class="runhead">
     <span class="l">ZooSnooz &middot; Staff Operations Guide</span>
-    <span class="r display">The documentary, and the night itself</span>
+    <span class="r display">What they get back</span>
   </div>
 
   <section>
-    <h2><span class="num">10</span>The documentary</h2>
+    <h2><span class="num">11</span>What they get back</h2>
+    <div class="shots shots-2">
+      {fig('s9-clipcard', 'J', 'Their clip, carded', 'The moment recording stops, the clip is wrapped in the Taronga card with their own writing beneath it, exactly as it appears in the finished film.')}
+      {fig('s10-badge', 'K', 'The badge', 'Points, the quiz bonus, and the writing scored in three bars, with one thing done well and one to try next time.')}
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="num">12</span>The documentary</h2>
     <div class="split">
       <figure class="shot tall">
         <img src="{S['s11-documentary']}" alt="The finished documentary, ready to submit">
-        <figcaption><span class="shot-n">K</span><b>The finished film</b>Preview, the night&rsquo;s
+        <figcaption><span class="shot-n">L</span><b>The finished film</b>Preview, the night&rsquo;s
         totals, then Submit.</figcaption>
       </figure>
       <div>
@@ -505,15 +600,34 @@ ol.run li:last-child {{ margin-bottom:0; }}
       </div>
     </div>
   </section>
+
+ </div>
+ <div class="foot">
+   <span>Taronga Tracka, an education program by Taronga Zoo Sydney</span>
+   <img src="{WILD}" alt="Taronga, For the Wild">
+   <span class="pg">Page 0 of 0</span>
+ </div>
+</div>
+
+<!-- ══════════════════════════ PAGE 7 ══════════════════════════ -->
+<div class="page">
+ <div class="page-body">
+  <div class="runhead">
+    <span class="l">ZooSnooz &middot; Staff Operations Guide</span>
+    <span class="r display">Running the night</span>
+  </div>
+
   <section>
-    <h2><span class="num">11</span>The running order</h2>
+    <h2><span class="num">13</span>The running order</h2>
     <ol class="run">
       <li><b>Start at the Institute or the Food Market.</b> Both have wifi. Get every phone onto it
       before anyone walks off, because each clip uploads as it is filmed.</li>
       <li><b>Join the class.</b> The teacher gives out the class code and each student picks an animal
       alias. No real names are ever entered.</li>
-      <li><b>Check the phones.</b> Charged, <b>auto-lock off</b> or on its longest setting. Hand out
-      the red torches here and say what they are for.</li>
+      <li><b>Check the phones.</b> Charged, <b>auto-lock off</b> or on its longest setting.</li>
+      <li><b>Hand out the red torches, and say what they are for.</b> Red preserves night vision,
+      disturbs the animals far less, and is the difference between usable footage and a black
+      rectangle. White torches on the glass ruin both.</li>
       <li><b>Split the group.</b> Not everyone at the same animal. Send a restless group to the
       <b>rhino, binturong or sun bear</b> first, because those three are untimed.</li>
       <li><b>Work the five animals, in any order.</b> Fifteen to twenty minutes each. The
@@ -528,7 +642,7 @@ ol.run li:last-child {{ margin-bottom:0; }}
   </section>
 
   <section>
-    <h2><span class="num">12</span>Worth knowing</h2>
+    <h2><span class="num">14</span>Worth knowing</h2>
     <div class="note">
       <ul style="margin:0">
         <li><b>No student ever enters a real name.</b> They are a Quoll or a Bilby all night.</li>
@@ -538,15 +652,29 @@ ol.run li:last-child {{ margin-bottom:0; }}
       </ul>
     </div>
   </section>
+
+  <section>
+    <h2><span class="num">99</span>After the night</h2>
+    <p>Nothing is left for anyone to collect. It is already where the teacher needs it.</p>
+    <ul>
+      <li><b>Every clip, every film and every piece of writing is on the class page</b>, filed under
+      the student&rsquo;s alias. The teacher plays them there, and can download them.</li>
+      <li><b>The marking is already done.</b> Each animal carries its three sub-scores and its
+      points, so a teacher reads results rather than marks a set.</li>
+      <li><b>Taronga staff can pull any film</b> from the staff portal if a school loses theirs or
+      asks for a copy later.</li>
+    </ul>
+  </section>
+
  </div>
  <div class="foot">
    <span>Taronga Tracka, an education program by Taronga Zoo Sydney</span>
    <img src="{WILD}" alt="Taronga, For the Wild">
-   <span class="pg">Page 5 of 6</span>
+   <span class="pg">Page 0 of 0</span>
  </div>
 </div>
 
-<!-- ══════════════════════════ PAGE 6 ══════════════════════════ -->
+<!-- ══════════════════════════ PAGE 8 ══════════════════════════ -->
 <div class="page">
  <div class="page-body">
   <div class="runhead">
@@ -555,7 +683,7 @@ ol.run li:last-child {{ margin-bottom:0; }}
   </div>
 
   <section>
-    <h2><span class="num">13</span>If something goes wrong</h2>
+    <h2><span class="num">15</span>If something goes wrong</h2>
     <p>None of these loses a student&rsquo;s work. Say that out loud first, because it is the thing
     they are actually worried about.</p>
 
@@ -601,17 +729,38 @@ ol.run li:last-child {{ margin-bottom:0; }}
       screen rather than a handwritten copy. 0 and O are the usual culprits.</p>
     </div>
   </section>
+
  </div>
  <div class="foot">
    <span>Questions: cameron.rodgers3@det.nsw.edu.au &nbsp;|&nbsp; tarongatracka.com.au</span>
    <img src="{WILD}" alt="Taronga, For the Wild">
-   <span class="pg">Page 6 of 6</span>
+   <span class="pg">Page 0 of 0</span>
  </div>
 </div>
+
 
 </body>
 </html>
 '''
+
+import re
+
+def _renumber(html):
+    n = [0]
+    def sec(m):
+        n[0] += 1
+        return f'<span class="num">{n[0]:02d}</span>'
+    html = re.sub(r'<span class="num">\d+</span>', sec, html)
+
+    total = html.count('<div class="page">')
+    pg = [0]
+    def page(m):
+        pg[0] += 1
+        return f'<span class="pg">Page {pg[0]} of {total}</span>'
+    html = re.sub(r'<span class="pg">Page \d+ of \d+</span>', page, html)
+    return html.replace('{PAGE_COUNT}', str(total))
+
+HTML = _renumber(HTML)
 
 OUT.write_text(HTML)
 print(f'{OUT}  {len(HTML)/1024:.0f} KB')
