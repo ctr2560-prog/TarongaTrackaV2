@@ -82,22 +82,42 @@ then shrink-wraps its content. Measured at 26px wide.
 
 ### The ZooSnooz staff guide is a DOCUMENT, not a page (2026-11-08)
 
-`docs/staff-guide/zoosnooz-staff-guide.html` — six A4 pages, eleven screenshots, built by
+`docs/staff-guide/zoosnooz-staff-guide.html`, built by
 `scripts/build-zoosnooz-staff-guide.py` from the crops in `docs/staff-guide/screenshots/`.
 
-🚫 **It is deliberately NOT in `public/` and is NOT linked from the staff portal.** It briefly was
-both; Cameron asked for a standalone document instead. Moving it back under `public/` publishes it
-on tarongatracka.com.au, which is the opposite of what was asked for.
+🚫 **It is deliberately NOT in `public/` and is NOT linked from the staff portal.** It briefly
+was both; Cameron asked for a standalone document instead. Moving it back under `public/`
+publishes it on tarongatracka.com.au, which is the opposite of what was asked for.
 
-Everything it needs — screenshots, both logos, the Taronga Headline font — is a **data URI**, so
-the single file can be emailed or opened from a USB stick. ~1.5MB.
+⚠️⚠️ **THREE PAGES, AND THE SPLIT IS THE POINT** (Cameron, 2026-11-08): page 1 is what it
+is, page 2 is what to do, page 3 is what to do when it breaks. On the night a staff member holds
+ONE page, so 🚫 nothing may straddle a page boundary and 🚫 nothing gets added without something
+else coming out.
 
-⚠️ **The page geometry is hand-fitted.** Every `.page-body` measures **260.5mm** and A4 leaves
-exactly that. A font size, an image height cap or a margin changed by a millimetre pushes a page
-over and silently produces a seventh page. **Print to PDF and count the pages after any edit** —
-`Page.printToPDF` over CDP, then `grep -c '/Type /Page'`.
+⚠️ **It was 8 pages first, fully illustrated** (git `c6dec10`), and the three-page cut is not
+free: the screenshots went from readable figures to a 28mm labelled strip, the per-screen captions
+went entirely, and the marking table became a paragraph. If a longer reference is ever wanted it is
+in history rather than lost. Unused crops stay on disk and embed lazily, because recapturing one
+means running the whole CDP harness again.
 
-⚠️ ⚠️ **THE SCREENSHOTS ARE REAL FRAMES OF THE RUNNING APP**, captured by
+Everything it needs is a **data URI**, so the single ~1.1MB file can be emailed or opened from a
+USB stick. ⚠️ The screenshots are deliberately larger than the layout needs: 680px into a 28mm
+frame is about 600dpi, which is what makes them survive a school printer.
+
+⚠️⚠️ **THE GEOMETRY IS HAND-FITTED** and at three pages there is no slack: a `.page-body`
+has exactly **264.8mm**. 🚫 **Measuring in the browser is not enough** — a page that overflows
+still reports its `min-height`, so it looks like it fits. **Print to PDF and count the pages**
+after any edit.
+
+⚠️ **Section numbers, page numbers and the page count are DERIVED** in `_renumber()`. They were
+hand-written, and the first time a page was inserted two sections were both numbered 04 and three
+footers still read "of 6" on an 8-page document. 🚫 Never hand-number anything in there.
+
+⚠️ **No em dashes** (house style, and it now covers staff documents as well as Evolve and
+ZooYard student copy). 🚫 Do not "fix" that with a blind swap to a comma: in about half the cases
+the dash was carrying a clause break a comma cannot hold, and each one was recast.
+
+⚠️⚠️ **THE SCREENSHOTS ARE REAL FRAMES OF THE RUNNING APP**, captured by
 `scripts/capture-zoosnooz-screens.mjs` — a CDP harness that seeds a student session into
 localStorage, overrides geolocation to each enclosure, and walks the whole six-phase flow
 including a real recording and a real stitch. 🚫 **Never replace one with a mockup.** A staff
@@ -110,14 +130,13 @@ an animal photo (the default fake camera is a green test pattern), and answering
 `Page.javascriptDialogOpening` — ZooSnooz guards leaving a mission with a `confirm()`, and an
 unanswered dialog wedges the renderer so every later CDP call times out and it looks like the
 harness crashed.
+⚠️ `/teacherLogin` is a deep-link screen, so the sign-up form can be captured with no account.
+**Create Class cannot** — it needs a real teacher login, and there is no screenshot of it rather
+than a teacher account created against production to take one.
 
 🚫 **That harness proves NOTHING about the pipeline**, and the rule in Video & media pipeline §7
 stands unchanged. It drove a stitch end to end, which is useful for pictures and is not evidence:
 headless Chrome is not WKWebView and a y4m is not a phone sensor.
-
-⚠️ Every fact in the guide is read out of the code, and one of them contradicted this document:
-the **sun bear DOES have an instrument** (`interaction.type: 'sketch'`, a labelled field sketch).
-The ZooSnooz Deep Reference row below said "no interactive instrument" and has been corrected.
 
 ⚠️⚠️ **THE NIGHT IS BOOKENDED BY WIFI, AND ONLY TWO PLACES HAVE IT** (Cameron, 2026-11-08):
 the **Institute of Science and Learning** and the **Food Market**. The group starts at one of them
@@ -126,18 +145,10 @@ so every phone is connected before anyone walks off, and comes back to one of th
 and needs no signal at all. What needs the signal is the **upload**: every clip as it is filmed, and
 the finished film on Submit. The practical instruction is the same; the reason is not, and a staff
 member told the wrong one will panic when a student with no bars cannot finish.
-This is in §11, "The running order", which is the page to hand someone who has never run a night.
 
-⚠️ **Section numbers, page numbers and the page count are DERIVED at build time** from
-document order (`_renumber()` at the foot of the script). They were hand-written, and the first
-time a page was inserted they silently went out of step: two sections both numbered 04, and three
-footers still reading "of 6" on an 8-page document. 🚫 Do not hand-number anything in there; the
-numerals in the source are placeholders.
-
-⚠️ **No em dashes anywhere in it** (Cameron, 2026-11-08). The house style already recorded for
-Evolve and ZooYard student copy applies to staff documents too. 🚫 Do not "fix" this with a blind
-character swap to a comma: half of them were a clause break that a comma cannot carry, and each one
-was recast instead. Code comments are still exempt. En dashes in number ranges (15–20 minutes) stay.
+⚠️ Every fact in the guide is read out of the code, and one of them contradicted this document:
+the **sun bear DOES have an instrument** (`interaction.type: 'sketch'`, a labelled field sketch).
+The ZooSnooz Deep Reference row below said "no interactive instrument" and has been corrected.
 
 ---
 
