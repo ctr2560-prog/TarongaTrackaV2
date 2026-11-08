@@ -80,6 +80,47 @@ the shape holds whichever one the engine applies first.
 then shrink-wraps its content. Measured at 26px wide.
 🚫 Never give the inner box a width.
 
+### The ZooSnooz staff guide is a DOCUMENT, not a page (2026-11-08)
+
+`docs/staff-guide/zoosnooz-staff-guide.html` — six A4 pages, eleven screenshots, built by
+`scripts/build-zoosnooz-staff-guide.py` from the crops in `docs/staff-guide/screenshots/`.
+
+🚫 **It is deliberately NOT in `public/` and is NOT linked from the staff portal.** It briefly was
+both; Cameron asked for a standalone document instead. Moving it back under `public/` publishes it
+on tarongatracka.com.au, which is the opposite of what was asked for.
+
+Everything it needs — screenshots, both logos, the Taronga Headline font — is a **data URI**, so
+the single file can be emailed or opened from a USB stick. ~1.5MB.
+
+⚠️ **The page geometry is hand-fitted.** Every `.page-body` measures **260.5mm** and A4 leaves
+exactly that. A font size, an image height cap or a margin changed by a millimetre pushes a page
+over and silently produces a seventh page. **Print to PDF and count the pages after any edit** —
+`Page.printToPDF` over CDP, then `grep -c '/Type /Page'`.
+
+⚠️ ⚠️ **THE SCREENSHOTS ARE REAL FRAMES OF THE RUNNING APP**, captured by
+`scripts/capture-zoosnooz-screens.mjs` — a CDP harness that seeds a student session into
+localStorage, overrides geolocation to each enclosure, and walks the whole six-phase flow
+including a real recording and a real stitch. 🚫 **Never replace one with a mockup.** A staff
+guide showing a screen the app does not have is worse than no screenshot at all.
+
+**Three flags that each cost a round of debugging**, all in that script's header:
+`--enable-unsafe-swiftshader` (without it MediaRecorder yields a zero-byte blob and the app
+correctly reports "Recording failed"), `--use-file-for-fake-video-capture` with a y4m built from
+an animal photo (the default fake camera is a green test pattern), and answering
+`Page.javascriptDialogOpening` — ZooSnooz guards leaving a mission with a `confirm()`, and an
+unanswered dialog wedges the renderer so every later CDP call times out and it looks like the
+harness crashed.
+
+🚫 **That harness proves NOTHING about the pipeline**, and the rule in Video & media pipeline §7
+stands unchanged. It drove a stitch end to end, which is useful for pictures and is not evidence:
+headless Chrome is not WKWebView and a y4m is not a phone sensor.
+
+⚠️ Every fact in the guide is read out of the code, and one of them contradicts this document:
+the **sun bear DOES have an instrument** (`interaction.type: 'sketch'`, a labelled field sketch).
+The ZooSnooz Deep Reference below says "no interactive instrument" and is wrong.
+
+---
+
 ### Consent, and a letter that did not exist (2026-11-07)
 
 **The checkbox is a commitment now, not a claim.** It read *"I confirm that appropriate consent
@@ -2620,7 +2661,7 @@ ZooSnooz is the entire night-mode experience. It lives almost entirely in `src/s
 | `lion` | African Lion | Sound/volume tracking (mic) |
 | `rhino` | Rhino | Motion path tracking (DeviceMotion gyroscope) |
 | `binturong` | Binturong | Bioluminescence/light sensor (camera brightness) |
-| `sun-bear` | Sun Bear | (no interactive instrument — observation only) |
+| `sun-bear` | Sun Bear | Field sketch (`interaction.type: 'sketch'`) — draw and label the claws, tongue and chest patch |
 
 Each animal has: `keeperInsight`, `interaction`, `question`, `options`, `correct`, `fact`, `conceptHeading`, `observationPrompt`, `conceptChips`, `keeperPrompts`, `filmingGuidance`, `behaviourWords`, `ideaWords`, and a `byStage` object overriding question/options/prompt/keeperQ per stage.
 
