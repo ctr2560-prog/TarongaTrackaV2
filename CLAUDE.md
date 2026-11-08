@@ -115,9 +115,23 @@ harness crashed.
 stands unchanged. It drove a stitch end to end, which is useful for pictures and is not evidence:
 headless Chrome is not WKWebView and a y4m is not a phone sensor.
 
-⚠️ Every fact in the guide is read out of the code, and one of them contradicts this document:
+⚠️ Every fact in the guide is read out of the code, and one of them contradicted this document:
 the **sun bear DOES have an instrument** (`interaction.type: 'sketch'`, a labelled field sketch).
-The ZooSnooz Deep Reference below says "no interactive instrument" and is wrong.
+The ZooSnooz Deep Reference row below said "no interactive instrument" and has been corrected.
+
+⚠️⚠️ **THE NIGHT IS BOOKENDED BY WIFI, AND ONLY TWO PLACES HAVE IT** (Cameron, 2026-11-08):
+the **Institute of Science and Learning** and the **Food Market**. The group starts at one of them
+so every phone is connected before anyone walks off, and comes back to one of them to finish.
+🚫 Do not describe the return as being needed "for the stitch" — the film is built on the phone
+and needs no signal at all. What needs the signal is the **upload**: every clip as it is filmed, and
+the finished film on Submit. The practical instruction is the same; the reason is not, and a staff
+member told the wrong one will panic when a student with no bars cannot finish.
+This is in §11, "The running order", which is the page to hand someone who has never run a night.
+
+⚠️ **No em dashes anywhere in it** (Cameron, 2026-11-08). The house style already recorded for
+Evolve and ZooYard student copy applies to staff documents too. 🚫 Do not "fix" this with a blind
+character swap to a comma: half of them were a clause break that a comma cannot carry, and each one
+was recast instead. Code comments are still exempt. En dashes in number ranges (15–20 minutes) stay.
 
 ---
 

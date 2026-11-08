@@ -56,7 +56,7 @@ HTML = f'''<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ZooSnooz — Staff Operations Guide — Taronga Tracka</title>
+<title>ZooSnooz Staff Operations Guide | Taronga Tracka</title>
 <style>
 @font-face {{
   font-family: 'Taronga Headline';
@@ -203,6 +203,17 @@ li {{ margin-bottom:1.5mm; }}
 li::marker {{ color:var(--euc); }}
 
 /* ── troubleshooting ───────────────────────────────────────────── */
+ol.run {{ counter-reset:run; list-style:none; margin:3mm 0 0; padding:0; }}
+ol.run li {{
+  counter-increment:run; position:relative; padding:0 0 0 9.5mm; margin-bottom:2.6mm;
+  min-height:6.6mm;
+}}
+ol.run li::before {{
+  content:counter(run); position:absolute; left:0; top:-0.3mm;
+  width:6.6mm; height:6.6mm; border-radius:50%; background:var(--euc); color:#fff;
+  font-size:8pt; font-weight:800; display:flex; align-items:center; justify-content:center;
+}}
+ol.run li:last-child {{ margin-bottom:0; }}
 .fix {{ margin-top:3.4mm; }}
 .fix {{ background:var(--cream); border:1px solid var(--stone); border-left:3.5px solid var(--euc);
   border-radius:0 2.5mm 2.5mm 0; padding:3mm 4mm; }}
@@ -244,7 +255,7 @@ li::marker {{ color:var(--euc); }}
 <body>
 
 <div class="bar">
-  <span>ZooSnooz staff operations guide &mdash; six pages. Print double-sided, or save as a PDF from your browser.</span>
+  <span>ZooSnooz staff operations guide, six pages. Print double-sided, or save as a PDF from your browser.</span>
   <button onclick="window.print()">Save as PDF / Print</button>
 </div>
 
@@ -274,7 +285,7 @@ li::marker {{ color:var(--euc); }}
     insight, use an on-screen instrument to gather their own data, answer one question about what they
     found, write an observation, and film a piece to camera. The clips become a documentary they keep.</p>
     <p>The app carries the structure, the timing and the marking. <b>Your job is movement, pacing and
-    encouragement</b> &mdash; not running the technology.</p>
+    encouragement</b>, not running the technology.</p>
   </section>
 
   <section>
@@ -313,8 +324,8 @@ li::marker {{ color:var(--euc); }}
   </section>
  </div>
  <div class="foot">
-   <span>Taronga Tracka &mdash; an education program by Taronga Zoo Sydney</span>
-   <img src="{WILD}" alt="Taronga \u2014 For the Wild">
+   <span>Taronga Tracka, an education program by Taronga Zoo Sydney</span>
+   <img src="{WILD}" alt="Taronga, For the Wild">
    <span class="pg">Page 1 of 6</span>
  </div>
 </div>
@@ -346,7 +357,7 @@ li::marker {{ color:var(--euc); }}
             <td>Points the camera around the animal. Reads how well dark fur hides it at that light level.</td></tr>
         <tr><td><b>Sun Bear</b><span class="sci">Helarctos malayanus</span></td>
             <td>Field sketch</td><td><span class="tag tag-free">Untimed</span></td>
-            <td>Draws and labels what they can see &mdash; the claws, the tongue, the chest patch.</td></tr>
+            <td>Draws and labels what they can see: the claws, the tongue, the chest patch.</td></tr>
       </tbody>
     </table>
     <div class="note warn"><b>The lion and the tiger are the two on a timer</b>, and both need the
@@ -363,8 +374,8 @@ li::marker {{ color:var(--euc); }}
   </section>
  </div>
  <div class="foot">
-   <span>Taronga Tracka &mdash; an education program by Taronga Zoo Sydney</span>
-   <img src="{WILD}" alt="Taronga \u2014 For the Wild">
+   <span>Taronga Tracka, an education program by Taronga Zoo Sydney</span>
+   <img src="{WILD}" alt="Taronga, For the Wild">
    <span class="pg">Page 2 of 6</span>
  </div>
 </div>
@@ -380,7 +391,7 @@ li::marker {{ color:var(--euc); }}
   <section>
     <h2><span class="num">06</span>From the answer to the writing</h2>
     <div class="shots shots-3">
-      {fig('s5-answer', 'E', 'The answer, then why', 'Right or wrong, they get the explanation. A wrong answer can be retried \u2014 it still teaches, it just does not score.')}
+      {fig('s5-answer', 'E', 'The answer, then why', 'Right or wrong, they get the explanation. A wrong answer can be retried: it still teaches, it just does not score.')}
       {fig('s6-watch', 'F', 'Twenty seconds of watching', 'The writing box stays shut for twenty seconds so they look at the animal first. There is a quiet skip if you need to move a group on.')}
       {fig('s7-write', 'G', 'The observation', 'A keeper question to steer them, an optional hint, and a word count. This part carries most of the marks.')}
     </div>
@@ -393,8 +404,8 @@ li::marker {{ color:var(--euc); }}
     <table>
       <thead><tr><th style="width:20%">Area</th><th>What earns marks</th><th style="width:12%">Out of</th></tr></thead>
       <tbody>
-        <tr><td><b>Behaviour</b></td><td>Describing what the animal is actually doing &mdash; moving, resting, hiding, calling</td><td class="num-cell">5</td></tr>
-        <tr><td><b>Detail</b></td><td>Naming what they can see &mdash; claws, horn, fur, shadow, sounds, surroundings</td><td class="num-cell">5</td></tr>
+        <tr><td><b>Behaviour</b></td><td>Describing what the animal is actually doing: moving, resting, hiding, calling</td><td class="num-cell">5</td></tr>
+        <tr><td><b>Detail</b></td><td>Naming what they can see: claws, horn, fur, shadow, sounds, surroundings</td><td class="num-cell">5</td></tr>
         <tr><td><b>Writing</b></td><td>Length and clarity, with expectations set by the class stage</td><td class="num-cell">5</td></tr>
         <tr><td><b>Question</b></td><td>Correct on the first attempt</td><td class="num-cell">20</td></tr>
       </tbody>
@@ -404,8 +415,8 @@ li::marker {{ color:var(--euc); }}
   </section>
  </div>
  <div class="foot">
-   <span>Taronga Tracka &mdash; an education program by Taronga Zoo Sydney</span>
-   <img src="{WILD}" alt="Taronga \u2014 For the Wild">
+   <span>Taronga Tracka, an education program by Taronga Zoo Sydney</span>
+   <img src="{WILD}" alt="Taronga, For the Wild">
    <span class="pg">Page 3 of 6</span>
  </div>
 </div>
@@ -428,7 +439,7 @@ li::marker {{ color:var(--euc); }}
       </figure>
       <div>
         <p>Each animal ends with a short piece to camera, and a line at the top says what to film.
-        <b>It is optional</b> &mdash; the skip underneath costs no marks.</p>
+        <b>It is optional</b>, and the skip underneath costs no marks.</p>
         <ul>
           <li><b>Night</b> lifts a dark enclosure. Worth turning on before they complain the picture
           is black.</li>
@@ -447,7 +458,7 @@ li::marker {{ color:var(--euc); }}
   <section>
     <h2><span class="num">09</span>What they get back</h2>
     <div class="shots shots-2">
-      {fig('s9-clipcard', 'I', 'Their clip, carded', 'The moment recording stops, the clip is wrapped in the Taronga card with their own writing beneath it \u2014 exactly as it appears in the finished film.')}
+      {fig('s9-clipcard', 'I', 'Their clip, carded', 'The moment recording stops, the clip is wrapped in the Taronga card with their own writing beneath it, exactly as it appears in the finished film.')}
       {fig('s10-badge', 'J', 'The badge', 'Points, the quiz bonus, and the writing scored in three bars, with one thing done well and one to try next time.')}
     </div>
     <div class="note warn"><b>Red torches, not white.</b> Red preserves night vision, disturbs the
@@ -455,8 +466,8 @@ li::marker {{ color:var(--euc); }}
   </section>
  </div>
  <div class="foot">
-   <span>Taronga Tracka &mdash; an education program by Taronga Zoo Sydney</span>
-   <img src="{WILD}" alt="Taronga \u2014 For the Wild">
+   <span>Taronga Tracka, an education program by Taronga Zoo Sydney</span>
+   <img src="{WILD}" alt="Taronga, For the Wild">
    <span class="pg">Page 4 of 6</span>
  </div>
 </div>
@@ -478,8 +489,8 @@ li::marker {{ color:var(--euc); }}
         totals, then Submit.</figcaption>
       </figure>
       <div>
-        <p>Tapping <b>Submit Session</b> joins their clips into one short film &mdash; a title card, a
-        card per animal, their own footage branded over the top, and a closing card. It takes
+        <p>Tapping <b>Submit Session</b> joins their clips into one short film: a title card, a card
+        per animal, their own footage branded over the top, and a closing card. It takes
         <b>about 45 seconds</b> and is built on the phone itself, not on a server.</p>
         <h3>Tell students</h3>
         <ul>
@@ -495,29 +506,25 @@ li::marker {{ color:var(--euc); }}
     </div>
   </section>
   <section>
-    <h2><span class="num">11</span>Before you start, and during</h2>
-    <div class="cols">
-      <div class="card">
-        <h3>Before you start</h3>
-        <ul>
-          <li>The teacher gives every student the <b>class code</b>. Students then pick an animal alias
-          &mdash; <b>no real names are ever entered</b>.</li>
-          <li>Check phones are charged. A full run uses the camera for roughly ten minutes.</li>
-          <li>Ask them to turn <b>auto-lock off</b>, or at least to its longest setting.</li>
-          <li>Hand out red torches, and say what they are for.</li>
-        </ul>
-      </div>
-      <div class="card">
-        <h3>During</h3>
-        <ul>
-          <li>Split the group so not everyone is at the same animal. Any order works.</li>
-          <li>Send restless groups to the <b>rhino, binturong or sun bear</b> first &mdash; those three
-          are untimed.</li>
-          <li>The <b>lion and tiger need quiet and stillness</b> for thirty seconds.</li>
-          <li>A student who arrives at an animal late has lost nothing. Their place is held.</li>
-        </ul>
-      </div>
-    </div>
+    <h2><span class="num">11</span>The running order</h2>
+    <ol class="run">
+      <li><b>Start at the Institute or the Food Market.</b> Both have wifi. Get every phone onto it
+      before anyone walks off, because each clip uploads as it is filmed.</li>
+      <li><b>Join the class.</b> The teacher gives out the class code and each student picks an animal
+      alias. No real names are ever entered.</li>
+      <li><b>Check the phones.</b> Charged, <b>auto-lock off</b> or on its longest setting. Hand out
+      the red torches here and say what they are for.</li>
+      <li><b>Split the group.</b> Not everyone at the same animal. Send a restless group to the
+      <b>rhino, binturong or sun bear</b> first, because those three are untimed.</li>
+      <li><b>Work the five animals, in any order.</b> Fifteen to twenty minutes each. The
+      <b>lion and tiger need quiet and stillness</b> for thirty seconds. A student who arrives late
+      has lost nothing: their place is held.</li>
+      <li><b>Bring everyone back to the Institute or the Food Market.</b> Same two spots, same reason.
+      The film is built on the phone, but the clips and the finished film still have to upload, and
+      that is where the signal is.</li>
+      <li><b>Submit Session, together.</b> About 45 seconds each. Screens stay on and the app stays in
+      front while it builds. This is the moment worth standing over.</li>
+    </ol>
   </section>
 
   <section>
@@ -533,8 +540,8 @@ li::marker {{ color:var(--euc); }}
   </section>
  </div>
  <div class="foot">
-   <span>Taronga Tracka &mdash; an education program by Taronga Zoo Sydney</span>
-   <img src="{WILD}" alt="Taronga \u2014 For the Wild">
+   <span>Taronga Tracka, an education program by Taronga Zoo Sydney</span>
+   <img src="{WILD}" alt="Taronga, For the Wild">
    <span class="pg">Page 5 of 6</span>
  </div>
 </div>
@@ -549,20 +556,20 @@ li::marker {{ color:var(--euc); }}
 
   <section>
     <h2><span class="num">13</span>If something goes wrong</h2>
-    <p>None of these loses a student&rsquo;s work. Say that out loud first &mdash; it is the thing they
-    are actually worried about.</p>
+    <p>None of these loses a student&rsquo;s work. Say that out loud first, because it is the thing
+    they are actually worried about.</p>
 
     <div class="fix">
       <p class="q">The film has the cards but none of the footage</p>
-      <p>The screen will say why. <b>If it mentions opening in Safari, do that</b> &mdash; some
-      browsers will not let the app read video back. Every clip is already saved either way, so
+      <p>The screen will say why. <b>If it mentions opening in Safari, do that.</b> Some browsers
+      will not let the app read video back. Every clip is already saved either way, so
       <b>nothing is lost</b>, and the film can be rebuilt afterwards.</p>
     </div>
 
     <div class="fix">
       <p class="q">The camera will not start</p>
       <p>The browser is blocking it. Reload the page and allow camera access when asked. If it still
-      refuses, they can skip the film and keep going &mdash; it costs no marks.</p>
+      refuses, they can skip the film and keep going. It costs no marks.</p>
     </div>
 
     <div class="fix">
@@ -591,13 +598,13 @@ li::marker {{ color:var(--euc); }}
     <div class="fix">
       <p class="q">The class code is not recognised</p>
       <p>Codes are six characters and are not case sensitive. Check it against the teacher&rsquo;s own
-      screen rather than a handwritten copy &mdash; 0 and O are the usual culprits.</p>
+      screen rather than a handwritten copy. 0 and O are the usual culprits.</p>
     </div>
   </section>
  </div>
  <div class="foot">
    <span>Questions: cameron.rodgers3@det.nsw.edu.au &nbsp;|&nbsp; tarongatracka.com.au</span>
-   <img src="{WILD}" alt="Taronga \u2014 For the Wild">
+   <img src="{WILD}" alt="Taronga, For the Wild">
    <span class="pg">Page 6 of 6</span>
  </div>
 </div>
