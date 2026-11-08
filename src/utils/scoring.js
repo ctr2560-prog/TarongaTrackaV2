@@ -1,4 +1,5 @@
 import { MATHS_ANIMALS } from '../data/animalsMaths';
+import { getMinWords } from './helpers';
 
 function checkExpectedAnswers(text, answers) {
   if (!answers || answers.length === 0) return false;
@@ -43,7 +44,9 @@ export function isLowQualityResponse(text) {
 
 // ── ZooSnooz scoring ────────────────────────────────────────────────────────
 
-export function calculateZzBehaviourScore(text) {
+// ⚠️ `stage` is OPTIONAL and omitting it keeps the old behaviour exactly, so every other
+//    caller is untouched. Only ZooSnooz's Stage 2 path passes it.
+export function calculateZzBehaviourScore(text, stage) {
   if (isLowQualityResponse(text)) return 1;
   const lower = text.toLowerCase();
   const behaviourRoots = [
@@ -64,10 +67,25 @@ export function calculateZzBehaviourScore(text) {
     'hid','blend','camouflag','freeze','froze','creep','crept',
   ];
   const matches = behaviourRoots.filter(root => lower.includes(root));
-  if (matches.length === 0) return 1;
-  if (matches.length === 1) return 3;
-  if (matches.length === 2) return 4;
-  return 5;
+  let score = matches.length === 0 ? 1
+    : matches.length === 1 ? 3
+    : matches.length === 2 ? 4
+    : 5;
+
+  // ⚠️ STAGE 2 IS MARKED ONE STEP GENTLER, at Cameron's request before the 2026-11-08 trial.
+  //    A Year 3-4 answer is SHORT by design - the stage minimum is five words - so it has far
+  //    fewer chances to hit a second or third behaviour root than a Stage 5 paragraph does.
+  //    The ladder, not the child, is why these plateaued at 3 of 5.
+  // ⚠️ Gated on the answer meeting THAT STAGE'S OWN word minimum rather than an arbitrary
+  //    number, so a real attempt is rewarded and a two-word shrug is not.
+  // 🚫 Zero matches still scores 1. An answer describing no behaviour at all must never be
+  //    lifted, or the mark stops meaning anything - and isLowQualityResponse already floors
+  //    junk before this point.
+  if (stage !== undefined && stage <= 2 && score > 1 && score < 5) {
+    const words = String(text).trim().split(/\s+/).filter(Boolean).length;
+    if (words >= getMinWords(stage)) score += 1;
+  }
+  return score;
 }
 
 export function calculateZzDetailScore(text) {
@@ -627,7 +645,7 @@ export function scoreObservation(text, animalId, classStage) {
     if (stage !== 5) literacyBonus = calculateWritingScore(text, stage);
   } else {
     const zzAnimalIds = new Set(['tiger','rhino','binturong','sun-bear']);
-    behaviourBonus = zzAnimalIds.has(animalId) ? calculateZzBehaviourScore(text) : calculateBehaviourScore(text);
+    behaviourBonus = zzAnimalIds.has(animalId) ? calculateZzBehaviourScore(text, stage) : calculateBehaviourScore(text);
     literacyBonus = calculateWritingScore(text, stage);
     const detailRoots = [
       'tree','rock','water','grass','shade','log','branch','leaf','leaves','fence','platform','ground','enclosure',
