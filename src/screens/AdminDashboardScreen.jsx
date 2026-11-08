@@ -1487,6 +1487,13 @@ function ZooSnoozAdminTab({ classes }) {
         <div>
           <h2 style={{ fontSize:'1.3rem', fontWeight:800, color:'var(--t-deep)', margin:'0 0 0.2rem' }}>🌙 ZooSnooz Documentaries</h2>
           <p style={{ fontSize:'0.82rem', color:'var(--t-slate)', margin:0 }}>Copy a URL to program it onto a student's NFC tag.</p>
+          {/* ⚠️ The operations guide is for the people RUNNING the night, which is why it lives
+              in the staff portal rather than with the teacher info sheet on Class Details. */}
+          <a href="/zoosnooz-staff-guide.html" target="_blank" rel="noopener noreferrer"
+            style={{ display:'inline-flex', alignItems:'center', gap:'0.35rem', marginTop:'0.5rem',
+              fontSize:'0.78rem', fontWeight:700, color:'var(--t-mid)', textDecoration:'underline' }}>
+            📋 Staff operations guide — how to run the night ↗
+          </a>
         </div>
         <div style={{ display:'flex', gap:'0.45rem' }}>
           <button onClick={() => loadList(false)} style={{ padding:'0.38rem 0.85rem', borderRadius:'var(--t-r-pill)', border:'1px solid var(--t-stone)', background:'white', fontSize:'0.76rem', fontWeight:600, cursor:'pointer', color:'var(--t-deep)' }}>↻ Refresh</button>
