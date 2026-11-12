@@ -21,6 +21,7 @@
 // it has stops the student chose to film, each with a caption in their own words.
 
 import { WD_FILM_TITLE } from './content';
+import { labelRecording } from '../../utils/containerSniff';
 
 const MIME_CANDIDATES = [
   'video/webm;codecs=vp9,opus',
@@ -31,61 +32,39 @@ const MIME_CANDIDATES = [
   'video/mp4',
 ];
 
-// ⚠️ See the iOS trap note in utils/evolveFilm.js. Never default the label to webm — iOS reports
-// nothing as supported and then records mp4, and the mismatch makes the film undecodable.
+// Picks a mimeType to CONSTRUCT a MediaRecorder with. That is the only question
+// `isTypeSupported` can answer, and it is the only thing this returns.
+//
+// ⚠️⚠️ IT DELIBERATELY NO LONGER RETURNS A LABEL. It used to also hand back `blobType`,
+//    `fileExt` and `contentType`, which made it look like a safe way to label a finished
+//    recording. It never was: on iOS `isTypeSupported` says false to EVERY candidate, so
+//    `mimeType` comes back empty, the old `|| 'video/webm'` defaults fired, and MediaRecorder
+//    given no mimeType records **mp4**. mp4 bytes stored and served as `video/webm` upload
+//    fine, download fine, fetch 200, and no browser will decode them — so every clip plays
+//    zero frames and the film is a stack of cards. See utils/containerSniff.js.
+// 🚫 Never label a recording from a default, and never from a capability probe. If a Blob is
+//    in scope, `labelRecording(blob, claimed)` is the answer; a probe is not.
 export function pickMimeType(candidates = MIME_CANDIDATES) {
   const mimeType = candidates.find(t => {
     try { return MediaRecorder.isTypeSupported(t); } catch { return false; }
   }) || '';
-  const isMP4 = String(mimeType).includes('mp4');
-  return {
-    mimeType,
-    blobType: mimeType || 'video/webm',
-    fileExt: isMP4 ? 'mp4' : 'webm',
-    contentType: isMP4 ? 'video/mp4' : 'video/webm',
-  };
+  return { mimeType };
 }
 
-// Records the given live stream. Returns a stop() handle; the blob arrives via onComplete.
-export function startChapterRecording(stream, { onComplete, onError }) {
-  const { mimeType, blobType, fileExt, contentType } = pickMimeType();
-  const chunks = [];
-  const opts = { videoBitsPerSecond: 2_000_000 };
-  if (mimeType) opts.mimeType = mimeType;
-
-  let mr;
-  try {
-    mr = new MediaRecorder(stream, opts);
-  } catch (e) {
-    onError?.(e);
-    return null;
-  }
-  mr.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
-  mr.onstop = () => {
-    // ⚠️⚠️ Derive the labels from what the recorder ACTUALLY produced. The values returned by
-    //    pickMimeType() above are only a hope: on iOS `isTypeSupported` says false to every
-    //    candidate, so `mimeType` is empty, MediaRecorder records mp4 anyway, and those
-    //    defaults would label it webm. The clip then uploads and downloads perfectly and no
-    //    browser will decode it, so the film comes out black and silent. See the iOS trap note
-    //    in utils/evolveFilm.js — this mode keeps its own copy of the recorder, which is why
-    //    the fix there did not reach it.
-    const actual = chunks[0]?.type || mr.mimeType || mimeType || '';
-    const isMP4  = actual.includes('mp4');
-    const blob = new Blob(chunks, { type: actual || blobType });
-    if (blob.size < 500) { onError?.(new Error('empty-recording')); return; }
-    onComplete?.({
-      blob,
-      url: URL.createObjectURL(blob),
-      fileExt:     actual ? (isMP4 ? 'mp4' : 'webm') : fileExt,
-      contentType: actual ? (isMP4 ? 'video/mp4' : 'video/webm') : contentType,
-    });
-  };
-  mr.start();
-  return {
-    stop: () => { try { if (mr.state !== 'inactive') mr.stop(); } catch { /* already stopped */ } },
-    recorder: mr,
-  };
-}
+// ⚠️⚠️ THIS MODE HAS NO RECORDER OF ITS OWN, AND THAT IS NOT AN OVERSIGHT.
+//
+// `startChapterRecording` used to be duplicated here, and it was DEAD CODE: nothing ever
+// imported it. `components/Recorder.jsx` imports the real one from `utils/evolveFilm.js`, so
+// every Wildest Dreams clip has always been recorded and labelled by Evolve's copy.
+//
+// 🚫 Do not re-add a copy here. It cost a round of work on 2026-11-12: CLAUDE.md recorded that
+//    "Wildest Dreams keeps its OWN copy of the recorder", the iOS label trap was duly fixed in
+//    the copy here, and that fix reached no student because the copy was never live. The one
+//    place to fix a clip-recording fault for BOTH Evolve and Wildest Dreams is
+//    `startChapterRecording` in `utils/evolveFilm.js`.
+//
+// What this file does own is the STITCHER below, which is genuinely its own: Wildest Dreams has
+// no chapters and no narrative order, just stops the student chose, each with their own caption.
 
 const wait = ms => new Promise(res => setTimeout(res, ms));
 
@@ -99,12 +78,26 @@ const wait = ms => new Promise(res => setTimeout(res, ms));
  * @param {object}   captions  { [stopId]: string } — the student's chosen focus / soundboard words
  * @param {function} onProgress (pct, stopIndex)
  * @param {function} isCancelled  () => boolean, checked throughout so unmount aborts cleanly
- * @returns {Promise<{blob: Blob, url: string}|null>}
+ * @returns {Promise<{blob, url, played, total, issues}|{error: string}>}
+ *
+ * ⚠️⚠️ IT NEVER RESOLVES TO A BARE null ANY MORE. Every failure carries a sentence the student
+ *    can be shown, because this screen used to end on one generic line for every cause and a
+ *    student with a real problem had nothing to act on. The caller must test `result.blob`,
+ *    not `result`, and must treat `played === 0` as a failure — see the note on `played`.
  */
 export async function buildWildestDreamsFilm({ stops, clipURLs, studentName, captions = {}, onProgress, isCancelled }) {
   const cancelled = () => (isCancelled ? isCancelled() : false);
   const clips = stops.filter(c => clipURLs[c.id]);
-  if (!clips.length) return null;
+  if (!clips.length) return { error: 'None of your animals have a clip saved against them yet.' };
+
+  // Feature-check up front rather than letting a bare call throw into an unhandled rejection,
+  // which left the building screen spinning forever with no message.
+  if (typeof MediaRecorder === 'undefined') {
+    return { error: 'This device cannot record video, so it cannot make the film.' };
+  }
+  if (typeof HTMLCanvasElement === 'undefined' || !HTMLCanvasElement.prototype.captureStream) {
+    return { error: 'This device cannot record from a canvas, which is how the film is put together. Try making the film on a laptop.' };
+  }
 
   // Hold the screen awake for the duration. The stitch captures in real time, so if the
   // phone sleeps or the tab is backgrounded the draw loops get throttled to ~1fps and that
@@ -115,12 +108,31 @@ export async function buildWildestDreamsFilm({ stops, clipURLs, studentName, cap
   try { wakeLock = await navigator.wakeLock?.request('screen'); } catch { /* unsupported or denied */ }
   const releaseWakeLock = () => { try { wakeLock?.release(); } catch { /* already gone */ } wakeLock = null; };
 
+  // ⚠️⚠️ WHY THIS MODE COUNTS WHAT IT CAPTURED. A film containing every card and none of the
+  //    footage still plays, still has a title and a name on it, and still looks finished. That
+  //    is how the same failure went unexplained for two days in ZooSnooz: the student sees a
+  //    film, the screen says nothing is wrong, and the evidence is gone.
+  // 🚫 A blob is NOT success. `played` is how many stops actually contributed picture, and
+  //    every swallowed failure appends a sentence to `issues` instead of vanishing.
+  const issues = [];
+  let played = 0;
+  const hostOf = (u) => { try { return new URL(u).host; } catch { return u?.slice(0, 12) || 'unknown'; } };
+
   const W = 720, H = 1280;
   const cvs = document.createElement('canvas');
   cvs.width = W; cvs.height = H;
   const ctx = cvs.getContext('2d');
   ctx.fillStyle = '#0E2A1C'; ctx.fillRect(0, 0, W, H);
-  const canvasStream = cvs.captureStream(30);
+  // ⚠️ Wrapped. This was a bare call outside every try, so anything it threw became an
+  //    unhandled rejection and the building screen span indefinitely with no message —
+  //    indistinguishable from a slow stitch. 🚫 Never leave the building screen with no exit.
+  let canvasStream;
+  try {
+    canvasStream = cvs.captureStream(30);
+  } catch (e) {
+    releaseWakeLock();
+    return { error: `This device refused to record from a canvas (${e?.name || 'error'}). Try making the film on a laptop.` };
+  }
 
   const logoImg = await new Promise(res => {
     const img = new Image();
@@ -174,7 +186,14 @@ export async function buildWildestDreamsFilm({ stops, clipURLs, studentName, cap
           const resp = await fetch(clipURLs[c.id]);
           const ab = await resp.arrayBuffer();
           audioBuffers[c.id] = await audioCtx.decodeAudioData(ab);
-        } catch { /* clip keeps its vision, loses its sound */ }
+        } catch (e) {
+          // ⚠️ BE FORGIVING AND LOUD. This was an empty catch commented "clip keeps its vision,
+          //    loses its sound". The picture and the sound fail for the SAME reasons (a 403, an
+          //    expired URL, a CORS miss, an undecodable container), so one cause trips both and
+          //    both used to be silent — a whole film of cards with a clean console.
+          issues.push(`${c.id}: no sound (${e?.name || 'decode failed'})`);
+          console.warn(`[wildestDreamsFilm] "${c.id}" audio did not decode:`, e?.name || e);
+        }
       }));
     } catch { audioDest = null; }
   }
@@ -183,29 +202,104 @@ export async function buildWildestDreamsFilm({ stops, clipURLs, studentName, cap
     ? new MediaStream([...canvasStream.getVideoTracks(), ...audioDest.stream.getAudioTracks()])
     : canvasStream;
 
-  const { mimeType, blobType } = pickMimeType(['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm', 'video/mp4']);
+  const { mimeType } = pickMimeType(['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm', 'video/mp4']);
   const chunks = [];
   let mr;
   try {
     const opts = { videoBitsPerSecond: 2_500_000 };
     if (mimeType) opts.mimeType = mimeType;
     mr = new MediaRecorder(recordStream, opts);
-  } catch {
+  } catch (e) {
     releaseWakeLock();
-    return null;
+    return { error: `This browser would not start the recorder (${e?.name || 'error'}).` };
   }
 
   const finished = new Promise(resolve => {
-    mr.onstop = () => {
-      // The finished film carries the same trap: label it from what the recorder actually
-      // produced, not from the candidate we hoped for.
-      const blob = new Blob(chunks, { type: chunks[0]?.type || mr?.mimeType || blobType });
-      resolve(blob.size > 1000 ? { blob, url: URL.createObjectURL(blob) } : null);
+    // ⚠️ async for the 12-byte container read. The finished film carries the same trap as a
+    //    clip, and it is worse here: the film is the thing the student keeps.
+    mr.onstop = async () => {
+      const claimed = chunks[0]?.type || mr?.mimeType || '';
+      const probe = new Blob(chunks, { type: claimed || 'video/webm' });
+      if (probe.size <= 1000) {
+        resolve({ error: `The recorder produced almost nothing (${probe.size} bytes from ${chunks.length} chunks).` });
+        return;
+      }
+      const { contentType, source } = await labelRecording(probe, claimed);
+      if (source === 'default') {
+        console.warn('[wildestDreamsFilm] film container could not be identified; see containerSniff');
+      }
+      const blob = new Blob(chunks, { type: contentType });
+      if (issues.length) console.warn('[wildestDreamsFilm] finished with issues:', issues);
+      resolve({ blob, url: URL.createObjectURL(blob), played, total: clips.length, issues });
     };
   });
   mr.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
   mr.start(500);
   await wait(80);
+
+  // ── Pause the whole stitch while the tab is hidden ──────────────────────────────────────
+  // The film is captured in REAL TIME, so whatever the tab is doing for those ~45 seconds is
+  // baked in permanently. Chrome clamps a hidden tab's timers to 1/second and pauses its
+  // media, so switching away recorded the remaining stops at ~1fps.
+  //
+  // The Wake Lock above only stops the SCREEN sleeping; it does nothing about switching tabs.
+  // So instead of trying to keep drawing, stop the clock: pause the recorder, the clip and the
+  // audio graph, and resume them together. The film then WAITS rather than degrading. It takes
+  // longer in wall-clock time and loses nothing. Ported from Evolve/ZooSnooz 2026-11-12 —
+  // ⚠️ this mode had the draw-loop half (the hidden-tab timer and the watchdog below) but none
+  // of the pause-and-resume half, so a locked phone still baked a frozen stop into the film.
+  const active = { video: null };
+  let hiddenSince = 0, hiddenTotal = 0;
+
+  // A monotonic "visible milliseconds" clock. Everything timed by the stitch uses this, so a
+  // card still gets its full on-screen duration and the low-fps warning does not cry wolf
+  // about seconds when nothing was being recorded anyway.
+  const activeMs = () =>
+    performance.now() - hiddenTotal - (hiddenSince ? performance.now() - hiddenSince : 0);
+
+  function pauseForHidden() {
+    if (hiddenSince) return;
+    hiddenSince = performance.now();
+    try { if (mr.state === 'recording') mr.pause(); } catch { /* not supported — degrades to old behaviour */ }
+    try { active.video?.pause(); } catch { /* nothing playing */ }
+    Promise.resolve(audioCtx?.suspend()).catch(() => { /* no audio graph */ });
+  }
+  // ⚠️⚠️ `play()` RETURNS A PROMISE AND try/catch DOES NOT CATCH IT. A rejection escapes as an
+  //    unhandled rejection and the video stays PAUSED, while `drawFrame` opens with
+  //    `if (videoEl.paused) return;` — so from that point the stop contributes no frames while
+  //    still counting as "started". iOS rejects play() with NotAllowedError routinely once a
+  //    page has been backgrounded, so a phone locking mid-stitch triggers it every time.
+  // 🚫 Never call play(), resume() or suspend() without handling the promise.
+  let resumeFailed = false;
+  const tryPlay = (el) => {
+    const pr = el?.play();
+    if (pr && typeof pr.catch === 'function') {
+      pr.then(() => { resumeFailed = false; }).catch(err => {
+        resumeFailed = true;
+        console.warn('[wildestDreamsFilm] playback would not resume:', err?.name || err);
+      });
+    }
+  };
+  function resumeFromHidden() {
+    if (!hiddenSince) return;
+    hiddenTotal += performance.now() - hiddenSince;
+    hiddenSince = 0;
+    Promise.resolve(audioCtx?.resume()).catch(() => { /* no audio graph */ });
+    try { tryPlay(active.video); } catch { /* nothing to resume */ }
+    try { if (mr.state === 'paused') mr.resume(); } catch { /* not supported */ }
+  }
+  const onVisibility = () => (document.hidden ? pauseForHidden() : resumeFromHidden());
+  document.addEventListener('visibilitychange', onVisibility);
+  if (document.hidden) pauseForHidden();          // started hidden
+
+  // Resolves after `ms` of VISIBLE time. Hidden time does not count, because the recorder is
+  // paused then and nothing is being captured.
+  const waitActive = ms => new Promise(resolve => {
+    const target = activeMs() + ms;
+    const h = setInterval(() => {
+      if (activeMs() >= target) { clearInterval(h); resolve(); }
+    }, 50);
+  });
 
   // Both draw loops are TIMER driven, not requestAnimationFrame.
   //
@@ -223,7 +317,10 @@ export async function buildWildestDreamsFilm({ stops, clipURLs, studentName, cap
     let settled = false;
     drawFn();
     const h = setInterval(() => { if (!cancelled() && !settled) drawFn(); }, FRAME_MS);
-    setTimeout(() => { if (settled) return; settled = true; clearInterval(h); resolve(); }, ms);
+    // ⚠️ VISIBLE time, not wall-clock. A card timed with setTimeout burns its whole duration
+    //    while the tab is hidden and the recorder is paused, so it would land in the film as a
+    //    flash or not at all.
+    waitActive(ms).then(() => { if (settled) return; settled = true; clearInterval(h); resolve(); });
   });
 
   const TOTAL = clips.length + 2;
@@ -307,27 +404,66 @@ export async function buildWildestDreamsFilm({ stops, clipURLs, studentName, cap
       // Requires the CORS policy in cors.json to be live on the bucket; see Build & Deploy.
       videoEl.crossOrigin = 'anonymous';
       videoEl.src = src; videoEl.playsInline = true; videoEl.muted = true; videoEl.preload = 'auto';
+      // ⚠️⚠️⚠️ THE ELEMENT MUST BE IN THE DOCUMENT, AND MUST BE RENDERED. Created detached and
+      //    never attached, which Safari tolerates — it decodes anyway — and which WKWebView
+      //    does NOT: there a detached video gets no drawable surface, so playback reports
+      //    perfectly healthy while drawImage receives nothing. CHROME ON iOS IS WKWebView.
+      //    This exact fault produced two days of empty ZooSnooz documentaries (2026-11-01 → 03);
+      //    Evolve was fixed 11-03 and this mode was the last copy still carrying it (11-12).
+      //    The tell: every clip reaches `started` and draws 0 frames, all identically, with no
+      //    screen lock involved and the clips playing fine on the preview card.
+      // 🚫 Never hide it with display:none, visibility:hidden or zero width/height — each stops
+      //    the decode on iOS as surely as being detached. It has to be laid out and painted.
+      videoEl.setAttribute('playsinline', '');
+      videoEl.setAttribute('webkit-playsinline', '');
+      videoEl.style.cssText = 'position:fixed;left:0;bottom:0;width:2px;height:2px;opacity:0.01;pointer-events:none;z-index:-1;';
+      try { document.body.appendChild(videoEl); } catch { /* can still try detached */ }
       let rafId = null, nextId = null, watchdog = null, abSrc = null, started = false, done = false;
+      // ⚠️ First draw failure for this stop, so the reason reaches the console instead of being
+      //    discarded. One per stop, not per frame — drawFrame runs 30 times a second.
+      let drawError = null;
       let drawn = 0, startedAt = 0, lastDrawAt = 0;
-      let guard = setTimeout(finish, 20000);
+      // Safety net for a clip that never fires `ended`. Counted in VISIBLE time, so being away
+      // for two minutes no longer cuts the stop short.
+      let guardUntil = activeMs() + 20000;
+      const guard = setInterval(() => { if (activeMs() >= guardUntil) finish(); }, 250);
 
       function finish() {
         if (done) return;
         done = true;
-        clearTimeout(guard);
+        clearInterval(guard);
         if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
         if (nextId) { clearTimeout(nextId); nextId = null; }
         if (watchdog) { clearInterval(watchdog); watchdog = null; }
         if (abSrc) { try { abSrc.stop(); abSrc.disconnect(); } catch { /* already stopped */ } abSrc = null; }
-        // Fewer than ~5fps means the device throttled us and this chapter's footage will
-        // look frozen in the finished film. Almost always the screen slept or the tab was
-        // backgrounded mid-stitch.
-        const __secs = (performance.now() - startedAt) / 1000;
+        // ── Say what happened, every time ──────────────────────────────────────────────
+        const __secs = (activeMs() - startedAt) / 1000;
+        if (!started) {
+          // Never reached `canplay`. Covers a 403, an expired signed URL, a CORS refusal and a
+          // container the browser will not decode — all of which look identical from here,
+          // which is precisely why the reason has to be carried out rather than guessed at.
+          issues.push(`${c.id}: the clip never became playable`);
+          console.warn(`[wildestDreamsFilm] "${c.id}" never became playable; src host ${hostOf(src)}`);
+        } else if (drawn > 0) {
+          played++;
+        } else {
+          // ⚠️ Started and drew nothing — the most confusing outcome this pipeline can produce,
+          //    and the signature of the detached-element bug fixed above.
+          const why = drawError ? ` — ${drawError}`
+            : resumeFailed ? ' (playback would not restart after the screen went off)' : '';
+          issues.push(`${c.id}: the clip played but no picture was captured${why}`);
+          console.warn(`[wildestDreamsFilm] "${c.id}" started but drew 0 frames; resumeFailed=${resumeFailed}; drawError=${drawError || 'none'}`);
+        }
+        // Fewer than ~5fps means the device throttled us and this stop's footage will
+        // look frozen in the finished film.
         if (started && __secs > 0.5 && drawn / __secs < 5) {
           console.warn(`[wildestDreamsFilm] "${c.id}" drew only ${drawn} frames in ${__secs.toFixed(1)}s (~${(drawn / __secs).toFixed(1)}fps) - its footage will look frozen. The screen most likely slept or the tab was backgrounded.`);
         }
-        // Release the element so the decoder pool frees up before the next chapter.
+        if (active.video === videoEl) active.video = null;
+        // Release the element so the decoder pool frees up before the next stop.
         try { videoEl.pause(); videoEl.removeAttribute('src'); videoEl.load(); } catch { /* noop */ }
+        // ⚠️ Take it back out, or one accumulates in the body per stop and stays for the session.
+        try { videoEl.remove(); } catch { /* never attached */ }
         resolve();
       }
       function startAudio() {
@@ -364,14 +500,33 @@ export async function buildWildestDreamsFilm({ stops, clipURLs, studentName, cap
         lastDrawAt = nowMs;
         drawBg();
         try {
-          const vW = videoEl.videoWidth || W, vH2 = videoEl.videoHeight || vidH;
+          // ⚠️⚠️ `|| W` WAS A TRAP. If the element reports 0x0 — no decodable video track, or
+          //    metadata not in yet — the fallback made the SOURCE rectangle 720x1020 over a 0x0
+          //    image, and drawImage throws IndexSizeError on EVERY frame into the catch below.
+          //    A stop with no dimensions cannot be drawn at all; say so once and stop trying.
+          if (!videoEl.videoWidth || !videoEl.videoHeight) {
+            if (!drawError) {
+              drawError = `the video has no picture track (reports ${videoEl.videoWidth}x${videoEl.videoHeight}, readyState ${videoEl.readyState})`;
+              console.warn(`[wildestDreamsFilm] "${c.id}" ${drawError}`);
+            }
+            return;
+          }
+          const vW = videoEl.videoWidth, vH2 = videoEl.videoHeight;
           const tgtA = W / vidH, srcA = vW / vH2;
           let sx, sy, sw, sh;
           if (srcA > tgtA) { sh = vH2; sw = sh * tgtA; sx = (vW - sw) / 2; sy = 0; }
           else { sw = vW; sh = sw / tgtA; sx = 0; sy = (vH2 - sh) / 2; }
           ctx.drawImage(videoEl, sx, sy, sw, sh, 0, vidY, W, vidH);
           drawn++;
-        } catch { /* frame not ready */ }
+        } catch (e) {
+          // 🚫 NEVER DEBUG THIS PIPELINE THROUGH AN EMPTY CATCH. This read
+          //    `catch { /* frame not ready */ }` and hid the real exception through three
+          //    investigations in ZooSnooz. Record the first one per stop.
+          if (!drawError) {
+            drawError = `drawImage failed (${e?.name || e})`;
+            console.warn(`[wildestDreamsFilm] "${c.id}" ${drawError}`);
+          }
+        }
 
         ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(0, 0, W, topH);
         ctx.fillStyle = 'rgba(246,232,210,0.88)'; ctx.font = '600 22px "DM Sans", sans-serif'; ctx.textAlign = 'left';
@@ -410,11 +565,15 @@ export async function buildWildestDreamsFilm({ stops, clipURLs, studentName, cap
         if (started || done) return;
         started = true;
         videoEl.oncanplay = null;
+        // ⚠️ Register it BEFORE play(), so a visibilitychange arriving during the play()
+        //    round trip can still pause the right element.
+        active.video = videoEl;
         videoEl.play().then(() => {
-          clearTimeout(guard);
+          // Re-arm the guard to the clip's real duration, in VISIBLE time. MediaRecorder webm
+          // often reports Infinity or null, hence the fallback.
           const dur = (isFinite(videoEl.duration) && videoEl.duration > 0) ? videoEl.duration : 12;
-          guard = setTimeout(finish, (dur + 5) * 1000);
-          startedAt = performance.now();
+          guardUntil = activeMs() + (dur + 5) * 1000;
+          startedAt = activeMs();
           lastDrawAt = 0;
           startAudio();
           tick();
@@ -466,7 +625,11 @@ export async function buildWildestDreamsFilm({ stops, clipURLs, studentName, cap
   }
 
   onProgress?.(100, clips.length);
+  document.removeEventListener('visibilitychange', onVisibility);
   releaseWakeLock();
+  // ⚠️ A paused recorder ignores stop() on some builds, so make sure it is running first —
+  //    otherwise a student who finished with the tab hidden never gets an onstop at all.
+  try { if (mr.state === 'paused') mr.resume(); } catch { /* not supported */ }
   if (mr.state !== 'inactive') { try { mr.requestData(); mr.stop(); } catch { /* already stopped */ } }
   return finished;
 }

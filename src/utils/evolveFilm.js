@@ -14,6 +14,7 @@
 //     partway through a five-clip stitch.
 
 import { EVOLVE_CHAPTER_WORDS } from '../data/evolveAnimals';
+import { labelRecording } from './containerSniff';
 
 const MIME_CANDIDATES = [
   'video/webm;codecs=vp9,opus',
@@ -102,15 +103,34 @@ export function startChapterRecording(stream, { onComplete, onError }) {
     return null;
   }
   mr.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
-  mr.onstop = () => {
-    // ⚠️ Ask the RECORDER what it produced, then prefer the chunk's own type. On iOS neither
-    //    `isTypeSupported` nor our candidate list knows the answer, and only these do. Labelling
-    //    a file by guesswork is what made every iPhone film black and silent.
-    const actual = chunks[0]?.type || mr.mimeType || mimeType;
-    const { blobType, fileExt, contentType } = describeMime(actual);
-    const blob = new Blob(chunks, { type: blobType });
-    if (blob.size < 500) { onError?.(new Error('empty-recording')); return; }
-    onComplete?.({ blob, url: URL.createObjectURL(blob), fileExt, contentType });
+  // ⚠️⚠️⚠️ THIS RECORDER SERVES TWO MODES. Evolve uses it directly, and Wildest Dreams'
+  //    Recorder.jsx imports it from here — `modes/wildest-dreams/film.js` has no live recorder
+  //    of its own. So this one function labels EVERY Evolve and Wildest Dreams clip, and a
+  //    wrong label here is an unplayable keepsake in both.
+  //
+  // ⚠️⚠️ ASK THE BYTES. This read `describeMime(chunks[0]?.type || mr.mimeType || mimeType)`,
+  //    which is correct as far as it goes and then undone by the `|| 'video/webm'` inside
+  //    describeMime: on iOS all three of those can be empty while MediaRecorder is recording
+  //    **mp4**, so the default fired and mp4 bytes were stored and served as `video/webm`.
+  //    Those upload fine, download fine, fetch 200, and no browser will decode them — every
+  //    clip plays zero frames, so the film is a stack of cards AND the teacher cannot play the
+  //    individual clips either. That second half is the tell: a stitcher fault cannot stop a
+  //    clip playing in the staff portal.
+  // 🚫 Never label a recording from a default, and never from a capability probe.
+  //    `async` for a 12-byte container read; nothing awaits onstop.
+  mr.onstop = async () => {
+    const claimed = chunks[0]?.type || mr.mimeType || '';
+    const probe = new Blob(chunks, { type: claimed || 'video/webm' });
+    if (probe.size < 500) { onError?.(new Error('empty-recording')); return; }
+    const { ext, contentType, source } = await labelRecording(probe, claimed);
+    if (source === 'default') {
+      console.warn('[evolveFilm] clip container could not be identified; see containerSniff');
+    }
+    // ⚠️ Take the object URL from the CORRECTLY LABELLED blob. A blob URL carries its blob's
+    //    type through to the <video> element, so playing back from a mislabelled copy is the
+    //    same bug one step later.
+    const blob = new Blob(chunks, { type: contentType });
+    onComplete?.({ blob, url: URL.createObjectURL(blob), fileExt: ext, contentType });
   };
   mr.start();
   return {
@@ -304,14 +324,21 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
   }
 
   const finished = new Promise(resolve => {
-    mr.onstop = () => {
-      // The finished film carries the same trap: label it from what the recorder actually
-      // produced, not from the candidate we hoped for.
-      const blob = new Blob(chunks, { type: chunks[0]?.type || mr?.mimeType || blobType });
-      if (blob.size <= 1000) {
-        resolve({ error: `The recorder produced almost nothing (${blob.size} bytes from ${chunks.length} chunks).` });
+    mr.onstop = async () => {
+      // The finished film carries the same trap, and it is worse here: the film is the thing
+      // the student keeps. Ask the bytes, not the candidate we hoped for. `async` for the
+      // 12-byte read; nothing awaits onstop.
+      const claimed = chunks[0]?.type || mr?.mimeType || '';
+      const probe = new Blob(chunks, { type: claimed || blobType });
+      if (probe.size <= 1000) {
+        resolve({ error: `The recorder produced almost nothing (${probe.size} bytes from ${chunks.length} chunks).` });
         return;
       }
+      const { contentType, source } = await labelRecording(probe, claimed);
+      if (source === 'default') {
+        console.warn('[evolveFilm] film container could not be identified; see containerSniff');
+      }
+      const blob = new Blob(chunks, { type: contentType });
       // ⚠️ A film with every card and no footage is NOT a success, and presenting it as one is how
       //    this went unexplained: the student sees a film, the screen says nothing is wrong, and
       //    the only evidence is gone. Report how many chapters actually contributed picture.

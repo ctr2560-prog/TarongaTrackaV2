@@ -6,7 +6,6 @@ import { makeSouvenirToken, wildestDreamsSouvenirLink } from '../../utils/evolve
 import { mintStudentMedia } from '../../utils/useSignedMedia';
 import { db, storage } from '../../firebase';
 import { normaliseCode, safeStudentId } from '../../utils/helpers';
-import { pickMimeType } from '../../utils/evolveFilm';
 import { buildWildestDreamsFilm } from './film';
 import { WD_STOPS, WD_FOCUS, WD_COPY, WD_FILM_TITLE } from './content';
 import { speak, armSpeech, playAnimalSound, stopAnimalSound } from './speech';
@@ -40,6 +39,11 @@ export default function WildestDreamsScreen() {
   const [filmURL, setFilmURL]   = useState(null);
   const [saveNote, setSaveNote] = useState('');
   const [souvenir, setSouvenir] = useState(null);   // keepsake link, set once the film is saved
+  // ⚠️ Why a reason and not just a flag: every failure path used to land on one line blaming
+  //    the device ("could not be made on this device"), which was often untrue and left a
+  //    student nothing to act on. This carries the actual cause, including the half-success
+  //    where the film built but some stops contributed no picture.
+  const [filmError, setFilmError] = useState('');
   const filmBlobRef = useRef(null);
 
   const code = normaliseCode(classCode || '');
@@ -106,7 +110,16 @@ export default function WildestDreamsScreen() {
 
     if (!code || !sid) return;
     try {
-      const { fileExt, contentType } = pickMimeType();
+      // ⚠️⚠️ THE LABEL COMES FROM THE CLIP IN HAND, NOT FROM A PROBE. This read
+      //    `pickMimeType()`, which answers "what could this browser record?" — the right
+      //    question when constructing a MediaRecorder and the wrong one when holding a
+      //    finished blob. On iOS it answers nothing, so the clip was stored as `.webm` with
+      //    `contentType: video/webm` while the bytes were mp4: it uploads fine, downloads
+      //    fine, and no browser will decode it. `startChapterRecording` already read the
+      //    container magic and put the truth on `clip.fileExt` / `clip.contentType`.
+      // 🚫 Never call a capability probe anywhere near an upload.
+      const fileExt = clip.fileExt || 'webm';
+      const contentType = clip.contentType || clip.blob?.type || 'video/webm';
       const path = `wildestDreams/${code}/${sid}/${stop.id}.${fileExt}`;
       await uploadBytes(storageRef(storage, path), clip.blob, { contentType });
       // ⚠️ THE PATH IS STORED, AND `getDownloadURL` IS NOT CALLED AT ALL (2026-10-04).
@@ -150,11 +163,32 @@ export default function WildestDreamsScreen() {
         isCancelled: () => cancelled,
       });
       if (cancelled) return;
-      if (result) {
+      // ⚠️⚠️ A BLOB IS NOT SUCCESS. `buildWildestDreamsFilm` never resolves to a bare null now:
+      //    it returns a reason, or a film plus how many stops actually contributed PICTURE.
+      //    A film with every card and none of the footage still plays and still looks finished,
+      //    which is exactly how this failure went unexplained for two days in ZooSnooz.
+      if (result?.error) {
+        setFilmError(result.error);
+      } else if (result?.blob) {
+        if (result.played === 0) {
+          // ⚠️ Pick a reason about the PICTURE. `issues` can also carry sound failures, and
+          //    issues[0] is whichever happened first — usually the audio decode, which is not
+          //    why the film came out as cards.
+          const why = result.issues?.find(i => /picture|playable/.test(i)) || result.issues?.[0];
+          setFilmError(why
+            ? `None of your clips went into the film. ${why}`
+            : 'None of your clips went into the film.');
+        } else if (result.played < result.total) {
+          const missing = result.total - result.played;
+          setFilmError(`${missing} of your ${result.total} animals did not make it into the film. Every clip is still saved.`);
+        }
         filmBlobRef.current = result.blob;
         setFilmURL(result.url);
         try {
-          const { fileExt, contentType } = pickMimeType();
+          // ⚠️ Labelled from the finished blob, whose type the stitcher set from the container
+          //    bytes. 🚫 Not from pickMimeType() — see the clip upload above.
+          const contentType = result.blob.type || 'video/webm';
+          const fileExt = contentType.includes('mp4') ? 'mp4' : 'webm';
           const path = `wildestDreams/${code}/${sid}/film.${fileExt}`;
           await uploadBytes(storageRef(storage, path), result.blob, { contentType });
           // ⚠️ The path, not a download URL — see the clip upload above. `filmURL` on screen is
@@ -262,7 +296,7 @@ export default function WildestDreamsScreen() {
         })}
 
         {filmedCount > 0 && (
-          <button className="wd-btn" style={{ marginTop:'1rem' }} onClick={() => { setFilmPct(0); setPhase('building'); }}>
+          <button className="wd-btn" style={{ marginTop:'1rem' }} onClick={() => { setFilmPct(0); setFilmError(''); setPhase('building'); }}>
             🎬 {WD_COPY.makeFilm}
           </button>
         )}
@@ -379,11 +413,25 @@ export default function WildestDreamsScreen() {
     // failed and there is no film on screen.
     <Shell title={WD_FILM_TITLE}
            lead={filmURL ? (saveNote || 'Here is your film.')
-                         : 'Your film could not be made on this device. Every clip is saved.'}>
+                         : 'Your film could not be made this time. Every clip is saved.'}>
       {filmURL
         ? <video src={filmURL} controls playsInline
                  style={{ width:'100%', borderRadius:20, background:'#000', marginBottom:'1rem' }} />
-        : <p className="wd-lead">Your film could not be made on this device, but every clip is saved.</p>}
+        : <p className="wd-lead">Your film could not be made this time, but every clip is saved.</p>}
+      {/* ── The reason ───────────────────────────────────────────────────────────────────
+          ⚠️ Shown whether or not a film rendered, because the worst case is the half-success:
+          a film that plays, with cards and no footage, and nothing on screen saying so.
+          🚫 Never word this as though the student's work is gone — the clips are safe, and
+          saying otherwise is the most alarming thing this screen could do. */}
+      {filmError && (
+        <div style={{ background:'#FFF4E5', border:'2px solid #E8B33C', borderRadius:16,
+                      padding:'0.9rem 1rem', marginBottom:'1rem' }}>
+          <p className="wd-lead" style={{ margin:0, color:'#5A3E00' }}>{filmError}</p>
+          <p style={{ margin:'0.5rem 0 0', fontSize:'0.9rem', color:'#5A3E00' }}>
+            Every clip you filmed is still saved. You can try making the film again.
+          </p>
+        </div>
+      )}
       {filmURL && (
         <a className="wd-btn" href={filmURL} download={`${WD_FILM_TITLE}.webm`}
            style={{ textDecoration:'none', marginBottom:'0.75rem' }}>
@@ -412,6 +460,15 @@ export default function WildestDreamsScreen() {
             📋 Copy my link
           </button>
         </div>
+      )}
+
+      {/* ⚠️ The copy above tells the student they can try again, so there has to be a way to.
+          Only offered when something went wrong — a student with a good film has no reason to
+          re-stitch it, and the whole mode is built on one idea per screen. */}
+      {(filmError || !filmURL) && (
+        <button className="wd-btn" onClick={() => { setFilmPct(0); setFilmError(''); setPhase('building'); }}>
+          🎬 Make my film again
+        </button>
       )}
 
       <button className="wd-btn wd-btn-quiet" onClick={() => setPhase('stops')}>
