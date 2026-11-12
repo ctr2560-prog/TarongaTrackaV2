@@ -13,6 +13,8 @@ import { ZOOSNOOZ_ANIMALS } from '../data/zoosnoozAnimals';
 import { ZOOYARD_ANIMALS } from '../data/zooyardAnimals';
 import { EVOLVE_CHAPTERS, EVOLVE_STORY_ORDER } from '../data/evolveAnimals';
 import { openEvolveCertificates, openEvolveAdviceSheet } from '../utils/evolveCertificates';
+import { WD_STOPS } from '../modes/wildest-dreams/content';
+import { wildestDreamsSouvenirLink } from '../utils/evolveSouvenir';
 
 // The chapter whose writing is the pledge — surfaced as its own column for teachers.
 const EVOLVE_PLEDGE_ID = (EVOLVE_CHAPTERS.find(c => c.isPledge) || {}).id;
@@ -219,6 +221,10 @@ export default function ClassDetailsScreen() {
   // Modals
   const [obsModal,          setObsModal]          = useState(null);
   const [evModal,           setEvModal]           = useState(null);   // { student, view: 'writing' | 'film' }
+  // ⚠️ Until now NOTHING on the teacher or staff side read `wildestDreams` at all: a mode that
+  //    is entirely video had no screen anywhere that could play one. A support unit teacher
+  //    could not see what their class had made.
+  const [wdModal,           setWdModal]           = useState(null);   // { student, view: 'film' | 'clips' }
   const [conservationModal, setConservationModal] = useState(null);
   const [expandedBreakdown, setExpandedBreakdown] = useState(null);
   const [overrideForms,     setOverrideForms]     = useState({});
@@ -1279,6 +1285,80 @@ export default function ClassDetailsScreen() {
                 </div>
               )}
 
+              {/* ── Wildest Dreams: the films ────────────────────────────────────────────
+                  ⚠️ A DELIBERATE COPY of the Evolve table above, not a shared component. The
+                  same decision as the three stitchers and the two parent letters: Evolve runs
+                  with real classes, and a shared table would let a change for one break the
+                  other. 🚫 Do not refactor these two into one.
+
+                  ⚠️ NO STAT CARDS, and nothing numeric. Wildest Dreams has no points, scores,
+                  marks, badges or leaderboard by design, so there is nothing to total. The
+                  columns are what a support unit teacher actually needs: who filmed what, and
+                  can I play it. */}
+              {isWD && (
+                <div style={{ background:'var(--t-chalk)', borderRadius:'var(--t-r-lg)', boxShadow:'var(--t-shadow-sm)', overflow:'hidden', border:'1px solid var(--t-stone)', marginBottom:'1rem' }}>
+                  <div style={{ display:'grid', gridTemplateColumns:'1.6fr 1fr 1fr 1.2fr', background:'var(--t-forest)', padding:'0.6rem 1rem' }}>
+                    {['Student','Clips','Film','Actions'].map(h => (
+                      <div key={h} style={{ color:'rgba(255,255,255,0.8)', fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em' }}>{h}</div>
+                    ))}
+                  </div>
+                  {students.length === 0 ? (
+                    <div style={{ padding:'2rem 1rem', textAlign:'center' }}>
+                      <p style={{ color:'#999', fontSize:'0.85rem', fontStyle:'italic' }}>No students have joined yet.</p>
+                    </div>
+                  ) : students.map((s, i) => {
+                    const wd    = s.wildestDreams || {};
+                    const filmed = WD_STOPS.filter(st => wd[st.id]?.clipURL).length;
+                    const busy  = studentActionBusy[s.id];
+                    return (
+                      <div key={s.id} style={{ display:'grid', gridTemplateColumns:'1.6fr 1fr 1fr 1.2fr', padding:'0.7rem 1rem', borderTop:'1px solid var(--t-stone)', alignItems:'center', background: i%2===0 ? 'var(--t-chalk)' : 'var(--t-parchment)' }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:'0.55rem', minWidth:0 }}>
+                          <div style={{ width:'28px', height:'28px', borderRadius:'50%', background: wd.filmURL ? 'linear-gradient(135deg,#2E7D55,#4A9E6B)' : 'linear-gradient(135deg,#aaa,#ccc)', display:'flex', alignItems:'center', justifyContent:'center', color:'white', fontSize:'0.72rem', fontWeight:700, flexShrink:0 }}>
+                            {String(s.name || s.id).charAt(0).toUpperCase()}
+                          </div>
+                          <div style={{ minWidth:0 }}>
+                            <div style={{ fontWeight:600, color:'var(--t-deep)', fontSize:'0.88rem' }}>{s.name || s.id}</div>
+                            {/* ⚠️ "of 8" is the number of stops AVAILABLE, not a target. Every
+                                stop is skippable by design, so a student who filmed three has
+                                not failed at anything. */}
+                            <div style={{ fontSize:'0.7rem', color:'var(--t-ash)' }}>{filmed} of {WD_STOPS.length} filmed</div>
+                          </div>
+                        </div>
+
+                        <div>
+                          {filmed ? (
+                            <button onClick={() => setWdModal({ student: s, view: 'clips' })}
+                              style={{ background:'var(--t-deep)', color:'white', border:'none', padding:'0.25rem 0.6rem', borderRadius:'6px', fontSize:'0.72rem', fontWeight:600, cursor:'pointer' }}>
+                              View
+                            </button>
+                          ) : <span style={{ color:'#bbb', fontSize:'0.75rem' }}> - </span>}
+                        </div>
+
+                        <div>
+                          {wd.filmURL ? (
+                            <button onClick={() => setWdModal({ student: s, view: 'film' })}
+                              style={{ background:'#2E7D55', color:'white', border:'none', padding:'0.25rem 0.6rem', borderRadius:'6px', fontSize:'0.72rem', fontWeight:600, cursor:'pointer' }}>
+                              Watch
+                            </button>
+                          ) : <span style={{ color:'#bbb', fontSize:'0.75rem' }}> - </span>}
+                        </div>
+
+                        <div style={{ display:'flex', alignItems:'center', gap:'0.35rem' }}>
+                          <button onClick={() => resetStudent(s)} disabled={!!busy} title="Restore to the animal list (keeps their clips)"
+                            style={{ display:'flex', alignItems:'center', gap:'0.25rem', background:'none', color:'#D97706', border:'1.5px solid #FCD34D', padding:'0.28rem 0.55rem', borderRadius:'7px', fontSize:'0.72rem', fontWeight:700, cursor:busy?'not-allowed':'pointer', opacity:busy?0.4:1, whiteSpace:'nowrap' }}>
+                            {busy==='resetting' ? '…' : <><span style={{ fontSize:'0.9rem', lineHeight:1 }}>↺</span> <span>Restore</span></>}
+                          </button>
+                          <button onClick={() => deleteStudent(s)} disabled={!!busy} title="Delete student"
+                            style={{ display:'flex', alignItems:'center', gap:'0.25rem', background:'none', color:'#DC2626', border:'1.5px solid #FECACA', padding:'0.28rem 0.55rem', borderRadius:'7px', fontSize:'0.72rem', fontWeight:700, cursor:busy?'not-allowed':'pointer', opacity:busy?0.4:1, whiteSpace:'nowrap' }}>
+                            {busy==='deleting' ? '…' : <><span style={{ fontSize:'0.85rem', lineHeight:1 }}>🗑</span> <span>Delete</span></>}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
               {/* ── ZooYard citizen science submissions, one per habitat ── */}
               {/* ── Where students went ──────────────────────────────────────────
                   ZooYard has no GPS check by design (DoE devices block geolocation), so the
@@ -1951,6 +2031,97 @@ export default function ClassDetailsScreen() {
                       This student has not written anything yet.
                     </p>
                   )}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── The Wildest Dreams film modal ────────────────────────────────────────────────
+          A deliberate copy of the Evolve modal above, in this mode's own green rather than
+          Evolve's gold, so a teacher can tell at a glance which programme they are looking at.
+          ⚠️ `clipURL` and `filmURL` are storage PATHS, not download URLs — <SignedVideo> and
+          <SignedLink> mint them for 60 minutes. 🚫 Never render one of these values directly;
+          it would resolve against our own domain and show a broken player. */}
+      {wdModal && (() => {
+        const wd = wdModal.student.wildestDreams || {};
+        const name = wdModal.student.name || wdModal.student.id;
+        const close = () => setWdModal(null);
+        const code = normaliseCode(selectedClass);
+        const filmedStops = WD_STOPS.filter(st => wd[st.id]?.clipURL);
+        return (
+          <div onClick={close} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.55)', zIndex:100, display:'flex', alignItems:'center', justifyContent:'center', padding:'1.5rem' }}>
+            <div onClick={e => e.stopPropagation()} style={{ background:'#071E14', borderRadius:'18px', width:'100%', maxWidth: wdModal.view === 'film' ? '420px' : '540px', maxHeight:'84vh', overflowY:'auto', boxShadow:'0 24px 60px rgba(0,0,0,0.5)', border:'1px solid rgba(46,125,85,0.35)' }}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'1.1rem 1.3rem 0.9rem', borderBottom:'1px solid rgba(46,125,85,0.25)', position:'sticky', top:0, background:'#071E14', zIndex:1 }}>
+                <div>
+                  <h3 style={{ fontSize:'1rem', fontWeight:700, color:'#D4EDE0', margin:0 }}>
+                    {wdModal.view === 'film' ? 'Their film' : 'Their clips'}
+                  </h3>
+                  <p style={{ fontSize:'0.78rem', color:'rgba(184,212,192,0.65)', margin:'0.15rem 0 0' }}>{name}</p>
+                </div>
+                <button onClick={close} style={{ background:'rgba(255,255,255,0.07)', border:'none', color:'rgba(212,237,224,0.7)', width:'30px', height:'30px', borderRadius:'50%', cursor:'pointer', fontSize:'1rem', fontWeight:700 }}>×</button>
+              </div>
+
+              {wdModal.view === 'film' ? (
+                <div style={{ padding:'1.1rem 1.3rem 1.4rem' }}>
+                  <SignedVideo url={wd.filmURL} classCode={code} controls playsInline
+                    style={{ width:'100%', borderRadius:12, background:'#000', display:'block' }} />
+                  <SignedLink url={wd.filmURL} classCode={code} target="_blank" rel="noopener noreferrer"
+                    style={{ display:'inline-block', marginTop:'0.9rem', fontSize:'0.78rem', color:'#4A9E6B', textDecoration:'none', borderBottom:'1px solid rgba(74,158,107,0.45)' }}>
+                    Open in a new tab ↗
+                  </SignedLink>
+                  {/* ── The keepsake link ──────────────────────────────────────────────────
+                      ⚠️ This is the thing teachers get asked for. The student is shown it once,
+                      on a borrowed tablet that gets wiped, so by the next week it is gone and
+                      the teacher is the only person who can find it again. It resolves through
+                      Firestore, so it keeps working after a film is re-made.
+                      ⚠️ Only rendered when a token exists — a film made before the souvenir
+                      route was built (2026-10-02) has none, and inventing a link would send a
+                      family to a page reading "Code not found". */}
+                  {wd.souvenirToken && (
+                    <div style={{ marginTop:'1rem', background:'rgba(46,125,85,0.12)', border:'1px solid rgba(46,125,85,0.35)', borderRadius:12, padding:'0.8rem 0.9rem' }}>
+                      <div style={{ fontSize:'0.58rem', fontWeight:800, letterSpacing:'0.18em', textTransform:'uppercase', color:'#4A9E6B', marginBottom:'0.35rem' }}>
+                        Keepsake link
+                      </div>
+                      <p style={{ margin:'0 0 0.6rem', fontSize:'0.72rem', color:'rgba(212,237,224,0.85)', wordBreak:'break-all', fontFamily:'monospace' }}>
+                        {wildestDreamsSouvenirLink(code, wdModal.student.id, wd.souvenirToken)}
+                      </p>
+                      <button onClick={() => {
+                          const link = wildestDreamsSouvenirLink(code, wdModal.student.id, wd.souvenirToken);
+                          navigator.clipboard?.writeText(link);
+                        }}
+                        style={{ background:'rgba(46,125,85,0.3)', border:'1px solid rgba(74,158,107,0.5)', color:'#D4EDE0', padding:'0.3rem 0.7rem', borderRadius:999, fontSize:'0.72rem', fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>
+                        📋 Copy link
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div style={{ padding:'1.1rem 1.3rem 1.4rem', display:'flex', flexDirection:'column', gap:'0.9rem' }}>
+                  {filmedStops.length === 0 ? (
+                    <p style={{ color:'rgba(212,237,224,0.5)', fontSize:'0.85rem', fontStyle:'italic', textAlign:'center', margin:'0.5rem 0' }}>
+                      This student has not filmed anything yet.
+                    </p>
+                  ) : filmedStops.map(st => {
+                    const entry = wd[st.id] || {};
+                    return (
+                      <div key={st.id} style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(46,125,85,0.25)', borderRadius:12, padding:'0.85rem 1rem' }}>
+                        <div style={{ fontSize:'0.58rem', fontWeight:800, letterSpacing:'0.18em', textTransform:'uppercase', color:'rgba(184,212,192,0.6)', marginBottom:'0.45rem' }}>
+                          {st.name}
+                        </div>
+                        {/* ⚠️ The caption is the student's OWN words — the focus they chose plus
+                            any soundboard words they tapped. For a student with little or no
+                            speech it may be the only language attached to their work, so it is
+                            shown even when there is nothing else to show. */}
+                        {entry.caption && (
+                          <p style={{ margin:'0 0 0.6rem', fontSize:'0.9rem', lineHeight:1.6, color:'#F0F7F3' }}>“{entry.caption}”</p>
+                        )}
+                        <SignedVideo url={entry.clipURL} classCode={code} controls playsInline
+                          style={{ width:'100%', maxWidth:'220px', borderRadius:10, background:'#000', display:'block' }} />
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>

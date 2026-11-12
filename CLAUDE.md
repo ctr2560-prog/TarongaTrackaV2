@@ -322,12 +322,55 @@ Function — do it as its own piece of work, and re-run the security sweep after
 | | detached `<video>` | broken `play()` catch | visibility handling | iOS label trap |
 |---|---|---|---|---|
 | ZooSnooz | ✅ fixed | ✅ fixed | ✅ | ✅ fixed 11-07 |
-| **Evolve** (`utils/evolveFilm.js`) | ✅ fixed 11-03 | ✅ fixed 11-03 | ✅ | 🔴 `\|\| 'video/webm'` |
-| **Wildest Dreams** (`modes/wildest-dreams/film.js`) | 🔴 same fault | — | 🔴 **none at all** | 🔴 same |
+| **Evolve** (`utils/evolveFilm.js`) | ✅ fixed 11-03 | ✅ fixed 11-03 | ✅ | ✅ fixed 11-12 |
+| **Wildest Dreams** (`modes/wildest-dreams/film.js`) | ✅ fixed 11-12 | ✅ fixed 11-12 | ✅ fixed 11-12 | ✅ fixed 11-12 |
 
-🔴 **WILDEST DREAMS IS THE LAST ONE LEFT**, and it is the worst of the three: the detached element
-AND no visibility handling at all, so a hidden tab still stops redrawing and produces a film of
-cards. It is a mode for support units, where a half-finished change is worse than none.
+✅ **ALL THREE STITCHERS ARE NOW LEVEL (2026-11-12, `c682cf7`).** Wildest Dreams got the detached
+element, the `visibilitychange` pause with the handled `play()` promise, the visible-time clock,
+and the `|| W` dimension trap removed.
+
+⚠️⚠️ **TWO CLAIMS IN THE ROW ABOVE WERE WRONG, AND THE SECOND COST REAL WORK:**
+
+1. **"No visibility handling at all" overstated it.** The *draw loop* already had the hidden-tab
+   timer and the 400ms watchdog. What was missing was the pause-and-resume half. 🚫 Do not read a
+   "none at all" in this document as meaning a whole mechanism is absent — check the file.
+2. ⚠️⚠️ **"Wildest Dreams keeps its OWN copy of the recorder" WAS FALSE.**
+   `modes/wildest-dreams/components/Recorder.jsx` imports `startChapterRecording` from
+   **`utils/evolveFilm.js`**. The copy that lived in `modes/wildest-dreams/film.js` was **dead
+   code nothing ever imported** — so the label trap was first "fixed" in the dead copy, where it
+   reached no student. **The dead copy has been deleted** and the file now carries a note saying
+   why not to re-add it.
+   🚫 **There is ONE place that labels a clip for BOTH Evolve and Wildest Dreams:**
+   `startChapterRecording` in `utils/evolveFilm.js`. Fix it there, once.
+   ⚠️ What this mode genuinely owns is the **stitcher**, which is a real separate copy.
+
+**The label fix is `utils/containerSniff.js` everywhere now**, not a hand-rolled derivation:
+bytes first, the recorder's own claim second, a default only as a last resort and it warns.
+🚫 `pickMimeType()` no longer returns a label at all — it answers "what can this browser record",
+which is the right question when constructing a MediaRecorder and the wrong one for a finished
+blob. Both Wildest Dreams upload sites had been calling it **at upload time**, which is the tell.
+
+⚠️ **No real clip was ever corrupted by this**, checked against the bucket: the only Wildest
+Dreams media in existence is `wildestDreams/TTKUQ7/Wallaby/lion.webm`, genuine WebM (magic
+`1a45dfa3`), VP9/Opus, **1280x720 landscape** — a laptop webcam in Chrome. Consistent with the
+rest of this document: no iPhone has ever produced a clip in this project. **The fix is
+preventive, so there is nothing to re-film.**
+
+⚠️ **Verified in a Node harness against stubs, NOT in a browser** — a driven tab manufactures the
+very bug (§7). What it proves is that the paths RUN, which a green build does not: under the iOS
+condition (`isTypeSupported` false for everything, empty `mimeType`, mp4 bytes) the film is
+labelled `video/mp4` where it would have been `video/webm`; a 0x0 element reports
+`played 0 of 2` with a named cause instead of a silent cards-only film; and hidden-then-returning
+pauses and resumes the recorder exactly once and still plays every stop.
+⚠️ **The harness had to stub `window`, not just `globalThis`** — the code reads
+`window.AudioContext`, so without it the entire audio branch was skipped and the first run
+reported no audio issues from a stub designed to fail. A harness that proves nothing looks exactly
+like a harness that passes.
+
+✅ **`buildWildestDreamsFilm` NEVER RESOLVES TO A BARE null NOW.** It returns `{error}` or
+`{blob, url, played, total, issues}`, matching Evolve's contract. 🚫 **A blob is not success** —
+the caller must test `result.blob` and treat `played === 0` as a failure. The done screen shows
+the reason and offers another go, instead of one line blaming the student's device.
 
 ⚠️ Evolve runs on student phones at a twilight excursion, which is precisely the exposure. It has
 **never** been proven on a phone — every clip in the bucket is Chromium-encoded, so every
@@ -3966,8 +4009,29 @@ Surfaced on Create Class and on Curriculum Alignment → Programs → Wildest Dr
   gets wiped. The link is what a student, teacher or parent can actually keep.
   ⚠️ The token is reused if one already exists: re-making a film must never invalidate a link
   already handed out.
-  **Still missing:** no teacher/staff view of the films — nothing in `ClassDetailsScreen` or the
-  staff portal reads `wildestDreams`.
+- ✅ **TEACHERS CAN SEE THE FILMS (2026-11-12).** `ClassDetailsScreen` has a Wildest Dreams table
+  (Student · Clips · Film · Actions) and a film modal, gated on `isWD`. Until then **nothing on
+  the teacher or staff side read `wildestDreams` at all** — a mode that is entirely video had no
+  screen anywhere that could play one.
+  ⚠️ It is a **deliberate copy** of the Evolve table and modal, in this mode's green rather than
+  Evolve's gold. 🚫 Do not refactor the two into one shared component: same reasoning as the three
+  stitchers and the two parent letters.
+  ⚠️ **No stat cards and nothing numeric**, the same as Evolve — there are no points, scores or
+  marks to total. "Clips: 3 of 8" is what is AVAILABLE, not a target; every stop is skippable by
+  design, so a student who filmed three has not failed at anything.
+  ⚠️ The modal shows each clip with **the student's own caption** above it. For a student with
+  little or no speech that caption may be the only language attached to their work.
+  ⚠️ It also surfaces the **keepsake link**, which is the thing teachers get asked for: the
+  student sees it once, on a borrowed tablet that gets wiped. 🚫 Only rendered when
+  `souvenirToken` exists — a film made before 2026-10-02 has none, and a fabricated link sends a
+  family to "Code not found".
+  ⚠️ `clipURL` and `filmURL` are storage **paths**; `<SignedVideo>` / `<SignedLink>` mint them.
+  🚫 Never render one of those values directly.
+  **Still missing:** no **staff portal** view (`AdminDashboardScreen` has a `wildest` analytics
+  view but no films tab like `EvolveFilmsTab`). ⚠️ And the teacher table is **unverified in a
+  browser** — it needs a signed-in teacher who owns a Wildest Dreams class. The only one with any
+  media is `TTKUQ7` (student `Wallaby`, one lion clip, no film), so the Watch column has never
+  been exercised against a real film.
 - **No still-photo alternative** for a student who will not tolerate video.
 - **No recording length limit** — an eight-minute clip is a slow upload on zoo wifi.
 
