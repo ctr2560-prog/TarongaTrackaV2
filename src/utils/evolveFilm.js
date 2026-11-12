@@ -398,6 +398,9 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
   // longer in wall-clock time and loses nothing.
   const active = { video: null };
   let hiddenSince = 0, hiddenTotal = 0;
+  // How many times the tab went hidden during this stitch. Tells a screen lock apart from
+  // a fault that merely looks like one — the two have completely different fixes.
+  let hiddenPauses = 0;
 
   // A monotonic "visible milliseconds" clock. Everything timed by the stitch uses this, so a
   // card still gets its full on-screen duration and the low-fps warning does not cry wolf
@@ -408,6 +411,7 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
   function pauseForHidden() {
     if (hiddenSince) return;
     hiddenSince = performance.now();
+    hiddenPauses++;
     try { if (mr.state === 'recording') mr.pause(); } catch { /* not supported — degrades to old behaviour */ }
     try { active.video?.pause(); } catch { /* nothing playing */ }
     Promise.resolve(audioCtx?.suspend()).catch(() => { /* no audio graph */ });
@@ -629,6 +633,19 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
       //    being discarded. One per chapter, not per frame — this runs 30 times a second.
       let drawError = null;
       let drawn = 0, startedAt = 0, lastDrawAt = 0;
+      // ⚠️⚠️ THE BLIND SPOT THESE EXIST TO CLOSE (added 2026-11-12, after a real failure).
+      //    Cameron's Evolve film came out as cards, and the screen said only "the clip played
+      //    but no picture was captured" with no reason: `drawError` was null and `resumeFailed`
+      //    was false, which rules out a throw, a 0x0 element and a refused resume — and leaves
+      //    nothing. There is no console on a phone, so that was the end of the investigation.
+      //
+      //    These three separate "it never drew" into causes that need different fixes:
+      //      drawCalls 0        → the loop never ran at all
+      //      pausedSkips high   → the loop ran and the video was PAUSED every time
+      //      endedEarly         → `ended` was already true, so finish() fired on the first call
+      // 🚫 Do not remove these to tidy up. A count that is only interesting when something
+      //    fails is exactly the thing that is missing when something fails.
+      let drawCalls = 0, pausedSkips = 0, endedEarly = false;
       // Safety net for a clip that never fires `ended`. Counted in VISIBLE time, so being away
       // for two minutes no longer cuts the chapter short.
       let guardUntil = activeMs() + 20000;
@@ -659,10 +676,22 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
         } else {
           // ⚠️ Started and drew nothing — the single most confusing outcome this pipeline can
           //    produce, and it used to record NOTHING at all.
+          // ⚠️ The state snapshot travels to the SCREEN, not just the console, because there is
+          //    no console on a phone and this branch is the one that reports nothing otherwise.
+          //    It is terse on purpose: a student should not be reading a stack trace, but a
+          //    teacher can read it out or photograph it, and it names the cause outright.
+          const state = `drawCalls=${drawCalls} pausedSkips=${pausedSkips}`
+            + ` endedEarly=${endedEarly} paused=${videoEl.paused} ended=${videoEl.ended}`
+            + ` readyState=${videoEl.readyState} size=${videoEl.videoWidth}x${videoEl.videoHeight}`
+            + ` t=${(videoEl.currentTime || 0).toFixed(2)} hiddenPauses=${hiddenPauses}`;
           const why = drawError ? ` — ${drawError}`
-            : resumeFailed ? ' (playback would not restart after the screen went off)' : '';
-          issues.push(`${c.id}: the clip played but no picture was captured${why}`);
-          console.warn(`[evolveFilm] "${c.id}" started but drew 0 frames; resumeFailed=${resumeFailed}; drawError=${drawError || 'none'}`);
+            : resumeFailed ? ' (playback would not restart after the screen went off)'
+            : endedEarly ? ' — the clip reported itself finished before a single frame was drawn'
+            : pausedSkips > 0 && drawn === 0 ? ' — the clip stayed paused the whole time'
+            : drawCalls === 0 ? ' — the draw loop never ran'
+            : '';
+          issues.push(`${c.id}: the clip played but no picture was captured${why} [${state}]`);
+          console.warn(`[evolveFilm] "${c.id}" started but drew 0 frames; resumeFailed=${resumeFailed}; drawError=${drawError || 'none'}; ${state}`);
         }
         if (started && __secs > 0.5 && drawn / __secs < 5) {
           console.warn(`[evolveFilm] "${c.id}" drew only ${drawn} frames in ${__secs.toFixed(1)}s (~${(drawn / __secs).toFixed(1)}fps) - its footage will look frozen. The screen most likely slept or the tab was backgrounded.`);
@@ -700,8 +729,15 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
         schedule();
       }
       function drawFrame() {
-        if (cancelled() || done || videoEl.ended) { finish(); return; }
-        if (videoEl.paused) return;
+        drawCalls++;
+        if (cancelled() || done || videoEl.ended) {
+          // Distinguish "the clip finished normally" from "it was already ended before a single
+          // frame was drawn", which looks identical from the outside and is not the same fault.
+          if (videoEl.ended && drawn === 0) endedEarly = true;
+          finish();
+          return;
+        }
+        if (videoEl.paused) { pausedSkips++; return; }
         // Cap at ~30fps so a 60Hz rAF does not draw every frame twice.
         const nowMs = performance.now();
         if (nowMs - lastDrawAt < 30) return;
