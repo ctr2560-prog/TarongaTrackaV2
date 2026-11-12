@@ -423,6 +423,10 @@ export async function buildWildestDreamsFilm({ stops, clipURLs, studentName, cap
       //    discarded. One per stop, not per frame — drawFrame runs 30 times a second.
       let drawError = null;
       let drawn = 0, startedAt = 0, lastDrawAt = 0;
+      // ⚠️ See the same block in utils/evolveFilm.js. These separate "it never drew" into
+      //    causes needing different fixes, and there is no console on a phone to ask.
+      let drawCalls = 0, pausedSkips = 0, endedEarly = false;
+      let playRefused = null, playAttempts = 0;
       // Safety net for a clip that never fires `ended`. Counted in VISIBLE time, so being away
       // for two minutes no longer cuts the stop short.
       let guardUntil = activeMs() + 20000;
@@ -449,9 +453,18 @@ export async function buildWildestDreamsFilm({ stops, clipURLs, studentName, cap
         } else {
           // ⚠️ Started and drew nothing — the most confusing outcome this pipeline can produce,
           //    and the signature of the detached-element bug fixed above.
-          const why = drawError ? ` — ${drawError}`
-            : resumeFailed ? ' (playback would not restart after the screen went off)' : '';
-          issues.push(`${c.id}: the clip played but no picture was captured${why}`);
+          const state = `drawCalls=${drawCalls} pausedSkips=${pausedSkips}`
+            + ` paused=${videoEl.paused} readyState=${videoEl.readyState}`
+            + ` size=${videoEl.videoWidth}x${videoEl.videoHeight}`
+            + ` playAttempts=${playAttempts} playRefused=${playRefused || 'no'}`;
+          const why = playRefused ? ' — your phone would not let the video play.'
+              + ' On an iPhone this is almost always Low Power Mode: turn it off and try again.'
+            : drawError ? ` — ${drawError}`
+            : resumeFailed ? ' (playback would not restart after the screen went off)'
+            : endedEarly ? ' — the clip said it had finished before a single frame was drawn'
+            : drawCalls === 0 ? ' — the draw loop never ran'
+            : '';
+          issues.push(`${c.id}: the clip played but no picture was captured${why} [${state}]`);
           console.warn(`[wildestDreamsFilm] "${c.id}" started but drew 0 frames; resumeFailed=${resumeFailed}; drawError=${drawError || 'none'}`);
         }
         // Fewer than ~5fps means the device throttled us and this stop's footage will
@@ -467,6 +480,9 @@ export async function buildWildestDreamsFilm({ stops, clipURLs, studentName, cap
         resolve();
       }
       function startAudio() {
+        // ⚠️ Idempotent: the watchdog retries play(), and each success would otherwise start
+        //    a second overlapping copy of this stop's audio.
+        if (abSrc) return;
         if (audioDest && audioBuffers[c.id]) {
           try {
             abSrc = audioCtx.createBufferSource();
@@ -492,8 +508,13 @@ export async function buildWildestDreamsFilm({ stops, clipURLs, studentName, cap
         schedule();
       }
       function drawFrame() {
-        if (cancelled() || done || videoEl.ended) { finish(); return; }
-        if (videoEl.paused) return;
+        drawCalls++;
+        if (cancelled() || done || videoEl.ended) {
+          if (videoEl.ended && drawn === 0) endedEarly = true;
+          finish();
+          return;
+        }
+        if (videoEl.paused) { pausedSkips++; return; }
         // Cap at ~30fps so a 60Hz rAF does not draw every frame twice.
         const nowMs = performance.now();
         if (nowMs - lastDrawAt < 30) return;
@@ -568,24 +589,45 @@ export async function buildWildestDreamsFilm({ stops, clipURLs, studentName, cap
         // ⚠️ Register it BEFORE play(), so a visibilitychange arriving during the play()
         //    round trip can still pause the right element.
         active.video = videoEl;
-        videoEl.play().then(() => {
-          // Re-arm the guard to the clip's real duration, in VISIBLE time. MediaRecorder webm
-          // often reports Infinity or null, hence the fallback.
-          const dur = (isFinite(videoEl.duration) && videoEl.duration > 0) ? videoEl.duration : 12;
-          guardUntil = activeMs() + (dur + 5) * 1000;
-          startedAt = activeMs();
-          lastDrawAt = 0;
-          startAudio();
-          tick();
-          watchdog = setInterval(() => {
-            if (done) return;
-            if (performance.now() - lastDrawAt > 400) {
-              if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
-              if (nextId) { clearTimeout(nextId); nextId = null; }
-              tick();
+        // ⚠️⚠️⚠️ NOTHING HERE MAY WAIT ON play() RESOLVING. This used to sit inside
+        //    `videoEl.play().then(...)` with `.catch(finish)`, so a refused play() meant the
+        //    draw loop never started and the watchdog was never created — and this mode's
+        //    watchdog did not even retry play(), so a refusal was final.
+        //    Found on Evolve on an iPhone, 2026-11-12: a fully loaded, correctly sized clip
+        //    that never played a millisecond. iOS refuses video autoplay in LOW POWER MODE.
+        const dur = (isFinite(videoEl.duration) && videoEl.duration > 0) ? videoEl.duration : 12;
+        guardUntil = activeMs() + (dur + 5) * 1000;
+        startedAt = activeMs();
+        lastDrawAt = 0;
+
+        const askToPlay = () => {
+          playAttempts++;
+          try {
+            const pr = videoEl.play();
+            if (pr && typeof pr.catch === 'function') {
+              pr.then(() => { playRefused = null; startAudio(); })
+                .catch(err => { playRefused = err?.name || String(err || 'refused'); });
+            } else {
+              startAudio();
             }
-          }, 500);
-        }).catch(finish);
+          } catch (e) {
+            playRefused = e?.name || String(e || 'refused');
+          }
+        };
+        askToPlay();
+        tick();
+        watchdog = setInterval(() => {
+          if (done) return;
+          // SELF-HEAL, now reachable even when the first play() was refused.
+          if (!document.hidden && !hiddenSince && videoEl.paused && !videoEl.ended) {
+            askToPlay();
+          }
+          if (performance.now() - lastDrawAt > 400) {
+            if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+            if (nextId) { clearTimeout(nextId); nextId = null; }
+            tick();
+          }
+        }, 500);
       };
       videoEl.load();
     });

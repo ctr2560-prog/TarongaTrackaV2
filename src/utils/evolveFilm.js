@@ -646,6 +646,9 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
       // 🚫 Do not remove these to tidy up. A count that is only interesting when something
       //    fails is exactly the thing that is missing when something fails.
       let drawCalls = 0, pausedSkips = 0, endedEarly = false;
+      // What play() actually said, and how many times we asked. `playRefused` holds the error
+      // NAME (NotAllowedError on iOS when autoplay is blocked), or stays null if it ever played.
+      let playRefused = null, playAttempts = 0;
       // Safety net for a clip that never fires `ended`. Counted in VISIBLE time, so being away
       // for two minutes no longer cuts the chapter short.
       let guardUntil = activeMs() + 20000;
@@ -683,8 +686,17 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
           const state = `drawCalls=${drawCalls} pausedSkips=${pausedSkips}`
             + ` endedEarly=${endedEarly} paused=${videoEl.paused} ended=${videoEl.ended}`
             + ` readyState=${videoEl.readyState} size=${videoEl.videoWidth}x${videoEl.videoHeight}`
-            + ` t=${(videoEl.currentTime || 0).toFixed(2)} hiddenPauses=${hiddenPauses}`;
-          const why = drawError ? ` — ${drawError}`
+            + ` t=${(videoEl.currentTime || 0).toFixed(2)} hiddenPauses=${hiddenPauses}`
+            + ` playAttempts=${playAttempts} playRefused=${playRefused || 'no'}`;
+          // ⚠️ A REFUSED play() IS THE LIKELIEST CAUSE ON AN iPHONE, so it is named first and
+          //    in words a student can act on. iOS blocks video autoplay in Low Power Mode, and
+          //    there is no web API that reports Low Power Mode, so the refusal itself is the
+          //    only signal we get. 🚫 Do not soften this to "something went wrong" — the whole
+          //    value is that it tells someone which switch to flick.
+          const why = playRefused ? ` — your phone would not let the video play (${playRefused}).`
+              + ' On an iPhone this is almost always Low Power Mode: turn it off in'
+              + ' Settings, Battery, then make the film again.'
+            : drawError ? ` — ${drawError}`
             : resumeFailed ? ' (playback would not restart after the screen went off)'
             : endedEarly ? ' — the clip reported itself finished before a single frame was drawn'
             : pausedSkips > 0 && drawn === 0 ? ' — the clip stayed paused the whole time'
@@ -704,6 +716,9 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
         resolve();
       }
       function startAudio() {
+        // ⚠️ Idempotent: the watchdog can retry play() many times, and each success would
+        //    otherwise start a second overlapping copy of this chapter's audio.
+        if (abSrc) return;
         if (audioDest && audioBuffers[c.id]) {
           try {
             abSrc = audioCtx.createBufferSource();
@@ -860,30 +875,63 @@ export async function buildEvolveFilm({ chapters, clipURLs, studentName, theme, 
         if (started || done) return;
         started = true;
         videoEl.oncanplay = null;
-        videoEl.play().then(() => {
-          active.video = videoEl;
-          if (document.hidden) pauseForHidden();   // went away during load
-          const dur = (isFinite(videoEl.duration) && videoEl.duration > 0) ? videoEl.duration : 12;
-          guardUntil = activeMs() + (dur + 5) * 1000;
-          startedAt = activeMs();
-          lastDrawAt = 0;
-          startAudio();
-          tick();
-          watchdog = setInterval(() => {
-            if (done) return;
-            // ⚠️ SELF-HEAL. One rejected play() used to end the chapter's contribution for good.
-            //    If we are visible and it is still paused, ask again — iOS usually allows it
-            //    once the page is properly foregrounded.
-            if (!document.hidden && !hiddenSince && videoEl.paused && !videoEl.ended) {
-              try { tryPlay(videoEl); } catch { /* asked again next tick */ }
+
+        // ⚠️⚠️⚠️ NOTHING HERE MAY WAIT ON play() RESOLVING. This whole block used to live
+        //    inside `videoEl.play().then(...)`, with `.catch(finish)` on the end — so when
+        //    play() was refused, the draw loop never started, the guard was never re-armed,
+        //    and above all THE SELF-HEAL WATCHDOG WAS NEVER CREATED. The one mechanism built
+        //    to retry a refused play() could only exist if play() had already succeeded.
+        //    One refusal killed the chapter outright, for good.
+        //
+        //    Caught 2026-11-12 on Cameron's iPhone, by the counters added the same day:
+        //    drawCalls=0 pausedSkips=0 paused=true ended=false readyState=4 size=720x1280
+        //    t=0.00 hiddenPauses=0 — a clip fully loaded, correctly sized, that never played
+        //    a single millisecond and whose draw loop never ran once.
+        //
+        // ⚠️ THE LIKELY TRIGGER IS LOW POWER MODE, and it is not an edge case for Evolve:
+        //    iOS refuses video autoplay while Low Power Mode is on, and Evolve is a TWILIGHT
+        //    excursion — a phone at the end of a school day is exactly a phone on low battery.
+        //    So the student most likely to hit this is the typical student.
+        active.video = videoEl;
+        if (document.hidden) pauseForHidden();     // went away during load
+        const dur = (isFinite(videoEl.duration) && videoEl.duration > 0) ? videoEl.duration : 12;
+        guardUntil = activeMs() + (dur + 5) * 1000;
+        startedAt = activeMs();
+        lastDrawAt = 0;
+
+        // Ask it to play, and record the answer rather than acting on it. 🚫 Never hang the
+        // pipeline on this promise: on iOS it can reject, and it can also simply never settle.
+        const askToPlay = () => {
+          playAttempts++;
+          try {
+            const pr = videoEl.play();
+            if (pr && typeof pr.catch === 'function') {
+              pr.then(() => { playRefused = null; startAudio(); })
+                .catch(err => { playRefused = err?.name || String(err || 'refused'); });
+            } else {
+              startAudio();                        // older engines return nothing
             }
-            if (performance.now() - lastDrawAt > 400) {
-              if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
-              if (nextId) { clearTimeout(nextId); nextId = null; }
-              tick();
-            }
-          }, 500);
-        }).catch(finish);
+          } catch (e) {
+            playRefused = e?.name || String(e || 'refused');
+          }
+        };
+        askToPlay();
+        // The loop runs whatever play() says. A paused video simply contributes no frames,
+        // which drawFrame already handles, and the watchdog below keeps asking.
+        tick();
+        watchdog = setInterval(() => {
+          if (done) return;
+          // ⚠️ SELF-HEAL. Now reachable even when the FIRST play() was refused, which is the
+          //    whole point of the restructure above.
+          if (!document.hidden && !hiddenSince && videoEl.paused && !videoEl.ended) {
+            askToPlay();
+          }
+          if (performance.now() - lastDrawAt > 400) {
+            if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+            if (nextId) { clearTimeout(nextId); nextId = null; }
+            tick();
+          }
+        }, 500);
       };
       videoEl.load();
     });

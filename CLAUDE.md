@@ -2133,6 +2133,60 @@ applies to new recordings only — re-film rather than retrying an old clip.
 
 ---
 
+### 0x. ⚠️⚠️⚠️ A REFUSED `play()` KILLED THE CHAPTER, AND LOW POWER MODE REFUSES IT (2026-11-12)
+
+**Found on a real iPhone, by the counters added the same day.** The film came out as cards and
+the screen reported:
+
+```
+kangaroo: the clip played but no picture was captured — the draw loop never ran
+[drawCalls=0 pausedSkips=0 endedEarly=false paused=true ended=false
+ readyState=4 size=720x1280 t=0.00 hiddenPauses=0]
+```
+
+Read it: `readyState=4` and `size=720x1280` mean the clip **loaded perfectly and had a picture
+track**. `paused=true` with `t=0.00` means it never played a single millisecond. `drawCalls=0`
+means the draw loop never ran once. `hiddenPauses=0` rules out a screen lock.
+
+**The cause, and it is a design flaw rather than a typo.** The guard re-arm, `startAudio()`,
+`tick()` and the **self-heal watchdog** all lived inside `videoEl.play().then(...)`, with
+`.catch(finish)` on the end. So when `play()` was refused, the draw loop never started and
+**the one mechanism built to retry a refused `play()` was never created**. It could only exist
+once `play()` had already succeeded. A single refusal ended the chapter for good.
+
+🚫 **NOTHING IN THE PER-CLIP SETUP MAY WAIT ON `play()` RESOLVING.** On iOS that promise can
+reject *and* can simply never settle. Ask it to play, record the answer, and start the loop
+regardless — a paused video contributes no frames, which `drawFrame` already handles, and the
+watchdog keeps asking.
+
+⚠️⚠️ **THE TRIGGER IS ALMOST CERTAINLY LOW POWER MODE, AND IT IS NOT AN EDGE CASE.** iOS blocks
+video autoplay while Low Power Mode is on. **Evolve is a TWILIGHT excursion**, so a phone at the
+end of a school day is exactly a phone on low battery: the student most likely to hit this is the
+typical student. There is **no web API that reports Low Power Mode**, so the refusal itself is the
+only signal available — which is why the message names it outright and tells the student which
+switch to flick. 🚫 Do not soften that to "something went wrong".
+
+✅ Fixed in **both** `utils/evolveFilm.js` and `modes/wildest-dreams/film.js`. ⚠️ Wildest Dreams
+was worse: its watchdog had no `play()` retry at all, so a refusal was final with no recovery
+path whatsoever.
+
+⚠️ **`startAudio()` had to become idempotent** — the watchdog now retries `play()`, and every
+success would otherwise start another overlapping copy of that clip's audio.
+
+**Verified in the Node harness** with a stubbed `play()`: always-refused gives `played 0`,
+`playAttempts=13` (it retried instead of dying) and the Low Power Mode message; refused-twice-
+then-allowed recovers to **`played 2 of 2`**, which before the fix was permanently 0.
+
+⚠️⚠️ **A HARNESS LESSON, because it made an earlier run look better than it was.** The harness
+had no `requestAnimationFrame` stub. While `tick()` was called inside the promise chain, that
+`ReferenceError` was swallowed as an unhandled rejection, so the draw loop **died after one
+frame** and the run still reported success — `drawImage calls: 2` for two clips, which is one
+each, and should have been read as a failure. With the loop moved out of the promise the same
+error surfaced immediately. 🚫 Do not read a passing harness run without checking the counts are
+the right ORDER OF MAGNITUDE; with the stub in place it is ~354.
+
+---
+
 ### 0z. ⚠️⚠️⚠️ THE `<video>` YOU DRAW FROM MUST BE IN THE DOCUMENT (2026-11-03)
 
 The single most expensive bug this pipeline has produced. Two days.
