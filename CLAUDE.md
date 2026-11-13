@@ -2187,6 +2187,29 @@ the right ORDER OF MAGNITUDE; with the stub in place it is ~354.
 
 ---
 
+#### ✅ EVOLVE PRODUCES A FILM AGAIN (2026-11-12) — AND iOS IS STILL NOT EVIDENCED
+
+Verified against the bucket, not by eye: `evolve/9YZ71K/Wallaby/` holds five clips plus an
+**8.5MB `film.webm` of 866 frames** (~29s), with `sessionCompleted: true` and a keepsake doc
+carrying a souvenir token. 866 is the number that matters — the standing test is that **under
+~400 frames for a five-chapter film means the clips did not contribute**, so this film really
+contains footage rather than cards.
+
+⚠️ **It is the first Evolve film since 2026-10-04**, and the first ever on the stitcher rewritten
+on 11-03. Everything between those dates failed.
+
+⚠️⚠️ **BUT THAT RUN WAS NOT AN iPHONE, SO THE LOW POWER MODE FIX IS STILL UNPROVEN ON iOS.**
+The clips and the film are **VP9/Opus**, which WebKit cannot encode, so a Chromium browser made
+them. **There is still not a single `.mp4` anywhere in the bucket**, which remains the only proof
+that iOS has ever completed a recording here. 🚫 Do not record Evolve as "fixed on iPhone" —
+what is fixed is a refused `play()` no longer killing the chapter, and the iPhone that produced
+the diagnostic has not been run again since.
+
+**The check, whenever this comes up again:** `gcloud storage ls -r "gs://tarongatracka.firebasestorage.app/**.mp4"`.
+An `.mp4` appearing is the first evidence WebKit ever recorded anything in this project.
+
+---
+
 ### 0z. ⚠️⚠️⚠️ THE `<video>` YOU DRAW FROM MUST BE IN THE DOCUMENT (2026-11-03)
 
 The single most expensive bug this pipeline has produced. Two days.
