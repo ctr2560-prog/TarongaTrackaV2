@@ -70,6 +70,34 @@ function makeSouvenirToken() {
 }
 
 function Shell({ children, onHome, scroll = true }) {
+  // ⚠️⚠️ THE WHITE CUSHION UNDER THE KEYBOARD (Cameron, iPhone, 2026-11-12).
+  //
+  // This shell is `position:fixed; inset:0`, which is sized against the LAYOUT viewport. When
+  // iOS opens the keyboard it shrinks the VISUAL viewport and scrolls the page, so the fixed
+  // box no longer covers everything on screen and whatever sits behind it shows through.
+  // Nothing in global.css ever set a background on html or body, so what showed through was
+  // the browser default: a white slab under the writing screen, exactly where a student is
+  // looking while they type.
+  //
+  // Painting the page itself fixes it at the source, and kills the white flash on rubber-band
+  // overscroll too. `deep` is the top of the same gradient, so the join is invisible.
+  // 🚫 Do not "fix" this by swapping the shell to 100dvh instead — dvh tracks the keyboard, so
+  //    the whole layout would resize and jump under the student's thumbs mid-sentence.
+  useEffect(() => {
+    const html = document.documentElement, body = document.body;
+    const prevHtml = html.style.background, prevBody = body.style.background;
+    const prevScheme = body.style.colorScheme;
+    html.style.background = T.deep;
+    body.style.background = T.deep;
+    // So iOS paints its own scroll and keyboard surfaces dark rather than white.
+    body.style.colorScheme = 'dark';
+    return () => {
+      html.style.background = prevHtml;
+      body.style.background = prevBody;
+      body.style.colorScheme = prevScheme;
+    };
+  }, []);
+
   return (
     <div style={{ position:'fixed', inset:0, background:T.bgGradient, overflowY: scroll ? 'auto' : 'hidden', fontFamily:'var(--t-font)' }}>
       {onHome && (
