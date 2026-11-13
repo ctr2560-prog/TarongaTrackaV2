@@ -904,6 +904,16 @@ export default function EvolveScreen() {
   }, [classCode, studentName]);
 
   // ── Camera lifecycle ──
+  // Forces WebKit to rebuild a live video's layer after the stream changes shape. See the
+  // comment on the record-screen <video>.
+  const reflowLiveVideo = useCallback((e) => {
+    const v = e.currentTarget;
+    v.style.display = 'none';
+    void v.offsetHeight;
+    v.style.display = '';
+    requestAnimationFrame(() => { v.style.display = 'none'; void v.offsetHeight; v.style.display = ''; });
+  }, []);
+
   const stopCam = useCallback(() => {
     camRef.current?.getTracks().forEach(t => t.stop());
     camRef.current = null;
@@ -1514,7 +1524,15 @@ export default function EvolveScreen() {
                   on .ev-cam above. */}
               <div className="ev-cam-stage">
                 <div className="ev-cam">
-                  <video ref={videoRef} playsInline muted autoPlay style={{ transform: frontCam ? 'scaleX(-1)' : 'none' }} />
+                  {/* ⚠️ iOS: a live camera stream often reports landscape first and flips to
+                      portrait once frames arrive. WebKit keeps the layer it sized for the old
+                      shape and draws the portrait picture as a small rectangle inside it
+                      (Cameron's phone, 2026-11-13; preview was fine because a stored clip never
+                      changes shape). On every shape change, take the video out of layout and put
+                      it back so WebKit rebuilds the layer. */}
+                  <video ref={videoRef} playsInline muted autoPlay
+                    onLoadedMetadata={reflowLiveVideo} onResize={reflowLiveVideo}
+                    style={{ transform: frontCam ? 'scaleX(-1)' : 'none' }} />
                   {recording && (
                     <div style={{ position:'absolute', top:'0.7rem', left:'50%', transform:'translateX(-50%)', background:'rgba(193,39,45,0.92)', color:'white', padding:'0.28rem 0.75rem', borderRadius:999, fontSize:'0.78rem', fontWeight:700, display:'flex', alignItems:'center', gap:'0.35rem', backdropFilter:'blur(4px)' }}>
                       <span style={{ width:'7px', height:'7px', borderRadius:'50%', background:'white', animation:'bflDot 0.8s ease-in-out infinite' }} />
