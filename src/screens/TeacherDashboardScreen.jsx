@@ -8,17 +8,6 @@ import TeacherHelpBot from '../components/TeacherHelpBot';
 import TeacherTutorial from '../components/TeacherTutorial';
 import nswSchools from '../data/nswPublicSchools.json';
 
-const WILDLY_PHRASES = ['Wildly by Taronga', 'Continue the learning', 'Resources', 'Programs', 'Assessments'];
-
-function WildlyLabel() {
-  const [idx, setIdx] = useState(0);
-  useEffect(() => {
-    const interval = setInterval(() => setIdx(i => (i + 1) % WILDLY_PHRASES.length), 2200);
-    return () => clearInterval(interval);
-  }, []);
-  return <span style={{ transition:'opacity 0.3s' }}>{WILDLY_PHRASES[idx]}</span>;
-}
-
 const MILESTONES = [
   { points: 300,  label: 'Free class zoo visit', reward: true },
   { points: 600,  label: 'Sponsor a habitat' },
@@ -67,14 +56,294 @@ const CHALLENGES = [
 
 const MONTHLY_CHALLENGE = { id:'monthly-june-2026', name:'June Challenge — Habitat Heroes', desc:'Document three different animal habitats near your school with photos and a short description.', points:100, icon:<SvgStar/> };
 
-const RESOURCE_CARDS = [
-  { title:'Curriculum Alignment', desc:'NSW syllabus outcome mapping', icon:<SvgList/>, tag:'Document', screen:'curriculumAlignment' },
-  { title:'Zoo Map', desc:'See where every Tracka animal lives', icon:<SvgCompass/>, tag:'Map', screen:'teacherMap' },
-  { title:'Excursion Planning Pack', desc:'From booking to boarding the bus', icon:<SvgBook/>, tag:'Checklist', screen:'excursionPlan' },
-  { title:'Accessibility & Inclusion', desc:'Supports so every student tracks', icon:<SvgUsers/>, tag:'Guide', screen:'accessibility' },
-  { title:'Conservation in Action', desc:'Real actions from real schools', icon:<SvgTree/>, tag:'Gallery', screen:'conservationGallery' },
-  { title:'Assessment Ideas', desc:'In-app evidence & post-visit tasks', icon:<SvgChart/>, tag:'Assessment', screen:'assessmentIdeas' },
+// ── Dashboard redesign (2026-11-13) ─────────────────────────────────────────────
+// Programme identity for each class card. ⚠️ 'standard' and an ABSENT sessionType both mean
+// Tracka Trek (see CLAUDE.md, Programme names); the listener already defaults absent to 'standard'.
+const PROGRAMMES = {
+  standard:         { key:'trek', label:'Tracka Trek',    color:'#2E7D55' },
+  zoosnooz:         { key:'snooz', label:'ZooSnooz',       color:'#7FA7E0', night:true },
+  zooyard:          { key:'yard', label:'ZooYard',        color:'#6E8B2A' },
+  evolve:           { key:'evolve', label:'Evolve',         color:'#C08A1E' },
+  'wildest-dreams': { key:'dreams', label:'Wildest Dreams', color:'#B4536E' },
+};
+function programmeOf(cls) {
+  if (cls.location === 'zoosnooz-sydney') return PROGRAMMES.zoosnooz;
+  return PROGRAMMES[cls.sessionType] || PROGRAMMES.standard;
+}
+function locationLabel(loc) {
+  return { 'taronga-sydney':'Taronga Sydney', 'zoosnooz-sydney':'ZooSnooz', 'dubbo':'Taronga Western Plains, Dubbo', 'school':'Your school grounds' }[loc] || loc || '';
+}
+function greeting() {
+  const h = new Date().getHours();
+  return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+}
+
+const PLAN_LINKS = [
+  { title:'Book devices',              desc:'Reserve Taronga phones for your visit',   icon:<SvgCalendarIcon/>, screen:'deviceBooking' },
+  { title:'Pre and post visit lessons', desc:'Ready-made lessons for before and after', icon:<SvgLayers/>,       screen:'resourceHub' },
+  { title:'Excursion planning pack',   desc:'From booking to boarding the bus',        icon:<SvgBook/>,         screen:'excursionPlan' },
+  { title:'Zoo map',                   desc:'Where every Tracka animal lives',         icon:<SvgCompass/>,      screen:'teacherMap' },
+  { title:'Curriculum alignment',      desc:'NSW syllabus outcomes, mapped',           icon:<SvgList/>,         screen:'curriculumAlignment' },
+  { title:'Assessment ideas',          desc:'Evidence from the app, tasks for after',  icon:<SvgChart/>,        screen:'assessmentIdeas' },
+  { title:'Accessibility and inclusion', desc:'Supports so every student can take part', icon:<SvgUsers/>,      screen:'accessibility' },
+  { title:'Conservation in action',    desc:'What other schools have done',            icon:<SvgTree/>,         screen:'conservationGallery' },
+  { title:'How-to guides',             desc:'Setting up, running and reviewing a class', icon:<SvgHelpCircle/>, screen:'teacherGuide' },
+  { title:'Book an excursion',         desc:'Opens taronga.org.au',                    icon:<SvgGlobe/>,        href:'https://www.taronga.org.au/learn' },
 ];
+
+// ⚠️ No backticks inside this string — it is a template literal.
+const TD_CSS = `
+.td-main { background: #F4F6F2; }
+.td-inner { max-width: 1180px; margin: 0 auto; }
+
+.td-hero {
+  position: relative; overflow: hidden; isolation: isolate;
+  display: flex; align-items: flex-end; justify-content: space-between; gap: 1.5rem; flex-wrap: wrap;
+  background: #0A2F1F; color: #fff; border-radius: 22px;
+  padding: 2.25rem 2.25rem 2rem; margin-bottom: 2rem; min-height: 230px;
+}
+.td-hero-photo {
+  position: absolute; inset: 0 0 0 38%; z-index: -1;
+  background: url('/images/koala.jpg') center 30% / cover no-repeat;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.55) 45%, #000 100%);
+          mask-image: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.55) 45%, #000 100%);
+  opacity: 0.75;
+}
+.td-hero::after {
+  content: ''; position: absolute; inset: 0; z-index: -1;
+  background: linear-gradient(0deg, rgba(10,47,31,0.75) 0%, rgba(10,47,31,0) 60%);
+}
+.td-greeting {
+  font-family: 'Taronga Headline', 'Bebas Neue', sans-serif; font-weight: 400;
+  font-size: clamp(2.4rem, 5vw, 3.6rem); line-height: 0.95; letter-spacing: 0.02em;
+  margin: 0 0 0.6rem; color: #fff;
+}
+.td-hero-sub { margin: 0; font-size: 0.95rem; color: rgba(255,255,255,0.78); display: flex; align-items: center; flex-wrap: wrap; gap: 0 0.6rem; }
+.td-sep { width: 4px; height: 4px; border-radius: 50%; background: rgba(255,255,255,0.45); display: inline-block; }
+.td-hero-stats { display: flex; gap: 2.25rem; margin: 1.5rem 0 0; padding: 0; flex-wrap: wrap; }
+.td-hero-stats div { display: flex; flex-direction: column-reverse; }
+.td-hero-stats dt { font-size: 0.78rem; color: rgba(255,255,255,0.62); margin-top: 0.15rem; }
+.td-hero-stats dd { margin: 0; font-size: 1.6rem; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.td-hero-cta { flex-shrink: 0; }
+
+.td-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem;
+  font: inherit; font-size: 0.9rem; font-weight: 700; cursor: pointer;
+  padding: 0.75rem 1.25rem; border-radius: 999px; border: 1.5px solid transparent;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.td-btn svg { width: 18px; height: 18px; }
+.td-btn:focus-visible, .td-code:focus-visible, .td-class-open:focus-visible, .td-links button:focus-visible,
+.td-wildly:focus-visible, .td-class-new:focus-visible, .td-ch-submit:focus-visible { outline: 3px solid #E0A526; outline-offset: 2px; }
+.td-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.td-btn-light { background: #fff; color: #0A2F1F; }
+.td-btn-light:hover { background: #E8F2EC; }
+.td-btn-primary { background: #1A5238; color: #fff; }
+.td-btn-primary:hover:not(:disabled) { background: #0A2F1F; }
+.td-btn-gold { background: #E0A526; color: #3A2A05; }
+.td-btn-gold:hover { background: #CF961C; }
+.td-btn-ghost { background: transparent; color: #1A5238; border-color: #CBD8CF; }
+.td-btn-ghost:hover { border-color: #1A5238; }
+
+.td-nudge { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; background: #FFF8E6; border: 1px solid #F0D58A; border-radius: 16px; padding: 1.1rem 1.25rem; margin-bottom: 2rem; }
+.td-nudge-title { margin: 0; font-weight: 700; color: #5C4306; font-size: 0.92rem; }
+.td-nudge-sub { margin: 0.2rem 0 0; color: #7A5B12; font-size: 0.82rem; line-height: 1.5; }
+.td-input { width: 100%; box-sizing: border-box; padding: 0.7rem 0.95rem; border-radius: 12px; border: 1.5px solid #E2CF98; font: inherit; font-size: 0.88rem; outline: none; background: #fff; }
+.td-input:focus { border-color: #1A5238; }
+.td-sugs { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: #fff; border: 1px solid #E2E6DF; border-radius: 12px; box-shadow: 0 12px 32px rgba(10,47,31,0.14); z-index: 20; max-height: 260px; overflow-y: auto; }
+.td-sugs button { display: block; width: 100%; text-align: left; padding: 0.55rem 0.9rem; background: none; border: 0; cursor: pointer; font: inherit; }
+.td-sugs button:hover { background: #F1F5F1; }
+.td-sug-name { display: block; font-size: 0.86rem; color: #14231B; }
+.td-sug-sub { display: block; font-size: 0.74rem; color: #8A928C; }
+.td-sug-add { border-top: 1px solid #EEF1EC !important; color: #1A5238; font-weight: 700; font-size: 0.84rem; }
+
+.td-section { margin-bottom: 2.25rem; }
+.td-section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.td-h3 { margin: 0; font-size: 1.3rem; font-weight: 700; color: #0A2F1F; letter-spacing: -0.015em; }
+.td-hint { margin: 0; font-size: 0.84rem; color: #6B736D; }
+.td-muted { margin: 0; font-size: 0.84rem; color: #8A928C; }
+
+.td-class-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(268px, 1fr)); gap: 1.1rem; }
+
+.td-class-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 1rem; }
+.td-class {
+  --prog: #2E7D55;
+  position: relative; display: flex; flex-direction: column;
+  background: #fff; border-radius: 20px; padding: 1.25rem 1.35rem 1.2rem;
+  border: 1px solid #E2E6DF; box-shadow: 0 1px 2px rgba(10,47,31,0.04);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.td-class:hover { border-color: #BFCDC4; box-shadow: 0 10px 30px rgba(10,47,31,0.08); }
+.td-class-open { position: absolute; inset: 0; border: 0; background: none; cursor: pointer; border-radius: 20px; z-index: 0; }
+.td-class > *:not(.td-class-open) { position: relative; z-index: 1; pointer-events: none; }
+.td-class .td-code { pointer-events: auto; }
+.td-class-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.7rem; }
+.td-prog { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.78rem; font-weight: 700; color: #3C4A41; }
+.td-prog-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--prog); }
+.td-stage { font-size: 0.75rem; color: #6B736D; font-weight: 600; }
+.td-class-name { margin: 0; font-size: 1.08rem; font-weight: 700; color: #0A2F1F; line-height: 1.25; letter-spacing: -0.01em; overflow-wrap: anywhere; }
+.td-class-meta { margin: 0.2rem 0 0; font-size: 0.82rem; color: #6B736D; }
+.td-code {
+  align-self: flex-start; margin: 0.85rem 0 1.1rem; padding: 0.15rem 0.55rem 0.05rem; margin-left: -0.55rem;
+  font-family: 'Taronga Headline', 'Bebas Neue', sans-serif; font-weight: 400;
+  font-size: 2.6rem; line-height: 1; letter-spacing: 0.14em; color: #0A2F1F;
+  background: none; border: 0; border-radius: 10px; cursor: zoom-in;
+  transition: background 0.15s;
+}
+.td-code:hover { background: #EEF4EF; }
+.td-progress { display: flex; align-items: center; gap: 0.7rem; margin-top: auto; }
+.td-bar { flex: 1; height: 5px; border-radius: 3px; background: #E8ECE6; overflow: hidden; }
+.td-bar span { display: block; height: 100%; border-radius: 3px; background: var(--prog, #2E7D55); transition: width 0.6s ease; }
+.td-progress-label { font-size: 0.78rem; color: #6B736D; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+.td-class.is-night { background: #0D1B2E; border-color: #0D1B2E; color: #E4ECF7; }
+.td-class.is-night:hover { border-color: #2B4466; box-shadow: 0 10px 30px rgba(13,27,46,0.35); }
+.td-class.is-night .td-prog { color: #BFD0EA; }
+.td-class.is-night .td-class-name, .td-class.is-night .td-code { color: #F3F7FC; }
+.td-class.is-night .td-class-meta, .td-class.is-night .td-stage, .td-class.is-night .td-progress-label { color: #8EA2BF; }
+.td-class.is-night .td-code:hover { background: rgba(255,255,255,0.07); }
+.td-class.is-night .td-bar { background: rgba(255,255,255,0.1); }
+
+/* Light theme hints: a pale wash in the programme colour and, for some, one faint detail.
+   Kept quiet on purpose; the code stays the strongest thing on the card. */
+.td-class { overflow: hidden; isolation: isolate; }
+.td-class[class*='tint-']::after { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+.tint-trek::after   { background: radial-gradient(120% 90% at 100% 0%, rgba(46,125,85,0.10) 0%, rgba(46,125,85,0) 60%); }
+.tint-yard::after   { background: radial-gradient(120% 90% at 100% 0%, rgba(110,139,42,0.13) 0%, rgba(110,139,42,0) 60%), radial-gradient(70% 50% at 0% 100%, rgba(110,139,42,0.06), transparent 70%); }
+.tint-evolve::after { background: radial-gradient(90% 70% at 100% 100%, rgba(232,150,60,0.20) 0%, rgba(192,90,120,0.07) 45%, rgba(192,90,120,0) 70%); }
+.tint-dreams::after {
+  background:
+    repeating-linear-gradient(90deg, rgba(180,83,110,0.16) 0 8px, transparent 8px 18px) left 0 top 6px / 100% 5px no-repeat,
+    radial-gradient(120% 90% at 100% 0%, rgba(180,83,110,0.09) 0%, rgba(180,83,110,0) 60%);
+}
+.tint-snooz::after {
+  background:
+    radial-gradient(1.4px 1.4px at 58% 14%, rgba(255,255,255,0.75) 50%, transparent 51%),
+    radial-gradient(1px 1px at 72% 34%, rgba(255,255,255,0.55) 50%, transparent 51%),
+    radial-gradient(1.2px 1.2px at 46% 40%, rgba(255,255,255,0.45) 50%, transparent 51%),
+    radial-gradient(1px 1px at 90% 52%, rgba(255,255,255,0.4) 50%, transparent 51%),
+    radial-gradient(1.2px 1.2px at 64% 58%, rgba(255,255,255,0.35) 50%, transparent 51%),
+    radial-gradient(90% 70% at 100% 0%, rgba(127,167,224,0.22) 0%, rgba(127,167,224,0) 60%);
+}
+
+.td-class-new {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem;
+  min-height: 200px; border-radius: 20px; border: 1.5px dashed #BFCDC4; background: transparent;
+  color: #1A5238; font: inherit; font-weight: 700; font-size: 0.92rem; cursor: pointer; transition: background 0.15s, border-color 0.15s;
+}
+.td-class-new:hover { background: #fff; border-color: #1A5238; }
+.td-class-new svg { width: 26px; height: 26px; }
+
+.td-empty { background: #fff; border: 1px solid #E2E6DF; border-radius: 20px; padding: 2.5rem 2rem; max-width: 560px; }
+.td-empty h4 { margin: 0 0 0.4rem; font-size: 1.15rem; color: #0A2F1F; }
+.td-empty p { margin: 0 0 1.25rem; color: #5B645E; line-height: 1.55; font-size: 0.92rem; }
+
+.td-split { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+.td-links { list-style: none; margin: 0; padding: 0.35rem; display: grid; grid-template-columns: 1fr 1fr; gap: 0.15rem; background: #fff; border: 1px solid #E2E6DF; border-radius: 20px; }
+.td-links button { display: flex; align-items: center; gap: 0.85rem; width: 100%; text-align: left; padding: 0.8rem 0.85rem; border: 0; background: none; border-radius: 14px; cursor: pointer; font: inherit; transition: background 0.15s; }
+.td-links button:hover { background: #F1F5F1; }
+.td-link-icon { width: 38px; height: 38px; flex-shrink: 0; border-radius: 11px; background: #EAF2EC; color: #1A5238; display: flex; align-items: center; justify-content: center; }
+.td-link-icon svg { width: 19px; height: 19px; }
+.td-link-text { flex: 1; min-width: 0; }
+.td-link-title { display: block; font-size: 0.9rem; font-weight: 700; color: #14231B; }
+.td-link-desc { display: block; font-size: 0.78rem; color: #6B736D; margin-top: 0.1rem; }
+.td-chev { color: #A3ADA6; font-size: 1.3rem; line-height: 1; }
+.td-wildly { margin-top: 0.75rem; display: flex; align-items: center; gap: 1rem; width: 100%; text-align: left; padding: 0.9rem 1.1rem; background: #fff; border: 1px solid #E2E6DF; border-radius: 20px; cursor: pointer; font: inherit; color: #3C4A41; font-size: 0.86rem; line-height: 1.45; transition: border-color 0.15s; }
+.td-wildly:hover { border-color: #1A5238; }
+.td-wildly img { width: 76px; height: auto; flex-shrink: 0; }
+.td-wildly span:nth-of-type(1) { flex: 1; }
+
+.td-points { background: #fff; border: 1px solid #E2E6DF; border-radius: 20px; padding: 1.35rem; }
+.td-points-num { display: flex; align-items: baseline; gap: 0.45rem; }
+.td-points-num span { font-size: 2.6rem; font-weight: 800; color: #0A2F1F; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; }
+.td-points-num small { font-size: 0.9rem; color: #6B736D; font-weight: 600; }
+.td-points-card .td-bar { margin-top: 0.85rem; }
+.td-bar-gold span { background: #E0A526; }
+.td-points-goal { margin: 0.5rem 0 0; font-size: 0.84rem; color: #5B645E; }
+.td-points-goal.is-won { color: #8A6200; font-weight: 700; margin-top: 0.6rem; }
+.td-monthly { margin-top: 1.25rem; padding: 1.05rem; border-radius: 16px; background: #FFF8E6; border: 1px solid #F3DFA6; }
+.td-monthly-head { display: flex; gap: 0.75rem; align-items: center; }
+.td-monthly-icon { width: 38px; height: 38px; border-radius: 11px; background: #E0A526; color: #3A2A05; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.td-monthly-icon svg { width: 19px; height: 19px; }
+.td-monthly-name { margin: 0; font-weight: 700; color: #3A2A05; font-size: 0.94rem; }
+.td-monthly-meta { margin: 0.1rem 0 0; font-size: 0.77rem; color: #7A5B12; }
+.td-monthly-desc { margin: 0.75rem 0 0.9rem; font-size: 0.84rem; color: #5C4306; line-height: 1.5; }
+.td-status { margin: 0; font-size: 0.82rem; font-weight: 700; }
+.td-status.is-pending { color: #8A6200; }
+.td-status.is-done { color: #1A5238; }
+.td-board { margin-top: 1.25rem; }
+.td-board-title { margin: 0 0 0.45rem; font-size: 0.86rem; font-weight: 700; color: #14231B; }
+.td-board ol { list-style: none; margin: 0; padding: 0; }
+.td-board li { display: grid; grid-template-columns: 1.6rem 1fr auto; gap: 0.5rem; align-items: center; padding: 0.5rem 0.55rem; border-radius: 10px; font-size: 0.85rem; }
+.td-board li + li { border-top: 1px solid #F0F2EE; }
+.td-board li.is-you { background: #EEF4EF; border-top-color: transparent; }
+.td-board li.is-you + li { border-top-color: transparent; }
+.td-rank { color: #8A928C; font-weight: 700; font-variant-numeric: tabular-nums; }
+.td-school { color: #14231B; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.td-school em { font-style: normal; color: #1A5238; font-weight: 700; }
+.td-pts { font-weight: 700; color: #3C4A41; font-variant-numeric: tabular-nums; }
+.td-all-ch { width: 100%; margin-top: 1rem; }
+
+.td-ch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 0.6rem; }
+.td-ch { display: flex; gap: 0.85rem; align-items: flex-start; background: #fff; border: 1px solid #E2E6DF; border-radius: 16px; padding: 0.95rem 1rem; }
+.td-ch-icon { width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: #F1F5F1; color: #4A7C61; }
+.td-ch-icon svg { width: 18px; height: 18px; }
+.td-ch.is-done .td-ch-icon { background: #1A5238; color: #fff; }
+.td-ch.is-pending { border-color: #F0D58A; }
+.td-ch-body { flex: 1; min-width: 0; }
+.td-ch-name { margin: 0; font-weight: 700; font-size: 0.9rem; color: #14231B; }
+.td-ch-desc { margin: 0.15rem 0 0; font-size: 0.8rem; color: #6B736D; line-height: 1.45; }
+.td-ch-side { display: flex; flex-direction: column; align-items: flex-end; gap: 0.3rem; flex-shrink: 0; }
+.td-ch-pts { font-weight: 800; color: #8A6200; font-size: 0.95rem; font-variant-numeric: tabular-nums; }
+.td-ch-pts::after { content: ' pts'; font-weight: 600; font-size: 0.74rem; color: #A88A3A; }
+.td-ch-state { font-size: 0.74rem; font-weight: 700; color: #1A5238; }
+.td-ch.is-pending .td-ch-state { color: #8A6200; }
+.td-ch-submit { font: inherit; font-size: 0.78rem; font-weight: 700; color: #1A5238; background: #EAF2EC; border: 0; border-radius: 999px; padding: 0.3rem 0.8rem; cursor: pointer; }
+.td-ch-submit:hover { background: #D7E7DC; }
+
+/* Sidebar on this screen: words only. Scoped to .td-side so other portal pages are unchanged. */
+.td-side.lms-sidebar { padding: 1.5rem 0.9rem 1.25rem; background: #0A2F1F; border-right: 0; }
+.td-nav, .td-nav-group, .td-side-foot { display: flex; flex-direction: column; gap: 0.15rem; }
+.td-nav-group { margin-top: 1.75rem; padding-top: 1.25rem; border-top: 1px solid rgba(255,255,255,0.09); }
+.td-nav-label { margin: 0 0 0.4rem; padding: 0 1rem; font-size: 0.8rem; color: rgba(255,255,255,0.45); }
+.td-nav-item {
+  position: relative; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+  width: 100%; text-align: left; padding: 0.72rem 1rem; border: 0; border-radius: 12px;
+  background: transparent; cursor: pointer; font: inherit; font-size: 1.02rem; font-weight: 600;
+  color: rgba(255,255,255,0.74); transition: background 0.15s, color 0.15s;
+}
+.td-nav-item:hover { background: rgba(255,255,255,0.06); color: #fff; }
+.td-nav-item:focus-visible, .td-legal button:focus-visible { outline: 2px solid #E0A526; outline-offset: 2px; }
+.td-nav-item.is-active { background: rgba(255,255,255,0.1); color: #fff; font-weight: 700; }
+.td-ext { font-size: 0.85rem; color: rgba(255,255,255,0.38); font-weight: 400; }
+.td-nav-item:hover .td-ext { color: rgba(255,255,255,0.7); }
+.td-side-foot { margin-top: auto; padding-top: 1.25rem; }
+.td-nav-quiet { font-size: 0.92rem; font-weight: 500; color: rgba(255,255,255,0.55); padding-top: 0.55rem; padding-bottom: 0.55rem; }
+.td-legal { display: flex; gap: 1rem; margin: 0.9rem 0 0; padding: 0.9rem 1rem 0; border-top: 1px solid rgba(255,255,255,0.09); }
+.td-legal button { background: none; border: 0; padding: 0; cursor: pointer; font: inherit; font-size: 0.76rem; color: rgba(255,255,255,0.38); }
+.td-legal button:hover { color: rgba(255,255,255,0.7); }
+.td-section[id] { scroll-margin-top: 1rem; }
+
+@media (max-width: 980px) {
+  .td-split { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .td-main.lms-main { padding: 1rem; }
+  .td-hero { padding: 1.6rem 1.35rem 1.4rem; border-radius: 18px; min-height: 0; }
+  .td-hero-photo { inset: 0 0 0 30%; opacity: 0.5; }
+  .td-hero-stats { gap: 1.5rem; }
+  .td-hero-cta { width: 100%; }
+  .td-links { grid-template-columns: 1fr; }
+  .td-class-grid, .td-ch-grid { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .td-bar span, .td-class, .td-btn, .td-code { transition: none; }
+}
+`;
+
+function jumpTo(id) {
+  document.getElementById(id)?.scrollIntoView({ behavior:'smooth', block:'start' });
+}
 
 function normalizeSchoolId(name) {
   return name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
@@ -110,9 +379,8 @@ export default function TeacherDashboardScreen() {
   // My challenge submissions (keyed by challengeId → latest submission)
   const [mySubmissions, setMySubmissions] = useState({});
 
-  // Challenge scroll
-  const challengeScrollRef = useRef(null);
-  const [canScrollRight,   setCanScrollRight]   = useState(true);
+  // Full challenge list, opened from the points panel
+  const [showAllChallenges, setShowAllChallenges] = useState(false);
 
   // Challenge upload modal
   const [uploadChallenge,   setUploadChallenge]   = useState(null);
@@ -337,395 +605,286 @@ export default function TeacherDashboardScreen() {
 
       <div className="lms-two-col">
         {/* Sidebar */}
-        <div className="lms-sidebar">
-          <div className="lms-sidebar-logo">
-            <p style={{ fontSize:'0.63rem', fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase', color:'rgba(255,255,255,0.4)', marginBottom:'0.15rem' }}>Teacher Portal</p>
-            <p style={{ fontSize:'0.82rem', fontWeight:600, color:'rgba(255,255,255,0.75)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{teacherEmail}</p>
+        <div className="lms-sidebar td-side">
+          <nav className="td-nav" aria-label="Dashboard">
+            <button className="td-nav-item is-active" aria-current="page" onClick={() => document.querySelector('.td-main')?.scrollTo({ top:0, behavior:'smooth' })}>Dashboard</button>
+            <button className="td-nav-item" onClick={() => jumpTo('t-classes-section')}>Your classes</button>
+            <button className="td-nav-item" onClick={() => setCurrentScreen('createClass')}>Create a class</button>
+            <button className="td-nav-item" onClick={() => jumpTo('t-plan-section')}>Plan your visit</button>
+            <button className="td-nav-item" onClick={() => jumpTo('t-points-section')}>School points</button>
+          </nav>
+
+          <div className="td-nav-group">
+            <p className="td-nav-label">More from Taronga</p>
+            <button className="td-nav-item" onClick={() => window.open('https://www.wildlybytaronga.com.au', '_blank')}>
+              Wildly by Taronga<span className="td-ext" aria-label="(opens a new tab)">↗</span>
+            </button>
+            <button className="td-nav-item" onClick={() => window.open('https://www.taronga.org.au/learn', '_blank')}>
+              Book an excursion<span className="td-ext" aria-label="(opens a new tab)">↗</span>
+            </button>
           </div>
-          <p className="lms-nav-group-label">Menu</p>
-          <nav className="lms-nav">
-            <button className="lms-nav-item lms-nav-active"><span className="lms-nav-icon">⊞</span> Dashboard</button>
-            <button className="lms-nav-item" onClick={() => setCurrentScreen('createClass')}><span className="lms-nav-icon">+</span> Create Class</button>
-            <button className="lms-nav-item" onClick={() => { const el = document.getElementById('t-classes-section'); el?.scrollIntoView({ behavior:'smooth' }); }}><span className="lms-nav-icon">○</span> My Classes</button>
-            <button className="lms-nav-item" onClick={() => window.open('https://www.wildlybytaronga.com.au', '_blank')}><span className="lms-nav-icon">✦</span> <WildlyLabel /></button>
-            <button className="lms-nav-item" onClick={() => window.open('https://www.taronga.org.au/learn', '_blank')}><span className="lms-nav-icon">◎</span> Book Excursion</button>
-          </nav>
-          <p className="lms-nav-group-label" style={{ marginTop:'1rem' }}>Account</p>
-          <nav className="lms-nav">
-            <button className="lms-nav-item" onClick={() => { setFeedbackRating(0); setFeedbackComment(''); setShowFeedback(true); }}><span className="lms-nav-icon">☺</span> Feedback</button>
-            <button className="lms-nav-item" onClick={() => setCurrentScreen('home')}><span className="lms-nav-icon">←</span> Back to Home</button>
-          </nav>
-          <div style={{ marginTop:'auto', paddingTop:'1.5rem', borderTop:'1px solid rgba(255,255,255,0.08)', padding:'1.5rem 1.25rem 0' }}>
-            <button onClick={() => setLegalDoc('privacy')} style={{ display:'block', background:'none', border:'none', color:'rgba(255,255,255,0.35)', fontSize:'0.72rem', cursor:'pointer', padding:'0.2rem 0', textAlign:'left', width:'100%' }}>Privacy Policy</button>
-            <button onClick={() => setLegalDoc('terms')}   style={{ display:'block', background:'none', border:'none', color:'rgba(255,255,255,0.35)', fontSize:'0.72rem', cursor:'pointer', padding:'0.2rem 0', textAlign:'left', width:'100%' }}>Terms of Use</button>
+
+          <div className="td-side-foot">
+            <button className="td-nav-item td-nav-quiet" onClick={() => { setFeedbackRating(0); setFeedbackComment(''); setShowFeedback(true); }}>Send feedback</button>
+            <button className="td-nav-item td-nav-quiet" onClick={() => setCurrentScreen('home')}>Back to home</button>
+            <p className="td-legal">
+              <button onClick={() => setLegalDoc('privacy')}>Privacy</button>
+              <button onClick={() => setLegalDoc('terms')}>Terms of use</button>
+            </p>
           </div>
         </div>
 
-        {/* Main content */}
-        <div className="lms-main">
-          <div className="lms-main-inner">
+        {/* Main content — redesigned 2026-11-13 (preview branch). Order follows what a teacher
+            opens the portal FOR: their classes and codes first, planning second, points last. */}
+        <div className="lms-main td-main">
+          <style>{TD_CSS}</style>
+          <div className="lms-main-inner td-inner">
 
-            {/* Welcome header */}
-            <div style={{ marginBottom:'1.5rem' }}>
-              <h2 className="heading-display" style={{ fontSize:'clamp(1.3rem, 2.5vw, 1.65rem)', color:'var(--t-deep)', lineHeight:1.2, marginBottom:'0.2rem' }}>
-                Welcome back{teacher?.displayName ? `, ${teacher.displayName.split(' ')[0]}` : ''}
-              </h2>
-              <p style={{ color:'var(--t-slate)', fontSize:'0.82rem' }}>
-                {new Date().toLocaleDateString('en-AU', { weekday:'long', day:'numeric', month:'long', year:'numeric' })}
-                {primarySchool ? ` · ${primarySchool}` : ''}
-              </p>
-            </div>
+            {/* Hero */}
+            <header className="td-hero">
+              <div className="td-hero-photo" aria-hidden="true" />
+              <div className="td-hero-body">
+                <h2 className="td-greeting">
+                  {greeting()}{teacher?.displayName ? `, ${teacher.displayName.split(' ')[0]}` : ''}
+                </h2>
+                <p className="td-hero-sub">
+                  {primarySchool || 'Taronga Tracka'}<span className="td-sep" aria-hidden="true" />
+                  {new Date().toLocaleDateString('en-AU', { weekday:'long', day:'numeric', month:'long' })}
+                </p>
+                <dl className="td-hero-stats">
+                  <div><dt>Active classes</dt><dd>{activeClasses.length}</dd></div>
+                  <div><dt>Students</dt><dd>{totalStudentsAll}</dd></div>
+                  <div><dt>School points</dt><dd>{schoolPoints === null ? '–' : schoolPoints.toLocaleString('en-AU')}</dd></div>
+                </dl>
+              </div>
+              <button className="td-btn td-btn-light td-hero-cta" onClick={() => setCurrentScreen('createClass')}>
+                <SvgPlus /> Create a class
+              </button>
+            </header>
 
             {/* Set school nudge */}
             {!teacherProfile?.schoolName && (
-              <div style={{ background:'#FFF9C4', border:'1px solid #F59E0B', borderRadius:'var(--t-r-md)', padding:'1rem 1.25rem', marginBottom:'1.5rem', display:'flex', alignItems:'center', gap:'1rem', flexWrap:'wrap' }}>
+              <div className="td-nudge">
                 <div style={{ flex:1, minWidth:'200px' }}>
-                  <p style={{ margin:0, fontSize:'0.85rem', fontWeight:700, color:'#92400E' }}>Set your school to use points &amp; leaderboard</p>
-                  <p style={{ margin:'0.2rem 0 0', fontSize:'0.75rem', color:'#B45309' }}>Your school wasn't saved when you created your account.</p>
+                  <p className="td-nudge-title">Add your school to earn points</p>
+                  <p className="td-nudge-sub">Your school wasn't saved when you created your account, so points and the leaderboard can't count your classes yet.</p>
                 </div>
                 <div style={{ position:'relative', display:'flex', gap:'0.5rem', alignItems:'center', flex:1, minWidth:'220px' }}>
                   <div style={{ position:'relative', flex:1 }}>
                     <input
                       type="text"
+                      className="td-input"
                       value={setSchoolInput}
                       onChange={e => { setSetSchoolInput(e.target.value); setShowSetSchoolSugs(true); }}
                       onFocus={() => setShowSetSchoolSugs(true)}
                       onBlur={() => setTimeout(() => setShowSetSchoolSugs(false), 150)}
-                      placeholder="Your school name…"
-                      style={{ width:'100%', padding:'0.55rem 0.85rem', borderRadius:'var(--t-r-sm)', border:'1.5px solid #F59E0B', fontSize:'0.85rem', fontFamily:'DM Sans, sans-serif', boxSizing:'border-box', outline:'none', background:'white' }}
+                      placeholder="Start typing your school…"
                     />
                     {showSetSchoolSugs && setSchoolInput.trim().length >= 2 && (() => {
                       const q = setSchoolInput.trim().toLowerCase();
                       const sugs = allSchools.filter(s => s.name.toLowerCase().includes(q) || s.suburb.toLowerCase().includes(q)).slice(0, 10);
                       const exactMatch = sugs.some(s => s.name.toLowerCase() === q);
                       return (
-                        <div style={{ position:'absolute', top:'calc(100% + 4px)', left:0, right:0, background:'white', border:'1.5px solid #E5E5E5', borderRadius:'var(--t-r-sm)', boxShadow:'0 8px 24px rgba(0,0,0,0.12)', zIndex:20, maxHeight:'200px', overflowY:'auto' }}>
+                        <div className="td-sugs">
                           {sugs.map(s => (
-                            <button key={s.name + s.suburb} onMouseDown={() => { setSetSchoolInput(s.name); setShowSetSchoolSugs(false); }}
-                              style={{ display:'block', width:'100%', padding:'0.5rem 0.85rem', background:'none', border:'none', textAlign:'left', cursor:'pointer', fontFamily:'DM Sans, sans-serif' }}
-                              onMouseEnter={e => e.currentTarget.style.background='#F5F5F5'}
-                              onMouseLeave={e => e.currentTarget.style.background='none'}>
-                              <div style={{ fontSize:'0.85rem', color:'var(--t-deep)', lineHeight:1.3 }}>{s.name}</div>
-                              {s.suburb && <div style={{ fontSize:'0.72rem', color:'#999', marginTop:'1px' }}>{s.suburb}{s.postcode ? ` ${s.postcode}` : ''}</div>}
+                            <button key={s.name + s.suburb} onMouseDown={() => { setSetSchoolInput(s.name); setShowSetSchoolSugs(false); }}>
+                              <span className="td-sug-name">{s.name}</span>
+                              {s.suburb && <span className="td-sug-sub">{s.suburb}{s.postcode ? ` ${s.postcode}` : ''}</span>}
                             </button>
                           ))}
                           {!exactMatch && (
-                            <button onMouseDown={() => setShowSetSchoolSugs(false)}
-                              style={{ display:'block', width:'100%', padding:'0.55rem 0.85rem', background:'none', border:'none', borderTop: sugs.length ? '1px solid #F0F0F0' : 'none', textAlign:'left', fontSize:'0.85rem', cursor:'pointer', color:'var(--t-mid)', fontFamily:'DM Sans, sans-serif', fontWeight:600 }}
-                              onMouseEnter={e => e.currentTarget.style.background='#F0FFF4'}
-                              onMouseLeave={e => e.currentTarget.style.background='none'}>
-                              + Add "{setSchoolInput.trim()}"
-                            </button>
+                            <button onMouseDown={() => setShowSetSchoolSugs(false)} className="td-sug-add">Add "{setSchoolInput.trim()}"</button>
                           )}
                         </div>
                       );
                     })()}
                   </div>
-                  <button onClick={saveSchoolToProfile} disabled={setSchoolInput.trim().length < 2 || savingSchool}
-                    style={{ padding:'0.55rem 1rem', borderRadius:'var(--t-r-sm)', border:'none', background: setSchoolInput.trim().length >= 2 ? '#D97706' : '#CCC', color:'white', fontSize:'0.82rem', fontWeight:700, cursor: setSchoolInput.trim().length >= 2 ? 'pointer' : 'not-allowed', whiteSpace:'nowrap', flexShrink:0 }}>
+                  <button className="td-btn td-btn-primary" onClick={saveSchoolToProfile} disabled={setSchoolInput.trim().length < 2 || savingSchool}>
                     {savingSchool ? 'Saving…' : 'Save'}
                   </button>
                 </div>
               </div>
             )}
 
-            {/* Quick actions */}
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(140px, 1fr))', gap:'0.75rem', marginBottom:'1.5rem' }}>
-              {[
-                { icon:<SvgPlus/>, label:'Create Class', sub:'New session', action: () => setCurrentScreen('createClass'), color:'var(--t-mid)' },
-                { icon:<SvgCalendarIcon/>, label:'Book Devices', sub:'Tracka device calendar', action: () => setCurrentScreen('deviceBooking'), color:'#B45309' },
-                { icon:<SvgLayers/>, label:'Pre/Post Visit', sub:'Learning resources', action: () => setCurrentScreen('resourceHub'), color:'#0369A1' },
-                { icon:<SvgHelpCircle/>, label:'How To', sub:'Guides & tutorials', action: () => setCurrentScreen('teacherGuide'), color:'#7C3AED' },
-                { icon:<img src="/images/wildly-logo.webp" alt="Wildly by Taronga" style={{ width:'68px', height:'auto', objectFit:'contain' }} />, label:'Wildly', sub:'by Taronga', action: () => window.open('https://www.wildlybytaronga.com.au', '_blank'), color:'#1B6B3A', wideIcon: true },
-              ].map(btn => (
-                <button key={btn.label} onClick={btn.action}
-                  style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'0.5rem', padding:'1.25rem 0.75rem', borderRadius:'var(--t-r-md)', border:'1px solid var(--t-stone)', background:'white', cursor:'pointer', boxShadow:'var(--t-shadow-sm)', transition:'all 0.18s', textAlign:'center' }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor=btn.color; e.currentTarget.style.boxShadow=`0 4px 16px rgba(0,0,0,0.1)`; e.currentTarget.style.transform='translateY(-2px)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor='var(--t-stone)'; e.currentTarget.style.boxShadow='var(--t-shadow-sm)'; e.currentTarget.style.transform='none'; }}>
-                  <div style={{ width: btn.wideIcon ? '72px' : '32px', height:'32px', display:'flex', alignItems:'center', justifyContent:'center', color:btn.color }}>{btn.icon}</div>
-                  <div>
-                    <div style={{ fontSize:'0.8rem', fontWeight:700, color:'var(--t-deep)', lineHeight:1.2 }}>{btn.label}</div>
-                    <div style={{ fontSize:'0.68rem', color:'var(--t-ash)', marginTop:'0.15rem' }}>{btn.sub}</div>
-                  </div>
-                </button>
-              ))}
-            </div>
-
-            {/* Video / tour strip */}
-            <div style={{ background:'white', borderRadius:'var(--t-r-lg)', border:'1px solid var(--t-stone)', boxShadow:'var(--t-shadow-sm)', padding:'1.5rem', marginBottom:'1.5rem', display:'grid', gridTemplateColumns:'1fr 1fr', gap:'1.5rem', alignItems:'center' }}>
-              <div>
-                <div style={{ display:'inline-block', background:'var(--t-foam)', color:'var(--t-mid)', fontSize:'0.68rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.08em', padding:'0.2rem 0.65rem', borderRadius:'var(--t-r-pill)', marginBottom:'0.75rem' }}>Getting Started</div>
-                <h3 style={{ fontSize:'1.15rem', fontWeight:700, color:'var(--t-deep)', margin:'0 0 0.5rem', lineHeight:1.3 }}>Welcome to Taronga Tracka</h3>
-                <p style={{ fontSize:'0.83rem', color:'var(--t-slate)', lineHeight:1.65, margin:'0 0 1rem' }}>A quick walkthrough of how to set up your class, run a visit, and review student results — everything you need in under 5 minutes.</p>
-                <button style={{ display:'inline-flex', alignItems:'center', gap:'0.5rem', padding:'0.6rem 1.2rem', borderRadius:'var(--t-r-pill)', border:'2px solid var(--t-mid)', background:'none', color:'var(--t-mid)', fontSize:'0.82rem', fontWeight:700, cursor:'pointer', letterSpacing:'0.03em' }}
-                  onMouseEnter={e => { e.currentTarget.style.background='var(--t-mid)'; e.currentTarget.style.color='white'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background='none'; e.currentTarget.style.color='var(--t-mid)'; }}>
-                  ▶ Watch Tutorial
-                </button>
-              </div>
-              <div style={{ background:'#0A2F1F', borderRadius:'var(--t-r-md)', aspectRatio:'16/9', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'0.75rem', cursor:'pointer' }}
-                onMouseEnter={e => e.currentTarget.style.opacity='0.85'} onMouseLeave={e => e.currentTarget.style.opacity='1'}>
-                <div style={{ width:'52px', height:'52px', borderRadius:'50%', background:'rgba(255,255,255,0.15)', border:'2px solid rgba(255,255,255,0.3)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                  <span style={{ fontSize:'1.4rem', marginLeft:'4px' }}>▶</span>
-                </div>
-                <p style={{ color:'rgba(255,255,255,0.5)', fontSize:'0.72rem', margin:0, fontWeight:600, letterSpacing:'0.05em', textTransform:'uppercase' }}>Video Coming Soon</p>
-              </div>
-            </div>
-
-            {/* School Points & Challenges */}
-            <div style={{ background:'white', borderRadius:'var(--t-r-lg)', border:'1px solid var(--t-stone)', boxShadow:'var(--t-shadow-sm)', padding:'1.5rem', marginBottom:'1.5rem' }}>
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'1.25rem' }}>
-                <div>
-                  <h3 style={{ fontSize:'1rem', fontWeight:700, color:'var(--t-deep)', margin:'0 0 0.15rem' }}>School Points &amp; Challenges</h3>
-                  <p style={{ fontSize:'0.78rem', color:'var(--t-ash)', margin:0 }}>Earn points through visits and conservation challenges</p>
-                </div>
-              </div>
-
-              {/* Points card + milestone */}
-              <div style={{ display:'grid', gridTemplateColumns:'220px 1fr', gap:'1.25rem', marginBottom:'1.25rem' }}>
-                <div style={{ background:'linear-gradient(135deg, var(--t-deep) 0%, var(--t-mid) 100%)', borderRadius:'var(--t-r-md)', padding:'1.25rem', color:'white', display:'flex', flexDirection:'column', gap:'0.5rem' }}>
-                  <div style={{ fontSize:'0.65rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.1em', color:'rgba(255,255,255,0.55)' }}>Your School</div>
-                  <div style={{ fontSize:'0.82rem', fontWeight:600, color:'rgba(255,255,255,0.85)', lineHeight:1.2 }}>{primarySchool || '—'}</div>
-                  <div style={{ fontSize:'2.5rem', fontWeight:800, lineHeight:1, marginTop:'0.25rem' }}>
-                    {schoolPoints === null ? '—' : schoolPoints}
-                  </div>
-                  <div style={{ fontSize:'0.72rem', color:'rgba(255,255,255,0.6)' }}>total points</div>
-                  {schoolPoints !== null && nextMilestone && (
-                    <>
-                      <div style={{ background:'rgba(255,255,255,0.15)', borderRadius:'4px', height:'6px', overflow:'hidden', marginTop:'0.25rem' }}>
-                        <div style={{ width:`${milestoneProgress}%`, height:'100%', background: nextMilestone.reward ? '#FCD34D' : 'rgba(255,255,255,0.8)', borderRadius:'4px', transition:'width 0.5s' }} />
-                      </div>
-                      {nextMilestone.reward ? (
-                        <div style={{ fontSize:'0.67rem', color:'#FCD34D', lineHeight:1.4, fontWeight:700 }}>
-                          {nextMilestone.points - (schoolPoints||0)} pts to a free zoo visit
-                        </div>
-                      ) : (
-                        <div style={{ fontSize:'0.67rem', color:'rgba(255,255,255,0.55)', lineHeight:1.4 }}>Next: {nextMilestone.label} at {nextMilestone.points} pts</div>
-                      )}
-                    </>
-                  )}
-                  {schoolPoints !== null && (schoolPoints || 0) >= 300 && (
-                    <div style={{ marginTop:'0.25rem', background:'#FCD34D', borderRadius:'var(--t-r-xs)', padding:'0.3rem 0.6rem', display:'flex', alignItems:'center', gap:'0.4rem' }}>
-                      <span style={{ fontSize:'0.7rem', fontWeight:800, color:'#78350F' }}>Free zoo visit unlocked!</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Monthly challenge — featured */}
-                {(() => {
-                  const monthlySub = mySubmissions[MONTHLY_CHALLENGE.id];
-                  const monthlyPending  = monthlySub?.status === 'pending';
-                  const monthlyApproved = monthlySub?.status === 'approved';
-                  return (
-                <div style={{ display:'flex', alignItems:'center', gap:'1rem', padding:'1.1rem 1.25rem', borderRadius:'var(--t-r-md)', border: monthlyApproved ? '2px solid #D97706' : '2px dashed #F59E0B', background:'linear-gradient(135deg, #FFFBEB, #FEF3C7)' }}>
-                  <div style={{ width:'44px', height:'44px', borderRadius:'var(--t-r-sm)', background: monthlyApproved ? '#D97706' : '#FEF3C7', border:'1px solid #F59E0B', display:'flex', alignItems:'center', justifyContent:'center', color: monthlyApproved ? 'white' : '#D97706', flexShrink:0 }}>{MONTHLY_CHALLENGE.icon}</div>
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', marginBottom:'0.25rem', flexWrap:'wrap' }}>
-                      <span style={{ fontSize:'0.85rem', fontWeight:700, color:'#92400E' }}>{MONTHLY_CHALLENGE.name}</span>
-                      <span style={{ fontSize:'0.62rem', fontWeight:700, color:'#B45309', background:'#FDE68A', padding:'0.1rem 0.45rem', borderRadius:'var(--t-r-pill)' }}>Monthly</span>
-                      <span style={{ fontSize:'0.65rem', fontWeight:700, color:'#D97706', background:'white', border:'1px solid #F59E0B', padding:'0.1rem 0.4rem', borderRadius:'var(--t-r-pill)' }}>+{MONTHLY_CHALLENGE.points} pts</span>
-                      {monthlyPending  && <span style={{ fontSize:'0.62rem', fontWeight:700, color:'#92400E', background:'#FEF3C7', border:'1px solid #F59E0B', padding:'0.1rem 0.45rem', borderRadius:'var(--t-r-pill)' }}>Pending review</span>}
-                      {monthlyApproved && <span style={{ fontSize:'0.62rem', fontWeight:700, color:'#166534', background:'#DCFCE7', border:'1px solid #86EFAC', padding:'0.1rem 0.45rem', borderRadius:'var(--t-r-pill)' }}>Complete</span>}
-                    </div>
-                    <p style={{ fontSize:'0.75rem', color:'#92400E', margin: monthlySub ? '0' : '0 0 0.6rem', lineHeight:1.5 }}>{MONTHLY_CHALLENGE.desc}</p>
-                    {!monthlySub && (
-                    <button onClick={() => { setUploadChallenge(MONTHLY_CHALLENGE); setUploadFile(null); setUploadNote(''); setUploadSuccess(false); }}
-                      style={{ marginTop:'0.6rem', padding:'0.4rem 1rem', borderRadius:'var(--t-r-pill)', border:'1.5px solid #D97706', background:'none', color:'#D97706', fontSize:'0.73rem', fontWeight:700, cursor:'pointer' }}
-                      onMouseEnter={e => { e.currentTarget.style.background='#D97706'; e.currentTarget.style.color='white'; }}
-                      onMouseLeave={e => { e.currentTarget.style.background='none'; e.currentTarget.style.color='#D97706'; }}>
-                      Submit Evidence
-                    </button>
-                    )}
-                  </div>
-                </div>
-                    );
-                  })()}
-                </div>
-
-              {/* Horizontal scroll of all challenges */}
-              <div style={{ position:'relative' }}>
-              <div
-                ref={challengeScrollRef}
-                onScroll={e => {
-                  const el = e.currentTarget;
-                  setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 10);
-                }}
-                style={{ overflowX:'auto', marginBottom:'0.25rem', paddingBottom:'0.5rem' }}>
-                <div style={{ display:'flex', gap:'0.75rem', width:'max-content' }}>
-                  {CHALLENGES.map(ch => {
-                    const isAutoComplete = ch.type === 'auto' && (
-                      ch.location ? activeClasses.some(c => c.location === ch.location) : activeClasses.length > 0
-                    );
-                    const isSubmit = ch.type === 'submit';
-                    const sub = mySubmissions[ch.id];
-                    const isApproved = sub?.status === 'approved';
-                    const isPending  = sub?.status === 'pending';
-                    const isDone     = isAutoComplete || isApproved;
-                    const borderCol  = isDone ? 'var(--t-mid)' : isPending ? '#F59E0B' : 'var(--t-stone)';
-                    const bgCol      = isDone ? 'var(--t-foam)' : isPending ? '#FFFBEB' : 'white';
-                    return (
-                      <div key={ch.id} style={{ width:'180px', flexShrink:0, display:'flex', flexDirection:'column', borderRadius:'var(--t-r-md)', border:`1px solid ${borderCol}`, background:bgCol, padding:'1rem', position:'relative', overflow:'hidden' }}>
-                        {isDone && (
-                          <div style={{ position:'absolute', top:'0.5rem', right:'0.5rem', width:'20px', height:'20px', borderRadius:'50%', background:'var(--t-mid)', color:'white', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                            <SvgCheck/>
-                          </div>
-                        )}
-                        {isPending && !isDone && (
-                          <div style={{ position:'absolute', top:'0.5rem', right:'0.5rem', fontSize:'0.6rem', fontWeight:800, color:'#92400E', background:'#FEF3C7', border:'1px solid #F59E0B', borderRadius:'3px', padding:'1px 5px' }}>Review</div>
-                        )}
-                        <div style={{ width:'40px', height:'40px', borderRadius:'var(--t-r-sm)', background: isDone ? 'var(--t-mid)' : 'var(--t-chalk)', border:`1px solid ${isDone ? 'var(--t-mid)' : 'var(--t-mist)'}`, display:'flex', alignItems:'center', justifyContent:'center', color: isDone ? 'white' : 'var(--t-slate)', marginBottom:'0.6rem' }}>
-                          {ch.icon}
-                        </div>
-                        <div style={{ fontSize:'0.8rem', fontWeight:700, color: isDone ? 'var(--t-mid)' : 'var(--t-deep)', marginBottom:'0.2rem', lineHeight:1.2 }}>{ch.name}</div>
-                        <p style={{ fontSize:'0.7rem', color:'var(--t-slate)', margin:'0 0 auto', lineHeight:1.4, paddingBottom:'0.75rem' }}>{ch.desc}</p>
-                        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:'0.6rem', paddingTop:'0.6rem', borderTop:`1px solid ${isDone ? 'rgba(46,125,85,0.15)' : 'var(--t-mist)'}` }}>
-                          <span style={{ fontSize:'0.68rem', fontWeight:700, color: isDone ? 'var(--t-mid)' : 'var(--t-sage)', background: isDone ? 'rgba(46,125,85,0.1)' : 'var(--t-chalk)', padding:'0.15rem 0.4rem', borderRadius:'var(--t-r-pill)' }}>+{ch.points} pts</span>
-                          {isAutoComplete && <span style={{ fontSize:'0.65rem', fontWeight:700, color:'var(--t-mid)' }}>Auto</span>}
-                          {isApproved && <span style={{ fontSize:'0.65rem', fontWeight:700, color:'var(--t-mid)' }}>Complete</span>}
-                          {isPending && !isApproved && <span style={{ fontSize:'0.65rem', fontWeight:600, color:'#92400E' }}>Pending</span>}
-                          {isSubmit && !sub && (
-                            <button onClick={() => { setUploadChallenge(ch); setUploadFile(null); setUploadNote(''); setUploadSuccess(false); }}
-                              style={{ fontSize:'0.65rem', fontWeight:700, color:'var(--t-mid)', background:'none', border:'none', cursor:'pointer', padding:0, textDecoration:'underline' }}>
-                              Submit
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-              {canScrollRight && (
-                <div style={{ position:'absolute', top:0, right:0, bottom:'0.5rem', width:'64px', background:'linear-gradient(to right, transparent, white 70%)', display:'flex', alignItems:'center', justifyContent:'flex-end', paddingRight:'0.5rem', pointerEvents:'none' }}>
-                  <div style={{ width:'28px', height:'28px', borderRadius:'50%', background:'white', border:'1px solid var(--t-stone)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 2px 8px rgba(0,0,0,0.1)', color:'var(--t-slate)', fontSize:'1.1rem', lineHeight:1 }}>›</div>
-                </div>
-              )}
-              </div>
-
-              {/* Leaderboard */}
-              <div style={{ borderTop:'1px solid var(--t-mist)', paddingTop:'1rem' }}>
-                <h4 style={{ fontSize:'0.78rem', fontWeight:800, color:'var(--t-deep)', textTransform:'uppercase', letterSpacing:'0.07em', margin:'0 0 0.75rem' }}>School Leaderboard</h4>
-                {leaderboard.length === 0 ? (
-                  <p style={{ fontSize:'0.78rem', color:'var(--t-ash)', fontStyle:'italic', margin:0 }}>No schools on the leaderboard yet. Be the first!</p>
-                ) : (
-                  <div style={{ display:'flex', flexDirection:'column', gap:'0.35rem' }}>
-                    {leaderboard.map((school, i) => {
-                      const isYours = primarySchool && normalizeSchoolId(primarySchool) === school.id;
-                      const medal   = null;
-                      const maxPts  = leaderboard[0]?.totalPoints || 1;
-                      const barW    = Math.round((school.totalPoints / maxPts) * 100);
-                      return (
-                        <div key={school.id} style={{ display:'grid', gridTemplateColumns:'1.5rem 1fr auto', gap:'0.6rem', alignItems:'center', padding:'0.5rem 0.6rem', borderRadius:'var(--t-r-sm)', background: isYours ? 'var(--t-foam)' : 'transparent', border: isYours ? '1px solid var(--t-mist)' : '1px solid transparent' }}>
-                          <span style={{ fontSize:'0.72rem', fontWeight:700, textAlign:'center', color: i===0 ? '#B45309' : i===1 ? '#6B7280' : i===2 ? '#92400E' : 'var(--t-ash)' }}>{i+1}</span>
-                          <div>
-                            <div style={{ display:'flex', alignItems:'center', gap:'0.4rem', marginBottom:'0.2rem' }}>
-                              <span style={{ fontSize:'0.78rem', fontWeight: isYours ? 700 : 500, color: isYours ? 'var(--t-mid)' : 'var(--t-deep)' }}>{school.name || school.id}</span>
-                              {isYours && <span style={{ fontSize:'0.6rem', fontWeight:700, color:'var(--t-mid)', background:'var(--t-foam)', border:'1px solid var(--t-mist)', padding:'0 0.35rem', borderRadius:'var(--t-r-pill)' }}>You</span>}
-                            </div>
-                            <div style={{ height:'4px', background:'var(--t-mist)', borderRadius:'2px', overflow:'hidden' }}>
-                              <div style={{ width:`${barW}%`, height:'100%', background: isYours ? 'var(--t-mid)' : '#9CA3AF', borderRadius:'2px' }} />
-                            </div>
-                          </div>
-                          <span style={{ fontSize:'0.78rem', fontWeight:700, color: isYours ? 'var(--t-mid)' : 'var(--t-slate)', whiteSpace:'nowrap' }}>{school.totalPoints} pts</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* My Classes */}
-            <div id="t-classes-section" style={{ marginBottom:'1.5rem' }}>
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'0.75rem' }}>
-                <h3 className="lms-section-heading" style={{ margin:0 }}>
-                  My Classes
-                  <span style={{ fontFamily:'DM Sans, sans-serif', fontWeight:600, fontSize:'0.75rem', color:'var(--t-sage)', letterSpacing:0, marginLeft:'0.5rem' }}>({activeClasses.length})</span>
-                </h3>
-                <button onClick={() => setCurrentScreen('createClass')}
-                  style={{ display:'flex', alignItems:'center', gap:'0.35rem', padding:'0.45rem 0.9rem', borderRadius:'var(--t-r-pill)', border:'none', background:'var(--t-mid)', color:'white', fontSize:'0.78rem', fontWeight:700, cursor:'pointer' }}>
-                  + New Class
-                </button>
+            {/* Classes */}
+            <section id="t-classes-section" className="td-section">
+              <div className="td-section-head">
+                <h3 className="td-h3">Your classes</h3>
+                {activeClasses.length > 0 && <p className="td-hint">Select a code to show it full screen for your students.</p>}
               </div>
 
               {activeClasses.length === 0 ? (
-                <div style={{ background:'var(--t-foam)', borderRadius:'var(--t-r-md)', padding:'2rem', textAlign:'center', border:'1px solid var(--t-mist)' }}>
-                  <div style={{ fontSize:'2.5rem', marginBottom:'0.75rem', color:'var(--t-mid)', fontWeight:300 }}>✦</div>
-                  <p style={{ color:'var(--t-slate)', fontSize:'0.88rem', fontWeight:600, marginBottom:'0.4rem' }}>No classes yet</p>
-                  <p style={{ color:'var(--t-ash)', fontSize:'0.78rem', marginBottom:'1rem' }}>Create your first class to get started with Taronga Tracka</p>
-                  <button onClick={() => setCurrentScreen('createClass')} style={{ padding:'0.6rem 1.5rem', borderRadius:'var(--t-r-pill)', border:'none', background:'linear-gradient(135deg, var(--t-mid), var(--t-eucalyptus))', color:'white', fontSize:'0.85rem', fontWeight:700, cursor:'pointer' }}>
-                    Create a Class
-                  </button>
+                <div className="td-empty">
+                  <h4>Start with a class</h4>
+                  <p>A class gives your students a code to join on the day. It takes about a minute to set up.</p>
+                  <button className="td-btn td-btn-primary" onClick={() => setCurrentScreen('createClass')}><SvgPlus /> Create a class</button>
                 </div>
               ) : (
-                <div className="lms-card">
-                  {activeClasses.map((cls, i) => {
+                <div className="td-class-grid">
+                  {activeClasses.map(cls => {
                     const counts = studentCounts[cls.classCode] || { total:0, completed:0 };
-                    const completionPct = counts.total > 0 ? Math.round((counts.completed / counts.total) * 100) : 0;
+                    const pct = counts.total > 0 ? Math.round((counts.completed / counts.total) * 100) : 0;
+                    const prog = programmeOf(cls);
+                    const open = () => { setSelectedClass(cls.classCode); setCurrentScreen('classDetails'); };
                     return (
-                      <div key={cls.classCode}
-                        onClick={() => { setSelectedClass(cls.classCode); setCurrentScreen('classDetails'); }}
-                        className="animate-fade-in-up lms-class-row"
-                        style={{ animationDelay:`${i*0.06}s` }}>
-                        <div className="lms-class-avatar">{(cls.className||'?').charAt(0).toUpperCase()}</div>
-                        <div className="lms-class-info" style={{ flex:1, minWidth:0 }}>
-                          <p className="lms-class-name">{cls.className}</p>
-                          <p className="lms-class-meta">
-                            {cls.schoolName && <span style={{ color:'var(--t-mid)', fontWeight:600 }}>{cls.schoolName} · </span>}
-                            {counts.total} student{counts.total !== 1 ? 's' : ''}
-                            {cls.stage ? <span style={{ marginLeft:'0.4rem', background:'var(--t-foam)', color:'var(--t-mid)', fontWeight:700, borderRadius:'var(--t-r-xs)', padding:'0 0.35rem', fontSize:'0.6875rem' }}>Stage {cls.stage}</span> : null}
-                          </p>
-                          {(cls.location || cls.subject) && (
-                            <p className="lms-class-meta" style={{ marginTop:'0.15rem', color:'var(--t-sage)' }}>
-                              {cls.location && <span style={{ fontWeight:600 }}>{{ 'taronga-sydney':'Taronga Sydney', 'zoosnooz-sydney':'ZooSnooz · Sydney', 'dubbo':'Taronga Dubbo', 'school':'ZooYard · School' }[cls.location] || cls.location}</span>}
-                              {cls.location && cls.subject && <span style={{ color:'var(--t-ash)' }}> · </span>}
-                              {cls.subject && <span style={{ textTransform:'capitalize', color:'var(--t-slate)' }}>{cls.subject}</span>}
-                            </p>
-                          )}
-                          {counts.total > 0 && (
-                            <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', marginTop:'0.3rem' }}>
-                              <div style={{ flex:1, height:'3px', background:'var(--t-mist)', borderRadius:'2px', overflow:'hidden' }}>
-                                <div style={{ width:`${completionPct}%`, height:'100%', background:'#22C55E' }} />
-                              </div>
-                              <span style={{ fontSize:'0.65rem', color:'var(--t-ash)', whiteSpace:'nowrap' }}>{counts.completed}/{counts.total} done</span>
-                            </div>
+                      <article key={cls.classCode} className={`td-class tint-${prog.key}${prog.night ? ' is-night' : ''}`} style={{ '--prog': prog.color }}>
+                        <button className="td-class-open" onClick={open} aria-label={`Open ${cls.className || cls.classCode}`} />
+                        <div className="td-class-top">
+                          <span className="td-prog"><span className="td-prog-dot" />{prog.label}</span>
+                          {cls.stage ? <span className="td-stage">Stage {cls.stage}</span> : null}
+                        </div>
+                        <h4 className="td-class-name">{cls.className || 'Untitled class'}</h4>
+                        <button className="td-code" onClick={() => setClassCodeModal(cls.classCode)} aria-label={`Show class code ${cls.classCode} full screen`}>
+                          {cls.classCode}
+                        </button>
+                        <div className="td-progress">
+                          <div className="td-bar"><span style={{ width:`${pct}%` }} /></div>
+                          <span className="td-progress-label">
+                            {counts.total === 0 ? 'No students yet' : `${counts.completed} of ${counts.total} finished`}
+                          </span>
+                        </div>
+                      </article>
+                    );
+                  })}
+                  <button className="td-class-new" onClick={() => setCurrentScreen('createClass')}>
+                    <SvgPlus /><span>New class</span>
+                  </button>
+                </div>
+              )}
+            </section>
+
+            {/* Plan + points */}
+            <div className="td-split">
+              <section id="t-plan-section" className="td-section td-plan">
+                <div className="td-section-head"><h3 className="td-h3">Plan your visit</h3></div>
+                <ul className="td-links">
+                  {PLAN_LINKS.map(l => (
+                    <li key={l.title}>
+                      <button onClick={() => l.href ? window.open(l.href, '_blank') : setCurrentScreen(l.screen)}>
+                        <span className="td-link-icon">{l.icon}</span>
+                        <span className="td-link-text">
+                          <span className="td-link-title">{l.title}</span>
+                          <span className="td-link-desc">{l.desc}</span>
+                        </span>
+                        <span className="td-chev" aria-hidden="true">›</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+                <button className="td-wildly" onClick={() => window.open('https://www.wildlybytaronga.com.au', '_blank')}>
+                  <img src="/images/wildly-logo.webp" alt="Wildly by Taronga" />
+                  <span>Lessons, programs and assessments to carry the visit back into class.</span>
+                  <span className="td-chev" aria-hidden="true">›</span>
+                </button>
+              </section>
+
+              <section id="t-points-section" className="td-section">
+                <div className="td-section-head"><h3 className="td-h3">School points</h3></div>
+                <div className="td-points">
+                <div className="td-points-card">
+                  <div className="td-points-num">
+                    <span>{schoolPoints === null ? '–' : schoolPoints.toLocaleString('en-AU')}</span>
+                    <small>points</small>
+                  </div>
+                  {schoolPoints !== null && (schoolPoints || 0) >= 300 ? (
+                    <p className="td-points-goal is-won">Your school has earned a free class zoo visit.</p>
+                  ) : schoolPoints !== null && nextMilestone ? (
+                    <>
+                      <div className="td-bar td-bar-gold"><span style={{ width:`${milestoneProgress}%` }} /></div>
+                      <p className="td-points-goal">
+                        {nextMilestone.reward
+                          ? `${nextMilestone.points - (schoolPoints || 0)} more to a free class zoo visit`
+                          : `Next: ${nextMilestone.label} at ${nextMilestone.points}`}
+                      </p>
+                    </>
+                  ) : null}
+                </div>
+
+                {(() => {
+                  const sub = mySubmissions[MONTHLY_CHALLENGE.id];
+                  return (
+                    <div className="td-monthly">
+                      <div className="td-monthly-head">
+                        <span className="td-monthly-icon">{MONTHLY_CHALLENGE.icon}</span>
+                        <div>
+                          <p className="td-monthly-name">{MONTHLY_CHALLENGE.name.replace(/^.*?—\s*/, '')}</p>
+                          <p className="td-monthly-meta">This month's challenge, worth {MONTHLY_CHALLENGE.points} points</p>
+                        </div>
+                      </div>
+                      <p className="td-monthly-desc">{MONTHLY_CHALLENGE.desc}</p>
+                      {!sub && (
+                        <button className="td-btn td-btn-gold" onClick={() => { setUploadChallenge(MONTHLY_CHALLENGE); setUploadFile(null); setUploadNote(''); setUploadSuccess(false); }}>
+                          Submit evidence
+                        </button>
+                      )}
+                      {sub?.status === 'pending'  && <p className="td-status is-pending">Submitted. Waiting for Taronga to review.</p>}
+                      {sub?.status === 'approved' && <p className="td-status is-done">Approved. Points added.</p>}
+                    </div>
+                  );
+                })()}
+
+                <div className="td-board">
+                  <p className="td-board-title">Leaderboard</p>
+                  {leaderboard.length === 0 ? (
+                    <p className="td-muted">No schools on the board yet.</p>
+                  ) : (
+                    <ol>
+                      {leaderboard.slice(0, 5).map((school, i) => {
+                        const isYours = primarySchool && normalizeSchoolId(primarySchool) === school.id;
+                        return (
+                          <li key={school.id} className={isYours ? 'is-you' : ''}>
+                            <span className="td-rank">{i + 1}</span>
+                            <span className="td-school">{school.name || school.id}{isYours && <em> (you)</em>}</span>
+                            <span className="td-pts">{school.totalPoints}</span>
+                          </li>
+                        );
+                      })}
+                    </ol>
+                  )}
+                </div>
+
+                <button className="td-btn td-btn-ghost td-all-ch" onClick={() => setShowAllChallenges(v => !v)} aria-expanded={showAllChallenges}>
+                  {showAllChallenges ? 'Hide challenges' : `See all ${CHALLENGES.length} challenges`}
+                </button>
+                </div>
+              </section>
+            </div>
+
+            {/* All challenges, opened from the points panel */}
+            {showAllChallenges && (
+              <section className="td-section">
+                <div className="td-section-head">
+                  <h3 className="td-h3">Challenges</h3>
+                  <p className="td-hint">Visits count automatically. Class projects need a photo, which Taronga reviews.</p>
+                </div>
+                <div className="td-ch-grid">
+                  {CHALLENGES.map(ch => {
+                    const isAuto = ch.type === 'auto' && (ch.location ? activeClasses.some(c => c.location === ch.location) : activeClasses.length > 0);
+                    const sub = mySubmissions[ch.id];
+                    const isApproved = sub?.status === 'approved';
+                    const isPending  = sub?.status === 'pending';
+                    const isDone = isAuto || isApproved;
+                    return (
+                      <div key={ch.id} className={`td-ch${isDone ? ' is-done' : ''}${isPending && !isDone ? ' is-pending' : ''}`}>
+                        <span className="td-ch-icon">{isDone ? <SvgCheck /> : ch.icon}</span>
+                        <div className="td-ch-body">
+                          <p className="td-ch-name">{ch.name}</p>
+                          <p className="td-ch-desc">{ch.desc}</p>
+                        </div>
+                        <div className="td-ch-side">
+                          <span className="td-ch-pts">{ch.points}</span>
+                          {isDone && <span className="td-ch-state">Done</span>}
+                          {isPending && !isDone && <span className="td-ch-state">In review</span>}
+                          {ch.type === 'submit' && !sub && (
+                            <button className="td-ch-submit" onClick={() => { setUploadChallenge(ch); setUploadFile(null); setUploadNote(''); setUploadSuccess(false); }}>Submit</button>
                           )}
                         </div>
-                        <div onClick={e => { e.stopPropagation(); setClassCodeModal(cls.classCode); }}
-                          style={{ textAlign:'right', cursor:'pointer', padding:'0.25rem 0.4rem', borderRadius:'var(--t-r-xs)', transition:'background 0.16s', flexShrink:0 }}
-                          onMouseEnter={e => e.currentTarget.style.background='var(--t-foam)'}
-                          onMouseLeave={e => e.currentTarget.style.background='transparent'}>
-                          <p style={{ fontFamily:'monospace', fontWeight:700, fontSize:'0.875rem', color:'var(--t-mid)', letterSpacing:'0.06em' }}>{cls.classCode}</p>
-                          <p style={{ color:'var(--t-ash)', fontSize:'0.6875rem' }}>tap to display</p>
-                        </div>
-                        <span className="lms-chevron">›</span>
                       </div>
                     );
                   })}
                 </div>
-              )}
-            </div>
-
-            {/* Resources */}
-            <div style={{ marginBottom:'1.5rem' }}>
-              <h3 className="lms-section-heading" style={{ marginBottom:'0.75rem' }}>Resources</h3>
-              <div style={{ display:'flex', gap:'0.75rem', overflowX:'auto', paddingBottom:'0.5rem', scrollbarWidth:'none' }}>
-                {RESOURCE_CARDS.map(r => (
-                  <div key={r.title} onClick={() => { if (r.screen) setCurrentScreen(r.screen); else if (r.href) window.open(r.href, '_blank'); }}
-                    style={{ flexShrink:0, width:'180px', background:'white', borderRadius:'var(--t-r-md)', border:'1px solid var(--t-stone)', padding:'1.1rem', cursor:'pointer', transition:'all 0.18s', boxShadow:'var(--t-shadow-sm)' }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor='var(--t-mid)'; e.currentTarget.style.transform='translateY(-2px)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor='var(--t-stone)'; e.currentTarget.style.transform='none'; }}>
-                    <div style={{ fontSize:'1.75rem', marginBottom:'0.6rem' }}>{r.icon}</div>
-                    <div style={{ fontSize:'0.62rem', fontWeight:700, color:'var(--t-ash)', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:'0.3rem' }}>{r.tag}</div>
-                    <div style={{ fontSize:'0.82rem', fontWeight:700, color:'var(--t-deep)', marginBottom:'0.3rem', lineHeight:1.3 }}>{r.title}</div>
-                    <div style={{ fontSize:'0.72rem', color:'var(--t-slate)', lineHeight:1.45 }}>{r.desc}</div>
-                    <div style={{ marginTop:'0.75rem', fontSize:'0.7rem', color: (r.screen || r.href) ? 'var(--t-mid)' : 'var(--t-ash)', fontStyle: (r.screen || r.href) ? 'normal' : 'italic', fontWeight: (r.screen || r.href) ? 700 : 400 }}>
-                      {(r.screen || r.href) ? 'Open →' : 'Coming soon'}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+              </section>
+            )}
 
           </div>
         </div>
