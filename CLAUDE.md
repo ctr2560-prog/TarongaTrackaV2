@@ -23,6 +23,109 @@ region: `australia-southeast1`. ⚠️ See **Build & Deploy** — these two drif
 
 ---
 
+## Where we left off (2026-11-13 → 11-15) — the teacher portal
+
+Three pieces, all on the teacher side, all shipped and live on tarongatracka.com.au.
+Cameron redesigned the dashboard himself on 11-13 (`c4cecfe`); the class screen, the Wildly
+panel and the tutorial followed here.
+
+### Class details is three tabs now (`1b4db9d`)
+
+**It was 4,217px of page — 6.2 screens — with three real headings.** Everything else was a
+grey all-caps micro-label, so a teacher scrolled past entire sections without seeing them.
+Measured rather than guessed, which is what made the case.
+
+Split into **Overview / Students / Responses** (1.5 / 1.4 / 3.5 screens), one `CD_TABS`
+array and an `onTab()` helper gating each section.
+
+⚠️⚠️ **A MODE ONLY GETS A TAB IF IT HAS CONTENT FOR ONE.** `CD_TABS` is empty for Evolve
+and Wildest Dreams (one table each, nothing to split) and is Overview + Students for
+ZooSnooz and ZooYard (no MCQ analysis). 🚫 Do not "make it consistent" by giving every
+mode three tabs: two of them would be empty, and an empty tab reads as missing data.
+
+⚠️ **Wildest Dreams was rendering five stat cards of zeros, including "0% average quiz".**
+It has no points, badges, quizzes or marks by design, so a class that was doing fine looked
+like it had failed. Evolve had been excluded from those cards years ago; WD never was —
+**the exclusion trap again, on a fourth surface.** 🚫 Never add stat cards back for a mode
+that has nothing to total.
+
+⚠️⚠️ **THE ACTIONS COLUMN IS A FIXED `296px` AND MUST STAY ONE.** `CD_COLS` is a grid
+template, and `auto` or an `fr` track **floors at its content**: the single row carrying an
+extra New device button widened its own column and that row alone fell out of alignment with
+the other nine. **It has now been fixed twice** — the second time after `minmax(220px,auto)`
+was used as the fix. Verified by measuring that all ten rows start their Points column at
+exactly 549px. 🚫 Do not widen a column by making it `auto`.
+
+Also fixed there: the radar chart's "Accuracy" label was clipped (the labels sit at 1.28x
+the radius, outside a `0 0 160 160` box — the **viewBox is padded to `-16 -6 192 178`**, the
+chart is not resized), `evolve-sydney` printed as a raw key, and Restore/Delete were icon
+only and unreadable, now labelled buttons.
+
+### The Wildly panel fills its column (`ffa606a`)
+
+`.td-split` stretches and `.td-plan` is a flex column, so the promo takes `flex: 1` and both
+columns end on the same line (measured: 737px each). It is the one **dark** panel in the main
+column, which is the point — white lockup, headline, one line, and a gold Open Wildly button
+pinned to the bottom. Uses `wildly-logo-white.png`, which was already on disk and unused.
+🚫 The colour logo has a white background and would show as a white box on the green.
+
+### ⚠️⚠️ THE TEACHER TUTORIAL IS LIVE NOW, NOT SCREENSHOTS (`63b82b8`)
+
+**It was five `.webp` screenshots of a dashboard that no longer existed.** The portal was
+redesigned on 11-13 and the pictures were not, so a first-time teacher was shown a layout
+they could not find. **A screenshot tour goes stale silently** — that is the reason to stop
+having one, and it is why `public/images/teacher-tutorial/` (18 files, 4.6MB) was deleted.
+
+Nine steps spotlighting the real elements, with the page dimmed and **completely
+unclickable** — Cameron's call: only Skip tutorial, Back and Next reach anything. Verified
+by asking the browser what a real click would land on at each control, not by eye.
+
+⚠️⚠️ **EVERY STEP ANCHORS ON A `data-tour` ATTRIBUTE, NEVER A CLASS NAME.** They are
+load-bearing, in `TeacherDashboardScreen.jsx` (`hero`, `classes`, `plan`, `wildly`, `points`,
+`nav`) and `TeacherHelpBot.jsx` (`help`). Remove one and that step **disappears with a green
+build and nothing on screen to say so** — a missing target is dropped rather than shown
+against nothing, which is the right failure and an invisible one.
+
+⚠️⚠️ **THE TARGET LIST IS SETTLED ONE FRAME AFTER MOUNT, AND THAT FRAME IS NOT OPTIONAL.**
+The component mounts in the **same commit** as the dashboard it describes, so at its first
+render **none of its targets are in the document yet**. Filtering there left only the two
+steps that have no target, and a nine step tour rendered as **"1 of 2"**. 🚫 Do not move that
+work back into render.
+
+⚠️ **The card never sits on top of what it points at**, and getting there took two passes: a
+big target is scrolled to the **top** rather than centred (a centred target leaves half a
+screen underneath and the card needs most of it), and where even that will not fit the
+**spotlight shortens** instead of being covered. Checked on an empty account and on one with
+17 classes: no overlap on any step, every card fully in view.
+
+**"The first time you ever log in" is a fact about the ACCOUNT, not the laptop.** It writes
+`tourSeen` on `teachers/{email}`, keeps localStorage as a fast local copy, and carries an old
+`teacherTutorial_*` flag up to the account so nobody who sat through the old one gets this
+one. ⚠️ It **waits for the teacher document** rather than guessing, and starts anyway after
+4s if it never arrives — never showing it at all is the worse of the two failures.
+✅ Proved by wiping every local flag on a real account: the tour still stays shut, which only
+the stored record can be doing.
+
+**The help bubble opens with "Show me around this page"**, which replays it. The two
+components meet at one named event (`TOUR_EVENT`), so neither depends on the other, and the
+button only renders where the tour has something to point at. A replay writes nothing.
+
+⚠️ **`demo@zoo` always gets the tour and never records it.** That is how it is shown to a
+room, and how to look at it without clearing anything.
+
+### Still open on the dashboard, offered and not actioned
+
+Cameron's call, none of them urgent:
+- The school nudge (`!teacherProfile?.schoolName`) can contradict the points panel, which
+  falls back to a class's `schoolName`.
+- `MONTHLY_CHALLENGE.name` is trimmed by `.replace(/^.*?—\s*/, '')`, which strips the month.
+- `programmeOf()` falls through to Tracka Trek for an unknown `sessionType` — **the exclusion
+  trap waiting to happen a fifth time.**
+- `.td-class-grid` is defined twice; `teacher.displayName` is never set anywhere in the repo,
+  so the greeting's name half is dead.
+
+---
+
 ## Where we left off (2026-11-03 → 11-07) — Evolve catches up, and consent
 
 Three strands, all following from the ZooSnooz work in the section below.
@@ -4203,7 +4306,7 @@ ZooSnooz internal screens (`zzScreen` values): `map` → `animal` (phases: insig
 | `zooyard` | `ZooYardScreen.jsx` | Entire ZooYard self-attest school experience — see ZooYard Deep Reference |
 | `documentaryViewer` | `DocumentaryViewer.jsx` | NFC souvenir card; triggered by `docViewCode` in AppContext |
 | `teacherLogin` | `TeacherLoginScreen.jsx` | Magic link email entry |
-| `teacherDashboard` | `TeacherDashboardScreen.jsx` | Quick actions, class cards, resource cards, challenge tile |
+| `teacherDashboard` | `TeacherDashboardScreen.jsx` | Hero, class cards, plan panel, Wildly panel, school points. ⚠️ Carries the `data-tour` anchors the tutorial spotlights |
 | `createClass` | `CreateClassScreen.jsx` | Create class form; sets stage, subject, session type, access code |
 | `classDetails` | `ClassDetailsScreen.jsx` | Per-class analytics, student list, RadarSVG, ZooSnooz data, ZooYard citizen science moderation, info sheet |
 | `teacherGuide` | `TeacherGuideScreen.jsx` | Timeline checklist, 4 phases, tap-to-tick, localStorage progress |
@@ -4240,8 +4343,8 @@ own row, animal aliases only, localStorage-cached so it survives no reception).
 | `MathsCalculator` | `MathsCalculator.jsx` | Accessible on-screen calculator shown during maths subject sessions |
 | `StudentFeedbackModal` | `StudentFeedbackModal.jsx` | Post-session student feedback modal (shown after submit + after ZooSnooz) |
 | `StudentGuide` | `StudentGuide.jsx` | Floating "Dr. Cam" character chat bubble shown on map and observation screens |
-| `TeacherHelpBot` | `TeacherHelpBot.jsx` | Keyword-matched FAQ bot shown in teacher dashboard; ~20 pre-written answers |
-| `TeacherTutorial` | `TeacherTutorial.jsx` | Step-by-step teacher onboarding overlay with screenshot highlights + portal highlights |
+| `TeacherHelpBot` | `TeacherHelpBot.jsx` | Keyword-matched FAQ bot shown in teacher dashboard; ~20 pre-written answers, and the **Show me around this page** button that replays the tour |
+| `TeacherTutorial` | `TeacherTutorial.jsx` | First-login tour that **spotlights the real dashboard**. ⚠️ Screenshots since deleted — see the 11-13 → 11-15 section |
 | `TutorialOverlay` | `TutorialOverlay.jsx` | Student-side "Dr. Cam" guided tour of the map screen (character image + callouts) |
 
 ---
