@@ -16,8 +16,153 @@ import { openEvolveCertificates, openEvolveAdviceSheet } from '../utils/evolveCe
 import { WD_STOPS } from '../modes/wildest-dreams/content';
 import { wildestDreamsSouvenirLink } from '../utils/evolveSouvenir';
 
+// What a teacher calls each programme. ⚠️ 'standard' AND an absent sessionType both mean
+// Tracka Trek — see CLAUDE.md, Programme names. 🚫 A new mode must be added here or its
+// classes quietly read as a zoo visit, which is the fourth time that trap would have bitten.
+const PROGRAMME_LABEL = {
+  standard:         'Tracka Trek',
+  zoosnooz:         'ZooSnooz',
+  zooyard:          'ZooYard',
+  evolve:           'Evolve',
+  'wildest-dreams': 'Wildest Dreams',
+};
+
 // The chapter whose writing is the pledge — surfaced as its own column for teachers.
 const EVOLVE_PLEDGE_ID = (EVOLVE_CHAPTERS.find(c => c.isPledge) || {}).id;
+
+// ── The class screen's own stylesheet (2026-11-15) ───────────────────────────────────
+// Scoped to .cd-root so no other portal screen is touched. It exists because this screen
+// had accumulated a different visual decision per panel: five stat cards in five unrelated
+// colours, dark-green table headers in shouting uppercase, gradient rules either side of
+// section titles, emoji headings, and three different card treatments.
+//
+// ⚠️ NO BACKTICKS ANYWHERE IN THIS STRING — it is a JS template literal and a backtick in a
+//    comment ends it. The build has failed on exactly that before (see CLAUDE.md).
+// 🚫 No shadows for decoration, no gradient fills, no glows. Flat white, one hairline border,
+//    one ink colour, one accent. Cameron's standing rule for the education products.
+// The student table's columns, written once so the head and the rows cannot drift apart.
+// ⚠️ The actions column is a FIXED width, wide enough for all three labelled buttons.
+// 'auto' or an fr track sizes to its content, so the one row carrying a New device button
+// widens its own column and knocks every other cell in that row out of line. Twice now.
+const CD_COLS = 'minmax(130px,1fr) 64px 64px 64px 92px 104px 108px 296px';
+
+const CD_CSS = `
+.cd-root { background: #F4F6F2; }
+.cd-root .lms-main-inner { max-width: 1180px; }
+
+/* Header: the class is the page title, the code is the thing teachers come back for. */
+.cd-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
+.cd-title { margin: 0 0 0.3rem; font-size: clamp(1.5rem, 3vw, 2rem); line-height: 1.1; color: #0A2F1F; letter-spacing: -0.01em; }
+.cd-meta { margin: 0; font-size: 0.86rem; color: #6B736D; display: flex; align-items: center; flex-wrap: wrap; gap: 0 0.5rem; }
+.cd-dot { width: 3px; height: 3px; border-radius: 50%; background: #B6BEB8; display: inline-block; }
+.cd-code {
+  display: inline-flex; align-items: baseline; gap: 0.6rem; align-self: flex-start;
+  background: #fff; border: 1px solid #E2E6DF; border-radius: 12px;
+  padding: 0.55rem 0.9rem; cursor: pointer; font: inherit; transition: border-color 0.15s;
+}
+.cd-code:hover { border-color: #1A5238; }
+.cd-code-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #8A928C; }
+.cd-code-value { font-family: 'Taronga Headline', 'Bebas Neue', sans-serif; font-size: 1.5rem; line-height: 1; letter-spacing: 0.12em; color: #0A2F1F; }
+
+/* Tabs. They were missed entirely as a 0.88rem underline, so they are now the second
+   biggest thing on the page and they stay put when the page scrolls. */
+.cd-tabs {
+  position: sticky; top: 0; z-index: 5;
+  display: flex; gap: 0.35rem; margin: 0 0 1.75rem;
+  background: #F4F6F2; border-bottom: 1px solid #DDE3DC;
+}
+.cd-tab {
+  appearance: none; background: none; border: 0; cursor: pointer; font: inherit;
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  font-size: 1rem; font-weight: 600; color: #6B736D;
+  padding: 0.85rem 0.9rem; margin-bottom: -1px;
+  border-bottom: 3px solid transparent; transition: color 0.15s, border-color 0.15s;
+}
+.cd-tab:hover { color: #0A2F1F; }
+.cd-tab[aria-selected="true"] { color: #0A2F1F; font-weight: 700; border-bottom-color: #1A5238; }
+.cd-tab:focus-visible { outline: 3px solid #E0A526; outline-offset: -3px; }
+.cd-tab-count {
+  font-size: 0.75rem; font-weight: 700; font-variant-numeric: tabular-nums;
+  background: #E6ECE7; color: #4A7C61; border-radius: 999px; padding: 0.1rem 0.45rem;
+}
+.cd-tab[aria-selected="true"] .cd-tab-count { background: #1A5238; color: #fff; }
+
+/* Stat row: one ink colour. The number is the information; the colour never was. */
+.cd-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.75rem; margin-bottom: 2rem; }
+.cd-stat { background: #fff; border: 1px solid #E2E6DF; border-radius: 14px; padding: 1.1rem 1.2rem; }
+.cd-stat-val { font-size: 1.9rem; font-weight: 700; color: #0A2F1F; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.cd-stat-label { margin-top: 0.35rem; font-size: 0.78rem; color: #6B736D; font-weight: 500; }
+
+/* Sections and panels: one card treatment, one heading treatment. */
+.cd-section { margin-bottom: 2rem; }
+.cd-h3 { margin: 0 0 0.9rem; font-size: 1.15rem; font-weight: 700; color: #0A2F1F; letter-spacing: -0.015em; }
+.cd-panel-title { margin: 0 0 0.8rem; font-size: 0.9rem; font-weight: 700; color: #14231B; }
+
+/* Student table. One grid definition for the head and every row, so a row with an extra
+   button can no longer stretch its own columns out of line with the rest. */
+.cd-table { background: #fff; border: 1px solid #E2E6DF; border-radius: 14px; overflow: hidden; margin-bottom: 1.25rem; }
+.cd-row { display: grid; align-items: center; gap: 0.75rem; padding: 0.8rem 1.1rem; }
+.cd-row > * { min-width: 0; }
+.cd-thead { background: #F7F9F6; border-bottom: 1px solid #E2E6DF; }
+.cd-th { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #6B736D; }
+.cd-tr + .cd-tr { border-top: 1px solid #EEF1EC; }
+.cd-tr:hover { background: #FAFBF9; }
+.cd-who { display: flex; align-items: center; gap: 0.65rem; }
+.cd-avatar { width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; background: #E6ECE7; color: #1A5238; }
+.cd-avatar.is-done { background: #1A5238; color: #fff; }
+.cd-name { font-weight: 600; color: #14231B; font-size: 0.9rem; overflow-wrap: anywhere; }
+.cd-num { font-weight: 600; color: #14231B; font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+.cd-nil { color: #B6BEB8; font-size: 0.85rem; }
+.cd-view {
+  font: inherit; font-size: 0.78rem; font-weight: 600; cursor: pointer;
+  background: #fff; color: #1A5238; border: 1px solid #CBD8CF; border-radius: 8px; padding: 0.3rem 0.7rem;
+  transition: background 0.15s, border-color 0.15s;
+}
+.cd-view:hover { background: #EEF4EF; border-color: #1A5238; }
+.cd-state { font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem; color: #6B736D; }
+.cd-state::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: #C9A227; }
+.cd-state.is-done { color: #1A5238; }
+.cd-state.is-done::before { background: #1A5238; }
+
+/* Row actions are quiet until you reach for them. Restore and Delete were the loudest
+   thing on the page, in amber and red, repeated on every single row. */
+.cd-acts { display: flex; align-items: center; justify-content: flex-end; gap: 0.3rem; flex-wrap: wrap; }
+.cd-act {
+  appearance: none; font: inherit; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 0.35rem; white-space: nowrap;
+  font-size: 0.8rem; font-weight: 600; padding: 0.3rem 0.6rem;
+  background: #fff; color: #5B645E; border: 1px solid #DDE3DC; border-radius: 8px;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.cd-act:hover { background: #F1F5F1; color: #14231B; border-color: #BFCDC4; }
+.cd-act.is-danger:hover { background: #FEF2F2; color: #B91C1C; border-color: #FECACA; }
+.cd-act:disabled { opacity: 0.4; cursor: not-allowed; }
+.cd-act:focus-visible { outline: 2px solid #E0A526; outline-offset: 1px; }
+.cd-act svg { width: 13px; height: 13px; flex-shrink: 0; }
+
+/* Sidebar, matched to the dashboard so moving between them is not a change of product. */
+.cd-side.lms-sidebar { background: #0A2F1F; border-right: 0; padding: 1.5rem 0.9rem 1.25rem; }
+.cd-side .lms-sidebar-logo { border-bottom: 1px solid rgba(255,255,255,0.09); padding: 0 1rem 1.1rem; margin-bottom: 1.1rem; }
+.cd-side .lms-nav-icon { display: none; }
+.cd-side .lms-nav-item {
+  border-radius: 12px; padding: 0.62rem 0.85rem; font-size: 0.92rem; font-weight: 600; line-height: 1.3;
+  color: rgba(255,255,255,0.74); background: transparent; border: 0; width: 100%; text-align: left;
+}
+.cd-side .lms-nav-item:hover { background: rgba(255,255,255,0.06); color: #fff; }
+.cd-side .lms-nav-group-label { padding: 0 0.85rem; font-size: 0.78rem; color: rgba(255,255,255,0.4); text-transform: none; letter-spacing: 0; font-weight: 500; }
+.cd-info { padding: 0 0.85rem; display: flex; flex-direction: column; gap: 0.5rem; }
+.cd-info-row { display: flex; flex-direction: column; gap: 0.1rem; }
+.cd-info-key { font-size: 0.76rem; color: rgba(255,255,255,0.45); }
+.cd-info-val { font-size: 0.88rem; color: rgba(255,255,255,0.9); font-weight: 600; }
+
+@media (max-width: 900px) {
+  .cd-head { flex-direction: column; }
+  .cd-tabs { overflow-x: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cd-tab, .cd-act, .cd-view, .cd-code { transition: none; }
+}
+`;
 import { openTeacherInfoSheet } from '../utils/teacherInfoSheet';
 import { openZooSnoozInfoSheet } from '../utils/zoosnoozInfoSheet';
 import { openZooYardInfoSheet } from '../utils/zooyardInfoSheet';
@@ -76,8 +221,10 @@ function RadarSVG({ avgB, avgD, avgW, dark, labels }) {
   const dotColor  = dark ? '#4A9E6B' : 'var(--t-mid)';
   const textColor = dark ? 'rgba(184,212,192,0.75)' : '#555';
   const valColor  = dark ? '#D4EDE0' : 'var(--t-deep)';
+  // ⚠️ The axis labels sit at 1.28x the radius, which is OUTSIDE a 0 0 160 160 box, so
+  //    "Accuracy" was clipped off the right edge. The box is padded, not the chart resized.
   return (
-    <svg viewBox="0 0 160 160" style={{ width:'100%', maxWidth:'220px' }}>
+    <svg viewBox="-16 -6 192 178" style={{ width:'100%', maxWidth:'250px' }}>
       {gridLevels.map(lvl => {
         const pts = axes.map(ax => pt(lvl, ax.angle));
         return <polygon key={lvl} points={pts.map(p=>p.join(',')).join(' ')} fill="none" stroke={gridColor} strokeWidth="0.8" />;
@@ -131,6 +278,9 @@ export default function ClassDetailsScreen() {
   const [markingCardOpen,   setMarkingCardOpen]   = useState(false);
   const [classCodeModal,    setClassCodeModal]    = useState(null);
   const [classCodeFS,       setClassCodeFS]       = useState(false);
+
+  // Which tab of the class screen is showing. See CD_TABS below for why a mode may have none.
+  const [tab, setTab] = useState('overview');
 
   const [studentActionBusy, setStudentActionBusy] = useState({});
 
@@ -316,6 +466,26 @@ export default function ClassDetailsScreen() {
   // ⚠️ Wildest Dreams films students from end to end and had no parent letter at all until
   //    2026-11-07, which is why it was missing from the notification buttons below.
   const isWD = cls.sessionType === 'wildest-dreams';
+
+  // ── The three tabs (2026-11-15) ──────────────────────────────────────────────────────
+  // This screen was 4,217px — 6.2 screens — of one unbroken scroll carrying eleven panels
+  // and three headings, for every programme at once. The tabs split it by the question a
+  // teacher is asking: how did the class go (overview), who did what (students), what did
+  // they write and answer (responses).
+  //
+  // ⚠️ A MODE ONLY GETS A TAB IF IT HAS SOMETHING TO PUT IN IT. Evolve and Wildest Dreams
+  //    are a single table each by design — no points, no marks, nothing to total — so they
+  //    get no tab bar at all rather than two empty tabs. Same for a class nobody has joined.
+  //    🚫 Do not "complete the set" by giving every mode three tabs; that is how Evolve got
+  //    stat cards it has no numbers for in the first place.
+  const CD_TABS =
+    students.length === 0 ? [] :
+    isEV || isWD          ? [] :
+    isZZ || isZY          ? ['overview', 'students'] :
+                            ['overview', 'students', 'responses'];
+  // With no tab bar every section renders, exactly as it did before the split.
+  const onTab = (t) => CD_TABS.length === 0 || tab === t;
+
   const totalStudents  = students.length;
   const avgPoints      = totalStudents > 0 ? Math.round(students.reduce((s,st)=>s+(st.totalPoints||0),0)/totalStudents) : 0;
   const totalBadges    = students.reduce((s,st)=>s+(st.badges?.length||0),0);
@@ -494,11 +664,16 @@ export default function ClassDetailsScreen() {
   const alreadySubmitted= cls.sessionClosed;
 
   // Style helpers
-  const nightStyle = (s={}) => isZZ ? { background:'rgba(255,255,255,0.04)', border:'1px solid rgba(46,125,85,0.2)', borderRadius:'var(--t-r-md)', padding:'1rem 1.15rem', marginBottom:'0.7rem', ...s } : { background:'var(--t-chalk)', borderRadius:'var(--t-r-md)', padding:'1rem 1.15rem', boxShadow:'var(--t-shadow-xs)', marginBottom:'0.7rem', border:'1px solid var(--t-stone)', ...s };
+  // One card treatment for every panel on the screen. 🚫 No shadow: it was the only thing
+  // separating these from the cards, and three different elevations on one page is noise.
+  const nightStyle = (s={}) => isZZ
+    ? { background:'rgba(255,255,255,0.04)', border:'1px solid rgba(46,125,85,0.2)', borderRadius:'14px', padding:'1.15rem 1.25rem', marginBottom:'0.75rem', ...s }
+    : { background:'#fff', border:'1px solid #E2E6DF', borderRadius:'14px', padding:'1.15rem 1.25rem', marginBottom:'0.75rem', ...s };
 
   // ─────────────────────────────────────────────────────────────────────────────
   return (
-    <div className="lms-page" style={ isZZ ? { background:'#020D06' } : {}}>
+    <div className={isZZ ? 'lms-page' : 'lms-page cd-root'} style={ isZZ ? { background:'#020D06' } : {}}>
+      {!isZZ && <style>{CD_CSS}</style>}
 
       {/* Top bar */}
       <div className="lms-topbar" style={ isZZ ? { background:'linear-gradient(135deg,#071E14 0%,#0A2F1F 60%,#071E14 100%)', borderBottom:'1px solid rgba(168,196,178,0.2)' } : {}}>
@@ -516,7 +691,7 @@ export default function ClassDetailsScreen() {
 
       <div className="lms-two-col">
         {/* Sidebar */}
-        <div className="lms-sidebar" style={ isZZ ? { background:'linear-gradient(180deg,#071E14 0%,#040F08 100%)', borderRight:'1px solid rgba(46,125,85,0.2)' } : {}}>
+        <div className={isZZ ? 'lms-sidebar' : 'lms-sidebar cd-side'} style={ isZZ ? { background:'linear-gradient(180deg,#071E14 0%,#040F08 100%)', borderRight:'1px solid rgba(46,125,85,0.2)' } : {}}>
           <div className="lms-sidebar-logo" style={ isZZ ? { borderBottom:'1px solid rgba(46,125,85,0.2)' } : {}}>
             <p style={{ fontSize:'0.63rem', fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase', color:'rgba(255,255,255,0.4)', marginBottom:'0.2rem' }}>Class Details</p>
             <p style={{ fontSize:'0.9rem', fontWeight:700, color:'white', lineHeight:1.25 }}>{cls.className}</p>
@@ -570,36 +745,29 @@ export default function ClassDetailsScreen() {
             )}
           </nav>
 
+          {/* ⚠️ The code, stage and programme are in the page header now, as a join-code
+              button and a meta line. Repeating them here was four labels competing with the
+              navigation for a teacher's attention and saying nothing new. */}
           <p className="lms-nav-group-label" style={{ marginTop:'1rem' }}>Class Info</p>
-          <div style={{ padding:'0 1.25rem', display:'flex', flexDirection:'column', gap:'0.55rem' }}>
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-              <span style={{ fontSize:'0.68rem', color:'rgba(255,255,255,0.4)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em' }}>Code</span>
-              <span style={{ fontFamily:'monospace', fontWeight:700, fontSize:'0.85rem', color:'rgba(255,255,255,0.9)', letterSpacing:'0.1em', cursor:'pointer' }} onClick={() => setClassCodeModal(cls.classCode)}>{cls.classCode}</span>
-            </div>
-            {cls.stage && (
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                <span style={{ fontSize:'0.68rem', color:'rgba(255,255,255,0.4)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em' }}>Stage</span>
-                <span style={{ fontSize:'0.8rem', color:'rgba(255,255,255,0.8)', fontWeight:600 }}>Stage {cls.stage}</span>
-              </div>
-            )}
+          <div className={isZZ ? undefined : 'cd-info'} style={isZZ ? { padding:'0 1.25rem', display:'flex', flexDirection:'column', gap:'0.55rem' } : undefined}>
             {cls.location && (
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                <span style={{ fontSize:'0.68rem', color:'rgba(255,255,255,0.4)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em' }}>Location</span>
-                <span style={{ fontSize:'0.75rem', color:'rgba(255,255,255,0.8)', fontWeight:600, textAlign:'right', maxWidth:'120px' }}>
-                  {{ 'taronga-sydney':'Taronga Sydney', 'zoosnooz-sydney':'ZooSnooz · Sydney', 'dubbo':'Taronga Dubbo', 'school':'Your School' }[cls.location] || cls.location}
+              <div className="cd-info-row" style={isZZ ? { display:'flex', flexDirection:'column', gap:'0.1rem' } : undefined}>
+                <span className="cd-info-key" style={isZZ ? { fontSize:'0.76rem', color:'rgba(184,212,192,0.55)' } : undefined}>Location</span>
+                <span className="cd-info-val" style={isZZ ? { fontSize:'0.88rem', color:'#D4EDE0', fontWeight:600 } : undefined}>
+                  {{ 'taronga-sydney':'Taronga Sydney', 'zoosnooz-sydney':'ZooSnooz · Sydney', 'evolve-sydney':'Evolve · Sydney', 'wildest-dreams-sydney':'Wildest Dreams · Sydney', 'dubbo':'Taronga Dubbo', 'school':'Your school' }[cls.location] || cls.location}
                 </span>
               </div>
             )}
             {cls.subject && (
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                <span style={{ fontSize:'0.68rem', color:'rgba(255,255,255,0.4)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em' }}>Subject</span>
-                <span style={{ fontSize:'0.75rem', color:'rgba(255,255,255,0.8)', fontWeight:600, textTransform:'capitalize' }}>{cls.subject}</span>
+              <div className="cd-info-row" style={isZZ ? { display:'flex', flexDirection:'column', gap:'0.1rem' } : undefined}>
+                <span className="cd-info-key" style={isZZ ? { fontSize:'0.76rem', color:'rgba(184,212,192,0.55)' } : undefined}>Subject</span>
+                <span className="cd-info-val" style={isZZ ? { fontSize:'0.88rem', color:'#D4EDE0', fontWeight:600, textTransform:'capitalize' } : { textTransform:'capitalize' }}>{cls.subject}</span>
               </div>
             )}
             {!loading && (
-              <div style={{ display:'flex', alignItems:'center', gap:'0.4rem', marginTop:'0.1rem' }}>
-                <div style={{ width:'7px', height:'7px', borderRadius:'50%', background:'#34d399', boxShadow:'0 0 6px rgba(52,211,153,0.6)' }} />
-                <span style={{ color:'#34d399', fontSize:'0.7rem', fontWeight:700, letterSpacing:'0.08em' }}>LIVE</span>
+              <div style={{ display:'flex', alignItems:'center', gap:'0.45rem', marginTop:'0.25rem' }}>
+                <div style={{ width:'7px', height:'7px', borderRadius:'50%', background:'#34d399' }} />
+                <span style={{ color:'rgba(255,255,255,0.6)', fontSize:'0.78rem' }}>Updating live</span>
               </div>
             )}
           </div>
@@ -614,7 +782,6 @@ export default function ClassDetailsScreen() {
             }}>
               {/* Header row */}
               <div style={{ display:'flex', alignItems:'center', gap:'0.4rem', marginBottom:'0.5rem' }}>
-                <span style={{ fontSize:'1rem' }}>{cls.gpsEnabled ? '📍' : '🔓'}</span>
                 <span style={{ fontSize:'0.75rem', fontWeight:800, color: cls.gpsEnabled ? '#16A34A' : '#B45309', textTransform:'uppercase', letterSpacing:'0.05em' }}>
                   {cls.gpsEnabled ? 'GPS On' : 'GPS Off'}
                 </span>
@@ -647,14 +814,15 @@ export default function ClassDetailsScreen() {
                   }
                 }}
                 style={{
-                  width:'100%', padding:'0.5rem 0.6rem',
-                  borderRadius:'var(--t-r-md)', border:'none',
-                  cursor:'pointer', fontWeight:700, fontSize:'0.75rem',
-                  background: cls.gpsEnabled ? '#DC2626' : '#16A34A',
-                  color:'white', transition:'background 0.2s',
+                  width:'100%', padding:'0.6rem',
+                  borderRadius:'10px', border:'1px solid rgba(255,255,255,0.25)',
+                  cursor:'pointer', fontWeight:700, fontSize:'0.82rem',
+                  background:'transparent', color:'#fff', transition:'background 0.15s',
                 }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
               >
-                {cls.gpsEnabled ? '🔓 Disable GPS (Dept Devices)' : '📍 Enable GPS (GPS Devices)'}
+                {cls.gpsEnabled ? 'Turn GPS off' : 'Turn GPS on'}
               </button>
             </div>
           </div>}
@@ -691,14 +859,98 @@ export default function ClassDetailsScreen() {
           ) : (
             <div className="lms-main-inner">
 
-              {/* Page heading */}
-              <div style={{ marginBottom:'1.5rem' }}>
-                <h2 className="heading-display" style={{ fontSize:'clamp(1.2rem, 2.5vw, 1.5rem)', color: isZZ ? '#D4EDE0' : 'var(--t-deep)', lineHeight:1.2, marginBottom:'0.2rem' }}>{cls.className}</h2>
-                <p style={{ color: isZZ ? 'rgba(184,212,192,0.65)' : 'var(--t-slate)', fontSize:'0.8rem' }}>{cls.schoolName}{cls.stage ? ` · Stage ${cls.stage}` : ''} · Code: <span style={{ fontFamily:'monospace', fontWeight:700, color: isZZ ? '#4A9E6B' : 'var(--t-mid)' }}>{cls.classCode}</span></p>
-              </div>
+              {/* Page heading. The class code is a control, not a footnote in the meta line:
+                  it is the single thing a teacher comes back to this screen to read out. */}
+              <header className={isZZ ? undefined : 'cd-head'} style={isZZ ? { marginBottom:'1.5rem' } : undefined}>
+                <div>
+                  <h2 className={isZZ ? 'heading-display' : 'heading-display cd-title'} style={isZZ ? { fontSize:'clamp(1.2rem, 2.5vw, 1.5rem)', color:'#D4EDE0', lineHeight:1.2, marginBottom:'0.2rem' } : undefined}>{cls.className}</h2>
+                  {isZZ ? (
+                    <p style={{ color:'rgba(184,212,192,0.65)', fontSize:'0.8rem' }}>{cls.schoolName}{cls.stage ? ` · Stage ${cls.stage}` : ''} · Code: <span style={{ fontFamily:'monospace', fontWeight:700, color:'#4A9E6B' }}>{cls.classCode}</span></p>
+                  ) : (
+                    <p className="cd-meta">
+                      {cls.schoolName}
+                      {cls.stage ? <><span className="cd-dot" aria-hidden="true" />Stage {cls.stage}</> : null}
+                      {PROGRAMME_LABEL[cls.sessionType || 'standard'] ? <><span className="cd-dot" aria-hidden="true" />{PROGRAMME_LABEL[cls.sessionType || 'standard']}</> : null}
+                      {!loading ? <><span className="cd-dot" aria-hidden="true" />{students.length} {students.length === 1 ? 'student' : 'students'}</> : null}
+                    </p>
+                  )}
+                </div>
+                {!isZZ && (
+                  <button className="cd-code" onClick={() => setClassCodeModal(cls.classCode)} title="Show this code full screen for your students">
+                    <span className="cd-code-label">Join code</span>
+                    <span className="cd-code-value">{cls.classCode}</span>
+                  </button>
+                )}
+              </header>
+
+              {/* Tabs. Absent by design for Evolve, Wildest Dreams and an empty class — see CD_TABS. */}
+              {CD_TABS.length > 1 && (
+                <div role="tablist" aria-label="Class sections" className={isZZ ? undefined : 'cd-tabs'} style={isZZ ? {
+                  display:'flex', gap:'0.25rem', marginBottom:'1.5rem',
+                  borderBottom:'1px solid rgba(168,196,178,0.2)',
+                } : undefined}>
+                  {CD_TABS.map(t => {
+                    const label = { overview:'Overview', students:'Students', responses:'Responses' }[t];
+                    const active = tab === t;
+                    return (
+                      <button
+                        key={t}
+                        role="tab"
+                        aria-selected={active}
+                        onClick={() => setTab(t)}
+                        className={isZZ ? undefined : 'cd-tab'}
+                        style={isZZ ? {
+                          appearance:'none', background:'none', border:0, cursor:'pointer',
+                          font:'inherit', fontSize:'0.95rem', fontWeight: active ? 700 : 600,
+                          padding:'0.7rem 1rem', marginBottom:'-1px',
+                          color: active ? '#D4EDE0' : 'rgba(184,212,192,0.6)',
+                          borderBottom: `3px solid ${active ? '#4A9E6B' : 'transparent'}`,
+                        } : undefined}
+                      >
+                        {label}
+                        {t === 'students' && students.length > 0 && (
+                          <span className={isZZ ? undefined : 'cd-tab-count'} style={isZZ ? { fontSize:'0.75rem', fontWeight:700, background:'rgba(168,196,178,0.18)', color:'#A8C4B2', borderRadius:'999px', padding:'0.1rem 0.45rem' } : undefined}>{students.length}</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* The class report, where a teacher will look for it. ⚠️ It opens a printable
+                  page in a new tab (print or save as PDF) rather than downloading a file — the
+                  button must not promise a file that never lands in Downloads. */}
+              {onTab('overview') && !isEV && !isWD && students.length > 0 && (
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'1rem', flexWrap:'wrap', marginBottom:'1.25rem' }}>
+                  <p style={{ margin:0, fontSize:'0.86rem', color: isZZ ? 'rgba(184,212,192,0.65)' : '#6B736D' }}>
+                    Every student's scores, writing and conservation statement in one document.
+                  </p>
+                  <button
+                    onClick={() => openHighlightsPackage(cls, students)}
+                    disabled={loading}
+                    title="Opens a printable report in a new tab. Use your browser's print dialog to save it as a PDF."
+                    style={{
+                      display:'inline-flex', alignItems:'center', gap:'0.5rem',
+                      font:'inherit', fontSize:'0.88rem', fontWeight:700, cursor: loading ? 'not-allowed' : 'pointer',
+                      padding:'0.65rem 1.1rem', borderRadius:'999px', border:'none',
+                      background: isZZ ? 'rgba(46,125,85,0.3)' : '#1A5238', color:'#fff', opacity: loading ? 0.5 : 1,
+                    }}
+                  >
+                    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                      <path d="M8 1.5v8.5M8 10l3-3M8 10L5 7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M2.5 11.5v1.6a1 1 0 001 1h9a1 1 0 001-1v-1.6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+                    </svg>
+                    Download class report
+                  </button>
+                </div>
+              )}
 
               {/* Stat cards — Evolve has no points, badges or scores, so it has none. */}
-              {isEV ? null : isZZ ? (() => {
+              {/* ⚠️ Evolve AND Wildest Dreams get no stat cards. Neither has points, badges,
+                  quizzes or marks — that is the design, not missing data — so the row rendered
+                  five zeros and a flat "0% average quiz" against a class that was doing fine.
+                  🚫 Do not add them back for a mode that has nothing to total. */}
+              {!onTab('overview') ? null : (isEV || isWD) ? null : isZZ ? (() => {
                 const zzCompleted  = students.filter(s=>s.zzSessionComplete).length;
                 const totalAnimals = students.reduce((sum,s) => sum + ZOOSNOOZ_ANIMALS.filter(a=>(s.zoosnooz||{})[a.id]?.completed).length, 0);
                 const avgPts       = students.length > 0 ? Math.round(students.reduce((s,st)=>s+(st.zzTotalPoints||0),0)/students.length) : 0;
@@ -706,8 +958,8 @@ export default function ClassDetailsScreen() {
                 return (
                   <div className="lms-stat-grid" style={{ gridTemplateColumns:'repeat(4,1fr)', marginBottom:'1.75rem' }}>
                     {[{l:'Students',v:totalStudents,c:'#4A9E6B'},{l:'Submitted',v:zzCompleted,c:'#34D399'},{l:'Avg Pts',v:avgPts,c:'#F59E0B'},{l:'Films',v:films,c:'#2E7D55'}].map(s=>(
-                      <div key={s.l} className="lms-stat-card animate-fade-in-up" style={{ borderTopColor:s.c, background:'rgba(255,255,255,0.04)', border:'1px solid rgba(46,125,85,0.2)' }}>
-                        <div className="lms-stat-val" style={{ color:s.c, fontSize:'1.6rem' }}>{s.v}</div>
+                      <div key={s.l} className="lms-stat-card" style={{ borderTop:'1px solid rgba(46,125,85,0.2)', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(46,125,85,0.2)' }}>
+                        <div className="lms-stat-val" style={{ color:'#D4EDE0', fontSize:'1.9rem', fontVariantNumeric:'tabular-nums' }}>{s.v}</div>
                         <div className="lms-stat-label" style={{ color:'rgba(184,212,192,0.6)' }}>{s.l}</div>
                       </div>
                     ))}
@@ -722,28 +974,28 @@ export default function ClassDetailsScreen() {
                 const qCorrect    = stats.reduce((sum, s) => sum + s.quizCorrect, 0);
                 const zyAvgQuiz   = qAttempted > 0 ? Math.round((qCorrect / qAttempted) * 100) : 0;
                 return (
-                  <div className="lms-stat-grid" style={{ gridTemplateColumns:'repeat(5,1fr)', marginBottom:'1.75rem' }}>
-                    {[{l:'Students',v:totalStudents,c:'#3B82F6'},{l:'Avg Points',v:zyAvgPts,c:'#F59E0B'},{l:'Habitat Badges',v:zyBadges,c:'#2E7D55'},{l:'Completed',v:zyCompleted,c:'#10B981'},{l:'Avg Quiz %',v:`${zyAvgQuiz}%`,c:'#7C3AED'}].map(s=>(
-                      <div key={s.l} className="lms-stat-card animate-fade-in-up" style={{ borderTopColor:s.c }}>
-                        <div className="lms-stat-val" style={{ color:s.c, fontSize:'1.6rem' }}>{s.v}</div>
-                        <div className="lms-stat-label">{s.l}</div>
+                  <div className="cd-stats">
+                    {[{l:'Students',v:totalStudents},{l:'Average points',v:zyAvgPts},{l:'Habitat badges',v:zyBadges},{l:'Finished',v:zyCompleted},{l:'Average quiz',v:`${zyAvgQuiz}%`}].map(s=>(
+                      <div key={s.l} className="cd-stat">
+                        <div className="cd-stat-val">{s.v}</div>
+                        <div className="cd-stat-label">{s.l}</div>
                       </div>
                     ))}
                   </div>
                 );
               })() : (
-                <div className="lms-stat-grid" style={{ gridTemplateColumns:'repeat(5,1fr)', marginBottom:'1.75rem' }}>
-                  {[{l:'Students',v:totalStudents,c:'#3B82F6'},{l:'Avg Points',v:avgPoints,c:'#F59E0B'},{l:'Badges',v:totalBadges,c:'var(--t-mid)'},{l:'Completed',v:completedCount,c:'#10B981'},{l:'Avg Quiz %',v:`${avgQuizPct}%`,c:'#2E7D55'}].map(s=>(
-                    <div key={s.l} className="lms-stat-card animate-fade-in-up" style={{ borderTopColor:s.c }}>
-                      <div className="lms-stat-val" style={{ color:s.c, fontSize:'1.6rem' }}>{s.v}</div>
-                      <div className="lms-stat-label">{s.l}</div>
+                <div className="cd-stats">
+                  {[{l:'Students',v:totalStudents},{l:'Average points',v:avgPoints},{l:'Badges earned',v:totalBadges},{l:'Finished',v:completedCount},{l:'Average quiz',v:`${avgQuizPct}%`}].map(s=>(
+                    <div key={s.l} className="cd-stat">
+                      <div className="cd-stat-val">{s.v}</div>
+                      <div className="cd-stat-label">{s.l}</div>
                     </div>
                   ))}
                 </div>
               )}
 
               {/* ── ZooSnooz Class Insights ── */}
-              {isZZ && students.length > 0 && (() => {
+              {onTab('overview') && isZZ && students.length > 0 && (() => {
                 let zzTotB=0,zzTotD=0,zzTotW=0,zzObsCnt=0,zzLowB=0,zzLowD=0,zzLowW=0;
                 students.forEach(s => {
                   const zzMap = resolveZzData(s);
@@ -931,7 +1183,7 @@ export default function ClassDetailsScreen() {
               })()}
 
               {/* ── ZooYard Class Insights ── */}
-              {isZY && students.length > 0 && (() => {
+              {onTab('overview') && isZY && students.length > 0 && (() => {
                 const stats  = students.map(buildZyStats);
                 const scored = stats.filter(s => s.obsCount > 0);
                 const obsCnt = stats.reduce((n, s) => n + s.obsCount, 0);
@@ -1031,11 +1283,11 @@ export default function ClassDetailsScreen() {
                         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.6rem', marginBottom:'0.7rem' }}>
                           <div style={{ background:'rgba(46,125,85,0.08)', border:'1px solid rgba(46,125,85,0.25)', borderRadius:'var(--t-r-md)', padding:'0.9rem 1rem' }}>
                             <p style={{ fontSize:'0.65rem', fontWeight:700, color:'var(--t-mid)', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:'0.3rem' }}>Strength</p>
-                            <p style={{ fontSize:'0.8rem', fontWeight:700, color:'var(--t-deep)', margin:'0 0 0.2rem' }}>{strongest.icon} {strongest.label} ({strongest.avg}/5)</p>
+                            <p style={{ fontSize:'0.8rem', fontWeight:700, color:'var(--t-deep)', margin:'0 0 0.2rem' }}>{strongest.label} ({strongest.avg}/5)</p>
                           </div>
                           <div style={{ background:'rgba(245,158,11,0.08)', border:'1px solid rgba(245,158,11,0.28)', borderRadius:'var(--t-r-md)', padding:'0.9rem 1rem' }}>
                             <p style={{ fontSize:'0.65rem', fontWeight:700, color:'#B45309', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:'0.3rem' }}>Focus Area</p>
-                            <p style={{ fontSize:'0.8rem', fontWeight:700, color:'var(--t-deep)', margin:'0 0 0.2rem' }}>{weakest.icon} {weakest.label} ({weakest.avg}/5)</p>
+                            <p style={{ fontSize:'0.8rem', fontWeight:700, color:'var(--t-deep)', margin:'0 0 0.2rem' }}>{weakest.label} ({weakest.avg}/5)</p>
                           </div>
                         </div>
 
@@ -1049,11 +1301,11 @@ export default function ClassDetailsScreen() {
                           {domainList.map(d => (
                             <div key={d.key} style={{ marginBottom:'0.6rem' }}>
                               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', fontSize:'0.82rem', marginBottom:'0.22rem' }}>
-                                <span style={{ color:'var(--t-deep)', fontWeight:500 }}>{d.icon} {d.label}</span>
-                                <span style={{ fontWeight:700, color:d.color }}>{d.avg}/5</span>
+                                <span style={{ color:'#14231B', fontWeight:500 }}>{d.label}</span>
+                                <span style={{ fontWeight:700, color:'#14231B', fontVariantNumeric:'tabular-nums' }}>{d.avg}/5</span>
                               </div>
                               <div style={{ height:'6px', background:'#EEE', borderRadius:'3px', overflow:'hidden' }}>
-                                <div style={{ height:'100%', width:`${(d.avg/5)*100}%`, background:d.color, borderRadius:'3px', transition:'width 0.5s ease' }} />
+                                <div style={{ height:'100%', width:`${(d.avg/5)*100}%`, background:'#2E7D55', borderRadius:'3px', transition:'width 0.5s ease' }} />
                               </div>
                             </div>
                           ))}
@@ -1100,9 +1352,9 @@ export default function ClassDetailsScreen() {
                     )}
 
                     <div style={{ background:'var(--t-chalk)', borderRadius:'var(--t-r-lg)', boxShadow:'var(--t-shadow-sm)', overflow:'hidden', border:'1px solid var(--t-stone)', marginBottom:'1rem' }}>
-                      <div style={{ display:'grid', gridTemplateColumns:'1.5fr 0.7fr 0.8fr 0.7fr 0.9fr 1fr', background:'var(--t-forest)', padding:'0.6rem 1rem' }}>
+                      <div style={{ display:'grid', gridTemplateColumns:'1.5fr 0.7fr 0.8fr 0.7fr 0.9fr 1fr', background:'#F7F9F6', borderBottom:'1px solid #E2E6DF', padding:'0.7rem 1.1rem' }}>
                         {['Student','Points','Habitats','Quiz %','Observations','Status'].map(h => (
-                          <div key={h} style={{ color:'rgba(255,255,255,0.8)', fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em' }}>{h}</div>
+                          <div key={h} style={{ color:'#6B736D', fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em' }}>{h}</div>
                         ))}
                       </div>
                       {stats.map((s, i) => (
@@ -1205,18 +1457,19 @@ export default function ClassDetailsScreen() {
                       <button onClick={() => openEvolveCertificates(cls, pledged)} disabled={pledged.length === 0}
                         title={pledged.length ? 'One landscape certificate per student, carrying all five chapters — print or save as PDF' : 'Nothing written yet'}
                         style={{ display:'inline-flex', alignItems:'center', gap:'0.45rem', padding:'0.5rem 1rem', borderRadius:'var(--t-r-pill)', border:'none',
-                          background: pledged.length ? 'linear-gradient(135deg,#C97B33,#8A4F1E)' : 'var(--t-stone)',
-                          color: pledged.length ? 'white' : 'var(--t-ash)', fontWeight:700, fontSize:'0.78rem',
-                          cursor: pledged.length ? 'pointer' : 'not-allowed', textTransform:'uppercase', letterSpacing:'0.06em' }}>
-                        🖨 Certificates
+                          background: pledged.length ? '#8A4F1E' : 'var(--t-stone)',
+                          color: pledged.length ? 'white' : 'var(--t-ash)', fontWeight:700, fontSize:'0.82rem',
+                          cursor: pledged.length ? 'pointer' : 'not-allowed' }}>
+                        Print certificates
                       </button>
                       <button onClick={() => openEvolveAdviceSheet(cls, advice, cohort)} disabled={advice.length === 0}
                         title={advice.length ? 'One card per student — print or save as PDF, and put them where a Year 7 will read them' : 'No advice written yet'}
-                        style={{ display:'inline-flex', alignItems:'center', gap:'0.45rem', padding:'0.5rem 1rem', borderRadius:'var(--t-r-pill)', border:'none',
-                          background: advice.length ? 'linear-gradient(135deg,#C97B33,#8A4F1E)' : 'var(--t-stone)',
-                          color: advice.length ? 'white' : 'var(--t-ash)', fontWeight:700, fontSize:'0.78rem',
-                          cursor: advice.length ? 'pointer' : 'not-allowed', textTransform:'uppercase', letterSpacing:'0.06em' }}>
-                        🖨 Advice from the Class of {cohort}
+                        style={{ display:'inline-flex', alignItems:'center', gap:'0.45rem', padding:'0.5rem 1rem', borderRadius:'var(--t-r-pill)',
+                          background: advice.length ? 'transparent' : 'var(--t-stone)',
+                          color: advice.length ? '#8A4F1E' : 'var(--t-ash)', fontWeight:700, fontSize:'0.82rem',
+                          border: advice.length ? '1px solid #D7BFA6' : 'none',
+                          cursor: advice.length ? 'pointer' : 'not-allowed' }}>
+                        Print advice from the Class of {cohort}
                       </button>
                     </div>
                   </div>
@@ -1225,9 +1478,9 @@ export default function ClassDetailsScreen() {
 
               {isEV && (
                 <div style={{ background:'var(--t-chalk)', borderRadius:'var(--t-r-lg)', boxShadow:'var(--t-shadow-sm)', overflow:'hidden', border:'1px solid var(--t-stone)', marginBottom:'1rem' }}>
-                  <div style={{ display:'grid', gridTemplateColumns:'1.6fr 1fr 1fr 1.2fr', background:'var(--t-forest)', padding:'0.6rem 1rem' }}>
+                  <div style={{ display:'grid', gridTemplateColumns:'1.6fr 1fr 1fr 1.2fr', background:'#F7F9F6', borderBottom:'1px solid #E2E6DF', padding:'0.7rem 1.1rem' }}>
                     {['Student','Pledge','Film','Actions'].map(h => (
-                      <div key={h} style={{ color:'rgba(255,255,255,0.8)', fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em' }}>{h}</div>
+                      <div key={h} style={{ color:'#6B736D', fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em' }}>{h}</div>
                     ))}
                   </div>
                   {students.length === 0 ? (
@@ -1269,14 +1522,12 @@ export default function ClassDetailsScreen() {
                           ) : <span style={{ color:'#bbb', fontSize:'0.75rem' }}> - </span>}
                         </div>
 
-                        <div style={{ display:'flex', alignItems:'center', gap:'0.35rem' }}>
-                          <button onClick={() => resetStudent(s)} disabled={!!busy} title="Restore to chapter list (keeps their writing)"
-                            style={{ display:'flex', alignItems:'center', gap:'0.25rem', background:'none', color:'#D97706', border:'1.5px solid #FCD34D', padding:'0.28rem 0.55rem', borderRadius:'7px', fontSize:'0.72rem', fontWeight:700, cursor:busy?'not-allowed':'pointer', opacity:busy?0.4:1, whiteSpace:'nowrap' }}>
-                            {busy==='resetting' ? '…' : <><span style={{ fontSize:'0.9rem', lineHeight:1 }}>↺</span> <span>Restore</span></>}
+                        <div className="cd-acts">
+                          <button className="cd-act" onClick={() => resetStudent(s)} disabled={!!busy} title="Send this student back to the chapter list. They keep their writing and films." aria-label={`Restore ${s.name}`}>
+                            {busy==='resetting' ? '…' : <><svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 8a5.5 5.5 0 109.3-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/><path d="M12.5 1v3.2H9.3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg> Restore</>}
                           </button>
-                          <button onClick={() => deleteStudent(s)} disabled={!!busy} title="Delete student"
-                            style={{ display:'flex', alignItems:'center', gap:'0.25rem', background:'none', color:'#DC2626', border:'1.5px solid #FECACA', padding:'0.28rem 0.55rem', borderRadius:'7px', fontSize:'0.72rem', fontWeight:700, cursor:busy?'not-allowed':'pointer', opacity:busy?0.4:1, whiteSpace:'nowrap' }}>
-                            {busy==='deleting' ? '…' : <><span style={{ fontSize:'0.85rem', lineHeight:1 }}>🗑</span> <span>Delete</span></>}
+                          <button className="cd-act is-danger" onClick={() => deleteStudent(s)} disabled={!!busy} title="Delete this student" aria-label={`Delete ${s.name}`}>
+                            {busy==='deleting' ? '…' : <><svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 4h11M6 4V2.5h4V4M4 4l.7 9.5h6.6L12 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg> Delete</>}
                           </button>
                         </div>
                       </div>
@@ -1297,9 +1548,9 @@ export default function ClassDetailsScreen() {
                   can I play it. */}
               {isWD && (
                 <div style={{ background:'var(--t-chalk)', borderRadius:'var(--t-r-lg)', boxShadow:'var(--t-shadow-sm)', overflow:'hidden', border:'1px solid var(--t-stone)', marginBottom:'1rem' }}>
-                  <div style={{ display:'grid', gridTemplateColumns:'1.6fr 1fr 1fr 1.2fr', background:'var(--t-forest)', padding:'0.6rem 1rem' }}>
+                  <div style={{ display:'grid', gridTemplateColumns:'1.6fr 1fr 1fr 1.2fr', background:'#F7F9F6', borderBottom:'1px solid #E2E6DF', padding:'0.7rem 1.1rem' }}>
                     {['Student','Clips','Film','Actions'].map(h => (
-                      <div key={h} style={{ color:'rgba(255,255,255,0.8)', fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em' }}>{h}</div>
+                      <div key={h} style={{ color:'#6B736D', fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em' }}>{h}</div>
                     ))}
                   </div>
                   {students.length === 0 ? (
@@ -1343,14 +1594,12 @@ export default function ClassDetailsScreen() {
                           ) : <span style={{ color:'#bbb', fontSize:'0.75rem' }}> - </span>}
                         </div>
 
-                        <div style={{ display:'flex', alignItems:'center', gap:'0.35rem' }}>
-                          <button onClick={() => resetStudent(s)} disabled={!!busy} title="Restore to the animal list (keeps their clips)"
-                            style={{ display:'flex', alignItems:'center', gap:'0.25rem', background:'none', color:'#D97706', border:'1.5px solid #FCD34D', padding:'0.28rem 0.55rem', borderRadius:'7px', fontSize:'0.72rem', fontWeight:700, cursor:busy?'not-allowed':'pointer', opacity:busy?0.4:1, whiteSpace:'nowrap' }}>
-                            {busy==='resetting' ? '…' : <><span style={{ fontSize:'0.9rem', lineHeight:1 }}>↺</span> <span>Restore</span></>}
+                        <div className="cd-acts">
+                          <button className="cd-act" onClick={() => resetStudent(s)} disabled={!!busy} title="Send this student back to the animal list. They keep their clips." aria-label={`Restore ${s.name}`}>
+                            {busy==='resetting' ? '…' : <><svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 8a5.5 5.5 0 109.3-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/><path d="M12.5 1v3.2H9.3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg> Restore</>}
                           </button>
-                          <button onClick={() => deleteStudent(s)} disabled={!!busy} title="Delete student"
-                            style={{ display:'flex', alignItems:'center', gap:'0.25rem', background:'none', color:'#DC2626', border:'1.5px solid #FECACA', padding:'0.28rem 0.55rem', borderRadius:'7px', fontSize:'0.72rem', fontWeight:700, cursor:busy?'not-allowed':'pointer', opacity:busy?0.4:1, whiteSpace:'nowrap' }}>
-                            {busy==='deleting' ? '…' : <><span style={{ fontSize:'0.85rem', lineHeight:1 }}>🗑</span> <span>Delete</span></>}
+                          <button className="cd-act is-danger" onClick={() => deleteStudent(s)} disabled={!!busy} title="Delete this student" aria-label={`Delete ${s.name}`}>
+                            {busy==='deleting' ? '…' : <><svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 4h11M6 4V2.5h4V4M4 4l.7 9.5h6.6L12 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg> Delete</>}
                           </button>
                         </div>
                       </div>
@@ -1367,7 +1616,7 @@ export default function ClassDetailsScreen() {
                   for scanning a class of thirty. This is the same photos laid out as a grid so a
                   teacher can verify the whole class at a glance, and spot the four identical
                   shots taken from one desk. */}
-              {isZY && students.length > 0 && (() => {
+              {onTab('students') && isZY && students.length > 0 && (() => {
                 const shots = [];
                 students.forEach(s => ZOOYARD_ANIMALS.forEach(a => {
                   const url = s.zooyard?.[a.id]?.habitatPhotoUrl;
@@ -1419,7 +1668,7 @@ export default function ClassDetailsScreen() {
                 );
               })()}
 
-              {isZY && (
+              {onTab('students') && isZY && (
                 <div style={{ background:'var(--t-chalk)', borderRadius:'var(--t-r-md)', padding:'1.15rem', marginBottom:'1.75rem', border:'1px solid var(--t-stone)' }}>
                   <h3 style={{ fontSize:'0.9rem', fontWeight:700, color:'var(--t-deep)', margin:'0 0 0.9rem' }}>🌱 Citizen Science Submissions</h3>
                   {zySubmissions.length === 0 ? (
@@ -1526,6 +1775,7 @@ export default function ClassDetailsScreen() {
                 };
                 return (
                   <div style={{ marginBottom:'1rem' }}>
+                    {onTab('overview') && <>
                     <h3 style={{ fontSize:'0.95rem', marginBottom:'0.75rem', color:'var(--t-deep)', letterSpacing:'-0.01em', fontWeight:700 }}>Class Insights</h3>
                     {/* Most Visited */}
                     <div style={nightStyle()}>
@@ -1559,71 +1809,94 @@ export default function ClassDetailsScreen() {
                         <RadarSVG avgB={avgB} avgD={avgD} avgW={avgW} dark={false} labels={isMaths ? ['Method','Accuracy','Comms'] : isPdhpe ? ['Compare','Understand','Comms'] : undefined} />
                       </div>
                     )}
+                    {/* ── How it is marked ── */}
+                    {/* ⚠️ Sits under the scores it explains. On the Responses tab it was answering a
+                        question the teacher had already stopped asking two screens earlier. */}
+                    <div style={{ borderRadius:'14px', border:'1px solid #E2E6DF', background:'#fff', overflow:'hidden', marginBottom:'0.75rem' }}>
+                      <button onClick={() => setMarkingCardOpen(o=>!o)} aria-expanded={markingCardOpen}
+                        style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'1rem', padding:'1rem 1.25rem', background:'#fff', border:'none', cursor:'pointer', textAlign:'left', font:'inherit' }}>
+                        <span>
+                          <span style={{ display:'block', fontWeight:700, fontSize:'0.95rem', color:'#0A2F1F' }}>How these scores are worked out</span>
+                          <span style={{ display:'block', fontSize:'0.82rem', color:'#6B736D', marginTop:'0.15rem' }}>What each of the three marks is looking for</span>
+                        </span>
+                        <span style={{ fontSize:'0.85rem', fontWeight:600, color:'#1A5238', whiteSpace:'nowrap' }}>{markingCardOpen ? 'Hide' : 'Show'}</span>
+                      </button>
+                      {markingCardOpen && (
+                        <div style={{ borderTop:'1px solid #EEF1EC' }}>
+                          {(isMaths ? [
+                            {title:'Method',desc:'Whether students show their mathematical working.',items:['Numbers, operators and equations used','Step-by-step working visible in the response'],note:'A clear, logical working chain scores highest.'},
+                            {title:'Accuracy',desc:'Whether the numbers, units and answer are correct.',items:['Numbers and measurements present','Correct answer with appropriate units'],note:'A correct key answer raises the score.'},
+                            {title:'Communication',desc:'How clearly the mathematics is expressed.',items:['Structured response with labels or steps','Mathematical vocabulary used appropriately'],note:'Precise, well-structured language scores highest.'},
+                          ] : isPdhpe ? [
+                            {title:'Physical observation',desc:'Whether a relevant physical or health-related behaviour was identified.',items:['Named a physical action or social behaviour','Connected the observation to the body or to health'],note:'A specific observation with correct terminology scores highest.'},
+                            {title:'Health concepts',desc:'How PDHPE knowledge is applied to what was observed.',items:['Named a body system, hormone or health concept','Explained a physiological or mental health connection'],note:'Accurate, in-depth use of PDHPE frameworks scores highest.'},
+                            {title:'Communication',desc:'Clarity, and use of PDHPE language.',items:['Full sentences with PDHPE vocabulary','Explanatory language: because, therefore, which means'],note:'Structured, precise language throughout scores highest.'},
+                          ] : [
+                            {title:'Behaviour',desc:'What the student noticed at the exhibit.',items:['Identifying what the animal is doing','Recognising behaviours: feeding, resting, interacting'],note:'Clear, accurate observations score highest.'},
+                            {title:'Detail',desc:'How much understanding the response shows.',items:['A clear observation or a relevant concept','A simple explanation, or a link to the behaviour'],note:'Students do not need every element to earn marks.'},
+                            {title:'Writing',desc:'How clearly the idea is communicated.',items:['Full sentences, appropriate terminology','Clear expression of ideas'],note:'Well-structured, scientific language scores highest.'},
+                          ]).map((d, i) => (
+                            <div key={d.title} style={{ padding:'1.1rem 1.25rem', borderTop: i === 0 ? 'none' : '1px solid #EEF1EC' }}>
+                              <p style={{ fontWeight:700, fontSize:'0.9rem', color:'#14231B', margin:'0 0 0.2rem' }}>{d.title}</p>
+                              <p style={{ fontSize:'0.84rem', color:'#5B645E', margin:'0 0 0.5rem', lineHeight:1.55 }}>{d.desc}</p>
+                              <ul style={{ margin:'0 0 0.5rem', paddingLeft:'1.1rem', fontSize:'0.82rem', color:'#5B645E', lineHeight:1.7 }}>{d.items.map(it=><li key={it}>{it}</li>)}</ul>
+                              <p style={{ fontSize:'0.8rem', color:'#8A928C', margin:0 }}>{d.note}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    </>}
                     {/* ── Student table (day mode) ── */}
-                    {(
-                      <div style={{ background:'var(--t-chalk)', borderRadius:'var(--t-r-lg)', boxShadow:'var(--t-shadow-sm)', overflow:'hidden', border:'1px solid var(--t-stone)', marginBottom:'1rem' }}>
-                        <div style={{ display:'grid', gridTemplateColumns:'1.4fr 0.6fr 0.6fr 0.6fr 0.85fr 1.4fr 0.75fr 1.1fr', background:'var(--t-forest)', padding:'0.6rem 1rem' }}>
-                          {['Student','Points','Badges','Quiz %','Observations','Conservation Statement','Status','Actions'].map(h => (
-                            <div key={h} style={{ color:'rgba(255,255,255,0.8)', fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em' }}>{h}</div>
+                    {/* ⚠️ ONE grid definition, shared by the head and every row (CD_COLS). It used to be
+                        written out twice as fr tracks, and an fr track floors at its content: the one
+                        student with a "New device" button widened that row's last column and pushed
+                        every other cell in THAT ROW out of line with the table. It read as a glitch. */}
+                    {onTab('students') && (
+                      <div className="cd-table">
+                        <div className="cd-row cd-thead" style={{ gridTemplateColumns: CD_COLS }}>
+                          {['Student','Points','Badges','Quiz','Observations','Conservation','Status',''].map((h,i) => (
+                            <div key={h || `a${i}`} className="cd-th" style={i === 7 ? { textAlign:'right' } : undefined}>{h}</div>
                           ))}
                         </div>
                         {students.length === 0 ? (
-                          <div style={{ padding:'2rem 1rem', textAlign:'center' }}><p style={{ color:'#999', fontSize:'0.85rem', fontStyle:'italic' }}>No students have submitted yet.</p></div>
-                        ) : students.map((s,i) => {
+                          <div style={{ padding:'2.5rem 1rem', textAlign:'center' }}><p style={{ color:'#8A928C', fontSize:'0.88rem' }}>No students have joined this class yet.</p></div>
+                        ) : students.map((s) => {
                           const badgeCount   = Array.isArray(s.badges) ? new Set(s.badges.map(b=>b.animalId).filter(Boolean)).size : 0;
                           const hasObs       = (s.badges||[]).some(b=>b.observation);
                           const { qc: sQCorrect, qt: sQTotal } = (s.badges||[]).reduce((acc, b) => {
                             (b.quizResults||[]).filter(qr => !qr.missionType || qr.missionType === 'knowledge').forEach(qr => { acc.qt++; if (qr.correctOnFirstAttempt === true) acc.qc++; });
                             return acc;
                           }, { qc: 0, qt: 0 });
-                          const studentQuizPct = sQTotal > 0 ? `${Math.round(sQCorrect / sQTotal * 100)}%` : ' - ';
+                          const studentQuizPct = sQTotal > 0 ? `${Math.round(sQCorrect / sQTotal * 100)}%` : null;
                           const busy = studentActionBusy[s.id];
+                          const done = s.status === 'complete';
                           return (
-                            <div key={s.name} style={{ display:'grid', gridTemplateColumns:'1.4fr 0.6fr 0.6fr 0.6fr 0.85fr 1.4fr 0.75fr 1.1fr', padding:'0.7rem 1rem', borderTop:'1px solid var(--t-stone)', alignItems:'center', background: i%2===0 ? 'var(--t-chalk)' : 'var(--t-parchment)' }}>
-                              <div style={{ display:'flex', alignItems:'center', gap:'0.55rem' }}>
-                                <div style={{ width:'28px', height:'28px', borderRadius:'50%', background: s.completed ? 'linear-gradient(135deg,var(--t-mid),var(--t-eucalyptus))' : 'linear-gradient(135deg,#aaa,#ccc)', display:'flex', alignItems:'center', justifyContent:'center', color:'white', fontSize:'0.72rem', fontWeight:700, flexShrink:0 }}>{s.name.charAt(0).toUpperCase()}</div>
-                                <span style={{ fontWeight:600, color:'var(--t-deep)', fontSize:'0.88rem' }}>{s.name}</span>
+                            <div key={s.name} className="cd-row cd-tr" style={{ gridTemplateColumns: CD_COLS }}>
+                              <div className="cd-who">
+                                <div className={done ? 'cd-avatar is-done' : 'cd-avatar'}>{s.name.charAt(0).toUpperCase()}</div>
+                                <span className="cd-name">{s.name}</span>
                               </div>
-                              <div style={{ fontWeight:700, color:'var(--sunset-orange)', fontSize:'0.9rem' }}>{s.totalPoints||0}</div>
-                              <div style={{ fontWeight:600, color:'var(--t-mid)', fontSize:'0.9rem' }}>{badgeCount}</div>
-                              <div style={{ fontWeight:600, color:'var(--t-mid)', fontSize:'0.85rem' }}>{studentQuizPct}</div>
-                              <div>{hasObs ? <button onClick={()=>setObsModal(s)} style={{ background:'var(--t-deep)', color:'white', border:'none', padding:'0.25rem 0.6rem', borderRadius:'6px', fontSize:'0.72rem', fontWeight:600, cursor:'pointer' }}>View</button> : <span style={{ color:'#bbb', fontSize:'0.75rem' }}> - </span>}</div>
-                              <div>{s.conservationStatement ? <button onClick={()=>setConservationModal({name:s.name,text:s.conservationStatement})} style={{ background:'var(--t-deep)', color:'white', border:'none', padding:'0.25rem 0.6rem', borderRadius:'6px', fontSize:'0.72rem', fontWeight:600, cursor:'pointer' }}>View</button> : <span style={{ color:'#bbb', fontSize:'0.75rem' }}> - </span>}</div>
-                              <div style={{ display:'flex', alignItems:'center', gap:'0.35rem' }}>
-                                <div style={{ width:'8px', height:'8px', borderRadius:'50%', background: s.status==='complete'?'#16A34A':'#CA8A04' }} />
-                                <span style={{ fontSize:'0.72rem', fontWeight:700, color: s.status==='complete'?'#16A34A':'#CA8A04' }}>{s.status==='complete'?'Complete':'Incomplete'}</span>
-                              </div>
-                              <div style={{ display:'flex', alignItems:'center', gap:'0.35rem' }}>
-                                <button
-                                  onClick={() => resetStudent(s)}
-                                  disabled={!!busy}
-                                  title="Restore to animal list (keeps badges)"
-                                  style={{ display:'flex', alignItems:'center', gap:'0.25rem', background:'none', color:'#D97706', border:'1.5px solid #FCD34D', padding:'0.28rem 0.55rem', borderRadius:'7px', fontSize:'0.72rem', fontWeight:700, cursor:busy?'not-allowed':'pointer', opacity:busy?0.4:1, transition:'background 0.15s, color 0.15s', whiteSpace:'nowrap' }}
-                                  onMouseEnter={e=>{ if(!busy){e.currentTarget.style.background='#FFFBEB';e.currentTarget.style.color='#B45309';} }}
-                                  onMouseLeave={e=>{ e.currentTarget.style.background='none';e.currentTarget.style.color='#D97706'; }}>
-                                  {busy==='resetting' ? <span style={{ fontSize:'0.85rem' }}>…</span> : <><span style={{ fontSize:'0.9rem', lineHeight:1 }}>↺</span> <span>Restore</span></>}
+                              <div className="cd-num">{s.totalPoints||0}</div>
+                              <div className="cd-num">{badgeCount}</div>
+                              <div className="cd-num">{studentQuizPct || <span className="cd-nil">–</span>}</div>
+                              <div>{hasObs ? <button className="cd-view" onClick={()=>setObsModal(s)}>Read</button> : <span className="cd-nil">–</span>}</div>
+                              <div>{s.conservationStatement ? <button className="cd-view" onClick={()=>setConservationModal({name:s.name,text:s.conservationStatement})}>Read</button> : <span className="cd-nil">–</span>}</div>
+                              <div><span className={done ? 'cd-state is-done' : 'cd-state'}>{done ? 'Finished' : 'In progress'}</span></div>
+                              {/* Quiet until reached for. These are the two actions a teacher least
+                                  wants to hit by accident, and they were the loudest thing on the page. */}
+                              <div className="cd-acts">
+                                <button className="cd-act" onClick={() => resetStudent(s)} disabled={!!busy} title="Send this student back to the animal list. They keep their badges and writing." aria-label={`Restore ${s.name}`}>
+                                  {busy==='resetting' ? '…' : <><svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 8a5.5 5.5 0 109.3-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/><path d="M12.5 1v3.2H9.3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg> Restore</>}
                                 </button>
-                                {/* Only offered when the record is actually claimed — otherwise it
-                                    is a button that does nothing and invites a confused click. */}
                                 {s.deviceUid && (
-                                  <button
-                                    onClick={() => releaseStudentDevice(s)}
-                                    disabled={!!busy}
-                                    title="Let this student continue on a different device"
-                                    style={{ display:'flex', alignItems:'center', gap:'0.25rem', background:'none', color:'var(--t-mid)', border:'1.5px solid var(--t-stone)', padding:'0.28rem 0.55rem', borderRadius:'7px', fontSize:'0.72rem', fontWeight:700, cursor:busy?'not-allowed':'pointer', opacity:busy?0.4:1, transition:'background 0.15s', whiteSpace:'nowrap' }}
-                                    onMouseEnter={e=>{ if(!busy){e.currentTarget.style.background='var(--t-foam)';} }}
-                                    onMouseLeave={e=>{ e.currentTarget.style.background='none'; }}>
-                                    {busy==='releasing' ? <span style={{ fontSize:'0.85rem' }}>…</span> : <><span style={{ fontSize:'0.85rem', lineHeight:1 }}>📱</span> <span>New device</span></>}
+                                  <button className="cd-act" onClick={() => releaseStudentDevice(s)} disabled={!!busy} title="Let this student continue on a different device" aria-label={`Move ${s.name} to a new device`}>
+                                    {busy==='releasing' ? '…' : <><svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="4.5" y="1.5" width="7" height="13" rx="1.5" stroke="currentColor" strokeWidth="1.5"/><path d="M7 12.5h2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg> New device</>}
                                   </button>
                                 )}
-                                <button
-                                  onClick={() => deleteStudent(s)}
-                                  disabled={!!busy}
-                                  title="Delete student"
-                                  style={{ display:'flex', alignItems:'center', gap:'0.25rem', background:'none', color:'#DC2626', border:'1.5px solid #FECACA', padding:'0.28rem 0.55rem', borderRadius:'7px', fontSize:'0.72rem', fontWeight:700, cursor:busy?'not-allowed':'pointer', opacity:busy?0.4:1, transition:'background 0.15s, color 0.15s', whiteSpace:'nowrap' }}
-                                  onMouseEnter={e=>{ if(!busy){e.currentTarget.style.background='#FEF2F2';e.currentTarget.style.color='#B91C1C';} }}
-                                  onMouseLeave={e=>{ e.currentTarget.style.background='none';e.currentTarget.style.color='#DC2626'; }}>
-                                  {busy==='deleting' ? <span style={{ fontSize:'0.85rem' }}>…</span> : <><span style={{ fontSize:'0.85rem', lineHeight:1 }}>🗑</span> <span>Delete</span></>}
+                                <button className="cd-act is-danger" onClick={() => deleteStudent(s)} disabled={!!busy} title="Delete this student" aria-label={`Delete ${s.name}`}>
+                                  {busy==='deleting' ? '…' : <><svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 4h11M6 4V2.5h4V4M4 4l.7 9.5h6.6L12 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg> Delete</>}
                                 </button>
                               </div>
                             </div>
@@ -1632,64 +1905,26 @@ export default function ClassDetailsScreen() {
                       </div>
                     )}
 
-                    {/* ── How It's Marked (day mode) ── */}
-                    {!isZZ && (
-                      <div style={{ marginBottom:'1rem', borderRadius:'var(--t-r-md)', border:'1px solid var(--t-mist)', background:'var(--t-chalk)', overflow:'hidden' }}>
-                        <button onClick={() => setMarkingCardOpen(o=>!o)} style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0.55rem 1.2rem', background:'linear-gradient(135deg,var(--t-foam) 0%,#E4EFE8 100%)', border:'none', cursor:'pointer', textAlign:'left' }}>
-                          <span style={{ fontWeight:700, fontSize:'0.9rem', color:'var(--t-deep)' }}>How Student Responses Are Marked</span>
-                          <span style={{ fontSize:'1.1rem', color:'var(--t-mid)', transition:'transform 0.2s', display:'inline-block', transform:markingCardOpen?'rotate(180deg)':'rotate(0deg)' }}>▾</span>
-                        </button>
-                        {markingCardOpen && (
-                          <div style={{ padding:'1rem', display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))', gap:'0.75rem' }}>
-                            {(isMaths ? [
-                              {title:'Method',color:'#34A85A',bg:'#F4FBF7',desc:'Assesses whether students show their mathematical working.',items:['Numbers, operators, and equations used','Step-by-step working visible in response'],note:'Higher: clear, logical working chain'},
-                              {title:'Accuracy',color:'#4A90D9',bg:'#F4F7FB',desc:'Assesses correctness of numbers, units, and answers.',items:['Numbers and measurements present','Correct answer included with appropriate units'],note:'Correct key answer detected = score boost'},
-                              {title:'Communication',color:'#E8894A',bg:'#FDF8F4',desc:'Assesses clarity of mathematical expression.',items:['Structured response with labels or steps','Mathematical vocabulary used appropriately'],note:'Higher: well-structured, precise maths language'},
-                            ] : isPdhpe ? [
-                              {title:'Physical Obs',color:'#DC2626',bg:'#FEF2F2',desc:'Assesses whether students identified a relevant physical or health-related behaviour.',items:['Named a physical action or social behaviour','Connected observation to the body or health'],note:'Higher: specific PDHPE-relevant observation with correct terminology'},
-                              {title:'Health Concepts',color:'#7C3AED',bg:'#F5F3FF',desc:'Assesses application of PDHPE knowledge to what they observed.',items:['Named a body system, hormone, or health concept','Explained a physiological or mental health connection'],note:'Higher: accurate, in-depth application of PDHPE frameworks'},
-                              {title:'Communication',color:'#059669',bg:'#F0FDF4',desc:'Assesses clarity and use of PDHPE language.',items:['Full sentences with PDHPE vocabulary','Explanatory language: because, therefore, which means'],note:'Higher: structured, precise PDHPE language throughout'},
-                            ] : [
-                              {title:'Behaviour',color:'#34A85A',bg:'#F4FBF7',desc:'Assesses what students observe at the exhibit.',items:['Identifying what the animal is doing','Recognising behaviours (feeding, resting, interacting)'],note:'Higher: clear, accurate observations'},
-                              {title:'Detail',color:'#4A90D9',bg:'#F4F7FB',desc:'Assesses level of understanding shown.',items:['A clear observation or relevant concept','A simple explanation or link to behaviour'],note:'Students do NOT need all elements for marks'},
-                              {title:'Writing',color:'#E8894A',bg:'#FDF8F4',desc:'Assesses clarity of communication.',items:['Full sentences, appropriate terminology','Clear expression of ideas'],note:'Higher: well-structured, scientific language'},
-                            ]).map(d => (
-                              <div key={d.title} style={{ background:d.bg, borderRadius:'var(--t-r-sm)', padding:'0.85rem 1rem', borderLeft:`4px solid ${d.color}` }}>
-                                <p style={{ fontWeight:700, fontSize:'0.88rem', color:'var(--t-deep)', marginBottom:'0.4rem' }}>{d.title}</p>
-                                <p style={{ fontSize:'0.78rem', color:'#555', marginBottom:'0.4rem', lineHeight:1.6 }}>{d.desc}</p>
-                                <ul style={{ margin:'0 0 0.4rem', paddingLeft:'1rem', fontSize:'0.76rem', color:'#555', lineHeight:1.8 }}>{d.items.map(i=><li key={i}>{i}</li>)}</ul>
-                                <p style={{ fontSize:'0.74rem', fontWeight:600, color:d.color, margin:0 }}>{d.note}</p>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
-
                     {/* Teaching Takeaways */}
-                    {obsCnt > 0 && (
+                    {onTab('responses') && obsCnt > 0 && (
                       <>
-                        <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', marginBottom:'0.75rem', paddingTop:'0.25rem' }}>
-                          <div style={{ flex:1, height:'2px', background:'linear-gradient(90deg,var(--t-eucalyptus),transparent)', borderRadius:'2px' }} />
-                          <p style={{ fontSize:'0.65rem', fontWeight:800, color:'var(--t-mid)', textTransform:'uppercase', letterSpacing:'0.1em', margin:0, whiteSpace:'nowrap' }}>Teaching Takeaways</p>
-                          <div style={{ flex:1, height:'2px', background:'linear-gradient(270deg,var(--t-eucalyptus),transparent)', borderRadius:'2px' }} />
-                        </div>
+                        <h3 className="cd-h3" style={{ marginTop:'1.75rem' }}>Teaching takeaways</h3>
                         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.6rem', marginBottom:'0.75rem' }}>
                           <div style={{ background:'var(--t-success-bg)', border:'1px solid #BBF7D0', borderRadius:'var(--t-r-md)', padding:'0.9rem 1rem' }}>
                             <p style={{ fontSize:'0.65rem', fontWeight:700, color:'#15803D', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:'0.3rem' }}>Strength</p>
-                            <p style={{ fontSize:'0.8rem', fontWeight:700, color:'#14532D', margin:'0 0 0.2rem' }}>{strongest.icon} {strongest.label} ({strongest.avg}/5)</p>
+                            <p style={{ fontSize:'0.8rem', fontWeight:700, color:'#14532D', margin:'0 0 0.2rem' }}>{strongest.label} ({strongest.avg}/5)</p>
                             <p style={{ fontSize:'0.72rem', color:'#166534', margin:0, lineHeight:1.4 }}>Students perform well at {isMaths ? (strongest.key === 'behaviour' ? 'showing clear working steps' : strongest.key === 'detail' ? 'including correct numbers and units' : 'structuring responses with maths vocabulary') : isPdhpe ? (strongest.key === 'behaviour' ? 'identifying physical and health-related behaviours' : strongest.key === 'detail' ? 'applying PDHPE concepts and terminology' : 'communicating ideas clearly using PDHPE language') : (strongest.key === 'behaviour' ? 'identifying what animals do' : strongest.key === 'detail' ? 'using supporting ideas and evidence' : 'constructing clear sentences')}.</p>
                           </div>
                           <div style={{ background:'var(--t-warning-bg)', border:'1px solid #FED7AA', borderRadius:'var(--t-r-md)', padding:'0.9rem 1rem' }}>
                             <p style={{ fontSize:'0.65rem', fontWeight:700, color:'#C2410C', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:'0.3rem' }}>Focus Area</p>
-                            <p style={{ fontSize:'0.8rem', fontWeight:700, color:'#7C2D12', margin:'0 0 0.2rem' }}>{weakest.icon} {weakest.label} ({weakest.avg}/5)</p>
+                            <p style={{ fontSize:'0.8rem', fontWeight:700, color:'#7C2D12', margin:'0 0 0.2rem' }}>{weakest.label} ({weakest.avg}/5)</p>
                             <p style={{ fontSize:'0.72rem', color:'#9A3412', margin:0, lineHeight:1.4 }}>Students need to improve {isMaths ? (weakest.key === 'behaviour' ? 'showing clear working steps' : weakest.key === 'detail' ? 'including correct numbers and units' : 'structuring responses with maths vocabulary') : isPdhpe ? (weakest.key === 'behaviour' ? 'identifying physical and health-related behaviours' : weakest.key === 'detail' ? 'applying PDHPE concepts and terminology' : 'communicating ideas using PDHPE language') : (weakest.key === 'behaviour' ? 'identifying what animals do' : weakest.key === 'detail' ? 'using supporting ideas and evidence' : 'constructing clear sentences')}.</p>
                           </div>
                         </div>
-                        <div style={{ background:'var(--t-info-bg)', border:'1px solid #BFDBFE', borderRadius:'var(--t-r-md)', padding:'0.95rem 1.15rem', marginBottom:'0.75rem' }}>
-                          <p style={{ fontSize:'0.65rem', fontWeight:700, color:'#1D4ED8', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:'0.3rem' }}>Suggested Next Step</p>
-                          <p style={{ fontSize:'0.75rem', color:'#1E3A5F', margin:'0 0 0.3rem', lineHeight:1.5, fontStyle:'italic' }}>{stagePrefix}</p>
-                          <p style={{ fontSize:'0.78rem', color:'#1E40AF', fontWeight:600, margin:0, lineHeight:1.5 }}>{actions[weakest.key]}</p>
+                        <div style={{ background:'#fff', border:'1px solid #E2E6DF', borderRadius:'14px', padding:'1.15rem 1.25rem', marginBottom:'0.75rem' }}>
+                          <p style={{ fontSize:'0.68rem', fontWeight:700, color:'#6B736D', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:'0.4rem' }}>Suggested next step</p>
+                          <p style={{ fontSize:'0.82rem', color:'#5B645E', margin:'0 0 0.35rem', lineHeight:1.55 }}>{stagePrefix}</p>
+                          <p style={{ fontSize:'0.88rem', color:'#14231B', fontWeight:600, margin:0, lineHeight:1.55 }}>{actions[weakest.key]}</p>
                         </div>
 
                         {/* Domain Averages */}
@@ -1698,11 +1933,11 @@ export default function ClassDetailsScreen() {
                           {domainList.map(d => (
                             <div key={d.key} style={{ marginBottom:'0.6rem' }}>
                               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', fontSize:'0.82rem', marginBottom:'0.22rem' }}>
-                                <span style={{ color:'var(--t-deep)', fontWeight:500 }}>{d.icon} {d.label}</span>
-                                <span style={{ fontWeight:700, color:d.color }}>{d.avg}/5</span>
+                                <span style={{ color:'#14231B', fontWeight:500 }}>{d.label}</span>
+                                <span style={{ fontWeight:700, color:'#14231B', fontVariantNumeric:'tabular-nums' }}>{d.avg}/5</span>
                               </div>
                               <div style={{ height:'6px', background:'#EAEAEA', borderRadius:'3px', overflow:'hidden' }}>
-                                <div style={{ height:'100%', width:`${(d.avg/5)*100}%`, background:d.color, borderRadius:'3px', transition:'width 0.5s ease' }} />
+                                <div style={{ height:'100%', width:`${(d.avg/5)*100}%`, background:'#2E7D55', borderRadius:'3px', transition:'width 0.5s ease' }} />
                               </div>
                             </div>
                           ))}
@@ -1737,7 +1972,7 @@ export default function ClassDetailsScreen() {
               })()}
 
               {/* ── ZooSnooz student table ── */}
-              {isZZ && (
+              {onTab('students') && isZZ && (
                 <div style={{ background:'linear-gradient(160deg,#020D06 0%,#040F08 100%)', borderRadius:'var(--t-r-lg)', border:'1px solid rgba(46,125,85,0.3)', overflow:'hidden', marginBottom:'1.5rem' }}>
                   <div style={{ padding:'0.75rem 1rem', background:'linear-gradient(135deg,#071E14,#0A2F1F)', borderBottom:'1px solid rgba(46,125,85,0.25)', display:'flex', alignItems:'center', gap:'0.65rem' }}>
                     <span>🌙</span>
@@ -1796,7 +2031,7 @@ export default function ClassDetailsScreen() {
               )}
 
               {/* ── Student Groups (day mode) ── */}
-              {!isZZ && students.length > 0 && obsCnt > 0 && (() => {
+              {onTab('students') && !isZZ && students.length > 0 && obsCnt > 0 && (() => {
                 const studentStats = students.map(s => {
                   let tb=0,td=0,tw=0,n=0;
                   (s.badges||[]).forEach(b => { const obs=b.observationScore; if(!obs||typeof obs!=='object') return; tb+=obs.behaviour||0; td+=obs.detail||0; tw+=obs.writing||0; n++; });
@@ -1843,7 +2078,7 @@ export default function ClassDetailsScreen() {
               })()}
 
               {/* ── Student Documentaries ── */}
-              {isZZ && students.some(s=>s.zzDocumentaryURL) && (
+              {onTab('students') && isZZ && students.some(s=>s.zzDocumentaryURL) && (
                 <div style={{marginBottom:'1.5rem'}}>
                   <h3 style={{fontSize:'0.95rem',fontWeight:700,color:'#D4EDE0',marginBottom:'0.75rem'}}>🎬 Student Documentaries</h3>
                   <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))',gap:'0.75rem'}}>
@@ -1861,7 +2096,7 @@ export default function ClassDetailsScreen() {
               )}
 
               {/* ── MCQ Question Analysis (day mode) ── */}
-              {!isZZ && (() => {
+              {onTab('responses') && !isZZ && (() => {
                 const mcqByAnimal = {};
                 students.forEach(student => {
                   const seenAnimals = new Set();
