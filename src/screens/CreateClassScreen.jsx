@@ -7,6 +7,163 @@ import { openTeacherInfoSheet } from '../utils/teacherInfoSheet';
 import { WD_OUTCOMES, WD_OUTCOMES_NOTE } from '../modes/wildest-dreams/content';
 import { openWildestDreamsInfoSheet } from '../modes/wildest-dreams/infoSheet';
 
+// ⚠️ Scoped stylesheet pattern, same as the dashboard and the class screen.
+// 🚫 NO BACKTICKS ANYWHERE INSIDE THIS STRING. It is a template literal and one backtick in a
+//    comment ends it; the build has failed on exactly that before.
+const CC_CSS = `
+.cc-root { background: #F4F6F2; }
+.cc-wrap { max-width: 760px; margin: 0 auto; padding-bottom: 3rem; }
+.cc-head { margin-bottom: 1.75rem; }
+.cc-title { margin: 0 0 0.35rem; font-size: clamp(1.6rem, 3vw, 2.1rem); line-height: 1.1; color: #0A2F1F; letter-spacing: -0.01em; }
+.cc-lede { margin: 0; font-size: 0.92rem; color: #6B736D; line-height: 1.55; }
+
+.cc-step { background: #fff; border: 1px solid #E2E6DF; border-radius: 20px; padding: 1.5rem 1.6rem; margin-bottom: 1rem; }
+.cc-step-n { margin: 0 0 0.15rem; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #8A9490; }
+.cc-h3 { margin: 0 0 1.1rem; font-size: 1.18rem; font-weight: 700; color: #0A2F1F; letter-spacing: -0.015em; }
+
+/* The programme decides everything downstream, so it is five cards rather than one line of a
+   dropdown. It used to be the smallest control on the screen. */
+.cc-progs { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; }
+.cc-prog {
+  position: relative; appearance: none; font: inherit; cursor: pointer; text-align: left;
+  display: flex; flex-direction: column; gap: 0.3rem;
+  padding: 1rem 1.1rem 1.05rem; border-radius: 16px;
+  background: #fff; border: 1.5px solid #E2E6DF;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.cc-prog:hover:not(:disabled) { border-color: #BFCDC4; }
+.cc-prog.is-on { border-color: #1A5238; box-shadow: inset 0 0 0 1px #1A5238; }
+.cc-prog:disabled { opacity: 0.55; cursor: not-allowed; }
+.cc-prog:focus-visible { outline: 3px solid #E0A526; outline-offset: 2px; }
+.cc-prog-name { display: flex; align-items: center; gap: 0.5rem; font-size: 1rem; font-weight: 700; color: #14231B; }
+.cc-prog-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--p, #2E7D55); flex-shrink: 0; }
+.cc-prog-desc { font-size: 0.84rem; color: #5B645E; line-height: 1.5; }
+.cc-prog-meta { font-size: 0.76rem; color: #8A9490; margin-top: 0.1rem; }
+.cc-prog-tick { position: absolute; top: 0.85rem; right: 0.95rem; width: 18px; height: 18px; color: #1A5238; }
+.cc-soon { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #8A9490; background: #F1F4F0; border-radius: 999px; padding: 0.1rem 0.45rem; }
+
+.cc-field { margin-bottom: 1.2rem; }
+.cc-field:last-child { margin-bottom: 0; }
+.cc-label { display: block; font-size: 0.86rem; font-weight: 700; color: #14231B; margin-bottom: 0.45rem; }
+.cc-hint { margin: 0.4rem 0 0; font-size: 0.8rem; color: #8A9490; line-height: 1.5; }
+.cc-input {
+  width: 100%; font: inherit; font-size: 0.95rem; color: #14231B;
+  padding: 0.75rem 0.9rem; border-radius: 12px; border: 1.5px solid #DDE3DC; background: #fff;
+  transition: border-color 0.15s;
+}
+.cc-input::placeholder { color: #A3ADA6; }
+.cc-input:focus { outline: none; border-color: #1A5238; }
+
+/* Stage and subject are short, closed lists. A segmented row shows every option at once, which
+   a select cannot: it asks the teacher to open it, read it and pick blind. */
+.cc-seg { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.cc-seg button {
+  appearance: none; font: inherit; cursor: pointer;
+  font-size: 0.88rem; font-weight: 600; color: #5B645E;
+  padding: 0.55rem 0.9rem; border-radius: 999px;
+  background: #fff; border: 1.5px solid #DDE3DC;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.cc-seg button:hover { background: #F1F5F1; color: #14231B; }
+.cc-seg button.is-on { background: #1A5238; border-color: #1A5238; color: #fff; }
+.cc-seg button:focus-visible { outline: 3px solid #E0A526; outline-offset: 2px; }
+.cc-seg small { display: block; font-size: 0.72rem; font-weight: 500; opacity: 0.75; }
+
+.cc-school { display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; font-size: 0.95rem; color: #14231B; font-weight: 600; }
+.cc-school span { font-size: 0.8rem; color: #8A9490; font-weight: 500; }
+.cc-school.is-missing { color: #B91C1C; font-weight: 600; font-size: 0.9rem; }
+
+.cc-consent { border-color: #DDE3DC; }
+.cc-check { display: flex; gap: 0.75rem; align-items: flex-start; cursor: pointer; }
+.cc-check input { margin-top: 3px; width: 17px; height: 17px; accent-color: #1A5238; flex-shrink: 0; }
+.cc-check span { font-size: 0.9rem; color: #3C4A41; line-height: 1.6; }
+.cc-letter { display: inline-flex; align-items: center; gap: 0.4rem; margin-top: 0.9rem; font-size: 0.86rem; font-weight: 700; color: #1A5238; }
+.cc-letter:hover { text-decoration: underline; }
+
+/* The create row stays with the form rather than floating: the summary is the last check. */
+.cc-create { display: flex; align-items: center; justify-content: space-between; gap: 1.25rem; flex-wrap: wrap; background: #fff; border: 1px solid #E2E6DF; border-radius: 20px; padding: 1.25rem 1.6rem; }
+.cc-summary { font-size: 0.88rem; color: #5B645E; line-height: 1.5; }
+.cc-summary strong { color: #14231B; font-weight: 700; }
+.cc-go {
+  appearance: none; font: inherit; font-size: 0.95rem; font-weight: 700; cursor: pointer;
+  padding: 0.85rem 1.6rem; border-radius: 12px; border: 0;
+  background: #1A5238; color: #fff; white-space: nowrap;
+  transition: background 0.15s;
+}
+.cc-go:hover:not(:disabled) { background: #14422D; }
+.cc-go:disabled { background: #C7D0C9; cursor: not-allowed; }
+.cc-go:focus-visible { outline: 3px solid #E0A526; outline-offset: 2px; }
+.cc-err { margin: 0 0 0.9rem; font-size: 0.86rem; font-weight: 600; color: #B91C1C; }
+
+.cc-out { background: #fff; border: 1px solid #E2E6DF; border-radius: 20px; padding: 1.4rem 1.6rem; margin-top: 1rem; }
+.cc-out-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.9rem; }
+.cc-out-title { margin: 0; font-size: 1.05rem; font-weight: 700; color: #0A2F1F; }
+.cc-out-syl { font-size: 0.78rem; color: #8A9490; }
+.cc-out-row { display: flex; gap: 0.7rem; align-items: flex-start; padding: 0.6rem 0; border-top: 1px solid #EEF1EC; }
+.cc-out-row:first-of-type { border-top: 0; padding-top: 0; }
+.cc-out-code { flex-shrink: 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.72rem; font-weight: 700; color: #1A5238; background: #EAF2EC; border-radius: 6px; padding: 0.2rem 0.45rem; }
+.cc-out-desc { font-size: 0.86rem; color: #5B645E; line-height: 1.5; }
+.cc-out-note { margin: 0.9rem 0 0; padding-top: 0.8rem; border-top: 1px solid #EEF1EC; font-size: 0.82rem; color: #6B736D; line-height: 1.55; }
+.cc-sheet {
+  appearance: none; font: inherit; font-size: 0.86rem; font-weight: 700; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 0.45rem; margin-top: 1rem;
+  padding: 0.6rem 1.1rem; border-radius: 999px; background: #fff; color: #1A5238; border: 1px solid #DDE3DC;
+}
+.cc-sheet:hover { background: #F1F5F1; border-color: #1A5238; }
+
+.cc-back { appearance: none; font: inherit; font-size: 0.86rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.55rem 1.05rem; border-radius: 999px; background: #fff; color: #1A5238; border: 1px solid #DDE3DC; }
+.cc-back:hover { background: #F1F5F1; border-color: #1A5238; }
+
+@media (max-width: 720px) {
+  .cc-progs { grid-template-columns: 1fr; }
+  .cc-step, .cc-create, .cc-out { padding: 1.2rem 1.1rem; border-radius: 16px; }
+  .cc-create { flex-direction: column; align-items: stretch; }
+  .cc-go { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cc-prog, .cc-seg button, .cc-go, .cc-input { transition: none; }
+}
+`;
+
+/* ⚠️ Every line of copy here is read out of what the mode actually does. The old screen told
+   teachers ZooYard was "three habitats" ending in "one real measurement": it has had EIGHT
+   since 2026-09-29 and the measurement step was removed on 2026-10-01. A screen that sells a
+   programme is as much a description of the product as a parent letter is. */
+const PROGRAMMES = [
+  { value:'taronga-sydney', name:'Tracka Trek', color:'#2E7D55',
+    desc:'The day excursion. Students walk the zoo, observe animals, answer questions and earn badges for their school.',
+    meta:'Taronga Sydney · pick a subject below' },
+  { value:'zoosnooz-sydney', name:'ZooSnooz', color:'#7FA7E0',
+    desc:'The night programme. Five animals, and the clips students film stitch into a documentary they keep.',
+    meta:'Taronga Sydney · evening · filming' },
+  { value:'school', name:'ZooYard', color:'#6E8B2A',
+    desc:'Runs in your own schoolyard. Eight habitats, each ending in something the class builds or does for local wildlife.',
+    meta:'At your school · no GPS needed · Science' },
+  { value:'evolve-sydney', name:'Evolve', color:'#C08A1E',
+    desc:'Stage 6 twilight. Five chapters of one story about leaving school, written and filmed into a short film they keep.',
+    meta:'Taronga Sydney · Stage 6 · Life Ready · filming' },
+  { value:'wildest-dreams-sydney', name:'Wildest Dreams', color:'#B4536E',
+    desc:'Video first, built for support units. Students choose what they want to show about each animal and film it.',
+    meta:'Taronga Sydney · no marks or scores · filming' },
+  { value:'dubbo', name:'Taronga Dubbo', color:'#9AA398', soon:true,
+    desc:'Not bookable through Tracka yet.', meta:'' },
+];
+
+const STAGES = [
+  { v:1, label:'Stage 1', years:'K–2' },
+  { v:2, label:'Stage 2', years:'3–4' },
+  { v:3, label:'Stage 3', years:'5–6' },
+  { v:4, label:'Stage 4', years:'7–8' },
+  { v:5, label:'Stage 5', years:'9–10' },
+];
+
+const SUBJECTS = [
+  { v:'science', label:'Science' },
+  { v:'maths',   label:'Mathematics' },
+  { v:'english', label:'English' },
+  { v:'pdhpe',   label:'PDHPE' },
+];
+
 function generateClassCode() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   let code = '';
@@ -112,7 +269,6 @@ const OUTCOMES_2027 = {
 
 const NSW_OUTCOMES = new Date().getFullYear() >= SYLLABUS_2027_FROM ? OUTCOMES_2027 : OUTCOMES_PRE_2027;
 
-const inputStyle = { width:'100%', padding:'0.65rem 0.9rem', borderRadius:'var(--t-r-sm)', border:'1.5px solid var(--t-stone)', fontSize:'0.88rem', fontFamily:'DM Sans, sans-serif', marginBottom:'0.85rem', boxSizing:'border-box', background:'var(--t-parchment)', color:'var(--t-ink)', outline:'none', transition:'border-color 0.2s' };
 
 export default function CreateClassScreen() {
   const { setCurrentScreen, teacherEmail, teacher, authLoading, demoMode, teacherProfile } = useApp();
@@ -128,7 +284,6 @@ export default function CreateClassScreen() {
   const [newSubject,      setNewSubject]      = useState('science');
   const [zzConsentChecked, setZzConsentChecked] = useState(false);
   const [creatingClass,   setCreatingClass]   = useState(false);
-  const [classCreated,    setClassCreated]    = useState(false);
   const [createError,     setCreateError]     = useState('');
   const [showWwzModal,    setShowWwzModal]    = useState(false);
 
@@ -208,9 +363,7 @@ export default function CreateClassScreen() {
 
       setNewClassName(''); setZzConsentChecked(false);
       setNewLocation('taronga-sydney'); setNewSubject('science');
-      setClassCreated(true);
       setShowWwzModal(true);
-      setTimeout(() => setClassCreated(false), 3000);
     } catch (err) {
       console.error('Create class error:', err);
       setCreateError(err.message || 'Failed to create class. Please try again.');
@@ -226,17 +379,18 @@ export default function CreateClassScreen() {
   const subjectData  = NSW_OUTCOMES[displaySubject];
   const outcomes     = subjectData?.[newClassStage] || [];
   const syllabusName = subjectData?.syllabus?.[newClassStage] || '';
-  const subjectColors = {
-    science: { accent:'#2E7D55', bg:'#F0F7F0', border:'#C6E2C6' },
-    maths:   { accent:'#0369a1', bg:'#EFF6FF', border:'#BFDBFE' },
-    pdhpe:   { accent:'#7C3AED', bg:'#F5F3FF', border:'#DDD6FE' },
-    english: { accent:'#B45309', bg:'#FFFBEB', border:'#FDE68A' },
-  };
-  const sc = subjectColors[displaySubject] || subjectColors.science;
+
+  const prog = PROGRAMMES.find(p => p.value === newLocation) || PROGRAMMES[0];
+  const showSubject = !isZooSnooz && !isZooYard && !isEvolve && !isWildest;
+  const canCreate = !!newClassName.trim() && !!schoolName && !creatingClass && (!filmingMode || zzConsentChecked);
+  const stageLabel = isEvolve ? 'Stage 6' : `Stage ${newClassStage}`;
+  const subjectLabel = showSubject ? (SUBJECTS.find(x => x.v === newSubject)?.label || '') : '';
 
   return (
     <>
-    <div className="lms-page">
+    <div className="lms-page cc-root">
+      <style>{CC_CSS}</style>
+
       {/* Topbar */}
       <div className="lms-topbar">
         <div className="lms-topbar-brand">
@@ -248,199 +402,205 @@ export default function CreateClassScreen() {
             <p style={{ fontSize:'0.7rem', color:'var(--t-slate)', fontWeight:500, marginTop:'0.1rem' }}>Teacher Portal · {teacherEmail}</p>
           </div>
         </div>
-        <button onClick={() => setCurrentScreen('teacherDashboard')} style={{ display:'flex', alignItems:'center', gap:'0.4rem', padding:'0.5rem 1rem', borderRadius:'var(--t-r-sm)', border:'1.5px solid var(--t-stone)', background:'white', color:'var(--t-slate)', fontSize:'0.82rem', fontWeight:600, cursor:'pointer' }}>
-          ← Back to Dashboard
+        <button className="cc-back" onClick={() => setCurrentScreen('teacherDashboard')}>
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M13 8H3m0 0 4-4M3 8l4 4" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          Dashboard
         </button>
       </div>
 
-      {/* Main — no sidebar, centred single column */}
       <div className="lms-main" style={{ flex:1, overflowY:'auto' }}>
-          <div style={{ maxWidth:'720px', width:'100%', margin:'0 auto' }}>
-            <div style={{ marginBottom:'1.75rem' }}>
-              <h2 className="heading-display" style={{ fontSize:'clamp(1.4rem, 2.5vw, 1.8rem)', color:'var(--t-deep)', lineHeight:1.2, marginBottom:'0.25rem' }}>Create a New Class</h2>
-              <p style={{ color:'var(--t-slate)', fontSize:'0.85rem' }}>Students will join using the generated class code.</p>
+        <div className="cc-wrap">
+
+          <header className="cc-head">
+            <h2 className="heading-display cc-title">Create a class</h2>
+            <p className="cc-lede">It takes about a minute, and ends with a six character code your students type in on the day.</p>
+          </header>
+
+          {/* ── 1. Programme ── */}
+          <section className="cc-step">
+            <p className="cc-step-n">Step 1</p>
+            <h3 className="cc-h3">Which programme is this class doing?</h3>
+            <div className="cc-progs">
+              {PROGRAMMES.map(p => (
+                <button
+                  key={p.value}
+                  type="button"
+                  className={newLocation === p.value ? 'cc-prog is-on' : 'cc-prog'}
+                  style={{ '--p': p.color }}
+                  disabled={!!p.soon}
+                  aria-pressed={newLocation === p.value}
+                  onClick={() => setNewLocation(p.value)}
+                >
+                  {newLocation === p.value && (
+                    <svg className="cc-prog-tick" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="9" fill="currentColor"/><path d="m6 10.2 2.6 2.6L14 7.4" stroke="#fff" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  )}
+                  <span className="cc-prog-name">
+                    <span className="cc-prog-dot" />
+                    {p.name}
+                    {p.soon && <span className="cc-soon">Coming soon</span>}
+                  </span>
+                  <span className="cc-prog-desc">{p.desc}</span>
+                  {p.meta && <span className="cc-prog-meta">{p.meta}</span>}
+                </button>
+              ))}
+            </div>
+          </section>
+
+          {/* ── 2. The class ── */}
+          <section className="cc-step">
+            <p className="cc-step-n">Step 2</p>
+            <h3 className="cc-h3">Tell us about the class</h3>
+
+            <div className="cc-field">
+              <label className="cc-label" htmlFor="cc-name">Class name</label>
+              <input id="cc-name" className="cc-input" type="text" value={newClassName}
+                onChange={e => setNewClassName(e.target.value)}
+                placeholder="7A, Biology, Koala Crew" />
+              <p className="cc-hint">Only you and your students see this. It is what the class is called on your dashboard.</p>
             </div>
 
-            <div style={{ background:'white', borderRadius:'var(--t-r-lg)', padding:'1.75rem', boxShadow:'var(--t-shadow-sm)', border:'1px solid var(--t-stone)' }}>
-
-              {/* Location */}
-              <label style={{ display:'block', fontSize:'0.78rem', fontWeight:700, color:'var(--t-deep)', marginBottom:'0.3rem', textTransform:'uppercase', letterSpacing:'0.05em' }}>Location</label>
-              <select value={newLocation} onChange={e => setNewLocation(e.target.value)} style={{ ...inputStyle, appearance:'auto', cursor:'pointer' }}
-                onFocus={e => e.target.style.borderColor='var(--t-mid)'} onBlur={e => e.target.style.borderColor='var(--t-stone)'}>
-                <option value="taronga-sydney">Taronga Sydney — Zoo Visit</option>
-                <option value="zoosnooz-sydney">ZooSnooz — Taronga Sydney</option>
-                <option value="dubbo" disabled>Taronga Dubbo (Coming Soon)</option>
-                <option value="school">Your School — ZooYard</option>
-                <option value="evolve-sydney">Taronga Sydney — Evolve (Stage 6)</option>
-                <option value="wildest-dreams-sydney">Taronga Sydney — Wildest Dreams</option>
-              </select>
-
-              {isZooYard && (
-                <div style={{ background:'#f0f7f2', border:'1px solid #b6d9c3', borderRadius:'10px', padding:'0.9rem 1rem', marginBottom:'1rem' }}>
-                  <p style={{ margin:0, fontSize:'0.8rem', color:'#1a4a2a', lineHeight:1.6 }}>
-                    ZooYard runs entirely at school — no GPS, no zoo visit. At each of three habitats (bushland, rainforest, savannah) students observe, take one real measurement, then build something at school that addresses what they measured. Science only for now.
-                  </p>
+            {/* Evolve is Stage 6 by definition, and the list only runs to Stage 5, so it could
+                never have been set correctly from here. */}
+            {!isEvolve && (
+              <div className="cc-field">
+                <label className="cc-label">NSW stage</label>
+                <div className="cc-seg">
+                  {STAGES.map(st => (
+                    <button key={st.v} type="button" aria-pressed={newClassStage === st.v}
+                      className={newClassStage === st.v ? 'is-on' : undefined}
+                      onClick={() => setNewClassStage(st.v)}>
+                      {st.label}<small>{st.years}</small>
+                    </button>
+                  ))}
                 </div>
-              )}
-
-              {isEvolve && (
-                <div style={{ background:'#fdf5e8', border:'1px solid #e6c88a', borderRadius:'10px', padding:'0.9rem 1rem', marginBottom:'1rem' }}>
-                  <p style={{ margin:0, fontSize:'0.8rem', color:'#5b3d15', lineHeight:1.6 }}>
-                    Evolve is a Stage 6 twilight excursion supporting Life Ready. Students walk five chapters — lion, kangaroo, tiger, giraffe, koala — writing a reflection and filming a piece to camera at each, which stitch into one short film they keep. No points, badges or marks. Filming consent applies, same as ZooSnooz.
-                  </p>
-                </div>
-              )}
-
-              {/* Subject */}
-              {newLocation !== 'zoosnooz-sydney' && !isZooYard && !isEvolve && !isWildest && (
-                <>
-                  <label style={{ display:'block', fontSize:'0.78rem', fontWeight:700, color:'var(--t-deep)', marginBottom:'0.3rem', textTransform:'uppercase', letterSpacing:'0.05em' }}>Subject</label>
-                  <select value={newSubject} onChange={e => setNewSubject(e.target.value)} style={{ ...inputStyle, appearance:'auto', cursor:'pointer' }}
-                    onFocus={e => e.target.style.borderColor='var(--t-mid)'} onBlur={e => e.target.style.borderColor='var(--t-stone)'}>
-                    <option value="science">Science</option>
-                    <option value="maths">Mathematics</option>
-                    <option value="english">English</option>
-                    <option value="pdhpe">PDHPE</option>
-                    <option value="geography" disabled>Geography (Coming Soon)</option>
-                    <option value="ngara-nura" disabled>Ngara Nura (Coming Soon)</option>
-                    <option value="technology" disabled>Technology (Coming Soon)</option>
-                    <option value="visual-arts" disabled>Visual Arts (Coming Soon)</option>
-                  </select>
-                </>
-              )}
-
-              <label style={{ display:'block', fontSize:'0.78rem', fontWeight:700, color:'var(--t-deep)', marginBottom:'0.3rem', textTransform:'uppercase', letterSpacing:'0.05em' }}>School Name</label>
-              <div style={{ marginBottom:'0.85rem', padding:'0.65rem 0.9rem', borderRadius:'var(--t-r-sm)', border:'1.5px solid var(--t-mist)', background:'var(--t-chalk)', fontSize:'0.88rem', color:'var(--t-slate)' }}>
-                {schoolName
-                  ? <><span style={{ fontWeight:700, color:'var(--t-deep)' }}>{schoolName}</span><span style={{ color:'var(--t-ash)', fontSize:'0.78rem', marginLeft:'0.5rem' }}>· from your profile</span></>
-                  : <span style={{ color:'#ef4444' }}>No school set on your profile — go to Dashboard to set it.</span>
-                }
               </div>
+            )}
 
-              {/* Evolve is Stage 6 by definition, so it has no stage picker — and the list
-                  below only runs to Stage 5, so it could never have been set correctly. */}
-              {!isEvolve && (
-                <>
-                  <label style={{ display:'block', fontSize:'0.78rem', fontWeight:700, color:'var(--t-deep)', marginBottom:'0.3rem', textTransform:'uppercase', letterSpacing:'0.05em' }}>NSW Stage</label>
-                  <select value={newClassStage} onChange={e => setNewClassStage(Number(e.target.value))} style={{ ...inputStyle, appearance:'auto', cursor:'pointer' }}
-                    onFocus={e => e.target.style.borderColor='var(--t-mid)'} onBlur={e => e.target.style.borderColor='var(--t-stone)'}>
-                    <option value={1}>Stage 1 (K–2)</option>
-                    <option value={2}>Stage 2 (3–4)</option>
-                    <option value={3}>Stage 3 (5–6)</option>
-                    <option value={4}>Stage 4 (7–8)</option>
-                    <option value={5}>Stage 5 (9–10)</option>
-                  </select>
-                </>
-              )}
-
-              <label style={{ display:'block', fontSize:'0.78rem', fontWeight:700, color:'var(--t-deep)', marginBottom:'0.3rem', textTransform:'uppercase', letterSpacing:'0.05em' }}>Class Name</label>
-              <input type="text" value={newClassName} onChange={e => setNewClassName(e.target.value)} placeholder="e.g. 7A, Biology, Koala Crew"
-                style={inputStyle} onFocus={e => e.target.style.borderColor='var(--t-mid)'} onBlur={e => e.target.style.borderColor='var(--t-stone)'} />
-
-              {filmingMode && (
-                <div style={{ background:'#f0f7f2', border:'1px solid #b6d9c3', borderRadius:'10px', padding:'0.9rem 1rem', marginBottom:'1rem' }}>
-                  <label style={{ display:'flex', gap:'0.65rem', alignItems:'flex-start', cursor:'pointer' }}>
-                    <input type="checkbox" checked={zzConsentChecked} onChange={e => setZzConsentChecked(e.target.checked)}
-                      style={{ marginTop:'3px', accentColor:'#1B6B3A', width:'15px', height:'15px', flexShrink:0 }} />
-                    <span style={{ fontSize:'0.8rem', color:'#1a4a2a', lineHeight:1.6 }}>
-                      {/* ⚠️ FUTURE TENSE, DELIBERATELY. This read "consent ... has been obtained",
-                          which asks a teacher to attest to something they have usually not done
-                          yet at the point of creating the class — so it was either a lie or a
-                          reason to stop. Cameron, 2026-11-07: "putting it back on teacher".
-                          The obligation is now a commitment to obtain it, which is honest at
-                          this moment and still places the duty with the school.
-                          🚫 Do not turn this into a per-student consent flag. CLAUDE.md records
-                             that as a closed decision: filming consent lives with the school,
-                             both parent letters run an opt-out model, and a student who may not
-                             be filmed becomes the crew. */}
-                      I confirm that I will obtain appropriate consent for video filming from the
-                      families of all participating students, in accordance with my school&rsquo;s policies.
-                    </span>
-                  </label>
-                  {/* ⚠️ The letter is HTML, not a PDF, and that is the house pattern — every
-                      printable in this app is a self-contained page the browser prints or saves
-                      as a PDF. 🚫 Do not add a separate PDF copy: it would be a second version
-                      of the same letter to keep in step, and this one already went home to
-                      families with a claim that had to be corrected once.
-                      ⚠️ Same path ClassDetailsScreen opens for a ZooSnooz class, so there is one
-                      letter and one place to change it. */}
-                  <a href={filmingMode.letter} target="_blank" rel="noopener noreferrer"
-                    style={{ display:'inline-flex', alignItems:'center', gap:'0.4rem', marginTop:'0.6rem', marginLeft:'2rem',
-                      fontSize:'0.78rem', fontWeight:700, color:'#1B6B3A', textDecoration:'underline' }}>
-                    Parent information &amp; opt-out letter ↗
-                  </a>
-                  <div style={{ fontSize:'0.72rem', color:'#4a7a5a', lineHeight:1.5, marginTop:'0.3rem', marginLeft:'2rem' }}>
-                    Print it or save it as a PDF from your browser, and send it home before the excursion.
-                  </div>
+            {showSubject && (
+              <div className="cc-field">
+                <label className="cc-label">Subject</label>
+                <div className="cc-seg">
+                  {SUBJECTS.map(sub => (
+                    <button key={sub.v} type="button" aria-pressed={newSubject === sub.v}
+                      className={newSubject === sub.v ? 'is-on' : undefined}
+                      onClick={() => setNewSubject(sub.v)}>
+                      {sub.label}
+                    </button>
+                  ))}
                 </div>
-              )}
+                <p className="cc-hint">Sets the questions, the writing prompts and what the marking looks for. Geography, Ngara Nura, Technology and Visual Arts are still being written.</p>
+              </div>
+            )}
 
-              {createError && <p style={{ color:'var(--t-danger)', fontSize:'0.82rem', fontWeight:600, marginBottom:'0.75rem' }}>⚠ {createError}</p>}
+            {!showSubject && (
+              <div className="cc-field">
+                <label className="cc-label">Subject</label>
+                <p className="cc-hint" style={{ margin:0 }}>
+                  {isEvolve ? 'Evolve is Life Ready, Stage 6. Both are set for you.'
+                    : isZooYard ? 'ZooYard is Science. It is set for you.'
+                    : isWildest ? 'Wildest Dreams has no subject. The outcomes below follow the stage you picked.'
+                    : 'ZooSnooz has no subject. The night missions are the same for every class.'}
+                </p>
+              </div>
+            )}
 
-              <button onClick={createClass} disabled={!newClassName.trim() || !schoolName || creatingClass}
-                style={{ width:'100%', padding:'0.85rem', borderRadius:'var(--t-r-sm)', border:'none', background:(!newClassName.trim()||!schoolName||creatingClass)?'#CCC':'linear-gradient(135deg, var(--t-mid), var(--t-eucalyptus))', color:'white', fontSize:'0.95rem', fontWeight:700, cursor:(!newClassName.trim()||!schoolName||creatingClass)?'not-allowed':'pointer', letterSpacing:'0.04em', transition:'all 0.2s' }}>
-                {creatingClass ? 'Creating…' : '+ Create Class'}
-              </button>
-
-              {classCreated && <p style={{ marginTop:'0.6rem', fontSize:'0.85rem', color:'#2e7d32', fontWeight:600, textAlign:'center' }}>✓ Class created successfully!</p>}
-
-              {/* NSW Curriculum */}
-              {(displaySubject === 'science' || displaySubject === 'maths' || displaySubject === 'pdhpe' || displaySubject === 'english') && (
-                <div style={{ marginTop:'1.25rem', background:sc.bg, border:`1px solid ${sc.border}`, borderRadius:'var(--t-r-sm)', padding:'0.9rem 1rem' }}>
-                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'0.6rem' }}>
-                    <p style={{ fontSize:'0.72rem', fontWeight:800, color:sc.accent, textTransform:'uppercase', letterSpacing:'0.07em', margin:0 }}>NSW Curriculum — Stage {newClassStage}</p>
-                    <span style={{ fontSize:'0.65rem', color:'#888', fontStyle:'italic' }}>{syllabusName}</span>
-                  </div>
-                  <div style={{ display:'flex', flexDirection:'column', gap:'0.4rem' }}>
-                    {outcomes.map(({ code, desc }) => (
-                      <div key={code} style={{ display:'flex', gap:'0.6rem', alignItems:'flex-start' }}>
-                        <span style={{ flexShrink:0, background:sc.accent, color:'white', fontSize:'0.63rem', fontWeight:800, padding:'0.15rem 0.45rem', borderRadius:'4px', letterSpacing:'0.03em', marginTop:'0.1rem', fontFamily:'monospace' }}>{code}</span>
-                        <span style={{ fontSize:'0.78rem', color:'#444', lineHeight:1.45 }}>{desc}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <button onClick={() => openTeacherInfoSheet(displaySubject, newClassStage, outcomes)}
-                    style={{ marginTop:'0.75rem', display:'flex', alignItems:'center', gap:'0.5rem', background:'none', border:`1px solid ${sc.accent}`, color:sc.accent, fontSize:'0.75rem', fontWeight:700, padding:'0.4rem 0.85rem', borderRadius:'40px', cursor:'pointer', letterSpacing:'0.04em', width:'100%', justifyContent:'center' }}
-                    onMouseEnter={e => { e.currentTarget.style.background=sc.accent; e.currentTarget.style.color='white'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background='none'; e.currentTarget.style.color=sc.accent; }}>
-                    ↓ Teacher Information Sheet
-                  </button>
-                </div>
-              )}
-
-              {/* Wildest Dreams — its own panel, because the outcomes differ by pathway and the
-                  mode has no scoring, so there is no Teacher Information Sheet to offer. */}
-              {isWildest && wdOutcomes && (
-                <div style={{ marginTop:'1.25rem', background:'#F0F7F0', border:'1px solid #C6E2C6', borderRadius:'var(--t-r-sm)', padding:'0.9rem 1rem' }}>
-                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'0.5rem', marginBottom:'0.6rem', flexWrap:'wrap' }}>
-                    <p style={{ fontSize:'0.72rem', fontWeight:800, color:'#1A5238', textTransform:'uppercase', letterSpacing:'0.07em', margin:0 }}>
-                      {wdOutcomes.lifeSkills ? 'Life Skills' : 'NSW Curriculum'} — Stage {newClassStage}
-                    </p>
-                    <span style={{ fontSize:'0.65rem', color:'#888', fontStyle:'italic' }}>{wdOutcomes.syllabus}</span>
-                  </div>
-                  <div style={{ display:'flex', flexDirection:'column', gap:'0.4rem' }}>
-                    {wdOutcomes.outcomes.map(({ code, desc }) => (
-                      <div key={code} style={{ display:'flex', gap:'0.6rem', alignItems:'flex-start' }}>
-                        <span style={{ flexShrink:0, background:'#1A5238', color:'white', fontSize:'0.63rem', fontWeight:800, padding:'0.15rem 0.45rem', borderRadius:'4px', letterSpacing:'0.03em', marginTop:'0.1rem', fontFamily:'monospace' }}>{code}</span>
-                        <span style={{ fontSize:'0.78rem', color:'#444', lineHeight:1.45 }}>{desc}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <p style={{ fontSize:'0.7rem', color:'#5A6B5A', lineHeight:1.5, margin:'0.75rem 0 0', paddingTop:'0.65rem', borderTop:'1px solid #C6E2C6' }}>
-                    {wdOutcomes.lifeSkills ? WD_OUTCOMES_NOTE.secondary : WD_OUTCOMES_NOTE.primary}
-                  </p>
-                  <button onClick={() => openWildestDreamsInfoSheet(newClassStage)}
-                    style={{ marginTop:'0.75rem', display:'flex', alignItems:'center', gap:'0.5rem', background:'none', border:'1px solid #1A5238', color:'#1A5238', fontSize:'0.75rem', fontWeight:700, padding:'0.4rem 0.85rem', borderRadius:'40px', cursor:'pointer', letterSpacing:'0.04em', width:'100%', justifyContent:'center' }}
-                    onMouseEnter={e => { e.currentTarget.style.background='#1A5238'; e.currentTarget.style.color='white'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background='none'; e.currentTarget.style.color='#1A5238'; }}>
-                    ↓ Teacher Information Sheet
-                  </button>
-                </div>
-              )}
+            <div className="cc-field">
+              <label className="cc-label">School</label>
+              {schoolName
+                ? <p className="cc-school">{schoolName} <span>from your profile</span></p>
+                : <p className="cc-school is-missing">No school on your profile yet. Add it on the dashboard first, or your classes cannot earn points.</p>}
             </div>
+          </section>
+
+          {/* ── 3. Consent, for the three programmes that record video ── */}
+          {filmingMode && (
+            <section className="cc-step cc-consent">
+              <p className="cc-step-n">Step 3</p>
+              <h3 className="cc-h3">Filming consent</h3>
+              <label className="cc-check">
+                <input type="checkbox" checked={zzConsentChecked} onChange={e => setZzConsentChecked(e.target.checked)} />
+                {/* ⚠️ FUTURE TENSE, DELIBERATELY. This read "consent ... has been obtained",
+                    which asks a teacher to attest to something they have usually not done
+                    yet at the point of creating the class. Cameron, 2026-11-07: "putting it
+                    back on teacher".
+                    🚫 Do not turn this into a per-student consent flag. CLAUDE.md records that
+                       as a closed decision: consent lives with the school, both parent letters
+                       run an opt-out model, and a student who may not be filmed becomes crew. */}
+                <span>
+                  I confirm that I will obtain appropriate consent for video filming from the
+                  families of all participating students, in accordance with my school&rsquo;s policies.
+                </span>
+              </label>
+              {/* ⚠️ The letter is HTML, not a PDF, and that is the house pattern: every printable
+                  in this app is a self-contained page the browser prints or saves as a PDF.
+                  🚫 Do not add a separate PDF copy. It would be a second version of the same
+                     letter to keep in step, and this one already went home to families with a
+                     claim that had to be corrected once. */}
+              <a className="cc-letter" href={filmingMode.letter} target="_blank" rel="noopener noreferrer">
+                {filmingMode.label} parent letter and opt-out slip ↗
+              </a>
+              <p className="cc-hint">Print it or save it as a PDF from your browser, and send it home before the excursion.</p>
+            </section>
+          )}
+
+          {/* ── Create ── */}
+          {createError && <p className="cc-err">{createError}</p>}
+          <div className="cc-create">
+            <p className="cc-summary">
+              Creating <strong>{newClassName.trim() || 'an unnamed class'}</strong>
+              {': '}<strong>{prog.name}</strong>
+              {' · '}<strong>{stageLabel}</strong>
+              {subjectLabel ? <> · <strong>{subjectLabel}</strong></> : null}
+              {schoolName ? <> · {schoolName}</> : null}
+            </p>
+            <button className="cc-go" onClick={createClass} disabled={!canCreate}>
+              {creatingClass ? 'Creating…' : 'Create class'}
+            </button>
           </div>
+
+          {/* ── Outcomes ── */}
+          {(displaySubject === 'science' || displaySubject === 'maths' || displaySubject === 'pdhpe' || displaySubject === 'english') && (
+            <div className="cc-out">
+              <div className="cc-out-head">
+                <h3 className="cc-out-title">What this covers, {stageLabel.toLowerCase()}</h3>
+                <span className="cc-out-syl">{syllabusName}</span>
+              </div>
+              {outcomes.map(({ code, desc }) => (
+                <div key={code} className="cc-out-row">
+                  <span className="cc-out-code">{code}</span>
+                  <span className="cc-out-desc">{desc}</span>
+                </div>
+              ))}
+              <button className="cc-sheet" onClick={() => openTeacherInfoSheet(displaySubject, newClassStage, outcomes)}>
+                Teacher information sheet ↗
+              </button>
+            </div>
+          )}
+
+          {/* Wildest Dreams: its own panel, because the outcomes differ by pathway and the mode
+              has no scoring, so there is no marking rubric to offer alongside them. */}
+          {isWildest && wdOutcomes && (
+            <div className="cc-out">
+              <div className="cc-out-head">
+                <h3 className="cc-out-title">{wdOutcomes.lifeSkills ? 'Life Skills outcomes' : 'What this covers'}, {stageLabel.toLowerCase()}</h3>
+                <span className="cc-out-syl">{wdOutcomes.syllabus}</span>
+              </div>
+              {wdOutcomes.outcomes.map(({ code, desc }) => (
+                <div key={code} className="cc-out-row">
+                  <span className="cc-out-code">{code}</span>
+                  <span className="cc-out-desc">{desc}</span>
+                </div>
+              ))}
+              <p className="cc-out-note">{wdOutcomes.lifeSkills ? WD_OUTCOMES_NOTE.secondary : WD_OUTCOMES_NOTE.primary}</p>
+              <button className="cc-sheet" onClick={() => openWildestDreamsInfoSheet(newClassStage)}>
+                Teacher information sheet ↗
+              </button>
+            </div>
+          )}
+
         </div>
       </div>
+    </div>
 
     {/* Who's Who modal */}
     {showWwzModal && (
@@ -460,12 +620,12 @@ export default function CreateClassScreen() {
             </div>
             <p style={{ fontSize:'0.83rem', color:'#444', lineHeight:1.7, marginBottom:'14px' }}>Print the <strong>Who's Who in the Zoo</strong> document and fill it in during the excursion. Keep it secure.</p>
             <a href="/whos-who-in-the-zoo.pdf" target="_blank" rel="noopener noreferrer"
-              style={{ display:'block', width:'100%', padding:'0.8rem', borderRadius:'40px', background:'linear-gradient(135deg, #1B6B3A, #0A2F1F)', color:'white', fontSize:'0.9rem', fontWeight:700, textDecoration:'none', textAlign:'center', letterSpacing:'0.05em', textTransform:'uppercase', marginBottom:'0.7rem', boxSizing:'border-box' }}>
-              ⊞ Open Who's Who Document
+              style={{ display:'block', width:'100%', padding:'0.85rem', borderRadius:'12px', background:'#1A5238', color:'white', fontSize:'0.9rem', fontWeight:700, textDecoration:'none', textAlign:'center', marginBottom:'0.6rem', boxSizing:'border-box' }}>
+              Open Who's Who in the Zoo
             </a>
             <button onClick={() => { setShowWwzModal(false); setCurrentScreen('teacherDashboard'); }}
-              style={{ width:'100%', padding:'0.7rem', borderRadius:'40px', border:'none', background:'#F5F3EE', color:'#555', fontSize:'0.85rem', fontWeight:600, cursor:'pointer' }}>
-              Back to Dashboard
+              style={{ width:'100%', padding:'0.8rem', borderRadius:'12px', border:'1px solid #DDE3DC', background:'#fff', color:'#5B645E', fontSize:'0.88rem', fontWeight:700, cursor:'pointer' }}>
+              Back to dashboard
             </button>
           </div>
         </div>
