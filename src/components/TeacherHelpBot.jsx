@@ -2,78 +2,127 @@ import { useState, useRef, useEffect } from 'react';
 import { TOUR_EVENT } from './TeacherTutorial';
 
 const SUGGESTIONS = [
-  'How do I get started?',
-  'How do students connect to WiFi?',
+  'How do I run a session?',
   'How do I create a class?',
-  'How do I restore a student?',
-  'What do the analytics show?',
-  'What subjects are available?',
+  'How do students join?',
+  'Where do I see their work?',
+  'A student needs to re-join',
+  'How do school points work?',
 ];
 
+/* ⚠️ These answers describe controls that exist. Checked against the code on 2026-11-15,
+   when the previous set was still sending teachers to a Classes tab, an Analytics tab and
+   a Taronga Access Code field, none of which the app has any more.
+   🚫 Never describe a button from memory. Grep for it first, and when a control changes,
+   grep for the places that describe it, this file included.
+
+   ⚠️ First keyword match wins, so ORDER IS BEHAVIOUR. Specific entries sit above general
+   ones: consent before ZooSnooz (a filming question contains the word video), school points
+   before scores (it contains the word points), and the catch-all stays last. */
 const RESPONSES = [
   {
-    keywords: ['start', 'begin', 'get going', 'run a session', 'run the', 'first', 'overview', 'run', 'session'],
-    answer: `Here's how to run a Taronga Tracka session:\n\n**1. Connect to WiFi**\nAsk all students to connect to **Taronga Guest WiFi** before you start — this keeps everything running smoothly.\n\n**2. Create a class**\nGo to the Classes tab → Create New Class. Enter your class details and Taronga Access Code.\n\n**3. Share your class code**\nYour 6-character code appears on the class card. Display it on a screen or read it out.\n\n**4. Students join**\nStudents open **Taronga Education** on their device → tap **"Let's Track!"** → **Student** → enter your class code → choose an animal alias.\n\n**5. Record who's who**\nUse the **Who's Who in the Zoo** document (available in your analytics) to note which student chose which animal alias.\n\n**6. Students explore the zoo**\nStudents walk to animal enclosures — each one unlocks on their map when they're nearby. They complete observations, quizzes and activities at each stop.\n\n**7. Wrap up**\nWhen finished, students tap **Complete Activity** → write a conservation statement → submit. You'll see their results live in Analytics.`,
+    keywords: ['run a session', 'run the day', 'get started', 'getting started', 'begin', 'on the day', 'what do i do first'],
+    answer: `Here is the whole run, start to finish:\n\n**1. Create the class**\nDashboard, then **Create a class**. Pick the programme, your school, the stage and a class name. There is no access code to type in any more.\n\n**2. Hand out the code**\nSix characters, on the class card. Tap the code itself to throw it up full screen for the room.\n\n**3. Students join**\nThey open **Taronga Education**, tap **Let's Track!**, type the code and pick an animal alias.\n\n**4. Note who is who**\n**Who's Who in the Zoo** in the class screen sidebar is a printable sheet for recording which student took which alias. Worth doing before they walk off.\n\n**5. Out they go**\nAnimals unlock as students reach them. Work saves as each one is finished, not at the end.\n\n**6. Watch it come in**\nOpen the class from the dashboard: **Overview** is the summary, **Students** is the table, **Responses** is their writing.\n\n**7. Wrap up**\nStudents tap **Complete Activity**, write a conservation statement and submit. **Submit Class** in the sidebar closes the whole class off.`,
   },
   {
-    keywords: ['wifi', 'wi-fi', 'internet', 'connection', 'network', 'connect', 'online', 'signal'],
-    answer: `Before heading out, make sure all student devices are connected to **Taronga Guest WiFi**.\n\n**How to connect:**\n1. Open **Settings → Wi-Fi** on each device\n2. Select **Taronga Guest** from the network list\n3. Follow any on-screen prompts to accept the guest terms\n\nA stable WiFi connection is important for:\n• Unlocking animal enclosures on the map\n• Saving quiz answers and observations\n• Live progress appearing in your Analytics tab\n\nTip: do a quick WiFi check before students split into groups — it's much easier to fix at the start than mid-session.`,
+    keywords: ['wifi', 'wi-fi', 'internet', 'network', 'signal', 'reception', 'offline'],
+    answer: `Get every device onto **Taronga Guest WiFi** before you split into groups. It is much easier to fix at the gate than halfway up the hill.\n\nWhat actually needs the signal:\n• Saving written work and quiz answers\n• Uploading video in ZooSnooz, Evolve and Wildest Dreams\n• Your class screen updating while they work\n\nWhat does **not** need it: unlocking animals. That is GPS, so a student with no bars can still unlock and keep working. Their progress is held on the phone and catches up when the signal returns.`,
   },
   {
-    keywords: ['student', 'join', 'log in', 'login', 'sign in', 'enter'],
-    answer: `Students join by:\n1. Opening **Taronga Education** on their device\n2. Tapping **"Let's Track!"** → **Student**\n3. Entering the **6-letter class code** from your class card\n4. Choosing their **animal alias** from the list\n\nIf a student reloads mid-session, the app automatically brings them back to the map. If you've restored a student after submission, their alias will show **↺ continue** in amber on the join screen.`,
+    keywords: ['create', 'new class', 'set up a class', 'make a class', 'access code'],
+    answer: `Dashboard, then **Create a class** (the button in the green header, or the sidebar).\n\nYou fill in five things: **Location**, **Subject**, **School Name**, **NSW Stage** and **Class Name**.\n\n⚠️ There is **no Taronga Access Code** any more. If you are hunting for that field, it is gone, not hidden.\n\nSome of it fills itself in: Evolve is Stage 6 and Life Ready, ZooYard is Science, and ZooSnooz and Wildest Dreams have no subject, so those pickers disappear when you choose them. The three filming programmes add one tick box about consent before you can create.\n\nThe class and its six character code appear on your dashboard straight away.`,
   },
   {
-    keywords: ['create', 'new class', 'set up', 'start class', 'access code'],
-    answer: `To create a class:\n1. Go to the **Classes** tab\n2. Click **Create New Class**\n3. Enter class name, school, year group, subject and session type\n4. Enter your **Taronga Access Code** (provided by Taronga Zoo)\n\nOnce created, your class code appears on the class card — share this with students to join.`,
+    keywords: ['zooyard', 'zoo yard', 'at school', 'cannot visit', "can't visit", 'schoolyard'],
+    answer: `**ZooYard** runs in your own schoolyard, for classes that cannot get to the zoo.\n\n• **Eight habitats**, each one about a quality an animal depends on\n• **No GPS at all**, which is why it works on locked down school devices. Students photograph the spot they are standing in to unlock it\n• Each habitat ends in something they actually build or do, photographed and sent to Taronga\n\nThose photos are reviewed by Taronga and earn your school points. You can see them, and remove any you do not want sent, from the class screen.`,
   },
   {
-    keywords: ['who\'s who', 'whos who', 'document', 'record', 'note down', 'write down'],
-    answer: `The **Who's Who in the Zoo** document lets you record which student chose which animal alias.\n\nYou can find it in your **Analytics** tab — look for the Who's Who button. Print it or fill it in digitally during the joining phase before students head out into the zoo.`,
+    keywords: ['evolve', 'stage 6', 'year 11', 'year 12', 'life ready', 'twilight'],
+    answer: `**Evolve** is the Stage 6 twilight programme for Life Ready. Five animals, five chapters of one story about leaving school. At each stop students write a reflection and film a short piece to camera, and the clips stitch into one film they keep.\n\n⚠️ It has **no points, badges, quizzes or marks**, on purpose. So its class screen is one table rather than the usual charts: that is the design, not missing data.\n\nFrom that table you can read every student's writing and print **pledge certificates**, for one student or the whole class.`,
   },
   {
-    keywords: ['restore', 'reset', 'bring back', 'rejoin', 'redo', 'continue'],
-    answer: `To restore a student so they can continue:\n1. Open the class in **Analytics**\n2. Find the student row\n3. Click the **↺ Restore** button\n\nThis keeps all their existing badges and progress — it just unlocks their animal alias so they can re-join. Their name will show **↺ continue** in amber on the join screen.\n\nUse **🗑 Delete** only if you want to permanently remove a student and all their data.`,
+    keywords: ['wildest', 'dreams', 'support unit', 'diverse learners', 'life skills'],
+    answer: `**Wildest Dreams** is the video first programme, built for support units and diverse learners.\n\nEight stops. At each one students watch an animal, choose what they want to show about it, and film a short piece. The clips become one documentary they keep.\n\nThere is **no quiz, no score, no marks and no required writing or speech**, and every stop can be skipped. A student who filmed three of eight has not failed at anything.\n\nFrom the class screen you can watch each clip with the caption the student chose, watch the finished film, and copy the keepsake link to send home.`,
   },
   {
-    keywords: ['analytics', 'progress', 'data', 'stats', 'score', 'quiz', 'points', 'badges'],
-    answer: `The **Analytics** tab shows per-class data:\n\n• **Points & badges** earned by each student\n• **Quiz mastery** histogram (% correct on first attempt)\n• **Observation scores** — behaviour, detail, writing quality\n• **Conservation statements** written by students\n• **Student status** — incomplete or complete\n\nAll data updates **live** as students complete animals — you don't need to wait for them to submit.`,
+    keywords: ['consent', 'permission', 'parent', 'letter', 'filming', 'opt out', 'opted out', 'privacy'],
+    answer: `Three programmes record video: **ZooSnooz**, **Evolve** and **Wildest Dreams**. Creating one of those classes asks you to tick that you **will obtain** appropriate consent for filming.\n\nEach has its own printable parent letter, in the sidebar of the class screen, with a tear off opt out slip.\n\nConsent stays with the school rather than being a setting in the app, so a student who may not be filmed becomes the **camera operator** for their group. Arranging that on the day is yours, not the app's.\n\nStudents never enter their real names anywhere. They pick an animal alias.`,
   },
   {
-    keywords: ['live', 'real time', 'realtime', 'update', 'see', 'watch'],
-    answer: `Progress is saved to Firestore **after each animal** is completed, not just at the end. You can watch the Analytics tab and see badges, points and quiz scores appear in real time as students work through the zoo — no need for them to hit Submit first.`,
+    keywords: ['zoosnooz', 'zoo snooz', 'night', 'sleepover', 'documentary'],
+    answer: `**ZooSnooz** is the night programme. Five animals, each with a keeper insight, an instrument to use, a question, an observation and a short film. The clips stitch into a documentary on the phone itself.\n\n• **⟳ Flip** switches between front and back cameras\n• Clips upload as they are filmed and the finished film uploads on submit, so the group wants signal at the **start and the end** of the night. The stitching itself needs none\n• Keep the phone awake and on the app while it builds, it takes about a minute\n\nYou can watch every clip and the finished documentary from the class screen.`,
   },
   {
-    keywords: ['subject', 'science', 'maths', 'math', 'pdhpe', 'english', 'curriculum'],
-    answer: `Taronga Tracka supports four subjects:\n\n• **Science** — observation, adaptation, classification\n• **Maths** — measurement, estimation, data\n• **PDHPE** — animal physiology, health and movement links\n• **English** — descriptive writing, imagery, vocabulary\n\nThe subject is set when you create the class and determines the quiz questions and observation prompts students see.`,
+    keywords: ['programme', 'program', 'modes', 'session type', 'which one', 'difference between'],
+    answer: `Five, all chosen from **Location** when you create the class:\n\n• **Tracka Trek** (Taronga Sydney, Zoo Visit) the day excursion, with quizzes, observations, badges and points\n• **ZooSnooz** the night programme, filming into a documentary\n• **ZooYard** at your own school, no GPS, eight habitats\n• **Evolve** Stage 6 twilight, Life Ready, five chapters into one film\n• **Wildest Dreams** video first, built for support units\n\nThe class card on your dashboard is labelled with whichever one it is.`,
   },
   {
-    keywords: ['zoosnooz', 'zoo snooz', 'night', 'video', 'documentary'],
-    answer: `**ZooSnooz** is the night-session mode. Students film short video clips of each animal and stitch them into a documentary. Select it as the session type when creating a class — it's designed for evening events at Taronga Zoo.\n\nStudents can flip between front and back cameras using the **⟳ Flip** button on the camera view.`,
+    keywords: ['restore', 'rejoin', 're-join', 'bring back', 'locked out', 'new device', 'different device', 'continue'],
+    answer: `Open the class, go to the **Students** tab and find their row.\n\n• **Restore** sends them back to the animal list so they can carry on. They keep every badge and everything they wrote\n• **New device** lets a student continue on a different phone or tablet. Use this if they swapped devices, or a shared iPad has moved on to someone else\n• **Delete** is permanent, so only use it for a test entry or a duplicate\n\nAfter a restore their alias shows **↺ continue** in amber when they re-join.`,
   },
   {
-    keywords: ['delete', 'remove', 'wipe'],
-    answer: `To permanently delete a student:\n1. Open the class in **Analytics**\n2. Find the student row\n3. Click **🗑 Delete**\n\nThis cannot be undone. If you just want to give a student more time, use **↺ Restore** instead — it keeps all their progress.`,
+    keywords: ['students join', 'join', 'joining', 'alias', 'log in', 'login', 'sign in'],
+    answer: `Students join by:\n1. Opening **Taronga Education** on their device\n2. Tapping **Let's Track!**\n3. Typing the **six character class code** from your class card\n4. Choosing an **animal alias**\n\nNo account, no password and no real names, which is deliberate.\n\nIf they reload mid session the app puts them back where they were. If you have restored a student, their alias shows **↺ continue** in amber on the join screen.`,
   },
   {
-    keywords: ['class code', 'code', 'share', 'qr'],
-    answer: `Your **class code** is the 6-character code on the class card (e.g. A7K2Q9). Share it verbally or display it on a screen — students type it in on the join screen.\n\nEach class gets a unique code when created.`,
+    keywords: ['class code', 'code', 'share the code', 'qr'],
+    answer: `The **class code** is the six characters on the class card, like A7K2Q9. Every class gets its own.\n\n**Tap the code on the card** and it fills the screen, which is the easy way to show it to a room. Students type it in on the join screen.`,
   },
   {
-    keywords: ['gps', 'location', 'proximity', 'map', 'unlock', 'near'],
-    answer: `By default, students need to be **physically near** an animal enclosure for it to unlock on their map. GPS must be enabled on their device.\n\nIf GPS isn't working (e.g. indoors or poor signal), an admin can turn off the GPS requirement in the **Control Room** of the Taronga Staff Portal.`,
+    keywords: ['delete', 'remove a student', 'wipe', 'duplicate'],
+    answer: `**Students** tab, find the row, then **Delete**. It cannot be undone and it takes their work with it.\n\nIf you only want to give a student more time, use **Restore** instead. If their device has changed, use **New device**. Delete is for test entries and duplicates.`,
   },
   {
-    keywords: ['feedback', 'rating', 'star', 'review'],
-    answer: `Student and teacher feedback (star ratings + comments) appears in the **Analytics** tab. You'll see average scores and a rating distribution chart.\n\nYou can submit your own rating at the bottom of the Analytics screen. Feedback can be cleared in the Taronga Staff Portal → Control Room.`,
+    keywords: ['mark', 'marking', 'override', 'wrong score', 'disagree', 'moderate', 'regrade'],
+    answer: `The app marks observations automatically, and you can overrule it.\n\nOpen the class, go to the **Responses** tab and open a student's score breakdown. **Override** lets you set the three domain scores yourself with a reason and a note, which also flags it so there is a record of why.\n\nThe panel under the radar chart on **Overview** explains what the automatic marking is actually looking at, which is worth a read before you change anything.`,
   },
   {
-    keywords: ['submit', 'finish', 'complete activity', 'complete', 'conservation', 'statement', 'done', 'end'],
-    answer: `When students are ready to wrap up:\n1. They tap **Complete Activity** on their collection screen\n2. Write a **Conservation Statement**\n3. Confirm submission\n4. Rate their experience\n5. Tap **Done** — the device is then ready for the next student to log in fresh.`,
+    keywords: ['analytics', 'progress', 'results', 'scores', 'data', 'stats', 'quiz', 'badges', 'see their work', 'where do i see'],
+    answer: `Open a class from the dashboard. It is in three tabs:\n\n• **Overview** class size, points, badges, quiz results, the most visited animals and the writing radar\n• **Students** every student with their points, badges and status, plus Restore, New device and Delete\n• **Responses** what they actually wrote, the common issues, and marking\n\nIt updates **live** as students finish each animal, so you do not have to wait for anyone to submit.\n\n⚠️ Evolve and Wildest Dreams have no tabs and no numbers, because they have no points or marks by design.`,
   },
   {
-    keywords: ['help', 'how', 'what', 'guide', 'instruction', 'use'],
-    answer: `Here are some things I can help with — just ask or tap a quick question below:\n\n• **Getting started** — running a full session\n• **WiFi** — connecting students to Taronga Guest WiFi\n• **Creating a class**\n• **Students joining**\n• **Who's Who document**\n• **Restoring or deleting students**\n• **Analytics and live progress**\n• **Subjects and curriculum**\n• **ZooSnooz night mode**\n• **GPS and location**`,
+    keywords: ['report', 'pdf', 'print', 'download', 'highlights', 'csv', 'export', 'spreadsheet'],
+    answer: `Two ways out of the app:\n\n• **Download class report** on the **Overview** tab, also called **Highlights Package** in the sidebar. It is the whole class written up: averages, every student's observations with their marks, and their conservation statements. It opens in a new tab ready to print, so use your browser's print dialog to save it as a PDF\n• **Export CSV** in the sidebar, for marks you want in a spreadsheet\n\nEvolve classes also print **pledge certificates**, one landscape page per student.`,
+  },
+  {
+    keywords: ["who's who", 'whos who', 'who is who', 'record names', 'which alias'],
+    answer: `**Who's Who in the Zoo** is a printable sheet for writing down which student took which animal alias. It is in the sidebar of the class screen.\n\nWorth filling in while they are joining. Students never give their real names to the app, so this sheet is the only link between an alias and a child, and it stays with you.`,
+  },
+  {
+    keywords: ['gps', 'location', 'proximity', 'unlock', 'not unlocking', 'map'],
+    answer: `On a zoo visit, animals unlock when students are **physically near** the enclosure, so location has to be on.\n\nThere are **two switches and both have to be on**: a Taronga wide setting, and a per class one. You control the second: open the class and look for the **GPS On / GPS Off** panel.\n\nTurn it off if location is not playing along, and animals unlock without the distance check. ZooYard never uses GPS at all, which is why it works on school devices that block it.`,
+  },
+  {
+    keywords: ['school points', 'leaderboard', 'challenge', 'free visit', 'reward', 'points for'],
+    answer: `Points sit with your **school**, not a class, and **300 earns a free class zoo visit**.\n\nThey come from running sessions, and from challenges. The **monthly challenge** on your dashboard is the quickest way up: do the thing, photograph it, tap Submit evidence, and Taronga reviews it before the points land. **See all challenges** lists the rest.\n\nThe leaderboard underneath shows where your school sits.\n\n⚠️ Points can only count if your school name is on your account. If the dashboard is asking you for it, that is why.`,
+  },
+  {
+    keywords: ['plan', 'book', 'device', 'ipad', 'lesson', 'resource', 'pre visit', 'post visit', 'outcome', 'syllabus', 'curriculum', 'assessment', 'accessibility'],
+    answer: `**Plan your visit** on the dashboard holds all of it:\n\n• **Book devices** Taronga has 20 Tracka phones a day, booked through the calendar\n• **Pre and post visit lessons** ready made, by subject and stage\n• **Excursion planning pack**, the **zoo map** and **How-to guides**\n• **Curriculum alignment** NSW outcomes, by subject and stage\n• **Assessment ideas** what the app evidences, plus post visit tasks with printable task notifications\n• **Accessibility and inclusion**\n\nEach class also has its own **Teacher Information Sheet** in the class screen sidebar, built for that class's programme and stage.`,
+  },
+  {
+    keywords: ['wildly', 'back at school', 'after the visit', 'units'],
+    answer: `**Wildly by Taronga** is the classroom side: lessons, units, assessments and professional learning.\n\nYour Tracka log in works there too, so it is the same email and password. The panel at the bottom of **Plan your visit** opens it, and so does the sidebar link.`,
+  },
+  {
+    keywords: ['subject', 'science', 'maths', 'math', 'pdhpe', 'english'],
+    answer: `A zoo visit can run as one of four subjects, chosen when you create the class:\n\n• **Science** behaviour, adaptation, classification\n• **Maths** measurement, estimation, data\n• **PDHPE** physiology, health and movement\n• **English** descriptive writing, imagery, vocabulary\n\nIt sets the questions, the writing prompts and what the marking looks for, so the three score domains are named differently in each.\n\nThe other programmes decide for themselves: ZooYard is Science, Evolve is Life Ready, and ZooSnooz and Wildest Dreams have no subject.`,
+  },
+  {
+    keywords: ['feedback', 'rating', 'suggest', 'bug', 'problem', 'contact'],
+    answer: `**Send feedback** at the bottom of the dashboard sidebar. Leave a star rating and tell us what happened, and it comes straight to the Tracka team.\n\nStudents are asked for theirs too, at the end of their session.`,
+  },
+  {
+    keywords: ['tour', 'show me around', 'tutorial', 'walk me through', 'walkthrough'],
+    answer: `**Show me around this page** at the top of this panel runs the tour of the dashboard again. It is about thirty seconds and you can skip it at any point.\n\nIt opens by itself the first time you ever sign in, and not after that.`,
+  },
+  {
+    keywords: ['submit', 'finish', 'complete activity', 'conservation statement', 'wrap up', 'done', 'end the session'],
+    answer: `Students finish by tapping **Complete Activity** on their collection screen, writing a **conservation statement**, confirming, and rating the day. The device is then clear for the next student.\n\nFrom your side, **Submit Class** in the class screen sidebar closes the class off once everyone is done. **Archive Class** takes an old class off your dashboard without deleting anything.`,
+  },
+  {
+    keywords: ['help', 'how', 'what', 'guide', 'where', 'can i'],
+    answer: `Ask me in your own words, or try one of these:\n\n• **Running a session**, start to finish\n• **Creating a class**, and where the access code went\n• **Students joining**, and the class code\n• **Restoring a student** or moving them to a new device\n• **Where their work is**, and the three tabs\n• **Marking**, and overriding a score\n• **Class report, CSV** and Who's Who\n• **School points** and the monthly challenge\n• **GPS** when animals will not unlock\n• **The five programmes**, and consent for the filming ones\n\nOr tap **Show me around this page** at the top for the tour.`,
   },
 ];
 
