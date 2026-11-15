@@ -1,335 +1,364 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
+import { doc, setDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 import { useApp } from '../context/AppContext';
 
-// Highlight coordinates are fractions (0–1) of the natural image dimensions.
-// { x, y, width, height } — all relative to the image, not the container.
+/* A live walk around the real dashboard. It was five screenshots until 2026-11-15, and
+   screenshots go stale the moment the layout moves: the ones it shipped with were of a
+   dashboard that no longer existed. This spotlights the actual elements on the page, so
+   it can only ever show what is really there.
+
+   ⚠️ Every step anchors on a data-tour attribute, NOT a class name. Those attributes are
+   load-bearing: removing one silently drops that step (the tour skips a target it cannot
+   find rather than breaking, which is the right failure but an invisible one).
+   🚫 Do not anchor a step on a .td-* class. Restyling the dashboard would then move the
+   spotlight somewhere else with nothing to tell you. */
+
 const STEPS = [
   {
-    type: 'welcome',
-    title: 'Welcome to your Teacher Dashboard',
-    text: "Here's a quick tour of the key features so you can get the most out of Taronga Tracka with your class.",
+    id: 'welcome',
+    title: 'This is your dashboard',
+    text: 'A quick look around, about thirty seconds. The page is held still while we do it, and you can skip at any time.',
+    cta: 'Show me around',
   },
   {
-    title: 'Create a New Class',
-    text: 'Fill in your location, subject, school name, NSW stage, and class name. Enter your Taronga access code and hit Create Class to generate a unique join code for your students.',
-    image: '/images/teacher-tutorial/dashboard-create-class.webp',
-    highlights: [
-      { x: 0.15, y: 0.73, width: 0.83, height: 0.21 },
-    ],
+    id: 'hero',
+    target: '[data-tour="hero"]',
+    title: 'Where everything is up to',
+    text: 'Your classes, the students who have joined them and the points your school has earned. It fills in as students work. The button on the right is where a new class starts.',
   },
   {
-    title: 'Teacher Documents',
-    text: 'Below the form you\'ll find the NSW Curriculum Outcomes mapped to your subject and stage. Download the Teacher Information Sheet for a printable overview to use before and after your visit.',
-    image: '/images/teacher-tutorial/dashboard-teacher-docs.webp',
-    highlights: [
-      { x: 0.15, y: 0.38, width: 0.83, height: 0.40 },
-    ],
+    id: 'classes',
+    target: '[data-tour="classes"]',
+    title: 'Your classes live here',
+    text: 'Each class carries the code students type in on the day. Tap the code to put it on the board full screen, or tap the card to open the class: progress, student writing and marking.',
   },
   {
-    title: 'Access Code & Your Classes',
-    text: 'Once your class is created it appears in the My Classes list. Each class shows the unique code your students use to join. Tap any class to start a live session or view analytics.',
-    image: '/images/teacher-tutorial/dashboard-code-classes.webp',
-    highlights: [
-      { x: 0.15, y: 0.63, width: 0.83, height: 0.35 },
-      { x: 0.89, y: 0.72, width: 0.09, height: 0.09 },
-      { x: 0.89, y: 0.85, width: 0.09, height: 0.09 },
-    ],
+    id: 'plan',
+    target: '[data-tour="plan"]',
+    title: 'Everything for planning the visit',
+    text: 'Devices, pre and post visit lessons, the zoo map, syllabus outcomes, assessment ideas and the accessibility guide, all in one panel.',
   },
   {
-    title: 'Class Analytics',
-    text: "After your visit, detailed analytics are available for every class. Here's a walkthrough of what's inside.",
-    slides: [
-      {
-        title: 'Analytics Overview',
-        text: 'At a glance: total students, animals found, badges earned, and quiz scores. The chart shows which animals your class visited most and how quiz results are distributed.',
-        image: '/images/teacher-tutorial/analytics-overview.webp',
-      },
-      {
-        title: 'Writing & Insights',
-        text: 'The radar chart breaks down writing quality across six domains. Teaching Takeaways highlight where your class excelled and where they need support, generated automatically from their work.',
-        image: '/images/teacher-tutorial/analytics-writing.webp',
-      },
-      {
-        title: 'Student Performance',
-        text: 'See every student ranked by overall performance band. Click any student to drill into their individual results, quiz answers, and observation writing.',
-        image: '/images/teacher-tutorial/analytics-students.webp',
-      },
-      {
-        title: 'Viewing Observations',
-        text: "Read each student's observation writing exactly as they submitted it. Use this to assess quality and spot students who may need extra support.",
-        image: '/images/teacher-tutorial/analytics-observations.webp',
-      },
-      {
-        title: 'Marking & Review',
-        text: 'Override any automatically-generated score here. Use the dropdowns to adjust marks for quiz, writing, and engagement. Changes update instantly.',
-        image: '/images/teacher-tutorial/analytics-marking.webp',
-      },
-      {
-        title: 'Conservation Statements',
-        text: "Each student writes a personal conservation commitment at the end of their visit. Read them here. Often the most meaningful part of the whole experience.",
-        image: '/images/teacher-tutorial/analytics-conservation.webp',
-      },
-    ],
+    id: 'wildly',
+    target: '[data-tour="wildly"]',
+    title: 'And the teaching beyond the visit',
+    text: 'Wildly by Taronga is the classroom side: lessons, units, assessments and professional learning. Your Tracka log in works there too.',
   },
   {
-    title: 'Need Help?',
-    text: "See the green question mark button in the bottom-right corner? Tap it any time to get answers about using the dashboard, reading analytics, or running a session.",
-    image: '/images/teacher-tutorial/dashboard-code-classes.webp',
-    highlights: [
-      { x: 0.96, y: 0.87, width: 0.05, height: 0.10 },
-    ],
+    id: 'points',
+    target: '[data-tour="points"]',
+    title: 'Points your school keeps',
+    text: 'Classes earn points towards a free class zoo visit at 300. The monthly challenge is the quickest way there.',
+  },
+  {
+    id: 'nav',
+    target: '[data-tour="nav"]',
+    title: 'Jump straight to a section',
+    text: 'The sidebar moves you down the page, and holds the way out to Wildly and to excursion bookings.',
+  },
+  {
+    id: 'help',
+    target: '[data-tour="help"]',
+    title: 'If you get stuck',
+    text: 'This answers the questions that come up most: class codes, getting a student back in on a new device, and what the marks mean.',
+  },
+  {
+    id: 'done',
+    title: 'That is the tour',
+    text: 'It will not open by itself again. If you want another look, it is the first thing in the help bubble down in the corner.',
+    cta: 'Get started',
   },
 ];
 
-function shouldShow(email, demo) {
-  if (!email) return false;
-  if (demo || email === 'demo@zoo') return true;
-  try { return localStorage.getItem(`teacherTutorial_${email}`) !== 'true'; }
-  catch { return true; }
+/* The help bubble asks for the tour by firing this, so the two components need nothing
+   from each other. 🚫 Do not rename it on one side only. */
+export const TOUR_EVENT = 'tracka:start-tour';
+
+const TOUR_KEY = email => `teacherTour_${email}`;
+const OLD_KEY  = email => `teacherTutorial_${email}`;
+
+const TT_CSS = `
+.tt-block { position: fixed; inset: 0; z-index: 3000; }
+.tt-hole {
+  position: fixed; z-index: 3001; pointer-events: none; border-radius: 18px;
+  box-shadow: 0 0 0 9999px rgba(8,34,22,0.72);
+  outline: 2px solid #E0A526; outline-offset: 3px;
 }
+.tt-card {
+  position: fixed; z-index: 3003; width: min(382px, calc(100vw - 2rem));
+  background: #fff; border: 1px solid #E2E6DF; border-radius: 18px;
+  padding: 1.35rem 1.4rem 1.2rem; box-shadow: 0 26px 64px rgba(0,0,0,0.32);
+  animation: ttIn 0.22s ease both;
+}
+@keyframes ttIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.tt-step { font-size: 0.74rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #8A9490; }
+.tt-title { margin: 0.4rem 0 0.45rem; font-size: 1.18rem; font-weight: 700; color: #0A2F1F; line-height: 1.3; letter-spacing: -0.01em; }
+.tt-text { margin: 0; font-size: 0.9rem; line-height: 1.6; color: #5B645E; }
+.tt-dots { display: flex; gap: 5px; margin: 1.1rem 0 0.95rem; }
+.tt-dot { width: 6px; height: 6px; border-radius: 999px; background: #DCE3DD; transition: width 0.2s, background 0.2s; }
+.tt-dot.is-on { width: 18px; background: #1A5238; }
+.tt-dot.is-past { background: #A9C3B4; }
+.tt-row { display: flex; gap: 0.55rem; align-items: center; }
+.tt-btn { appearance: none; font: inherit; font-weight: 700; font-size: 0.9rem; cursor: pointer; border-radius: 11px; padding: 0.65rem 1.15rem; }
+.tt-next { flex: 1; border: 0; background: #1A5238; color: #fff; }
+.tt-next:hover { background: #14422D; }
+.tt-back { border: 1px solid #DDE3DC; background: #fff; color: #5B645E; }
+.tt-back:hover { background: #F1F5F1; color: #14231B; }
+.tt-skip {
+  position: fixed; top: 1rem; right: 1rem; z-index: 3004;
+  appearance: none; font: inherit; font-size: 0.86rem; font-weight: 700; cursor: pointer;
+  padding: 0.6rem 1.1rem; border-radius: 999px;
+  background: #fff; color: #14231B; border: 1px solid #fff;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+}
+.tt-skip:hover { background: #F1F5F1; }
+.tt-block:focus-visible, .tt-btn:focus-visible, .tt-skip:focus-visible { outline: 3px solid #E0A526; outline-offset: 2px; }
+@media (max-width: 640px) {
+  .tt-card { padding: 1.15rem 1.15rem 1.05rem; }
+  .tt-skip { top: 0.6rem; right: 0.6rem; padding: 0.5rem 0.9rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tt-card { animation: none; }
+}
+`;
+
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(v, hi));
 
 export default function TeacherTutorial() {
-  const { teacherEmail, demoMode } = useApp();
-  const [done, setDone] = useState(() => !shouldShow(teacherEmail, demoMode));
+  const { teacherEmail, demoMode, teacherProfile } = useApp();
+  const isDemo = demoMode || teacherEmail === 'demo@zoo';
+
+  const [dismissed, setDismissed] = useState(false);
+  const [waited, setWaited] = useState(false);
+  const [asked, setAsked] = useState(false);     // replayed from the help bubble
+  const [ready, setReady] = useState(false);
   const [step, setStep] = useState(0);
-  const [slide, setSlide] = useState(0);
+  const [hole, setHole] = useState(null);
+  const [pos, setPos]   = useState(null);
+  const cardRef = useRef(null);
 
-  const current = STEPS[step];
-  const isFirst = step === 0;
-  const isLast = step === STEPS.length - 1;
-  const hasSlides = !!current?.slides;
-  const slides = hasSlides ? current.slides : null;
-  const isLastSlide = hasSlides && slide === slides.length - 1;
+  /* ---- should it run at all ----
 
-  const complete = () => {
-    const isDemo = demoMode || teacherEmail === 'demo@zoo';
-    if (!isDemo && teacherEmail) {
-      try { localStorage.setItem(`teacherTutorial_${teacherEmail}`, 'true'); } catch { /* storage blocked */ }
-    }
-    setDone(true);
-  };
+     ⚠️ "The first time you ever log in" is a fact about the ACCOUNT, not the laptop, so
+     the record lives on the teacher document and localStorage is only a fast local copy.
+     The verdict waits for that document rather than guessing: showing the tour again to
+     someone who did it last term on another machine is the one failure worth avoiding. */
 
-  const next = () => {
-    if (hasSlides && !isLastSlide) { setSlide(s => s + 1); return; }
-    if (isLast) { complete(); return; }
-    setSlide(0);
-    setStep(s => s + 1);
-  };
+  const seenHere = useMemo(() => {
+    if (!teacherEmail) return false;
+    try {
+      return localStorage.getItem(TOUR_KEY(teacherEmail)) === 'true'
+          || localStorage.getItem(OLD_KEY(teacherEmail)) === 'true';
+    } catch { return false; }    // storage blocked: the profile below decides
+  }, [teacherEmail]);
 
-  const back = () => {
-    if (hasSlides && slide > 0) { setSlide(s => s - 1); return; }
-    setSlide(0);
-    setStep(s => s - 1);
-  };
+  const verdict = !teacherEmail        ? 'hide'
+    : isDemo                           ? 'show'   // the demo account always gets it, and never records it
+    : seenHere                         ? 'hide'
+    : teacherProfile?.tourSeen         ? 'hide'
+    : teacherProfile                   ? 'show'
+    :                                    'wait';
 
-  if (done) return null;
+  const running = !dismissed && (asked || verdict === 'show' || (verdict === 'wait' && waited));
+
+  /* A step whose element is not on the page is dropped rather than shown against
+     nothing. Settled once, a frame after the tour starts, so it cannot renumber mid-tour.
+     ⚠️ The frame is not optional: this component mounts in the SAME commit as the
+     dashboard it describes, so at its first render NONE of the targets are in the
+     document yet and filtering there leaves only the two steps that have no target. */
+  const steps = useMemo(
+    () => (ready ? STEPS.filter(s => !s.target || document.querySelector(s.target)) : STEPS),
+    [ready],
+  );
+
+  const current = steps[step];
+  const total = steps.length;
+  const isLast = step === total - 1;
+
+  const markSeen = useCallback(() => {
+    if (isDemo || !teacherEmail) return;
+    if (teacherProfile?.tourSeen) return;        // a replay has nothing new to record
+    try { localStorage.setItem(TOUR_KEY(teacherEmail), 'true'); } catch { /* storage blocked: the profile flag below is the real record */ }
+    // The account is what "first time you ever log in" means, so it is stored on the
+    // teacher, not the device. A failed write only costs one repeat on another machine.
+    setDoc(doc(db, 'teachers', teacherEmail), { tourSeen: true, tourSeenAt: new Date().toISOString() }, { merge: true })
+      .catch(err => console.warn('[tutorial] could not record the tour as seen:', err?.code || err));
+  }, [isDemo, teacherEmail, teacherProfile]);
+
+  useEffect(() => {
+    const onAsk = () => { setStep(0); setDismissed(false); setAsked(true); };
+    window.addEventListener(TOUR_EVENT, onAsk);
+    return () => window.removeEventListener(TOUR_EVENT, onAsk);
+  }, []);
+
+  // Someone who finished the old screenshot tutorial on this device has their flag
+  // carried up to their account, so a second machine does not start the tour again.
+  useEffect(() => {
+    if (seenHere && teacherProfile && !teacherProfile.tourSeen) markSeen();
+  }, [seenHere, teacherProfile, markSeen]);
+
+  useEffect(() => {
+    if (!running) return;
+    const r = requestAnimationFrame(() => setReady(true));
+    return () => cancelAnimationFrame(r);
+  }, [running]);
+
+  // If the teacher document never arrives (it does not exist, or there is no reception)
+  // run anyway after a moment. Never showing it at all is the worse of the two failures,
+  // and localStorage still stops it repeating on this device.
+  useEffect(() => {
+    if (verdict !== 'wait') return;
+    const t = setTimeout(() => setWaited(true), 4000);
+    return () => clearTimeout(t);
+  }, [verdict]);
+
+
+  /* ---- bring the target into view when the step changes ---- */
+
+  useEffect(() => {
+    if (!running || !current?.target) return;
+    const el = document.querySelector(current.target);
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    // Park a big target at the top rather than centring it, so the card has somewhere
+    // to sit that is not on top of the thing it is describing.
+    // Centring only works for something small: a centred target leaves half a screen
+    // underneath, and the card needs most of that. Anything bigger goes to the top.
+    const need = (cardRef.current?.offsetHeight || 280) + 45;
+    el.scrollIntoView({ block: r.height + need * 2 <= window.innerHeight ? 'center' : 'start', behavior: 'smooth' });
+  }, [running, step, current]);
+
+  /* ---- keep the hole and the card glued to the element, every frame ----
+     A frame-by-frame read is what lets the spotlight ride a smooth scroll and survive
+     the leaderboard and class counts arriving late and shifting the layout under it. */
+
+  useEffect(() => {
+    if (!running) return;
+    let raf;
+    const tick = () => {
+      const vw = window.innerWidth, vh = window.innerHeight;
+      const cardW = cardRef.current?.offsetWidth  || 360;
+      const cardH = cardRef.current?.offsetHeight || 220;
+      const el = current?.target ? document.querySelector(current.target) : null;
+
+      if (!el) {
+        setHole(null);
+        setPos({ left: Math.round((vw - cardW) / 2), top: Math.round((vh - cardH) / 2) });
+      } else {
+        const r = el.getBoundingClientRect();
+        const pad = 8, gap = 14, edge = 12;
+        let h = { left: r.left - pad, top: r.top - pad, width: r.width + pad * 2, height: r.height + pad * 2 };
+        if (h.height > vh - edge * 2) { h.top = edge; h.height = vh - edge * 2; }
+        if (h.width  > vw - edge * 2) { h.left = edge; h.width  = vw - edge * 2; }
+        h.left = clamp(h.left, -pad, vw - 40);
+        h.top  = clamp(h.top, -pad, vh - 40);
+
+        let left, top;
+        const sideRoom = h.height > vh * 0.55;
+        if (sideRoom && h.left + h.width + gap + cardW <= vw - edge) {
+          left = h.left + h.width + gap;
+          top  = clamp(h.top + h.height / 2 - cardH / 2, edge, vh - cardH - edge);
+        } else if (sideRoom && h.left - gap - cardW >= edge) {
+          left = h.left - gap - cardW;
+          top  = clamp(h.top + h.height / 2 - cardH / 2, edge, vh - cardH - edge);
+        } else {
+          left = clamp(h.left + h.width / 2 - cardW / 2, edge, Math.max(edge, vw - cardW - edge));
+          let below = h.top + h.height + gap;
+          const above = h.top - gap - cardH;
+          if (below + cardH <= vh - edge) {
+            top = below;
+          } else if (above >= edge) {
+            top = above;
+          } else {
+            // Neither end has room, so the spotlight gives some up. 🚫 The card must never
+            // sit on top of the element it is pointing at: that is the whole mechanism.
+            h.height = Math.max(120, vh - edge - gap - cardH - h.top);
+            below = h.top + h.height + gap;
+            top = Math.min(below, Math.max(edge, vh - cardH - edge));
+          }
+        }
+        setHole(prev => same(prev, h) ? prev : round(h));
+        setPos(prev => (prev && prev.left === Math.round(left) && prev.top === Math.round(top))
+          ? prev : { left: Math.round(left), top: Math.round(top) });
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [running, step, current]);
+
+  /* ---- controls ---- */
+
+  const finish = useCallback(() => { markSeen(); setDismissed(true); setAsked(false); }, [markSeen]);
+  const next = () => (isLast ? finish() : setStep(s => s + 1));
+  const back = () => setStep(s => Math.max(0, s - 1));
+
+  useEffect(() => {
+    if (!running) return;
+    const onKey = e => {
+      if (e.key === 'Escape')     { e.preventDefault(); finish(); }
+      if (e.key === 'ArrowRight') { e.preventDefault(); setStep(s => (s >= total - 1 ? s : s + 1)); }
+      if (e.key === 'ArrowLeft')  { e.preventDefault(); setStep(s => Math.max(0, s - 1)); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [running, total, finish]);
+
+  if (!running || !current) return null;
 
   return createPortal(
     <>
-      <div style={{ position: 'fixed', inset: 0, zIndex: 3000, background: 'rgba(0,0,0,0.72)' }} />
+      <style>{TT_CSS}</style>
 
-      {!isFirst && (
-        <button onClick={complete} style={{
-          position: 'fixed', top: '1rem', right: '1rem', zIndex: 3003,
-          background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.25)',
-          color: 'rgba(255,255,255,0.85)', borderRadius: '999px', padding: '0.3rem 0.9rem',
-          fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', backdropFilter: 'blur(6px)',
-        }}>Skip tour</button>
-      )}
+      {/* Nothing underneath is clickable while the tour runs. The spotlight shows a
+          teacher where a thing IS; it is not an invitation to go off and use it. */}
+      <div
+        className="tt-block"
+        onClick={e => e.stopPropagation()}
+        onMouseDown={e => e.preventDefault()}
+        aria-hidden="true"
+      />
 
-      {isFirst ? (
-        <WelcomeCard
-          title={current.title}
-          text={current.text}
-          totalSteps={STEPS.length}
-          onNext={next}
-        />
-      ) : (
-        <ScreenshotModal
-          step={step}
-          totalSteps={STEPS.length}
-          title={hasSlides ? slides[slide].title : current.title}
-          text={hasSlides ? slides[slide].text : current.text}
-          image={hasSlides ? slides[slide].image : current.image}
-          highlights={hasSlides ? (slides[slide].highlights || []) : (current.highlights || [])}
-          badge={hasSlides ? `${slide + 1} of ${slides.length}` : null}
-          isLast={isLast && (!hasSlides || isLastSlide)}
-          onBack={back}
-          onNext={next}
-          slideIndex={hasSlides ? slide : null}
-          slideCount={hasSlides ? slides.length : null}
-        />
-      )}
+      {hole && <div className="tt-hole" style={{ left: hole.left, top: hole.top, width: hole.width, height: hole.height }} />}
+      {!hole && <div className="tt-hole" style={{ left: '50%', top: '50%', width: 0, height: 0, outline: 'none' }} />}
 
-      <style>{`
-        @keyframes ttFadeInCenter {
-          from { opacity: 0; transform: translate(-50%, -46%); }
-          to   { opacity: 1; transform: translate(-50%, -50%); }
-        }
-        @keyframes ttFadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes ttHighlight {
-          0%, 100% { stroke-opacity: 0.9; fill-opacity: 0.12; }
-          50%       { stroke-opacity: 0.5; fill-opacity: 0.04; }
-        }
-      `}</style>
+      <button className="tt-skip" onClick={finish}>Skip tutorial</button>
+
+      <div
+        ref={cardRef}
+        className="tt-card"
+        key={current.id}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="tt-title"
+        style={pos ? { left: pos.left, top: pos.top } : { left: -9999, top: 0 }}
+      >
+        <p className="tt-step">{step + 1} of {steps.length}</p>
+        <h2 className="tt-title" id="tt-title">{current.title}</h2>
+        <p className="tt-text">{current.text}</p>
+
+        <div className="tt-dots" aria-hidden="true">
+          {steps.map((s, i) => (
+            <span key={s.id} className={`tt-dot${i === step ? ' is-on' : i < step ? ' is-past' : ''}`} />
+          ))}
+        </div>
+
+        <div className="tt-row">
+          {step > 0 && <button className="tt-btn tt-back" onClick={back}>Back</button>}
+          <button className="tt-btn tt-next" onClick={next}>{current.cta || (isLast ? 'Finish' : 'Next')}</button>
+        </div>
+      </div>
     </>,
     document.body
   );
 }
 
-function WelcomeCard({ title, text, totalSteps, onNext }) {
-  return (
-    <div style={{
-      position: 'fixed', zIndex: 3002, left: '50%', top: '50%',
-      transform: 'translate(-50%, -50%)',
-      width: 'min(420px, calc(100vw - 2rem))',
-      background: 'white', borderRadius: '20px', padding: '2rem 2rem 1.6rem',
-      boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
-      animation: 'ttFadeInCenter 0.3s ease',
-      textAlign: 'center',
-    }}>
-      <div style={{
-        width: '56px', height: '56px', borderRadius: '16px', margin: '0 auto 1.25rem',
-        background: 'linear-gradient(135deg, #1A5238, #2E7D32)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        boxShadow: '0 4px 16px rgba(46,125,50,0.35)',
-      }}>
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="white"/>
-        </svg>
-      </div>
-      <div style={{ fontWeight: 800, fontSize: '1.4rem', color: '#1A5238', marginBottom: '0.6rem', lineHeight: 1.2 }}>{title}</div>
-      <p style={{ margin: '0 0 1.5rem', fontSize: '1rem', color: '#555', lineHeight: 1.65 }}>{text}</p>
-      <div style={{ display: 'flex', gap: '4px', justifyContent: 'center', marginBottom: '1.25rem' }}>
-        {Array.from({ length: totalSteps }).map((_, i) => (
-          <div key={i} style={{ width: i === 0 ? '20px' : '7px', height: '7px', borderRadius: '999px', background: i === 0 ? '#2E7D32' : '#D1D5DB', transition: 'all 0.25s' }} />
-        ))}
-      </div>
-      <button onClick={onNext} style={{
-        width: '100%', padding: '0.9rem', borderRadius: '999px', border: 'none',
-        background: 'linear-gradient(135deg, #1A5238, #2E7D32)', color: 'white',
-        fontSize: '1rem', fontWeight: 700, cursor: 'pointer',
-        boxShadow: '0 4px 16px rgba(46,125,50,0.4)',
-      }}>Start Tour</button>
-    </div>
-  );
+function round(h) {
+  return { left: Math.round(h.left), top: Math.round(h.top), width: Math.round(h.width), height: Math.round(h.height) };
 }
-
-function ScreenshotModal({ step, totalSteps, title, text, image, highlights, badge, isLast, onBack, onNext, slideIndex, slideCount }) {
-  return (
-    <div style={{
-      position: 'fixed', zIndex: 3002, inset: 0,
-      background: 'white', display: 'flex', flexDirection: 'column',
-      animation: 'ttFadeIn 0.25s ease',
-    }}>
-      {/* Header */}
-      <div style={{ background: 'linear-gradient(135deg, #1A5238, #2E7D32)', padding: '0.85rem 1.25rem', flexShrink: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.25rem' }}>
-          <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: '6px', padding: '2px 8px', fontSize: '0.72rem', fontWeight: 700, color: 'white', letterSpacing: '0.05em' }}>
-            {badge ? `ANALYTICS · ${badge}` : `STEP ${step} OF ${totalSteps - 1}`}
-          </div>
-        </div>
-        <div style={{ fontWeight: 800, fontSize: '1.1rem', color: 'white', lineHeight: 1.2 }}>{title}</div>
-      </div>
-
-      {/* Screenshot — fills all remaining vertical space */}
-      <div style={{ flex: 1, background: '#f0f2f4', overflow: 'hidden', minHeight: 0 }}>
-        <ImageWithHighlights src={image} alt={title} highlights={highlights} />
-      </div>
-
-      {/* Bottom bar */}
-      <div style={{ padding: '0.9rem 1.25rem 1rem', flexShrink: 0, borderTop: '1px solid #eee' }}>
-        <p style={{ margin: '0 0 0.8rem', fontSize: '1.1rem', color: '#333', lineHeight: 1.6, fontWeight: 500, textAlign: 'center' }}>{text}</p>
-
-        {slideCount !== null && (
-          <div style={{ display: 'flex', gap: '4px', justifyContent: 'center', marginBottom: '0.5rem' }}>
-            {Array.from({ length: slideCount }).map((_, i) => (
-              <div key={i} style={{ width: i === slideIndex ? '14px' : '6px', height: '6px', borderRadius: '999px', background: i === slideIndex ? '#2E7D32' : '#D1D5DB', transition: 'all 0.2s' }} />
-            ))}
-          </div>
-        )}
-
-        <div style={{ display: 'flex', gap: '4px', justifyContent: 'center', marginBottom: '0.8rem' }}>
-          {Array.from({ length: totalSteps }).map((_, i) => (
-            <div key={i} style={{ width: i === step ? '14px' : '6px', height: '6px', borderRadius: '999px', background: i === step ? '#2E7D32' : '#D1D5DB', transition: 'all 0.2s' }} />
-          ))}
-        </div>
-
-        <div style={{ display: 'flex', gap: '0.5rem', maxWidth: '480px', margin: '0 auto' }}>
-          <button onClick={onBack} style={{
-            flex: 1, padding: '0.65rem', borderRadius: '999px',
-            border: '1.5px solid #E5E5E5', background: 'white', color: '#555',
-            fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer',
-          }}>Back</button>
-          <button onClick={onNext} style={{
-            flex: 2, padding: '0.65rem', borderRadius: '999px', border: 'none',
-            background: 'linear-gradient(135deg, #1A5238, #2E7D32)', color: 'white',
-            fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer',
-          }}>{isLast ? 'Done' : 'Next'}</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ImageWithHighlights({ src, alt, highlights = [] }) {
-  const containerRef = useRef(null);
-  const imgRef = useRef(null);
-  const [bounds, setBounds] = useState(null);
-
-  const calcBounds = useCallback(() => {
-    const img = imgRef.current;
-    const container = containerRef.current;
-    if (!img || !container || !img.naturalWidth) return;
-    const cw = container.clientWidth;
-    const ch = container.clientHeight;
-    const iw = img.naturalWidth;
-    const ih = img.naturalHeight;
-    const scale = Math.min(cw / iw, ch / ih);
-    const rw = iw * scale;
-    const rh = ih * scale;
-    setBounds({ x: (cw - rw) / 2, y: (ch - rh) / 2, w: rw, h: rh });
-  }, []);
-
-  useEffect(() => {
-    const img = imgRef.current;
-    if (!img) return;
-    if (img.complete && img.naturalWidth) calcBounds();
-    img.addEventListener('load', calcBounds);
-    window.addEventListener('resize', calcBounds);
-    return () => {
-      img.removeEventListener('load', calcBounds);
-      window.removeEventListener('resize', calcBounds);
-    };
-  }, [src, calcBounds]);
-
-  return (
-    <div ref={containerRef} style={{ position: 'relative', width: '100%', height: '100%' }}>
-      <img
-        ref={imgRef}
-        src={src}
-        alt={alt}
-        style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
-      />
-      {bounds && highlights.length > 0 && (
-        <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', overflow: 'visible' }}>
-          {highlights.map((h, i) => (
-            <rect
-              key={i}
-              x={bounds.x + h.x * bounds.w}
-              y={bounds.y + h.y * bounds.h}
-              width={h.width * bounds.w}
-              height={h.height * bounds.h}
-              rx="8" ry="8"
-              fill="rgba(252,211,77,0.18)"
-              stroke="#FCD34D"
-              strokeWidth="3"
-              style={{ animation: 'ttHighlight 2s ease-in-out infinite', filter: 'drop-shadow(0 0 6px rgba(252,211,77,0.7))' }}
-            />
-          ))}
-        </svg>
-      )}
-    </div>
-  );
+function same(a, b) {
+  return !!a && Math.abs(a.left - b.left) < 1 && Math.abs(a.top - b.top) < 1
+      && Math.abs(a.width - b.width) < 1 && Math.abs(a.height - b.height) < 1;
 }

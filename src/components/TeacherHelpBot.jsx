@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { TOUR_EVENT } from './TeacherTutorial';
 
 const SUGGESTIONS = [
   'How do I get started?',
@@ -126,10 +127,13 @@ export default function TeacherHelpBot() {
     }, 600);
   };
 
+  const canTour = open && typeof document !== 'undefined' && !!document.querySelector('[data-tour="hero"]');
+
   return (
     <>
       {/* Floating button */}
       <button
+        data-tour="help"
         onClick={() => setOpen(o => !o)}
         style={{
           position:'fixed', bottom:'1.5rem', right:'1.5rem', zIndex:1000,
@@ -168,6 +172,33 @@ export default function TeacherHelpBot() {
               <div style={{ color:'rgba(255,255,255,0.75)', fontSize:'0.72rem' }}>Ask me anything about the portal</div>
             </div>
           </div>
+
+          {/* The tour of this page, on request. It is only offered where the tour has
+              something to point at: TeacherTutorial is mounted on the dashboard, and a
+              button that silently did nothing anywhere else would be worse than none. */}
+          {canTour && (
+            <button
+              onClick={() => { setOpen(false); window.dispatchEvent(new CustomEvent(TOUR_EVENT)); }}
+              style={{
+                display:'flex', alignItems:'center', gap:'0.7rem', width:'100%', textAlign:'left',
+                padding:'0.8rem 1rem', background:'#F3F7F3', border:'0', borderBottom:'1px solid #E6EBE5',
+                cursor:'pointer', font:'inherit', flexShrink:0,
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#E9F1EA'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = '#F3F7F3'; }}
+            >
+              <span style={{ width:'34px', height:'34px', borderRadius:'10px', background:'var(--t-mid)', color:'white', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="11" cy="11" r="7" /><path d="m20 20-3.2-3.2" /><path d="M11 8v6" /><path d="M8 11h6" />
+                </svg>
+              </span>
+              <span style={{ flex:1, minWidth:0 }}>
+                <span style={{ display:'block', fontSize:'0.86rem', fontWeight:700, color:'var(--t-deep)' }}>Show me around this page</span>
+                <span style={{ display:'block', fontSize:'0.74rem', color:'#6B736D', marginTop:'0.1rem' }}>A guided tour of the dashboard, about thirty seconds</span>
+              </span>
+              <span style={{ color:'#A3ADA6', fontSize:'1.2rem', lineHeight:1 }} aria-hidden="true">›</span>
+            </button>
+          )}
 
           {/* Messages */}
           <div style={{ flex:1, overflowY:'auto', padding:'1rem', display:'flex', flexDirection:'column', gap:'0.75rem' }}>

@@ -621,7 +621,7 @@ export default function TeacherDashboardScreen() {
 
       <div className="lms-two-col">
         {/* Sidebar */}
-        <div className="lms-sidebar td-side">
+        <div className="lms-sidebar td-side" data-tour="nav">
           <nav className="td-nav" aria-label="Dashboard">
             <button className="td-nav-item is-active" aria-current="page" onClick={() => document.querySelector('.td-main')?.scrollTo({ top:0, behavior:'smooth' })}>Dashboard</button>
             <button className="td-nav-item" onClick={() => jumpTo('t-classes-section')}>Your classes</button>
@@ -651,13 +651,17 @@ export default function TeacherDashboardScreen() {
         </div>
 
         {/* Main content — redesigned 2026-11-13 (preview branch). Order follows what a teacher
-            opens the portal FOR: their classes and codes first, planning second, points last. */}
+            opens the portal FOR: their classes and codes first, planning second, points last.
+
+            ⚠️ The data-tour attributes below are what TeacherTutorial spotlights on a first
+            login. They are load-bearing: delete one and that step quietly disappears from
+            the tour, with a green build and nothing on screen to tell you. */}
         <div className="lms-main td-main">
           <style>{TD_CSS}</style>
           <div className="lms-main-inner td-inner">
 
             {/* Hero */}
-            <header className="td-hero">
+            <header className="td-hero" data-tour="hero">
               <div className="td-hero-photo" aria-hidden="true" />
               <div className="td-hero-body">
                 <h2 className="td-greeting">
@@ -723,7 +727,7 @@ export default function TeacherDashboardScreen() {
             )}
 
             {/* Classes */}
-            <section id="t-classes-section" className="td-section">
+            <section id="t-classes-section" className="td-section" data-tour="classes">
               <div className="td-section-head">
                 <h3 className="td-h3">Your classes</h3>
                 {activeClasses.length > 0 && <p className="td-hint">Select a code to show it full screen for your students.</p>}
@@ -773,7 +777,7 @@ export default function TeacherDashboardScreen() {
             <div className="td-split">
               <section id="t-plan-section" className="td-section td-plan">
                 <div className="td-section-head"><h3 className="td-h3">Plan your visit</h3></div>
-                <ul className="td-links">
+                <ul className="td-links" data-tour="plan">
                   {PLAN_LINKS.map(l => (
                     <li key={l.title}>
                       <button onClick={() => l.href ? window.open(l.href, '_blank') : setCurrentScreen(l.screen)}>
@@ -787,7 +791,7 @@ export default function TeacherDashboardScreen() {
                     </li>
                   ))}
                 </ul>
-                <button className="td-wildly" onClick={() => window.open('https://www.wildlybytaronga.com.au', '_blank')}>
+                <button className="td-wildly" data-tour="wildly" onClick={() => window.open('https://www.wildlybytaronga.com.au', '_blank')}>
                   <img src="/images/wildly-logo-white.png" alt="Wildly by Taronga" />
                   <span className="td-wildly-title">Take Taronga back to the classroom.</span>
                   <span className="td-wildly-copy">Lessons, units, assessments and professional learning, written by Taronga educators.</span>
@@ -801,7 +805,7 @@ export default function TeacherDashboardScreen() {
                 </button>
               </section>
 
-              <section id="t-points-section" className="td-section">
+              <section id="t-points-section" className="td-section" data-tour="points">
                 <div className="td-section-head"><h3 className="td-h3">School points</h3></div>
                 <div className="td-points">
                 <div className="td-points-card">
