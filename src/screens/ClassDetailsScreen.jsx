@@ -45,84 +45,200 @@ const EVOLVE_PLEDGE_ID = (EVOLVE_CHAPTERS.find(c => c.isPledge) || {}).id;
 // 'auto' or an fr track sizes to its content, so the one row carrying a New device button
 // widens its own column and knocks every other cell in that row out of line. Twice now.
 const CD_COLS = 'minmax(130px,1fr) 64px 64px 64px 92px 104px 108px 296px';
+// Same rule as above: the last track is a FIXED width, never auto and never an fr.
+const CD_COLS_ZZ = 'minmax(130px,1fr) 70px 70px 118px 104px 112px 296px';
 
 const CD_CSS = `
-.cd-root { background: #F4F6F2; }
+/* ⚠️⚠️ ONE STYLESHEET, TWO PALETTES. Night is the same rules with different tokens, set by
+   .is-night on the root. Until 2026-11-15 ZooSnooz was withheld from this sheet entirely and
+   re-stated every panel, table and tab as inline styles, so it drifted into a different
+   product: no tabs worth seeing, no stat cards, grey default buttons where a cd-* class was
+   used by mistake, and five greens that appeared nowhere else.
+   🚫 Do not add a colour literal below. Add a token, and give it a night value here, or the
+   drift starts again one rule at a time. */
+.cd-root {
+  --cd-bg: #F4F6F2;
+  --cd-card: #fff;
+  --cd-line: #E2E6DF;
+  --cd-line-soft: #EEF1EC;
+  --cd-ink: #0A2F1F;
+  --cd-ink-2: #14231B;
+  --cd-muted: #6B736D;
+  --cd-faint: #B6BEB8;
+  --cd-accent: #1A5238;
+  --cd-on-accent: #fff;
+  --cd-hover: #F1F5F1;
+  --cd-row-hover: #FAFBF9;
+  --cd-thead: #F7F9F6;
+  --cd-chip: #E6ECE7;
+  --cd-chip-ink: #4A7C61;
+  --cd-good-bg: #F0FDF4; --cd-good-line: #BBF7D0; --cd-good-ink: #15803D;
+  --cd-warn-bg: #FFFBEB; --cd-warn-line: #FDE68A; --cd-warn-ink: #B45309;
+  --cd-info-bg: #EFF6FF; --cd-info-line: #BFDBFE; --cd-info-ink: #1D4ED8;
+  --cd-bad-ink: #B91C1C;
+  --cd-side: #0A2F1F;
+  --cd-side-line: rgba(255,255,255,0.09);
+  --cd-side-ink: rgba(255,255,255,0.74);
+  --cd-side-strong: #fff;
+  --cd-side-label: rgba(255,255,255,0.4);
+  --cd-side-key: rgba(255,255,255,0.45);
+  --cd-side-val: rgba(255,255,255,0.9);
+  --cd-side-hover: rgba(255,255,255,0.06);
+  --cd-side-btn: rgba(255,255,255,0.1);
+  --cd-side-btn-line: rgba(255,255,255,0.22);
+  background: var(--cd-bg);
+}
+.cd-root.is-night {
+  --cd-bg: #020D06;
+  --cd-card: rgba(255,255,255,0.045);
+  --cd-line: rgba(168,196,178,0.18);
+  --cd-line-soft: rgba(168,196,178,0.1);
+  --cd-ink: #D4EDE0;
+  --cd-ink-2: #C6E2D2;
+  --cd-muted: rgba(184,212,192,0.62);
+  --cd-faint: rgba(184,212,192,0.3);
+  --cd-accent: #4A9E6B;
+  --cd-on-accent: #04170C;
+  --cd-hover: rgba(255,255,255,0.08);
+  --cd-row-hover: rgba(255,255,255,0.035);
+  --cd-thead: rgba(255,255,255,0.03);
+  --cd-chip: rgba(74,158,107,0.2);
+  --cd-chip-ink: #A8C4B2;
+  --cd-good-bg: rgba(46,125,85,0.14); --cd-good-line: rgba(74,158,107,0.35); --cd-good-ink: #6FBF8E;
+  --cd-warn-bg: rgba(245,158,11,0.1); --cd-warn-line: rgba(245,158,11,0.28); --cd-warn-ink: #E0A526;
+  --cd-info-bg: rgba(96,165,250,0.1); --cd-info-line: rgba(96,165,250,0.25); --cd-info-ink: #7FB3F5;
+  --cd-bad-ink: #F87171;
+  --cd-side: linear-gradient(180deg,#071E14 0%,#040F08 100%);
+  --cd-side-line: rgba(46,125,85,0.22);
+  --cd-side-ink: rgba(212,237,224,0.75);
+  --cd-side-strong: #D4EDE0;
+  --cd-side-label: rgba(184,212,192,0.45);
+  --cd-side-key: rgba(184,212,192,0.55);
+  --cd-side-val: #D4EDE0;
+  --cd-side-hover: rgba(255,255,255,0.07);
+  --cd-side-btn: rgba(255,255,255,0.08);
+  --cd-side-btn-line: rgba(168,196,178,0.28);
+}
 .cd-root .lms-main-inner { max-width: 1180px; }
+
+/* The shell. Night restates only what the tokens cannot reach. */
+.cd-root.is-night .lms-topbar { background: linear-gradient(135deg,#071E14 0%,#0A2F1F 60%,#071E14 100%); border-bottom: 1px solid rgba(168,196,178,0.2); }
+.cd-brand { color: var(--t-deep); }
+.cd-brand-sub { color: var(--t-slate); }
+.cd-root.is-night .cd-brand { color: #D4EDE0; }
+.cd-root.is-night .cd-brand-sub { color: rgba(184,212,192,0.65); }
+.cd-root.is-night .lms-signout-btn { background: rgba(46,125,85,0.25); border-color: rgba(168,196,178,0.4); color: #A8C4B2; }
+.cd-root.is-night .lms-main { background: var(--cd-bg); }
+
+/* Getting OUT of a class was one grey line in a list of ten documents, so it read as
+   another link rather than the way back. Two now, and neither is in that list: one at the
+   top of the sidebar, one above the class name where the eye already is. */
+.cd-back {
+  appearance: none; font: inherit; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 0.45rem;
+  margin-bottom: 0.9rem; padding: 0.45rem 0.9rem 0.45rem 0.7rem;
+  background: var(--cd-card); color: var(--cd-accent); border: 1px solid var(--cd-line); border-radius: 999px;
+  font-size: 0.84rem; font-weight: 700;
+  transition: background 0.15s, border-color 0.15s;
+}
+.cd-back:hover { background: var(--cd-hover); border-color: var(--cd-accent); }
+.cd-back:focus-visible { outline: 3px solid #E0A526; outline-offset: 2px; }
+.cd-back svg { width: 14px; height: 14px; }
+.cd-root.is-night .cd-back { color: #A8C4B2; }
+.cd-root.is-night .cd-back:hover { color: var(--cd-ink); }
+
+.cd-side-back {
+  appearance: none; font: inherit; cursor: pointer; width: 100%;
+  display: flex; align-items: center; gap: 0.55rem;
+  margin-bottom: 0.95rem; padding: 0.62rem 0.85rem;
+  background: var(--cd-side-btn); border: 1px solid var(--cd-side-btn-line);
+  border-radius: 12px; color: var(--cd-side-strong); font-size: 0.86rem; font-weight: 700;
+  transition: background 0.15s, border-color 0.15s;
+}
+.cd-side-back:hover { background: var(--cd-side-hover); border-color: var(--cd-side-strong); }
+.cd-side-back:focus-visible { outline: 3px solid #E0A526; outline-offset: 2px; }
+.cd-side-back svg { width: 15px; height: 15px; flex-shrink: 0; }
 
 /* Header: the class is the page title, the code is the thing teachers come back for. */
 .cd-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
-.cd-title { margin: 0 0 0.3rem; font-size: clamp(1.5rem, 3vw, 2rem); line-height: 1.1; color: #0A2F1F; letter-spacing: -0.01em; }
-.cd-meta { margin: 0; font-size: 0.86rem; color: #6B736D; display: flex; align-items: center; flex-wrap: wrap; gap: 0 0.5rem; }
-.cd-dot { width: 3px; height: 3px; border-radius: 50%; background: #B6BEB8; display: inline-block; }
+.cd-title { margin: 0 0 0.3rem; font-size: clamp(1.5rem, 3vw, 2rem); line-height: 1.1; color: var(--cd-ink); letter-spacing: -0.01em; }
+.cd-meta { margin: 0; font-size: 0.86rem; color: var(--cd-muted); display: flex; align-items: center; flex-wrap: wrap; gap: 0 0.5rem; }
+.cd-dot { width: 3px; height: 3px; border-radius: 50%; background: var(--cd-faint); display: inline-block; }
 .cd-code {
   display: inline-flex; align-items: baseline; gap: 0.6rem; align-self: flex-start;
-  background: #fff; border: 1px solid #E2E6DF; border-radius: 12px;
+  background: var(--cd-card); border: 1px solid var(--cd-line); border-radius: 12px;
   padding: 0.55rem 0.9rem; cursor: pointer; font: inherit; transition: border-color 0.15s;
 }
-.cd-code:hover { border-color: #1A5238; }
-.cd-code-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #8A928C; }
-.cd-code-value { font-family: 'Taronga Headline', 'Bebas Neue', sans-serif; font-size: 1.5rem; line-height: 1; letter-spacing: 0.12em; color: #0A2F1F; }
+.cd-code:hover { border-color: var(--cd-accent); }
+.cd-code-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--cd-muted); }
+.cd-code-value { font-family: 'Taronga Headline', 'Bebas Neue', sans-serif; font-size: 1.5rem; line-height: 1; letter-spacing: 0.12em; color: var(--cd-ink); }
 
 /* Tabs. They were missed entirely as a 0.88rem underline, so they are now the second
    biggest thing on the page and they stay put when the page scrolls. */
 .cd-tabs {
   position: sticky; top: 0; z-index: 5;
   display: flex; gap: 0.35rem; margin: 0 0 1.75rem;
-  background: #F4F6F2; border-bottom: 1px solid #DDE3DC;
+  background: var(--cd-bg); border-bottom: 1px solid var(--cd-line);
 }
 .cd-tab {
   appearance: none; background: none; border: 0; cursor: pointer; font: inherit;
   display: inline-flex; align-items: center; gap: 0.5rem;
-  font-size: 1rem; font-weight: 600; color: #6B736D;
+  font-size: 1rem; font-weight: 600; color: var(--cd-muted);
   padding: 0.85rem 0.9rem; margin-bottom: -1px;
   border-bottom: 3px solid transparent; transition: color 0.15s, border-color 0.15s;
 }
-.cd-tab:hover { color: #0A2F1F; }
-.cd-tab[aria-selected="true"] { color: #0A2F1F; font-weight: 700; border-bottom-color: #1A5238; }
+.cd-tab:hover { color: var(--cd-ink); }
+.cd-tab[aria-selected="true"] { color: var(--cd-ink); font-weight: 700; border-bottom-color: var(--cd-accent); }
 .cd-tab:focus-visible { outline: 3px solid #E0A526; outline-offset: -3px; }
 .cd-tab-count {
   font-size: 0.75rem; font-weight: 700; font-variant-numeric: tabular-nums;
-  background: #E6ECE7; color: #4A7C61; border-radius: 999px; padding: 0.1rem 0.45rem;
+  background: var(--cd-chip); color: var(--cd-chip-ink); border-radius: 999px; padding: 0.1rem 0.45rem;
 }
-.cd-tab[aria-selected="true"] .cd-tab-count { background: #1A5238; color: #fff; }
+.cd-tab[aria-selected="true"] .cd-tab-count { background: var(--cd-accent); color: var(--cd-on-accent); }
 
 /* Stat row: one ink colour. The number is the information; the colour never was. */
 .cd-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.75rem; margin-bottom: 2rem; }
-.cd-stat { background: #fff; border: 1px solid #E2E6DF; border-radius: 14px; padding: 1.1rem 1.2rem; }
-.cd-stat-val { font-size: 1.9rem; font-weight: 700; color: #0A2F1F; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
-.cd-stat-label { margin-top: 0.35rem; font-size: 0.78rem; color: #6B736D; font-weight: 500; }
+.cd-stat { background: var(--cd-card); border: 1px solid var(--cd-line); border-radius: 14px; padding: 1.1rem 1.2rem; }
+.cd-stat-val { font-size: 1.9rem; font-weight: 700; color: var(--cd-ink); line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.cd-stat-label { margin-top: 0.35rem; font-size: 0.78rem; color: var(--cd-muted); font-weight: 500; }
 
 /* Sections and panels: one card treatment, one heading treatment. */
 .cd-section { margin-bottom: 2rem; }
-.cd-h3 { margin: 0 0 0.9rem; font-size: 1.15rem; font-weight: 700; color: #0A2F1F; letter-spacing: -0.015em; }
-.cd-panel-title { margin: 0 0 0.8rem; font-size: 0.9rem; font-weight: 700; color: #14231B; }
+.cd-h3 { margin: 0 0 0.9rem; font-size: 1.15rem; font-weight: 700; color: var(--cd-ink); letter-spacing: -0.015em; }
+.cd-panel { background: var(--cd-card); border: 1px solid var(--cd-line); border-radius: 14px; padding: 1.15rem 1.25rem; margin-bottom: 0.75rem; }
+.cd-panel-title { margin: 0 0 0.8rem; font-size: 0.9rem; font-weight: 700; color: var(--cd-ink-2); }
+.cd-lede { margin: 0; font-size: 0.86rem; color: var(--cd-muted); }
+.cd-eyebrow { margin: 0 0 0.7rem; font-size: 0.68rem; font-weight: 700; color: var(--cd-muted); text-transform: uppercase; letter-spacing: 0.07em; }
 
 /* Student table. One grid definition for the head and every row, so a row with an extra
    button can no longer stretch its own columns out of line with the rest. */
-.cd-table { background: #fff; border: 1px solid #E2E6DF; border-radius: 14px; overflow: hidden; margin-bottom: 1.25rem; }
+.cd-table { background: var(--cd-card); border: 1px solid var(--cd-line); border-radius: 14px; overflow: hidden; margin-bottom: 1.25rem; }
 .cd-row { display: grid; align-items: center; gap: 0.75rem; padding: 0.8rem 1.1rem; }
 .cd-row > * { min-width: 0; }
-.cd-thead { background: #F7F9F6; border-bottom: 1px solid #E2E6DF; }
-.cd-th { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #6B736D; }
-.cd-tr + .cd-tr { border-top: 1px solid #EEF1EC; }
-.cd-tr:hover { background: #FAFBF9; }
+.cd-thead { background: var(--cd-thead); border-bottom: 1px solid var(--cd-line); }
+.cd-th { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--cd-muted); }
+.cd-tr + .cd-tr { border-top: 1px solid var(--cd-line-soft); }
+.cd-tr:hover { background: var(--cd-row-hover); }
 .cd-who { display: flex; align-items: center; gap: 0.65rem; }
-.cd-avatar { width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; background: #E6ECE7; color: #1A5238; }
-.cd-avatar.is-done { background: #1A5238; color: #fff; }
-.cd-name { font-weight: 600; color: #14231B; font-size: 0.9rem; overflow-wrap: anywhere; }
-.cd-num { font-weight: 600; color: #14231B; font-size: 0.9rem; font-variant-numeric: tabular-nums; }
-.cd-nil { color: #B6BEB8; font-size: 0.85rem; }
+.cd-avatar { width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; background: var(--cd-chip); color: var(--cd-chip-ink); }
+.cd-avatar.is-done { background: var(--cd-accent); color: var(--cd-on-accent); }
+.cd-name { font-weight: 600; color: var(--cd-ink-2); font-size: 0.9rem; overflow-wrap: anywhere; }
+.cd-num { font-weight: 600; color: var(--cd-ink-2); font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+.cd-nil { color: var(--cd-faint); font-size: 0.85rem; }
+.cd-bar { flex: 1; min-width: 36px; height: 4px; border-radius: 3px; background: var(--cd-chip); overflow: hidden; display: block; }
+.cd-bar > span { display: block; height: 100%; border-radius: 3px; background: var(--cd-accent); }
 .cd-view {
   font: inherit; font-size: 0.78rem; font-weight: 600; cursor: pointer;
-  background: #fff; color: #1A5238; border: 1px solid #CBD8CF; border-radius: 8px; padding: 0.3rem 0.7rem;
+  background: var(--cd-card); color: var(--cd-accent); border: 1px solid var(--cd-line); border-radius: 8px; padding: 0.3rem 0.7rem;
   transition: background 0.15s, border-color 0.15s;
 }
-.cd-view:hover { background: #EEF4EF; border-color: #1A5238; }
-.cd-state { font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem; color: #6B736D; }
+.cd-view:hover { background: var(--cd-hover); border-color: var(--cd-accent); }
+.cd-root.is-night .cd-view { color: #A8C4B2; }
+.cd-state { font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem; color: var(--cd-muted); }
 .cd-state::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: #C9A227; }
-.cd-state.is-done { color: #1A5238; }
-.cd-state.is-done::before { background: #1A5238; }
+.cd-state.is-done { color: var(--cd-accent); }
+.cd-state.is-done::before { background: var(--cd-accent); }
+.cd-root.is-night .cd-state.is-done { color: #6FBF8E; }
 
 /* Row actions are quiet until you reach for them. Restore and Delete were the loudest
    thing on the page, in amber and red, repeated on every single row. */
@@ -131,29 +247,31 @@ const CD_CSS = `
   appearance: none; font: inherit; cursor: pointer;
   display: inline-flex; align-items: center; gap: 0.35rem; white-space: nowrap;
   font-size: 0.8rem; font-weight: 600; padding: 0.3rem 0.6rem;
-  background: #fff; color: #5B645E; border: 1px solid #DDE3DC; border-radius: 8px;
+  background: var(--cd-card); color: var(--cd-muted); border: 1px solid var(--cd-line); border-radius: 8px;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
-.cd-act:hover { background: #F1F5F1; color: #14231B; border-color: #BFCDC4; }
+.cd-act:hover { background: var(--cd-hover); color: var(--cd-ink); border-color: var(--cd-faint); }
 .cd-act.is-danger:hover { background: #FEF2F2; color: #B91C1C; border-color: #FECACA; }
+.cd-root.is-night .cd-act.is-danger:hover { background: rgba(185,28,28,0.18); color: #FCA5A5; border-color: rgba(252,165,165,0.4); }
 .cd-act:disabled { opacity: 0.4; cursor: not-allowed; }
 .cd-act:focus-visible { outline: 2px solid #E0A526; outline-offset: 1px; }
 .cd-act svg { width: 13px; height: 13px; flex-shrink: 0; }
 
 /* Sidebar, matched to the dashboard so moving between them is not a change of product. */
-.cd-side.lms-sidebar { background: #0A2F1F; border-right: 0; padding: 1.5rem 0.9rem 1.25rem; }
-.cd-side .lms-sidebar-logo { border-bottom: 1px solid rgba(255,255,255,0.09); padding: 0 1rem 1.1rem; margin-bottom: 1.1rem; }
+.cd-side.lms-sidebar { background: var(--cd-side); border-right: 0; padding: 1.5rem 0.9rem 1.25rem; }
+.cd-root.is-night .cd-side.lms-sidebar { border-right: 1px solid rgba(46,125,85,0.2); }
+.cd-side .lms-sidebar-logo { border-bottom: 1px solid var(--cd-side-line); padding: 0 1rem 1.1rem; margin-bottom: 1.1rem; }
 .cd-side .lms-nav-icon { display: none; }
 .cd-side .lms-nav-item {
   border-radius: 12px; padding: 0.62rem 0.85rem; font-size: 0.92rem; font-weight: 600; line-height: 1.3;
-  color: rgba(255,255,255,0.74); background: transparent; border: 0; width: 100%; text-align: left;
+  color: var(--cd-side-ink); background: transparent; border: 0; width: 100%; text-align: left;
 }
-.cd-side .lms-nav-item:hover { background: rgba(255,255,255,0.06); color: #fff; }
-.cd-side .lms-nav-group-label { padding: 0 0.85rem; font-size: 0.78rem; color: rgba(255,255,255,0.4); text-transform: none; letter-spacing: 0; font-weight: 500; }
+.cd-side .lms-nav-item:hover { background: var(--cd-side-hover); color: var(--cd-side-strong); }
+.cd-side .lms-nav-group-label { padding: 0 0.85rem; font-size: 0.78rem; color: var(--cd-side-label); text-transform: none; letter-spacing: 0; font-weight: 500; }
 .cd-info { padding: 0 0.85rem; display: flex; flex-direction: column; gap: 0.5rem; }
 .cd-info-row { display: flex; flex-direction: column; gap: 0.1rem; }
-.cd-info-key { font-size: 0.76rem; color: rgba(255,255,255,0.45); }
-.cd-info-val { font-size: 0.88rem; color: rgba(255,255,255,0.9); font-weight: 600; }
+.cd-info-key { font-size: 0.76rem; color: var(--cd-side-key); }
+.cd-info-val { font-size: 0.88rem; color: var(--cd-side-val); font-weight: 600; }
 
 @media (max-width: 900px) {
   .cd-head { flex-direction: column; }
@@ -666,33 +784,34 @@ export default function ClassDetailsScreen() {
   // Style helpers
   // One card treatment for every panel on the screen. 🚫 No shadow: it was the only thing
   // separating these from the cards, and three different elevations on one page is noise.
-  const nightStyle = (s={}) => isZZ
-    ? { background:'rgba(255,255,255,0.04)', border:'1px solid rgba(46,125,85,0.2)', borderRadius:'14px', padding:'1.15rem 1.25rem', marginBottom:'0.75rem', ...s }
-    : { background:'#fff', border:'1px solid #E2E6DF', borderRadius:'14px', padding:'1.15rem 1.25rem', marginBottom:'0.75rem', ...s };
 
   // ─────────────────────────────────────────────────────────────────────────────
   return (
-    <div className={isZZ ? 'lms-page' : 'lms-page cd-root'} style={ isZZ ? { background:'#020D06' } : {}}>
-      {!isZZ && <style>{CD_CSS}</style>}
+    <div className={isZZ ? 'lms-page cd-root is-night' : 'lms-page cd-root'}>
+      <style>{CD_CSS}</style>
 
       {/* Top bar */}
-      <div className="lms-topbar" style={ isZZ ? { background:'linear-gradient(135deg,#071E14 0%,#0A2F1F 60%,#071E14 100%)', borderBottom:'1px solid rgba(168,196,178,0.2)' } : {}}>
+      <div className="lms-topbar">
         <div className="lms-topbar-brand">
           <div style={{ width:'44px', height:'44px', borderRadius:'50%', background: isZZ ? 'rgba(46,125,85,0.3)' : 'var(--t-deep)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
             <img src="/images/logo.png" alt="" style={{ height:'32px', width:'auto', filter: isZZ ? 'brightness(0) invert(1)' : 'none' }} onError={e=>e.target.style.display='none'} />
           </div>
           <div style={{ display:'flex', flexDirection:'column', justifyContent:'center' }}>
-            <h1 className="taronga-title" style={{ fontSize:'1.35rem', letterSpacing:'0.06em', lineHeight:1, color: isZZ ? '#D4EDE0' : 'var(--t-deep)', fontWeight:400 }}>{isZZ ? '🌙 ZOOSNOOZ' : 'TARONGA TRACKA'}</h1>
-            <p style={{ fontSize:'0.7rem', color: isZZ ? 'rgba(184,212,192,0.65)' : 'var(--t-slate)', fontWeight:500, marginTop:'0.1rem' }}>Teacher Portal · {cls.className}</p>
+            <h1 className="taronga-title cd-brand" style={{ fontSize:'1.35rem', letterSpacing:'0.06em', lineHeight:1, fontWeight:400 }}>{isZZ ? '🌙 ZOOSNOOZ' : 'TARONGA TRACKA'}</h1>
+            <p className="cd-brand-sub" style={{ fontSize:'0.7rem', fontWeight:500, marginTop:'0.1rem' }}>Teacher Portal · {cls.className}</p>
           </div>
         </div>
-        <button className="lms-signout-btn" onClick={signOutTeacher} style={ isZZ ? { background:'rgba(46,125,85,0.25)', borderColor:'rgba(168,196,178,0.4)', color:'#A8C4B2' } : {}}>Sign Out</button>
+        <button className="lms-signout-btn" onClick={signOutTeacher}>Sign Out</button>
       </div>
 
       <div className="lms-two-col">
         {/* Sidebar */}
-        <div className={isZZ ? 'lms-sidebar' : 'lms-sidebar cd-side'} style={ isZZ ? { background:'linear-gradient(180deg,#071E14 0%,#040F08 100%)', borderRight:'1px solid rgba(46,125,85,0.2)' } : {}}>
-          <div className="lms-sidebar-logo" style={ isZZ ? { borderBottom:'1px solid rgba(46,125,85,0.2)' } : {}}>
+        <div className="lms-sidebar cd-side">
+          <div className="lms-sidebar-logo">
+            <button className="cd-side-back" onClick={() => setCurrentScreen('teacherDashboard')}>
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M13 8H3m0 0 4-4M3 8l4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              All classes
+            </button>
             <p style={{ fontSize:'0.63rem', fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase', color:'rgba(255,255,255,0.4)', marginBottom:'0.2rem' }}>Class Details</p>
             <p style={{ fontSize:'0.9rem', fontWeight:700, color:'white', lineHeight:1.25 }}>{cls.className}</p>
             {cls.schoolName && <p style={{ fontSize:'0.72rem', color:'rgba(255,255,255,0.5)', marginTop:'0.1rem' }}>{cls.schoolName}</p>}
@@ -700,9 +819,6 @@ export default function ClassDetailsScreen() {
 
           <p className="lms-nav-group-label">Navigation</p>
           <nav className="lms-nav">
-            <button className="lms-nav-item" onClick={() => setCurrentScreen('teacherDashboard')}>
-              <span className="lms-nav-icon"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M10 13L5 8l5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg></span> All Classes
-            </button>
             <button className="lms-nav-item" onClick={() => window.open('/whos-who-in-the-zoo.pdf', '_blank')}>
               <span className="lms-nav-icon"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5.5" r="2.2" stroke="currentColor" strokeWidth="1.5"/><path d="M3 14c0-2.76 2.24-5 5-5s5 2.24 5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg></span> Who's Who in the Zoo
             </button>
@@ -749,19 +865,19 @@ export default function ClassDetailsScreen() {
               button and a meta line. Repeating them here was four labels competing with the
               navigation for a teacher's attention and saying nothing new. */}
           <p className="lms-nav-group-label" style={{ marginTop:'1rem' }}>Class Info</p>
-          <div className={isZZ ? undefined : 'cd-info'} style={isZZ ? { padding:'0 1.25rem', display:'flex', flexDirection:'column', gap:'0.55rem' } : undefined}>
+          <div className="cd-info">
             {cls.location && (
-              <div className="cd-info-row" style={isZZ ? { display:'flex', flexDirection:'column', gap:'0.1rem' } : undefined}>
-                <span className="cd-info-key" style={isZZ ? { fontSize:'0.76rem', color:'rgba(184,212,192,0.55)' } : undefined}>Location</span>
-                <span className="cd-info-val" style={isZZ ? { fontSize:'0.88rem', color:'#D4EDE0', fontWeight:600 } : undefined}>
+              <div className="cd-info-row">
+                <span className="cd-info-key">Location</span>
+                <span className="cd-info-val">
                   {{ 'taronga-sydney':'Taronga Sydney', 'zoosnooz-sydney':'ZooSnooz · Sydney', 'evolve-sydney':'Evolve · Sydney', 'wildest-dreams-sydney':'Wildest Dreams · Sydney', 'dubbo':'Taronga Dubbo', 'school':'Your school' }[cls.location] || cls.location}
                 </span>
               </div>
             )}
             {cls.subject && (
-              <div className="cd-info-row" style={isZZ ? { display:'flex', flexDirection:'column', gap:'0.1rem' } : undefined}>
-                <span className="cd-info-key" style={isZZ ? { fontSize:'0.76rem', color:'rgba(184,212,192,0.55)' } : undefined}>Subject</span>
-                <span className="cd-info-val" style={isZZ ? { fontSize:'0.88rem', color:'#D4EDE0', fontWeight:600, textTransform:'capitalize' } : { textTransform:'capitalize' }}>{cls.subject}</span>
+              <div className="cd-info-row">
+                <span className="cd-info-key">Subject</span>
+                <span className="cd-info-val" style={{ textTransform:'capitalize' }}>{cls.subject}</span>
               </div>
             )}
             {!loading && (
@@ -788,12 +904,12 @@ export default function ClassDetailsScreen() {
               </div>
 
               {/* Description */}
-              <p style={{ margin:'0 0 0.35rem', fontSize:'0.78rem', fontWeight:700, color: isZZ ? 'rgba(212,237,224,0.9)' : 'rgba(255,255,255,0.85)', lineHeight:1.45 }}>
+              <p style={{ margin:'0 0 0.35rem', fontSize:'0.78rem', fontWeight:700, color:'rgba(255,255,255,0.85)', lineHeight:1.45 }}>
                 {cls.gpsEnabled
                   ? 'Students must be near an exhibit to discover it.'
                   : 'Students can discover animals without being nearby.'}
               </p>
-              <p style={{ margin:'0 0 0.65rem', fontSize:'0.72rem', color: isZZ ? 'rgba(184,212,192,0.6)' : 'rgba(255,255,255,0.5)', lineHeight:1.5 }}>
+              <p style={{ margin:'0 0 0.65rem', fontSize:'0.72rem', color:'rgba(255,255,255,0.5)', lineHeight:1.5 }}>
                 {cls.gpsEnabled
                   ? 'For GPS-enabled devices, e.g. Taronga hire phones.'
                   : 'Use this for NSW Department devices — GPS is blocked.'}
@@ -859,36 +975,32 @@ export default function ClassDetailsScreen() {
           ) : (
             <div className="lms-main-inner">
 
+              <button className="cd-back" onClick={() => setCurrentScreen('teacherDashboard')}>
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M13 8H3m0 0 4-4M3 8l4 4" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                All classes
+              </button>
+
               {/* Page heading. The class code is a control, not a footnote in the meta line:
                   it is the single thing a teacher comes back to this screen to read out. */}
-              <header className={isZZ ? undefined : 'cd-head'} style={isZZ ? { marginBottom:'1.5rem' } : undefined}>
+              <header className="cd-head">
                 <div>
-                  <h2 className={isZZ ? 'heading-display' : 'heading-display cd-title'} style={isZZ ? { fontSize:'clamp(1.2rem, 2.5vw, 1.5rem)', color:'#D4EDE0', lineHeight:1.2, marginBottom:'0.2rem' } : undefined}>{cls.className}</h2>
-                  {isZZ ? (
-                    <p style={{ color:'rgba(184,212,192,0.65)', fontSize:'0.8rem' }}>{cls.schoolName}{cls.stage ? ` · Stage ${cls.stage}` : ''} · Code: <span style={{ fontFamily:'monospace', fontWeight:700, color:'#4A9E6B' }}>{cls.classCode}</span></p>
-                  ) : (
-                    <p className="cd-meta">
-                      {cls.schoolName}
-                      {cls.stage ? <><span className="cd-dot" aria-hidden="true" />Stage {cls.stage}</> : null}
-                      {PROGRAMME_LABEL[cls.sessionType || 'standard'] ? <><span className="cd-dot" aria-hidden="true" />{PROGRAMME_LABEL[cls.sessionType || 'standard']}</> : null}
-                      {!loading ? <><span className="cd-dot" aria-hidden="true" />{students.length} {students.length === 1 ? 'student' : 'students'}</> : null}
-                    </p>
-                  )}
+                  <h2 className="heading-display cd-title">{cls.className}</h2>
+                  <p className="cd-meta">
+                    {cls.schoolName}
+                    {cls.stage ? <><span className="cd-dot" aria-hidden="true" />Stage {cls.stage}</> : null}
+                    {PROGRAMME_LABEL[cls.sessionType || 'standard'] ? <><span className="cd-dot" aria-hidden="true" />{PROGRAMME_LABEL[cls.sessionType || 'standard']}</> : null}
+                    {!loading ? <><span className="cd-dot" aria-hidden="true" />{students.length} {students.length === 1 ? 'student' : 'students'}</> : null}
+                  </p>
                 </div>
-                {!isZZ && (
-                  <button className="cd-code" onClick={() => setClassCodeModal(cls.classCode)} title="Show this code full screen for your students">
-                    <span className="cd-code-label">Join code</span>
-                    <span className="cd-code-value">{cls.classCode}</span>
-                  </button>
-                )}
+                <button className="cd-code" onClick={() => setClassCodeModal(cls.classCode)} title="Show this code full screen for your students">
+                  <span className="cd-code-label">Join code</span>
+                  <span className="cd-code-value">{cls.classCode}</span>
+                </button>
               </header>
 
               {/* Tabs. Absent by design for Evolve, Wildest Dreams and an empty class — see CD_TABS. */}
               {CD_TABS.length > 1 && (
-                <div role="tablist" aria-label="Class sections" className={isZZ ? undefined : 'cd-tabs'} style={isZZ ? {
-                  display:'flex', gap:'0.25rem', marginBottom:'1.5rem',
-                  borderBottom:'1px solid rgba(168,196,178,0.2)',
-                } : undefined}>
+                <div role="tablist" aria-label="Class sections" className="cd-tabs">
                   {CD_TABS.map(t => {
                     const label = { overview:'Overview', students:'Students', responses:'Responses' }[t];
                     const active = tab === t;
@@ -898,18 +1010,11 @@ export default function ClassDetailsScreen() {
                         role="tab"
                         aria-selected={active}
                         onClick={() => setTab(t)}
-                        className={isZZ ? undefined : 'cd-tab'}
-                        style={isZZ ? {
-                          appearance:'none', background:'none', border:0, cursor:'pointer',
-                          font:'inherit', fontSize:'0.95rem', fontWeight: active ? 700 : 600,
-                          padding:'0.7rem 1rem', marginBottom:'-1px',
-                          color: active ? '#D4EDE0' : 'rgba(184,212,192,0.6)',
-                          borderBottom: `3px solid ${active ? '#4A9E6B' : 'transparent'}`,
-                        } : undefined}
+                        className="cd-tab"
                       >
                         {label}
                         {t === 'students' && students.length > 0 && (
-                          <span className={isZZ ? undefined : 'cd-tab-count'} style={isZZ ? { fontSize:'0.75rem', fontWeight:700, background:'rgba(168,196,178,0.18)', color:'#A8C4B2', borderRadius:'999px', padding:'0.1rem 0.45rem' } : undefined}>{students.length}</span>
+                          <span className="cd-tab-count">{students.length}</span>
                         )}
                       </button>
                     );
@@ -922,7 +1027,7 @@ export default function ClassDetailsScreen() {
                   button must not promise a file that never lands in Downloads. */}
               {onTab('overview') && !isEV && !isWD && students.length > 0 && (
                 <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'1rem', flexWrap:'wrap', marginBottom:'1.25rem' }}>
-                  <p style={{ margin:0, fontSize:'0.86rem', color: isZZ ? 'rgba(184,212,192,0.65)' : '#6B736D' }}>
+                  <p className="cd-lede">
                     Every student's scores, writing and conservation statement in one document.
                   </p>
                   <button
@@ -933,7 +1038,7 @@ export default function ClassDetailsScreen() {
                       display:'inline-flex', alignItems:'center', gap:'0.5rem',
                       font:'inherit', fontSize:'0.88rem', fontWeight:700, cursor: loading ? 'not-allowed' : 'pointer',
                       padding:'0.65rem 1.1rem', borderRadius:'999px', border:'none',
-                      background: isZZ ? 'rgba(46,125,85,0.3)' : '#1A5238', color:'#fff', opacity: loading ? 0.5 : 1,
+                      background:'var(--cd-accent)', color:'var(--cd-on-accent)', opacity: loading ? 0.5 : 1,
                     }}
                   >
                     <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -956,11 +1061,11 @@ export default function ClassDetailsScreen() {
                 const avgPts       = students.length > 0 ? Math.round(students.reduce((s,st)=>s+(st.zzTotalPoints||0),0)/students.length) : 0;
                 const films        = students.filter(s=>s.zzDocumentaryURL).length;
                 return (
-                  <div className="lms-stat-grid" style={{ gridTemplateColumns:'repeat(4,1fr)', marginBottom:'1.75rem' }}>
-                    {[{l:'Students',v:totalStudents,c:'#4A9E6B'},{l:'Submitted',v:zzCompleted,c:'#34D399'},{l:'Avg Pts',v:avgPts,c:'#F59E0B'},{l:'Films',v:films,c:'#2E7D55'}].map(s=>(
-                      <div key={s.l} className="lms-stat-card" style={{ borderTop:'1px solid rgba(46,125,85,0.2)', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(46,125,85,0.2)' }}>
-                        <div className="lms-stat-val" style={{ color:'#D4EDE0', fontSize:'1.9rem', fontVariantNumeric:'tabular-nums' }}>{s.v}</div>
-                        <div className="lms-stat-label" style={{ color:'rgba(184,212,192,0.6)' }}>{s.l}</div>
+                  <div className="cd-stats">
+                    {[{l:'Students',v:totalStudents},{l:'Finished',v:zzCompleted},{l:'Average points',v:avgPts},{l:'Animals filmed',v:totalAnimals},{l:'Documentaries',v:films}].map(s=>(
+                      <div key={s.l} className="cd-stat">
+                        <div className="cd-stat-val">{s.v}</div>
+                        <div className="cd-stat-label">{s.l}</div>
                       </div>
                     ))}
                   </div>
@@ -1035,9 +1140,9 @@ export default function ClassDetailsScreen() {
                 const maxQBucket=Math.max(...Object.values(quizBuckets),1);
 
                 const zzDomainList=[
-                  {key:'behaviour',label:'Behaviour',icon:'B',avg:zzAvgB,color:'#4A9E6B'},
-                  {key:'detail',label:'Detail',icon:'D',avg:zzAvgD,color:'#60A5FA'},
-                  {key:'writing',label:'Writing',icon:'W',avg:zzAvgW,color:'#34D399'},
+                  {key:'behaviour',label:'Behaviour',icon:'B',avg:zzAvgB},
+                  {key:'detail',label:'Detail',icon:'D',avg:zzAvgD},
+                  {key:'writing',label:'Writing',icon:'W',avg:zzAvgW},
                 ];
                 const zzSorted=[...zzDomainList].sort((a,b)=>b.avg-a.avg);
                 const zzStrongest=zzSorted[0], zzWeakest=zzSorted[zzSorted.length-1];
@@ -1058,89 +1163,83 @@ export default function ClassDetailsScreen() {
                 const zzDeveloping=zzStudentStats.filter(s=>s.avg>=2.5&&s.avg<=3.5);
                 const zzProficient=zzStudentStats.filter(s=>s.avg>3.5);
 
-                const ns=(sx={})=>({background:'rgba(255,255,255,0.04)',border:'1px solid rgba(46,125,85,0.2)',borderRadius:'var(--t-r-md)',padding:'1rem 1.15rem',marginBottom:'0.7rem',...sx});
-
                 return (
                   <div style={{marginBottom:'1rem'}}>
-                    <h3 style={{fontSize:'0.95rem',marginBottom:'0.75rem',color:'#D4EDE0',letterSpacing:'-0.01em',fontWeight:700}}>Class Insights</h3>
+                    <h3 className="cd-h3">Class Insights</h3>
 
-                    <div style={ns()}>
-                      <p style={{fontSize:'0.68rem',fontWeight:700,color:'rgba(184,212,192,0.65)',textTransform:'uppercase',letterSpacing:'0.07em',marginBottom:'0.7rem'}}>Animals Encountered</p>
+                    <div className="cd-panel">
+                      <p className="cd-eyebrow">Animals Encountered</p>
                       {encounterCounts.map(({name,count})=>(
                         <div key={name} style={{marginBottom:'0.5rem'}}>
-                          <div style={{display:'flex',justifyContent:'space-between',fontSize:'0.78rem',color:'#A8C4B2',marginBottom:'0.2rem'}}><span>{name}</span><span style={{fontWeight:700,color:'#4A9E6B'}}>{count}</span></div>
-                          <div style={{height:'7px',borderRadius:'4px',background:'rgba(46,125,85,0.15)',overflow:'hidden'}}><div style={{height:'100%',width:`${(count/maxEncounter)*100}%`,background:'linear-gradient(90deg,#2E7D55,#4A9E6B)',borderRadius:'4px',transition:'width 0.4s'}}/></div>
+                          <div style={{display:'flex',justifyContent:'space-between',fontSize:'0.78rem',color:'var(--cd-muted)',marginBottom:'0.2rem'}}><span>{name}</span><span style={{fontWeight:700,color:'var(--cd-accent)'}}>{count}</span></div>
+                          <div style={{height:'7px',borderRadius:'4px',background:'var(--cd-chip)',overflow:'hidden'}}><div style={{height:'100%',width:`${(count/maxEncounter)*100}%`,background:'var(--cd-accent)',borderRadius:'4px',transition:'width 0.4s'}}/></div>
                         </div>
                       ))}
                     </div>
 
-                    <div style={ns()}>
-                      <p style={{fontSize:'0.68rem',fontWeight:700,color:'rgba(184,212,192,0.65)',textTransform:'uppercase',letterSpacing:'0.07em',marginBottom:'0.7rem'}}>Quiz Distribution</p>
+                    <div className="cd-panel">
+                      <p className="cd-eyebrow">Quiz Distribution</p>
                       <div style={{display:'flex',alignItems:'flex-end',gap:'0.6rem',height:'110px',paddingBottom:'0.2rem'}}>
                         {Object.entries(quizBuckets).map(([label,val])=>(
                           <div key={label} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:'0.25rem'}}>
-                            <span style={{fontSize:'0.72rem',fontWeight:700,color:'#4A9E6B'}}>{val}</span>
-                            <div style={{width:'100%',height:`${Math.max((val/maxQBucket)*80,val>0?6:0)}px`,background:'linear-gradient(180deg,#4A9E6B,#2E7D55)',borderRadius:'4px 4px 0 0',transition:'height 0.4s'}}/>
-                            <span style={{fontSize:'0.65rem',color:'rgba(184,212,192,0.5)',textAlign:'center',lineHeight:1.2}}>{label}</span>
+                            <span style={{fontSize:'0.72rem',fontWeight:700,color:'var(--cd-accent)'}}>{val}</span>
+                            <div style={{width:'100%',height:`${Math.max((val/maxQBucket)*80,val>0?6:0)}px`,background:'var(--cd-accent)',borderRadius:'4px 4px 0 0',transition:'height 0.4s'}}/>
+                            <span style={{fontSize:'0.65rem',color:'var(--cd-muted)',textAlign:'center',lineHeight:1.2}}>{label}</span>
                           </div>
                         ))}
                       </div>
                     </div>
 
                     {zzObsCnt>0&&(
-                      <div style={{...ns(),display:'flex',flexDirection:'column',alignItems:'center'}}>
-                        <p style={{fontSize:'0.72rem',fontWeight:700,color:'rgba(184,212,192,0.65)',textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:'0.5rem',alignSelf:'flex-start'}}>Observation Scores</p>
+                      <div className="cd-panel" style={{display:'flex',flexDirection:'column',alignItems:'center'}}>
+                        <p className="cd-eyebrow" style={{alignSelf:'flex-start'}}>Observation Scores</p>
                         <RadarSVG avgB={zzAvgB} avgD={zzAvgD} avgW={zzAvgW} dark={true}/>
                       </div>
                     )}
 
                     {zzObsCnt>0&&(
                       <>
-                        <div style={{display:'flex',alignItems:'center',gap:'0.75rem',marginBottom:'0.75rem',paddingTop:'0.25rem'}}>
-                          <div style={{flex:1,height:'2px',background:'linear-gradient(90deg,#2E7D55,transparent)',borderRadius:'2px'}}/>
-                          <p style={{fontSize:'0.65rem',fontWeight:800,color:'#4A9E6B',textTransform:'uppercase',letterSpacing:'0.1em',margin:0,whiteSpace:'nowrap'}}>Teaching Takeaways</p>
-                          <div style={{flex:1,height:'2px',background:'linear-gradient(270deg,#2E7D55,transparent)',borderRadius:'2px'}}/>
-                        </div>
+                        <h3 className="cd-h3" style={{marginTop:'1.75rem'}}>Teaching takeaways</h3>
                         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.6rem',marginBottom:'0.75rem'}}>
-                          <div style={{background:'rgba(46,125,85,0.12)',border:'1px solid rgba(46,125,85,0.35)',borderRadius:'var(--t-r-md)',padding:'0.9rem 1rem'}}>
-                            <p style={{fontSize:'0.65rem',fontWeight:700,color:'#4A9E6B',textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:'0.3rem'}}>Strength</p>
-                            <p style={{fontSize:'0.8rem',fontWeight:700,color:'#D4EDE0',margin:'0 0 0.2rem'}}>{zzStrongest.icon} {zzStrongest.label} ({zzStrongest.avg}/5)</p>
-                            <p style={{fontSize:'0.72rem',color:'#A8C4B2',margin:0,lineHeight:1.4}}>Students perform well at {zzStrongest.key==='behaviour'?'identifying what animals do':zzStrongest.key==='detail'?'using supporting ideas and evidence':'constructing clear sentences'}.</p>
+                          <div style={{background:'var(--cd-good-bg)',border:'1px solid var(--cd-good-line)',borderRadius:'var(--t-r-md)',padding:'0.9rem 1rem'}}>
+                            <p style={{fontSize:'0.65rem',fontWeight:700,color:'var(--cd-accent)',textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:'0.3rem'}}>Strength</p>
+                            <p style={{fontSize:'0.8rem',fontWeight:700,color:'var(--cd-ink)',margin:'0 0 0.2rem'}}>{zzStrongest.icon} {zzStrongest.label} ({zzStrongest.avg}/5)</p>
+                            <p style={{fontSize:'0.72rem',color:'var(--cd-muted)',margin:0,lineHeight:1.4}}>Students perform well at {zzStrongest.key==='behaviour'?'identifying what animals do':zzStrongest.key==='detail'?'using supporting ideas and evidence':'constructing clear sentences'}.</p>
                           </div>
-                          <div style={{background:'rgba(245,158,11,0.08)',border:'1px solid rgba(245,158,11,0.25)',borderRadius:'var(--t-r-md)',padding:'0.9rem 1rem'}}>
-                            <p style={{fontSize:'0.65rem',fontWeight:700,color:'#F59E0B',textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:'0.3rem'}}>Focus Area</p>
-                            <p style={{fontSize:'0.8rem',fontWeight:700,color:'#D4EDE0',margin:'0 0 0.2rem'}}>{zzWeakest.icon} {zzWeakest.label} ({zzWeakest.avg}/5)</p>
-                            <p style={{fontSize:'0.72rem',color:'#A8C4B2',margin:0,lineHeight:1.4}}>Students need to improve {zzWeakest.key==='behaviour'?'identifying what animals do':zzWeakest.key==='detail'?'using supporting ideas and evidence':'constructing clear sentences'}.</p>
+                          <div style={{background:'var(--cd-warn-bg)',border:'1px solid var(--cd-warn-line)',borderRadius:'var(--t-r-md)',padding:'0.9rem 1rem'}}>
+                            <p style={{fontSize:'0.65rem',fontWeight:700,color:'var(--cd-warn-ink)',textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:'0.3rem'}}>Focus Area</p>
+                            <p style={{fontSize:'0.8rem',fontWeight:700,color:'var(--cd-ink)',margin:'0 0 0.2rem'}}>{zzWeakest.icon} {zzWeakest.label} ({zzWeakest.avg}/5)</p>
+                            <p style={{fontSize:'0.72rem',color:'var(--cd-muted)',margin:0,lineHeight:1.4}}>Students need to improve {zzWeakest.key==='behaviour'?'identifying what animals do':zzWeakest.key==='detail'?'using supporting ideas and evidence':'constructing clear sentences'}.</p>
                           </div>
                         </div>
-                        <div style={{background:'rgba(59,130,246,0.08)',border:'1px solid rgba(59,130,246,0.2)',borderRadius:'var(--t-r-md)',padding:'0.95rem 1.15rem',marginBottom:'0.75rem'}}>
-                          <p style={{fontSize:'0.65rem',fontWeight:700,color:'#60A5FA',textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:'0.3rem'}}>Suggested Next Step</p>
-                          <p style={{fontSize:'0.78rem',color:'#A8C4B2',fontWeight:600,margin:0,lineHeight:1.5}}>
+                        <div style={{background:'var(--cd-info-bg)',border:'1px solid var(--cd-info-line)',borderRadius:'var(--t-r-md)',padding:'0.95rem 1.15rem',marginBottom:'0.75rem'}}>
+                          <p style={{fontSize:'0.65rem',fontWeight:700,color:'var(--cd-info-ink)',textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:'0.3rem'}}>Suggested Next Step</p>
+                          <p style={{fontSize:'0.78rem',color:'var(--cd-muted)',fontWeight:600,margin:0,lineHeight:1.5}}>
                             {zzWeakest.key==='behaviour'?'Help students identify and describe specific animal behaviours at each night exhibit.':zzWeakest.key==='detail'?'Encourage students to include specific details and link observations to the nocturnal environment.':'Support students to write complete sentences with clear scientific language.'}
                           </p>
                         </div>
 
-                        <div style={ns()}>
-                          <p style={{fontSize:'0.68rem',fontWeight:700,color:'rgba(184,212,192,0.65)',textTransform:'uppercase',letterSpacing:'0.07em',marginBottom:'0.75rem'}}>Domain Averages</p>
+                        <div className="cd-panel">
+                          <p className="cd-eyebrow">Domain Averages</p>
                           {zzDomainList.map(d=>(
                             <div key={d.key} style={{marginBottom:'0.6rem'}}>
                               <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',fontSize:'0.82rem',marginBottom:'0.22rem'}}>
-                                <span style={{color:'#D4EDE0',fontWeight:500}}>{d.icon} {d.label}</span>
-                                <span style={{fontWeight:700,color:d.color}}>{d.avg}/5</span>
+                                <span style={{color:'var(--cd-ink)',fontWeight:500}}>{d.icon} {d.label}</span>
+                                <span style={{fontWeight:700,color:'var(--cd-accent)'}}>{d.avg}/5</span>
                               </div>
-                              <div style={{height:'6px',background:'rgba(46,125,85,0.15)',borderRadius:'3px',overflow:'hidden'}}>
-                                <div style={{height:'100%',width:`${(d.avg/5)*100}%`,background:d.color,borderRadius:'3px',transition:'width 0.5s ease'}}/>
+                              <div style={{height:'6px',background:'var(--cd-chip)',borderRadius:'3px',overflow:'hidden'}}>
+                                <div style={{height:'100%',width:`${(d.avg/5)*100}%`,background:'var(--cd-accent)',borderRadius:'3px',transition:'width 0.5s ease'}}/>
                               </div>
                             </div>
                           ))}
                         </div>
 
-                        <div style={ns()}>
-                          <p style={{fontSize:'0.68rem',fontWeight:700,color:'rgba(184,212,192,0.65)',textTransform:'uppercase',letterSpacing:'0.07em',marginBottom:'0.65rem'}}>Common Issues</p>
+                        <div className="cd-panel">
+                          <p className="cd-eyebrow">Common Issues</p>
                           {[[zzLowBPct,'of responses showed low behaviour identification'],[zzLowDPct,'of responses showed low supporting detail'],[zzLowWPct,'of responses contained no explanation language']].map(([pct,label])=>(
                             <div key={label} style={{display:'flex',alignItems:'baseline',gap:'0.65rem',marginBottom:'0.45rem'}}>
-                              <span style={{fontSize:'0.88rem',fontWeight:700,color:'#F87171',minWidth:'2.8rem'}}>{pct}%</span>
-                              <span style={{fontSize:'0.78rem',color:'#A8C4B2',lineHeight:1.4}}>{label}</span>
+                              <span style={{fontSize:'0.88rem',fontWeight:700,color:'var(--cd-bad-ink)',minWidth:'2.8rem'}}>{pct}%</span>
+                              <span style={{fontSize:'0.78rem',color:'var(--cd-muted)',lineHeight:1.4}}>{label}</span>
                             </div>
                           ))}
                         </div>
@@ -1149,9 +1248,9 @@ export default function ClassDetailsScreen() {
 
                     {zzStudentStats.length>0&&(
                       <div style={{marginBottom:'0.5rem'}}>
-                        <h3 style={{fontSize:'1rem',fontWeight:700,color:'#D4EDE0',marginBottom:'0.75rem'}}>Student Groups</h3>
-                        <div style={ns()}>
-                          <p style={{fontSize:'0.72rem',fontWeight:700,color:'rgba(184,212,192,0.5)',textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:'0.65rem'}}>Overall Performance</p>
+                        <h3 className="cd-h3">Student Groups</h3>
+                        <div className="cd-panel">
+                          <p className="cd-eyebrow">Overall Performance</p>
                           {[
                             {key:'support',label:'Support',students:zzSupport,bg:'rgba(239,68,68,0.08)',border:'rgba(239,68,68,0.3)',labelColor:'#FCA5A5',tip:'Work with these students on identifying behaviour and adding simple night-observation detail.'},
                             {key:'developing',label:'Developing',students:zzDeveloping,bg:'rgba(245,158,11,0.08)',border:'rgba(245,158,11,0.3)',labelColor:'#FCD34D',tip:'Encourage adding more specific nocturnal detail and clearer explanations.'},
@@ -1169,7 +1268,7 @@ export default function ClassDetailsScreen() {
                                 <div style={{background:g.bg,borderLeft:`3px solid ${g.border}`,borderRadius:'0 0 8px 8px',padding:'0.6rem 0.75rem',marginTop:'-2px'}}>
                                   <p style={{fontSize:'0.72rem',color:g.labelColor,fontStyle:'italic',margin:'0 0 0.4rem',lineHeight:1.4}}>{g.tip}</p>
                                   <div style={{display:'flex',flexWrap:'wrap',gap:'0.3rem'}}>
-                                    {g.students.map((s,i)=><span key={i} style={{fontSize:'0.72rem',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.12)',borderRadius:'var(--t-r-pill)',padding:'0.15rem 0.55rem',color:'#D4EDE0',fontWeight:600}}>{s.name}</span>)}
+                                    {g.students.map((s,i)=><span key={i} style={{fontSize:'0.72rem',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.12)',borderRadius:'var(--t-r-pill)',padding:'0.15rem 0.55rem',color:'var(--cd-ink)',fontWeight:600}}>{s.name}</span>)}
                                   </div>
                                 </div>
                               )}
@@ -1244,7 +1343,7 @@ export default function ClassDetailsScreen() {
                   <div style={{ marginBottom:'1rem' }}>
                     <h3 style={{ fontSize:'0.95rem', marginBottom:'0.75rem', color:'var(--t-deep)', letterSpacing:'-0.01em', fontWeight:700 }}>Class Insights</h3>
 
-                    <div style={nightStyle()}>
+                    <div className="cd-panel">
                       <p style={{ fontSize:'0.68rem', fontWeight:700, color:'var(--t-slate)', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:'0.7rem' }}>Habitats Completed</p>
                       {habitatCounts.map(h => (
                         <div key={h.name} style={{ marginBottom:'0.6rem' }}>
@@ -1260,7 +1359,7 @@ export default function ClassDetailsScreen() {
                       ))}
                     </div>
 
-                    <div style={nightStyle()}>
+                    <div className="cd-panel">
                       <p style={{ fontSize:'0.68rem', fontWeight:700, color:'var(--t-slate)', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:'0.7rem' }}>Quiz Distribution</p>
                       <div style={{ display:'flex', alignItems:'flex-end', gap:'0.6rem', height:'110px', paddingBottom:'0.2rem' }}>
                         {Object.entries(quizBuckets).map(([label,val]) => (
@@ -1275,7 +1374,7 @@ export default function ClassDetailsScreen() {
 
                     {obsCnt > 0 && (
                       <>
-                        <div style={{ ...nightStyle(), display:'flex', flexDirection:'column', alignItems:'center' }}>
+                        <div className="cd-panel" style={{ display:'flex', flexDirection:'column', alignItems:'center' }}>
                           <p style={{ fontSize:'0.72rem', fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'0.5rem', alignSelf:'flex-start' }}>Writing Scores</p>
                           <RadarSVG avgB={zyAvgB} avgD={zyAvgD} avgW={zyAvgW} dark={false} />
                         </div>
@@ -1296,7 +1395,7 @@ export default function ClassDetailsScreen() {
                           <p style={{ fontSize:'0.78rem', color:'#555', fontWeight:600, margin:0, lineHeight:1.5 }}>{action}</p>
                         </div>
 
-                        <div style={nightStyle()}>
+                        <div className="cd-panel">
                           <p style={{ fontSize:'0.68rem', fontWeight:700, color:'var(--t-slate)', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:'0.75rem' }}>Domain Averages</p>
                           {domainList.map(d => (
                             <div key={d.key} style={{ marginBottom:'0.6rem' }}>
@@ -1311,7 +1410,7 @@ export default function ClassDetailsScreen() {
                           ))}
                         </div>
 
-                        <div style={nightStyle()}>
+                        <div className="cd-panel">
                           <p style={{ fontSize:'0.68rem', fontWeight:700, color:'var(--t-slate)', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:'0.65rem' }}>Common Issues</p>
                           {[[pct(lowB),'of responses showed low behaviour identification'],[pct(lowD),'of responses showed low supporting detail'],[pct(lowW),'of responses contained no explanation language']].map(([p,label]) => (
                             <div key={label} style={{ display:'flex', alignItems:'baseline', gap:'0.65rem', marginBottom:'0.45rem' }}>
@@ -1321,7 +1420,7 @@ export default function ClassDetailsScreen() {
                           ))}
                         </div>
 
-                        <div style={nightStyle()}>
+                        <div className="cd-panel">
                           <p style={{ fontSize:'0.68rem', fontWeight:700, color:'var(--t-slate)', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:'0.65rem' }}>Student Groups</p>
                           {[
                             { key:'zy-support',    label:'Support',    list:support,    bg:'rgba(239,68,68,0.06)',  border:'rgba(239,68,68,0.28)',  color:'#DC2626', tip:'Work with these students on naming a behaviour and adding one specific detail.' },
@@ -1778,7 +1877,7 @@ export default function ClassDetailsScreen() {
                     {onTab('overview') && <>
                     <h3 style={{ fontSize:'0.95rem', marginBottom:'0.75rem', color:'var(--t-deep)', letterSpacing:'-0.01em', fontWeight:700 }}>Class Insights</h3>
                     {/* Most Visited */}
-                    <div style={nightStyle()}>
+                    <div className="cd-panel">
                       <p style={{ fontSize:'0.68rem', fontWeight:700, color:'var(--t-slate)', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:'0.7rem' }}>Most Visited Animals</p>
                       {topAnimals.length === 0 ? <p style={{ fontSize:'0.78rem', color:'#bbb' }}>No data yet</p> :
                         topAnimals.map(([name,count]) => (
@@ -1790,7 +1889,7 @@ export default function ClassDetailsScreen() {
                       }
                     </div>
                     {/* Quiz Distribution */}
-                    <div style={nightStyle()}>
+                    <div className="cd-panel">
                       <p style={{ fontSize:'0.68rem', fontWeight:700, color:'var(--t-slate)', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:'0.7rem' }}>Quiz Distribution</p>
                       <div style={{ display:'flex', alignItems:'flex-end', gap:'0.6rem', height:'110px', paddingBottom:'0.2rem' }}>
                         {Object.entries(quizBuckets).map(([label,val]) => (
@@ -1804,7 +1903,7 @@ export default function ClassDetailsScreen() {
                     </div>
                     {/* Observation/Maths Radar */}
                     {obsCnt > 0 && (
-                      <div style={{ ...nightStyle(), display:'flex', flexDirection:'column', alignItems:'center' }}>
+                      <div className="cd-panel" style={{ display:'flex', flexDirection:'column', alignItems:'center' }}>
                         <p style={{ fontSize:'0.72rem', fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'0.5rem', alignSelf:'flex-start' }}>{isMaths ? 'Maths Scores' : isPdhpe ? 'PDHPE Scores' : 'Writing Scores'}</p>
                         <RadarSVG avgB={avgB} avgD={avgD} avgW={avgW} dark={false} labels={isMaths ? ['Method','Accuracy','Comms'] : isPdhpe ? ['Compare','Understand','Comms'] : undefined} />
                       </div>
@@ -1972,65 +2071,69 @@ export default function ClassDetailsScreen() {
               })()}
 
               {/* ── ZooSnooz student table ── */}
+              {/* The same table as every other programme, in the night palette. It was a
+                  separate construction entirely: an HTML table with zebra striping, a gradient
+                  banner and five greens, inside a screen built on one grid and one ink colour.
+                  ⚠️ It also had no Restore and no Delete, which every other mode has had for
+                  months, so a ZooSnooz student who finished early could not be let back in. */}
               {onTab('students') && isZZ && (
-                <div style={{ background:'linear-gradient(160deg,#020D06 0%,#040F08 100%)', borderRadius:'var(--t-r-lg)', border:'1px solid rgba(46,125,85,0.3)', overflow:'hidden', marginBottom:'1.5rem' }}>
-                  <div style={{ padding:'0.75rem 1rem', background:'linear-gradient(135deg,#071E14,#0A2F1F)', borderBottom:'1px solid rgba(46,125,85,0.25)', display:'flex', alignItems:'center', gap:'0.65rem' }}>
-                    <span>🌙</span>
-                    <span style={{ fontSize:'0.85rem', fontWeight:700, color:'white' }}>ZooSnooz Night Program</span>
-                    <span style={{ fontSize:'0.72rem', color:'rgba(184,212,192,0.65)', marginLeft:'auto' }}>{students.length} students · {ZOOSNOOZ_ANIMALS.length} animals</span>
+                <div className="cd-table">
+                  <div className="cd-row cd-thead" style={{ gridTemplateColumns: CD_COLS_ZZ }}>
+                    {['Student','Points','Quiz','Animals','Observations','Submitted',''].map((h,i) => (
+                      <div key={h || `a${i}`} className="cd-th" style={i === 6 ? { textAlign:'right' } : undefined}>{h}</div>
+                    ))}
                   </div>
-                  <div style={{ overflowX:'auto' }}>
-                    <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'0.88rem' }}>
-                      <thead>
-                        <tr style={{ borderBottom:'1px solid rgba(46,125,85,0.25)' }}>
-                          {['Student','Points','Quiz %','Animals','Submitted','Actions'].map(h => (
-                            <th key={h} style={{ textAlign:h==='Student'?'left':'center', padding:'0.65rem 0.75rem', fontWeight:600, color:'#4A9E6B', fontSize:'0.75rem', textTransform:'uppercase', letterSpacing:'0.05em' }}>{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {students.length === 0 ? (
-                          <tr><td colSpan={6} style={{ textAlign:'center', padding:'2rem', color:'rgba(184,212,192,0.4)', fontSize:'0.85rem' }}>No students yet.</td></tr>
-                        ) : students.map((s,i) => {
-                          const zzMap = resolveZzData(s);
-                          const completedIds = ZOOSNOOZ_ANIMALS.filter(a => zzMap[a.id]).map(a => a.id);
-                          const completedCount = completedIds.length;
-                          const allDone = completedCount === ZOOSNOOZ_ANIMALS.length;
-                          const zzPts   = s.zzTotalPoints ?? 0;
-                          const correct = completedIds.filter(id => {
-                            const d = zzMap[id];
-                            return d.quizCorrect === true || d.quizResults?.[0]?.correctOnFirstAttempt === true;
-                          }).length;
-                          const quizPct = completedCount > 0
-                            ? Math.round((correct / completedCount) * 100)
-                            : (s.quizPercentage != null ? s.quizPercentage : null);
-                          return (
-                            <tr key={i} style={{ borderBottom:'1px solid rgba(46,125,85,0.1)', background: allDone?'rgba(46,125,85,0.08)':i%2===0?'rgba(255,255,255,0.02)':'transparent' }}>
-                              <td style={{ padding:'0.8rem 0.75rem', color:'#D4EDE0', fontWeight:600 }}>{s.name}{allDone&&<span style={{ marginLeft:'0.4rem', fontSize:'0.6rem', background:'#2E7D55', color:'white', borderRadius:'4px', padding:'0.1rem 0.35rem', fontWeight:700, verticalAlign:'middle' }}>Done</span>}</td>
-                              <td style={{ padding:'0.8rem 0.75rem', textAlign:'center', fontWeight:700, color:'#A8C4B2' }}>{completedCount>0?zzPts:<span style={{ color:'rgba(255,255,255,0.2)' }}> - </span>}</td>
-                              <td style={{ padding:'0.8rem 0.75rem', textAlign:'center', fontWeight:600, color:'#4A9E6B' }}>{quizPct!==null?`${quizPct}%`:<span style={{ color:'rgba(255,255,255,0.2)' }}> - </span>}</td>
-                              <td style={{ padding:'0.8rem 0.75rem', textAlign:'center' }}>
-                                <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'0.2rem' }}>
-                                  <div style={{ width:'48px', height:'4px', background:'rgba(46,125,85,0.2)', borderRadius:'3px', overflow:'hidden' }}><div style={{ height:'100%', width:`${(completedCount/ZOOSNOOZ_ANIMALS.length)*100}%`, background:'#2E7D55', borderRadius:'3px' }}/></div>
-                                  <span style={{ fontSize:'0.7rem', fontWeight:700, color:'#4A9E6B' }}>{completedCount}/{ZOOSNOOZ_ANIMALS.length}</span>
-                                </div>
-                              </td>
-                              <td style={{ padding:'0.8rem 0.75rem', textAlign:'center', color:'rgba(184,212,192,0.5)', fontSize:'0.82rem' }}>
-                                {s.completedAt ? new Date(s.completedAt.toDate?.() || s.completedAt).toLocaleDateString('en-AU',{day:'numeric',month:'short'}) : ' - '}
-                              </td>
-                              <td style={{ padding:'0.8rem 0.75rem', textAlign:'center' }}>
-                                {completedCount>0 ? <button onClick={() => setObsModal({...s, isZZ:true})} style={{ background:'rgba(46,125,85,0.18)', color:'#A8C4B2', border:'1px solid rgba(46,125,85,0.35)', padding:'0.25rem 0.55rem', borderRadius:'var(--t-r-xs)', fontSize:'0.75rem', fontWeight:600, cursor:'pointer' }}>View</button> : <span style={{ color:'rgba(255,255,255,0.2)', fontSize:'0.72rem' }}> - </span>}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
+                  {students.length === 0 ? (
+                    <div style={{ padding:'2.5rem 1rem', textAlign:'center' }}><p className="cd-lede">No students have joined this class yet.</p></div>
+                  ) : students.map((s) => {
+                    const zzMap = resolveZzData(s);
+                    const completedIds = ZOOSNOOZ_ANIMALS.filter(a => zzMap[a.id]).map(a => a.id);
+                    const completedCount = completedIds.length;
+                    const allDone = completedCount === ZOOSNOOZ_ANIMALS.length;
+                    const zzPts   = s.zzTotalPoints ?? 0;
+                    const correct = completedIds.filter(id => {
+                      const d = zzMap[id];
+                      return d.quizCorrect === true || d.quizResults?.[0]?.correctOnFirstAttempt === true;
+                    }).length;
+                    const quizPct = completedCount > 0
+                      ? Math.round((correct / completedCount) * 100)
+                      : (s.quizPercentage != null ? s.quizPercentage : null);
+                    const busy = studentActionBusy[s.id];
+                    return (
+                      <div key={s.id || s.name} className="cd-row cd-tr" style={{ gridTemplateColumns: CD_COLS_ZZ }}>
+                        <div className="cd-who">
+                          <div className={allDone ? 'cd-avatar is-done' : 'cd-avatar'}>{s.name.charAt(0).toUpperCase()}</div>
+                          <span className="cd-name">{s.name}</span>
+                        </div>
+                        <div className="cd-num">{completedCount > 0 ? zzPts : <span className="cd-nil">–</span>}</div>
+                        <div className="cd-num">{quizPct !== null ? `${quizPct}%` : <span className="cd-nil">–</span>}</div>
+                        <div style={{ display:'flex', alignItems:'center', gap:'0.5rem' }}>
+                          <span className="cd-bar"><span style={{ width:`${(completedCount/ZOOSNOOZ_ANIMALS.length)*100}%` }} /></span>
+                          <span className="cd-num" style={{ fontSize:'0.82rem' }}>{completedCount}/{ZOOSNOOZ_ANIMALS.length}</span>
+                        </div>
+                        <div>{completedCount > 0 ? <button className="cd-view" onClick={() => setObsModal({ ...s, isZZ:true })}>Read</button> : <span className="cd-nil">–</span>}</div>
+                        <div>{s.completedAt
+                          ? <span className="cd-state is-done">{new Date(s.completedAt.toDate?.() || s.completedAt).toLocaleDateString('en-AU',{day:'numeric',month:'short'})}</span>
+                          : <span className="cd-state">In progress</span>}</div>
+                        <div className="cd-acts">
+                          <button className="cd-act" onClick={() => resetStudent(s)} disabled={!!busy} title="Send this student back to the animal list. They keep their clips and writing." aria-label={`Restore ${s.name}`}>
+                            {busy==='resetting' ? '…' : <><svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 8a5.5 5.5 0 109.3-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/><path d="M12.5 1v3.2H9.3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg> Restore</>}
+                          </button>
+                          {s.deviceUid && (
+                            <button className="cd-act" onClick={() => releaseStudentDevice(s)} disabled={!!busy} title="Let this student continue on a different device" aria-label={`Move ${s.name} to a new device`}>
+                              {busy==='releasing' ? '…' : <><svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="4.5" y="1.5" width="7" height="13" rx="1.5" stroke="currentColor" strokeWidth="1.5"/><path d="M7 12.5h2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg> New device</>}
+                            </button>
+                          )}
+                          <button className="cd-act is-danger" onClick={() => deleteStudent(s)} disabled={!!busy} title="Delete this student" aria-label={`Delete ${s.name}`}>
+                            {busy==='deleting' ? '…' : <><svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 4h11M6 4V2.5h4V4M4 4l.7 9.5h6.6L12 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg> Delete</>}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 
-              {/* ── Student Groups (day mode) ── */}
               {onTab('students') && !isZZ && students.length > 0 && obsCnt > 0 && (() => {
                 const studentStats = students.map(s => {
                   let tb=0,td=0,tw=0,n=0;
@@ -2080,14 +2183,14 @@ export default function ClassDetailsScreen() {
               {/* ── Student Documentaries ── */}
               {onTab('students') && isZZ && students.some(s=>s.zzDocumentaryURL) && (
                 <div style={{marginBottom:'1.5rem'}}>
-                  <h3 style={{fontSize:'0.95rem',fontWeight:700,color:'#D4EDE0',marginBottom:'0.75rem'}}>🎬 Student Documentaries</h3>
+                  <h3 className="cd-h3">Student documentaries</h3>
                   <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))',gap:'0.75rem'}}>
                     {students.filter(s=>s.zzDocumentaryURL).map((s,i)=>(
-                      <div key={i} style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(46,125,85,0.2)',borderRadius:'var(--t-r-md)',overflow:'hidden'}}>
+                      <div key={i} className="cd-panel" style={{padding:0,marginBottom:0,overflow:'hidden'}}>
                         <SignedVideo url={s.zzDocumentaryURL} classCode={normaliseCode(selectedClass)} style={{width:'100%',aspectRatio:'9/16',objectFit:'cover',display:'block'}} preload="none" playsInline controls />
                         <div style={{padding:'0.55rem 0.65rem'}}>
-                          <p style={{fontSize:'0.78rem',fontWeight:700,color:'#D4EDE0',margin:'0 0 0.15rem'}}>{s.name}</p>
-                          <p style={{fontSize:'0.68rem',color:'rgba(184,212,192,0.55)',margin:0}}>{Object.keys(resolveZzData(s)).length} animals</p>
+                          <p className="cd-name" style={{margin:'0 0 0.15rem'}}>{s.name}</p>
+                          <p className="cd-lede" style={{fontSize:'0.72rem'}}>{Object.keys(resolveZzData(s)).length} animals</p>
                         </div>
                       </div>
                     ))}
