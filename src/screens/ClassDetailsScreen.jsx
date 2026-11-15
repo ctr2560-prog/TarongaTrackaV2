@@ -130,23 +130,10 @@ const CD_CSS = `
 .cd-root.is-night .lms-signout-btn { background: rgba(46,125,85,0.25); border-color: rgba(168,196,178,0.4); color: #A8C4B2; }
 .cd-root.is-night .lms-main { background: var(--cd-bg); }
 
-/* Getting OUT of a class was one grey line in a list of ten documents, so it read as
-   another link rather than the way back. Two now, and neither is in that list: one at the
-   top of the sidebar, one above the class name where the eye already is. */
-.cd-back {
-  appearance: none; font: inherit; cursor: pointer;
-  display: inline-flex; align-items: center; gap: 0.45rem;
-  margin-bottom: 0.9rem; padding: 0.45rem 0.9rem 0.45rem 0.7rem;
-  background: var(--cd-card); color: var(--cd-accent); border: 1px solid var(--cd-line); border-radius: 999px;
-  font-size: 0.84rem; font-weight: 700;
-  transition: background 0.15s, border-color 0.15s;
-}
-.cd-back:hover { background: var(--cd-hover); border-color: var(--cd-accent); }
-.cd-back:focus-visible { outline: 3px solid #E0A526; outline-offset: 2px; }
-.cd-back svg { width: 14px; height: 14px; }
-.cd-root.is-night .cd-back { color: #A8C4B2; }
-.cd-root.is-night .cd-back:hover { color: var(--cd-ink); }
-
+/* Getting out of a class was one grey line in a list of ten documents, so it read as
+   another link rather than the way back. It is its own control at the top of the sidebar
+   now. ⚠️ There was briefly a second one above the class name as well; two ways back on
+   one screen is clutter, and the sidebar is where it belongs. */
 .cd-side-back {
   appearance: none; font: inherit; cursor: pointer; width: 100%;
   display: flex; align-items: center; gap: 0.55rem;
@@ -974,11 +961,6 @@ export default function ClassDetailsScreen() {
             </div>
           ) : (
             <div className="lms-main-inner">
-
-              <button className="cd-back" onClick={() => setCurrentScreen('teacherDashboard')}>
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M13 8H3m0 0 4-4M3 8l4 4" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                All classes
-              </button>
 
               {/* Page heading. The class code is a control, not a footnote in the meta line:
                   it is the single thing a teacher comes back to this screen to read out. */}
