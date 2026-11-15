@@ -238,7 +238,8 @@ const TD_CSS = `
 .td-empty h4 { margin: 0 0 0.4rem; font-size: 1.15rem; color: #0A2F1F; }
 .td-empty p { margin: 0 0 1.25rem; color: #5B645E; line-height: 1.55; font-size: 0.92rem; }
 
-.td-split { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+.td-split { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 1.5rem; align-items: stretch; }
+.td-plan { display: flex; flex-direction: column; }
 .td-links { list-style: none; margin: 0; padding: 0.35rem; display: grid; grid-template-columns: 1fr 1fr; gap: 0.15rem; background: #fff; border: 1px solid #E2E6DF; border-radius: 20px; }
 .td-links button { display: flex; align-items: center; gap: 0.85rem; width: 100%; text-align: left; padding: 0.8rem 0.85rem; border: 0; background: none; border-radius: 14px; cursor: pointer; font: inherit; transition: background 0.15s; }
 .td-links button:hover { background: #F1F5F1; }
@@ -248,10 +249,25 @@ const TD_CSS = `
 .td-link-title { display: block; font-size: 0.9rem; font-weight: 700; color: #14231B; }
 .td-link-desc { display: block; font-size: 0.78rem; color: #6B736D; margin-top: 0.1rem; }
 .td-chev { color: #A3ADA6; font-size: 1.3rem; line-height: 1; }
-.td-wildly { margin-top: 0.75rem; display: flex; align-items: center; gap: 1rem; width: 100%; text-align: left; padding: 0.9rem 1.1rem; background: #fff; border: 1px solid #E2E6DF; border-radius: 20px; cursor: pointer; font: inherit; color: #3C4A41; font-size: 0.86rem; line-height: 1.45; transition: border-color 0.15s; }
-.td-wildly:hover { border-color: #1A5238; }
-.td-wildly img { width: 76px; height: auto; flex-shrink: 0; }
-.td-wildly span:nth-of-type(1) { flex: 1; }
+/* The one dark panel in the main column, and it is meant to be noticed: it fills
+   whatever height the points column leaves (flex: 1 inside .td-plan) so the two
+   columns end on the same line instead of the plan column stopping short. */
+.td-wildly {
+  margin-top: 0.9rem; flex: 1; min-height: 196px;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 0.7rem;
+  width: 100%; text-align: left; padding: 1.4rem 1.45rem;
+  background: #0A2F1F; border: 1px solid #0A2F1F; border-radius: 20px;
+  cursor: pointer; font: inherit; transition: background 0.15s, border-color 0.15s;
+}
+.td-wildly:hover { background: #10402A; border-color: #2E7D55; }
+.td-wildly img { width: 146px; height: auto; margin-bottom: 0.15rem; }
+.td-wildly-title { font-size: 1.2rem; font-weight: 700; color: #fff; line-height: 1.3; letter-spacing: -0.01em; }
+.td-wildly-copy { font-size: 0.87rem; line-height: 1.55; color: rgba(255,255,255,0.68); }
+.td-wildly-foot { margin-top: auto; padding-top: 0.9rem; display: flex; align-items: center; gap: 0.85rem; flex-wrap: wrap; }
+.td-wildly-cta { display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.62rem 1.05rem; border-radius: 11px; background: #E0A526; color: #2A2206; font-size: 0.88rem; font-weight: 700; }
+.td-wildly-cta svg { width: 15px; height: 15px; }
+.td-wildly:hover .td-wildly-cta { background: #EFB63A; }
+.td-wildly-note { font-size: 0.78rem; color: rgba(255,255,255,0.5); }
 
 .td-points { background: #fff; border: 1px solid #E2E6DF; border-radius: 20px; padding: 1.35rem; }
 .td-points-num { display: flex; align-items: baseline; gap: 0.45rem; }
@@ -772,9 +788,16 @@ export default function TeacherDashboardScreen() {
                   ))}
                 </ul>
                 <button className="td-wildly" onClick={() => window.open('https://www.wildlybytaronga.com.au', '_blank')}>
-                  <img src="/images/wildly-logo.webp" alt="Wildly by Taronga" />
-                  <span>Lessons, programs and assessments to carry the visit back into class.</span>
-                  <span className="td-chev" aria-hidden="true">›</span>
+                  <img src="/images/wildly-logo-white.png" alt="Wildly by Taronga" />
+                  <span className="td-wildly-title">Take Taronga back to the classroom.</span>
+                  <span className="td-wildly-copy">Lessons, units, assessments and professional learning, written by Taronga educators.</span>
+                  <span className="td-wildly-foot">
+                    <span className="td-wildly-cta">
+                      Open Wildly
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M7 17 17 7" /><path d="M8 7h9v9" /></svg>
+                    </span>
+                    <span className="td-wildly-note">Your Tracka log-in works there too.</span>
+                  </span>
                 </button>
               </section>
 
