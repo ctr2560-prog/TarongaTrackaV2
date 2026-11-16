@@ -21,26 +21,69 @@ const CC_CSS = `
 .cc-step-n { margin: 0 0 0.15rem; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #8A9490; }
 .cc-h3 { margin: 0 0 1.1rem; font-size: 1.18rem; font-weight: 700; color: #0A2F1F; letter-spacing: -0.015em; }
 
-/* The programme decides everything downstream, so it is five cards rather than one line of a
-   dropdown. It used to be the smallest control on the screen. */
-.cc-progs { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; }
+/* ⚠️⚠️ A TEACHER WHO HAS NEVER HEARD OF THESE FIVE HAS TO BE ABLE TO PICK ONE.
+   Names alone do not do that: "ZooYard" and "Evolve" mean nothing cold, and the first pass
+   at this leaned on pale colour washes, which carry nothing to someone who does not already
+   know the colour code. Each card leads with a PHOTOGRAPH of that programme happening, and a
+   plain line underneath saying where it is and who it is for. The marketing name is the
+   smallest promise on the card. */
+.cc-progs { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 .cc-prog {
-  position: relative; appearance: none; font: inherit; cursor: pointer; text-align: left;
-  display: flex; flex-direction: column; gap: 0.3rem;
-  padding: 1rem 1.1rem 1.05rem; border-radius: 16px;
-  background: #fff; border: 1.5px solid #E2E6DF;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  position: relative; overflow: hidden;
+  appearance: none; font: inherit; cursor: pointer; text-align: left; padding: 0;
+  display: flex; flex-direction: column;
+  border-radius: 18px; background: #fff; border: 1.5px solid #E2E6DF;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.15s;
 }
-.cc-prog:hover:not(:disabled) { border-color: #BFCDC4; }
-.cc-prog.is-on { border-color: #1A5238; box-shadow: inset 0 0 0 1px #1A5238; }
-.cc-prog:disabled { opacity: 0.55; cursor: not-allowed; }
-.cc-prog:focus-visible { outline: 3px solid #E0A526; outline-offset: 2px; }
-.cc-prog-name { display: flex; align-items: center; gap: 0.5rem; font-size: 1rem; font-weight: 700; color: #14231B; }
-.cc-prog-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--p, #2E7D55); flex-shrink: 0; }
-.cc-prog-desc { font-size: 0.84rem; color: #5B645E; line-height: 1.5; }
-.cc-prog-meta { font-size: 0.76rem; color: #8A9490; margin-top: 0.1rem; }
-.cc-prog-tick { position: absolute; top: 0.85rem; right: 0.95rem; width: 18px; height: 18px; color: #1A5238; }
-.cc-soon { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #8A9490; background: #F1F4F0; border-radius: 999px; padding: 0.1rem 0.45rem; }
+.cc-prog:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 16px 34px rgba(10,47,31,0.13); border-color: #CBD5CC; }
+.cc-prog.is-on { border-color: var(--p); box-shadow: 0 0 0 2px var(--p), 0 14px 30px rgba(10,47,31,0.12); }
+.cc-prog:focus-visible { outline: 3px solid #E0A526; outline-offset: 3px; }
+
+.cc-shot { position: relative; aspect-ratio: 16 / 9; background: #E8EDE7; overflow: hidden; }
+.cc-shot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cc-shot::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(8,20,13,0) 38%, rgba(8,20,13,0.42) 62%, rgba(8,20,13,0.86) 100%);
+}
+.cc-shot-text { position: absolute; left: 1.1rem; right: 1.1rem; bottom: 0.85rem; z-index: 1; }
+.cc-prog-name {
+  display: block; font-family: 'Taronga Headline', 'Bebas Neue', sans-serif;
+  font-size: 1.5rem; letter-spacing: 0.05em; line-height: 1; color: #fff;
+}
+.cc-prog-what { display: block; margin-top: 0.3rem; font-size: 0.88rem; font-weight: 600; color: rgba(255,255,255,0.92); line-height: 1.35; }
+.cc-prog-body { padding: 0.95rem 1.1rem 1.1rem; display: flex; flex-direction: column; gap: 0.55rem; }
+.cc-prog-desc { font-size: 0.85rem; color: #5B645E; line-height: 1.5; }
+.cc-prog-meta { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: auto; }
+.cc-chip { font-size: 0.72rem; font-weight: 600; color: #4A5A50; background: #F1F4F0; border: 1px solid #E6EBE4; border-radius: 999px; padding: 0.18rem 0.55rem; white-space: nowrap; }
+
+/* An odd number of programmes leaves the last card orphaned beside an empty cell, so it
+   takes the full width and lays itself out sideways instead. */
+.cc-prog.is-wide { grid-column: 1 / -1; flex-direction: row; }
+.cc-prog.is-wide .cc-shot { width: 44%; flex-shrink: 0; }
+.cc-prog.is-wide .cc-prog-body { flex: 1; justify-content: center; padding: 1.2rem 1.4rem; }
+
+/* The tick is a filled badge over the photo: at a glance, from across a desk. */
+.cc-prog-tick {
+  position: absolute; top: 0.8rem; right: 0.8rem; z-index: 2;
+  width: 30px; height: 30px; border-radius: 50%;
+  background: var(--p); color: #fff; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+.cc-prog-tick svg { width: 17px; height: 17px; }
+.cc-prog-flag {
+  position: absolute; top: 0.8rem; left: 0.8rem; z-index: 2;
+  font-size: 0.68rem; font-weight: 800; letter-spacing: 0.07em; text-transform: uppercase;
+  color: #0A2F1F; background: rgba(255,255,255,0.93); border-radius: 999px; padding: 0.25rem 0.6rem;
+}
+
+/* Dubbo has no programme and no photograph, so it is a line rather than an empty card
+   pretending to be one. */
+.cc-soon-row {
+  display: flex; align-items: center; gap: 0.6rem; margin-top: 0.8rem;
+  padding: 0.75rem 1rem; border-radius: 14px; border: 1px dashed #DDE3DC;
+  font-size: 0.84rem; color: #8A9490;
+}
+.cc-soon { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #6B736D; background: #F1F4F0; border-radius: 999px; padding: 0.15rem 0.5rem; }
 
 .cc-field { margin-bottom: 1.2rem; }
 .cc-field:last-child { margin-bottom: 0; }
@@ -116,6 +159,9 @@ const CC_CSS = `
 
 @media (max-width: 720px) {
   .cc-progs { grid-template-columns: 1fr; }
+  .cc-prog.is-wide { flex-direction: column; }
+  .cc-prog.is-wide .cc-shot { width: 100%; }
+  .cc-prog.is-wide .cc-prog-body { padding: 0.95rem 1.1rem 1.1rem; }
   .cc-step, .cc-create, .cc-out { padding: 1.2rem 1.1rem; border-radius: 16px; }
   .cc-create { flex-direction: column; align-items: stretch; }
   .cc-go { width: 100%; }
@@ -130,23 +176,36 @@ const CC_CSS = `
    since 2026-09-29 and the measurement step was removed on 2026-10-01. A screen that sells a
    programme is as much a description of the product as a parent letter is. */
 const PROGRAMMES = [
-  { value:'taronga-sydney', name:'Tracka Trek', color:'#2E7D55',
-    desc:'The day excursion. Students walk the zoo, observe animals, answer questions and earn badges for their school.',
-    meta:'Taronga Sydney · pick a subject below' },
-  { value:'zoosnooz-sydney', name:'ZooSnooz', color:'#7FA7E0',
-    desc:'The night programme. Five animals, and the clips students film stitch into a documentary they keep.',
-    meta:'Taronga Sydney · evening · filming' },
-  { value:'school', name:'ZooYard', color:'#6E8B2A',
-    desc:'Runs in your own schoolyard. Eight habitats, each ending in something the class builds or does for local wildlife.',
-    meta:'At your school · no GPS needed · Science' },
-  { value:'evolve-sydney', name:'Evolve', color:'#C08A1E',
-    desc:'Stage 6 twilight. Five chapters of one story about leaving school, written and filmed into a short film they keep.',
-    meta:'Taronga Sydney · Stage 6 · Life Ready · filming' },
-  { value:'wildest-dreams-sydney', name:'Wildest Dreams', color:'#B4536E',
-    desc:'Video first, built for support units. Students choose what they want to show about each animal and film it.',
-    meta:'Taronga Sydney · no marks or scores · filming' },
-  { value:'dubbo', name:'Taronga Dubbo', color:'#9AA398', soon:true,
-    desc:'Not bookable through Tracka yet.', meta:'' },
+  { value:'taronga-sydney', k:'trek', name:'Tracka Trek', color:'#2E7D55',
+    what:'A day at the zoo', flag:'Most popular',
+    img:'/images/screenshots/mode-zoo.jpg',
+    alt:'Primary students at a zoo exhibit holding tablets running Tracka',
+    desc:'Students walk the zoo finding animals, answering questions and writing what they see. Badges and points for your school.',
+    chips:['Taronga Sydney','Any subject','Stages 1 to 5'] },
+  { value:'zoosnooz-sydney', k:'snooz', name:'ZooSnooz', color:'#7FA7E0',
+    what:'A night at the zoo, on a sleepover',
+    img:'/images/screenshots/mode-zoosnooz.jpg',
+    alt:'Students filming animals at night during a ZooSnooz sleepover',
+    desc:'Five animals after dark. The clips students film stitch into a documentary they keep.',
+    chips:['Taronga Sydney','Evening','Creative media'] },
+  { value:'school', k:'yard', name:'ZooYard', color:'#6E8B2A',
+    what:'At your school. No zoo visit.',
+    img:'/images/screenshots/mode-school.jpg',
+    alt:'Students working outdoors in their own schoolyard',
+    desc:'Eight habitats in your own grounds, each ending in something the class actually builds for local wildlife.',
+    chips:['Your school','No GPS needed','Science'] },
+  { value:'evolve-sydney', k:'evolve', name:'Evolve', color:'#C08A1E',
+    what:'A twilight visit for Year 11 and 12',
+    img:'/images/screenshots/mode-evolve.webp',
+    alt:'Senior students filming at the zoo at dusk',
+    desc:'Five animals become five chapters about leaving school. Students write and film at each, and keep the short film.',
+    chips:['Taronga Sydney','Stage 6','Life Ready'] },
+  { value:'wildest-dreams-sydney', k:'dreams', name:'Wildest Dreams', color:'#B4536E',
+    what:'A filming day built for support units',
+    img:'/images/screenshots/mode-wildest-dreams.webp',
+    alt:'A group of students, one using a wheelchair, filming a koala',
+    desc:'Students choose what they want to show about each animal and film it. No quiz, no marks, every stop skippable.',
+    chips:['Taronga Sydney','Diverse learners','Creative media'] },
 ];
 
 const STAGES = [
@@ -421,29 +480,43 @@ export default function CreateClassScreen() {
             <p className="cc-step-n">Step 1</p>
             <h3 className="cc-h3">Which programme is this class doing?</h3>
             <div className="cc-progs">
-              {PROGRAMMES.map(p => (
-                <button
-                  key={p.value}
-                  type="button"
-                  className={newLocation === p.value ? 'cc-prog is-on' : 'cc-prog'}
-                  style={{ '--p': p.color }}
-                  disabled={!!p.soon}
-                  aria-pressed={newLocation === p.value}
-                  onClick={() => setNewLocation(p.value)}
-                >
-                  {newLocation === p.value && (
-                    <svg className="cc-prog-tick" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="9" fill="currentColor"/><path d="m6 10.2 2.6 2.6L14 7.4" stroke="#fff" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  )}
-                  <span className="cc-prog-name">
-                    <span className="cc-prog-dot" />
-                    {p.name}
-                    {p.soon && <span className="cc-soon">Coming soon</span>}
-                  </span>
-                  <span className="cc-prog-desc">{p.desc}</span>
-                  {p.meta && <span className="cc-prog-meta">{p.meta}</span>}
-                </button>
-              ))}
+              {PROGRAMMES.map((p, i) => {
+                const on = newLocation === p.value;
+                const wide = PROGRAMMES.length % 2 === 1 && i === PROGRAMMES.length - 1;
+                return (
+                  <button
+                    key={p.value}
+                    type="button"
+                    className={`cc-prog${on ? ' is-on' : ''}${wide ? ' is-wide' : ''}`}
+                    style={{ '--p': p.color }}
+                    data-k={p.k}
+                    aria-pressed={on}
+                    onClick={() => setNewLocation(p.value)}
+                  >
+                    <span className="cc-shot">
+                      <img src={p.img} alt={p.alt} loading="lazy" />
+                      <span className="cc-shot-text">
+                        <span className="cc-prog-name">{p.name}</span>
+                        <span className="cc-prog-what">{p.what}</span>
+                      </span>
+                    </span>
+                    {p.flag && !on && <span className="cc-prog-flag">{p.flag}</span>}
+                    {on && (
+                      <span className="cc-prog-tick">
+                        <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="m4.5 10.5 3.6 3.6L15.5 6.7" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      </span>
+                    )}
+                    <span className="cc-prog-body">
+                      <span className="cc-prog-desc">{p.desc}</span>
+                      <span className="cc-prog-meta">
+                        {p.chips.map(c => <span key={c} className="cc-chip">{c}</span>)}
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
             </div>
+            <p className="cc-soon-row"><span className="cc-soon">Coming soon</span> Taronga Dubbo is not bookable through Tracka yet.</p>
           </section>
 
           {/* ── 2. The class ── */}
