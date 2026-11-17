@@ -1208,10 +1208,18 @@ export default function ZooSnoozScreen() {
         //    branch 403'd any alias with a space, because the Storage folder and the Firestore
         //    doc id were spelled differently. Unifying those two names is what unlocks it.
         try {
+          // ⚠️⚠️ ON A CLOCK, AND THE CLOCK IS NOT OPTIONAL. Both calls below are network calls
+          //    with no deadline of their own — the Storage SDK retries a failed getMetadata for
+          //    about two minutes — and this runs BEFORE the first frame is recorded. Without a
+          //    cap, a phone with no signal in a zoo at night would sit on the stitching screen
+          //    for minutes and then produce the same cards-only film anyway. 8s is enough for a
+          //    working connection and short enough that a dead one costs almost nothing.
+          const deadline = ms => new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms));
+          const onTime = p => Promise.race([p, deadline(8000)]);
           const stored = completed[a.id]?.videoURL
-            || await findMediaPath([`zoosnooz/${stitchCode}/${studentKey}`,
-                                    `zoosnooz/${stitchCode}/${legacyStoragePath(studentKey)}`], a.id);
-          const signed = stored && await mintStudentMedia(stitchCode, studentKey, { [a.id]: stored });
+            || await onTime(findMediaPath([`zoosnooz/${stitchCode}/${studentKey}`,
+                                           `zoosnooz/${stitchCode}/${legacyStoragePath(studentKey)}`], a.id));
+          const signed = stored && await onTime(mintStudentMedia(stitchCode, studentKey, { [a.id]: stored }));
           if (signed?.[a.id]) { playURLs[a.id] = signed[a.id]; recovered.push(a.id); return; }
         } catch (e) {
           // 🚫 Never fatal. One clip that cannot be fetched must not cost the whole documentary.
