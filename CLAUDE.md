@@ -23,7 +23,7 @@ region: `australia-southeast1`. ⚠️ See **Build & Deploy** — these two drif
 
 ---
 
-## Where we left off (2026-11-13 → 11-15) — the teacher portal
+## Where we left off (2026-11-13 → 11-17) — the teacher portal
 
 Three pieces, all on the teacher side, all shipped and live on tarongatracka.com.au.
 Cameron redesigned the dashboard himself on 11-13 (`c4cecfe`); the class screen, the Wildly
@@ -112,6 +112,72 @@ button only renders where the tour has something to point at. A replay writes no
 
 ⚠️ **`demo@zoo` always gets the tour and never records it.** That is how it is shown to a
 room, and how to look at it without clearing anything.
+
+### The help bot answers about the app that exists (`e349946`)
+
+Rewritten against the real screens, 17 answers to 26. **It was telling teachers to enter a
+"Taronga Access Code" that no longer exists**, pointing at a "Classes tab" and an "Analytics
+tab" that are not there, putting Who's Who and teacher feedback on the wrong screens, and
+claiming the zoo WiFi unlocks enclosures. A help bot that describes a previous version of
+the app is worse than no help bot: the teacher believes it and goes looking.
+
+⚠️⚠️ **FIRST KEYWORD MATCH WINS, SO THE ORDER OF `RESPONSES` IS BEHAVIOUR.** Specific
+entries sit above general ones — consent above ZooSnooz (a filming question contains the
+word *video*), school points above scores (it contains the word *points*), restore above
+join — and the catch-all stays last. 🚫 Do not append a new answer at the top for
+convenience. Found by running 29 real phrasings through the matcher in Node, which is how
+"a student needs to re-join" and "how do students finish" were both landing on the join
+answer.
+
+### The class screen is one screen now, in two palettes (`d14021a`, `f3df23f`)
+
+**ZooSnooz had a parallel implementation of the same screen.** `CD_CSS` is now tokenised
+(`--cd-bg`, `--cd-card`, `--cd-line`, `--cd-ink`, `--cd-muted`, `--cd-accent`, `--cd-chip`,
+the `--cd-good/warn/info/side-*` families) with one `.cd-root.is-night` block redefining the
+tokens, so night mode is a palette and not a second screen. ZooSnooz now shares the header,
+meta row, join-code button, tabs, stat cards, panels and table.
+
+⚠️ **`<style>{CD_CSS}</style>` IS UNCONDITIONAL AND MUST STAY SO.** It used to be
+`{!isZZ && ...}`, which is why ZooSnooz's own back buttons rendered as **grey default browser
+buttons** — the sheet that styled them was deliberately withheld. `nightStyle()` and its nine
+call sites are gone; those panels are `.cd-panel`.
+
+⚠️ **An inline `color` beats the night rule**, every time. The topbar title was dark-on-dark
+under `.cd-root.is-night` because of an inline `var(--t-deep)`; that is what `.cd-brand` and
+`.cd-brand-sub` exist for. 🚫 Do not style anything inside `.cd-root` inline.
+
+ZooSnooz's student table was rebuilt on `.cd-table`/`.cd-row` with its own
+`CD_COLS_ZZ` and **gained Restore / New device / Delete, which it had never had** — a
+ZooSnooz teacher previously had no way to restore a student. Measured: 22 rows all starting
+at 583px.
+
+**There is exactly one way back out of a class: `All classes` in the sidebar.** A `.cd-back`
+pill above the class name was added and then removed at Cameron's request ("remove the
+bubbles") — the sidebar control is on every class screen already, and two of them read as
+two different destinations. 🚫 Do not add a second one.
+
+### ⚠️ CREATE A CLASS SHOWS THE PROGRAMME, IT DOES NOT NAME IT (`5cdead9`, `c1ceb6c`)
+
+**The programme was a row in a dropdown.** Five programmes that differ in where they happen,
+who they are for and whether anyone is marked, chosen from five words. Rebuilt with `CC_CSS`
+as three numbered steps: programme cards, a segmented stage/subject, then consent, with a
+live summary above the Create button.
+
+⚠️⚠️ **A PROGRAMME CARD NEEDS A PHOTOGRAPH AND A PLAIN LINE, NOT JUST A NAME.** Each entry
+in `PROGRAMMES` carries `img` (16:9, from `/images/screenshots/`, under a bottom gradient
+scrim with the name in Taronga Headline over it), `what` — one short line a teacher reads in
+a second, "A day at the zoo", "A night at the zoo, on a sleepover", "At your school. No zoo
+visit." — and three `chips`. 🚫 Adding a sixth programme by copying the name and colour
+alone produces a card that cannot be told from the others.
+
+The first attempt was tint-washed cards with no imagery and Cameron rejected it outright:
+*"some teachers would have no idea what is what"*. **Teachers choosing this have often never
+seen any of the five programmes run.** That is the brief for this screen.
+
+Chip wording is Cameron's and was decided deliberately: ZooSnooz and Wildest Dreams both say
+**Creative media** (not "Filming consent"), Evolve carries **no** "No marks" chip, and
+Wildest Dreams says **Diverse learners**. The fifth card takes `.cc-prog.is-wide` because
+five cards leave one odd; Dubbo sits in `.cc-soon-row` as not-yet.
 
 ### Still open on the dashboard, offered and not actioned
 
@@ -4307,7 +4373,7 @@ ZooSnooz internal screens (`zzScreen` values): `map` → `animal` (phases: insig
 | `documentaryViewer` | `DocumentaryViewer.jsx` | NFC souvenir card; triggered by `docViewCode` in AppContext |
 | `teacherLogin` | `TeacherLoginScreen.jsx` | Magic link email entry |
 | `teacherDashboard` | `TeacherDashboardScreen.jsx` | Hero, class cards, plan panel, Wildly panel, school points. ⚠️ Carries the `data-tour` anchors the tutorial spotlights |
-| `createClass` | `CreateClassScreen.jsx` | Create class form; sets stage, subject, session type, access code |
+| `createClass` | `CreateClassScreen.jsx` | Create class form, three numbered steps; **photo-led programme cards, not a dropdown** (see the top section); sets stage, subject, session type, access code |
 | `classDetails` | `ClassDetailsScreen.jsx` | Per-class analytics, student list, RadarSVG, ZooSnooz data, ZooYard citizen science moderation, info sheet |
 | `teacherGuide` | `TeacherGuideScreen.jsx` | Timeline checklist, 4 phases, tap-to-tick, localStorage progress |
 | `assessmentIdeas` | `AssessmentIdeasScreen.jsx` | In-app evidence + 20 post-visit tasks per subject; generates unique printable AT Notification docs |
@@ -4343,7 +4409,7 @@ own row, animal aliases only, localStorage-cached so it survives no reception).
 | `MathsCalculator` | `MathsCalculator.jsx` | Accessible on-screen calculator shown during maths subject sessions |
 | `StudentFeedbackModal` | `StudentFeedbackModal.jsx` | Post-session student feedback modal (shown after submit + after ZooSnooz) |
 | `StudentGuide` | `StudentGuide.jsx` | Floating "Dr. Cam" character chat bubble shown on map and observation screens |
-| `TeacherHelpBot` | `TeacherHelpBot.jsx` | Keyword-matched FAQ bot shown in teacher dashboard; ~20 pre-written answers, and the **Show me around this page** button that replays the tour |
+| `TeacherHelpBot` | `TeacherHelpBot.jsx` | Keyword-matched FAQ bot shown in teacher dashboard; 26 pre-written answers (**first match wins — order is behaviour**), and the **Show me around this page** button that replays the tour |
 | `TeacherTutorial` | `TeacherTutorial.jsx` | First-login tour that **spotlights the real dashboard**. ⚠️ Screenshots since deleted — see the 11-13 → 11-15 section |
 | `TutorialOverlay` | `TutorialOverlay.jsx` | Student-side "Dr. Cam" guided tour of the map screen (character image + callouts) |
 
