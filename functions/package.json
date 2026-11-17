@@ -1,13 +1,17 @@
 {
   "name": "taronga-tracka-functions",
   "description": "Cloud Functions for Taronga Tracka",
-  "engines": { "node": "22" },
+  "engines": {
+    "node": "22"
+  },
   "main": "index.js",
   "scripts": {
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log"
   },
   "dependencies": {
+    "@napi-rs/canvas": "^1.1.1",
+    "ffmpeg-static": "^5.3.0",
     "firebase-admin": "^12.0.0",
     "firebase-functions": "^5.0.0",
     "resend": "^4.0.0"

@@ -4,7 +4,7 @@ import {
   collection, doc, getDoc, getDocs, onSnapshot,
   writeBatch, setDoc, updateDoc, deleteDoc, query, where, serverTimestamp,
 } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, auth } from '../firebase';
 import { findMediaPath } from '../utils/mediaProbe';
 import { normaliseCode, safeStudentId, legacyStoragePath, averageQuizPercent } from '../utils/helpers';
 import { SignedVideo, SignedImage, SignedLink } from '../components/SignedMedia';
@@ -485,6 +485,9 @@ export default function ClassDetailsScreen() {
   const [overrideForms,     setOverrideForms]     = useState({});
   const [overrideSaving,    setOverrideSaving]    = useState(null);
   const [zzModalClipUrls,   setZzModalClipUrls]   = useState({});
+  // Building a student's documentary on the server. One at a time: the build is a minute of
+  // real work and a teacher firing off ten at once helps nobody.
+  const [zzFilmState, setZzFilmState] = useState({});   // { [studentId]: 'building' | path | {error} }
 
   // Fetch per-animal clip URLs when a ZooSnooz modal opens
   useEffect(() => {
@@ -508,6 +511,30 @@ export default function ClassDetailsScreen() {
     })();
     return () => { cancelled = true; };
   }, [obsModal]);
+
+  // ⚠️ The film is built on the SERVER, not here. The student's own stitcher captures a canvas
+  //    in real time, which is why a phone that dims halfway through makes a film of title cards
+  //    and no footage. Doing the same thing in a teacher's tab would inherit that exactly —
+  //    minimise the window, and the film is ruined. buildZooSnoozFilm composes it with ffmpeg
+  //    and hands back a path. 🚫 Do not "simplify" this by reusing the browser stitcher.
+  const buildFilm = async (studentName) => {
+    const sid = safeStudentId(studentName);
+    setZzFilmState(prev => ({ ...prev, [sid]: 'building' }));
+    try {
+      const idToken = await auth.currentUser?.getIdToken();
+      if (!idToken) throw new Error('Please sign in again.');
+      const res = await fetch('https://australia-southeast1-tarongatracka.cloudfunctions.net/buildZooSnoozFilm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+        body: JSON.stringify({ classCode: normaliseCode(selectedClass), studentId: sid }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok || !d.ok) throw new Error(d.error || `The film could not be built (${res.status}).`);
+      setZzFilmState(prev => ({ ...prev, [sid]: d.path }));
+    } catch (e) {
+      setZzFilmState(prev => ({ ...prev, [sid]: { error: e.message } }));
+    }
+  };
 
   // Load class metadata
   useEffect(() => {
@@ -2514,6 +2541,42 @@ export default function ClassDetailsScreen() {
                     );
                   })}
                 </div>
+
+                {/* ── The documentary ───────────────────────────────────────────────── */}
+                {(() => {
+                  const sid   = safeStudentId(obsModal.name);
+                  const st    = zzFilmState[sid];
+                  const built = typeof st === 'string' && st !== 'building' ? st : null;
+                  const film  = built || obsModal.zzDocumentaryURL || null;
+                  const busy  = st === 'building';
+                  return (
+                    <div style={{ borderTop:'1px solid rgba(255,255,255,0.1)', padding:'1.1rem 1.4rem 1.4rem', display:'flex', flexDirection:'column', gap:'0.7rem' }}>
+                      <div style={{ fontSize:'0.6rem', fontWeight:700, color:'rgba(184,212,192,0.65)', textTransform:'uppercase', letterSpacing:'0.08em' }}>Documentary</div>
+                      {film && (
+                        <SignedVideo url={film} classCode={normaliseCode(selectedClass)} controls playsInline preload="none"
+                          style={{ width:'100%', borderRadius:'10px', background:'#000', display:'block', aspectRatio:'9/16', objectFit:'contain', maxHeight:'60vh' }} />
+                      )}
+                      {busy && (
+                        <p style={{ fontSize:'0.8rem', color:'#C0DCC8', margin:0, lineHeight:1.5 }}>
+                          Building the film — about a minute. You can close this and carry on; it keeps going.
+                        </p>
+                      )}
+                      {st?.error && (
+                        <p style={{ fontSize:'0.8rem', color:'#FCA5A5', margin:0, lineHeight:1.5 }}>{st.error}</p>
+                      )}
+                      <button onClick={() => buildFilm(obsModal.name)} disabled={busy}
+                        style={{ background: busy ? 'rgba(255,255,255,0.08)' : '#2E7D55', color:'white', border:'none',
+                          padding:'0.7rem 1rem', borderRadius:'10px', fontSize:'0.85rem', fontWeight:700,
+                          cursor: busy ? 'not-allowed' : 'pointer', fontFamily:'inherit' }}>
+                        {busy ? 'Building…' : film ? 'Build it again' : 'Build the film'}
+                      </button>
+                      <p style={{ fontSize:'0.68rem', color:'rgba(184,212,192,0.55)', margin:0, lineHeight:1.5 }}>
+                        Built from the clips saved for this student, with the title cards and captions — the same film
+                        they make on the night. Comes out as an MP4, which plays on anything.
+                      </p>
+                    </div>
+                  );
+                })()}
               </>
             ) : obsModal.isZY ? (
               <>

@@ -1164,3 +1164,94 @@ exports.sendMentorReport = onRequest(
     res.json({ success: true });
   }
 );
+
+// ─────────────────────────────────────────────────────────────────────────────────────────
+// buildZooSnoozFilm — builds a student's documentary from the clips already in Storage.
+//
+// ⚠️⚠️ WHY THIS EXISTS AND WHY IT IS NOT IN THE BROWSER. The student's own stitcher captures a
+//    canvas in REAL TIME: for the length of the film the phone must stay awake, in the app,
+//    with the screen on. A phone that dims halfway through produces a documentary of title
+//    cards and no footage — it did exactly that in the first trial (2026-11-17), while every
+//    clip sat safely uploaded. Here nothing is captured; ffmpeg composes the frames as fast as
+//    the machine allows, so there is no window in which it can go wrong.
+//
+// ⚠️ It outputs MP4/H.264, not the WebM a phone records. A WebM will not open in QuickTime,
+//    Safari, PowerPoint or iMovie, which is why the trial films had to be converted by hand
+//    before anyone could watch them. The two live side by side; documentaryURL points here.
+//
+// ⚠️ Memory is 2GiB because /tmp on Cloud Functions is a RAM disk — every clip downloaded and
+//    every segment written counts against it, not against a disk.
+exports.buildZooSnoozFilm = onRequest(
+  { region: 'australia-southeast1', invoker: 'public', timeoutSeconds: 540, memory: '2GiB' },
+  async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    const classCode = String(req.body?.classCode || '').toUpperCase();
+    const studentId = String(req.body?.studentId || '');
+    if (!classCode || !studentId) { res.status(400).json({ error: 'Missing class or student.' }); return; }
+
+    const db = admin.firestore();
+
+    // ── Entitlement: staff, or the teacher who owns this class ──────────────────────────
+    // ⚠️ The same scoping as getMediaUrl's educator branch. Without the class check any
+    //    signed-in teacher could build — and overwrite — films in any school.
+    try {
+      const authHeader = req.headers.authorization || '';
+      const idToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+      if (!idToken) { res.status(403).json({ error: 'Sign-in required.' }); return; }
+      let decoded;
+      try { decoded = await admin.auth().verifyIdToken(idToken); }
+      catch { res.status(403).json({ error: 'Sign-in required.' }); return; }
+      const email = (decoded.email || '').toLowerCase();
+      if (!email) { res.status(403).json({ error: 'Sign-in required.' }); return; }
+
+      const isStaff = ROOT_ADMIN_EMAILS.includes(email)
+        || (await db.collection('staffAdmins').doc(email).get()).exists;
+      if (!isStaff) {
+        const clsSnap = await db.collection('classes').doc(classCode).get();
+        const owner = clsSnap.exists ? (clsSnap.data().teacherEmail || '').toLowerCase() : null;
+        if (!owner || owner !== email) { res.status(403).json({ error: 'Not your class.' }); return; }
+      }
+    } catch (err) {
+      console.error('buildZooSnoozFilm entitlement check failed:', err);
+      res.status(500).json({ error: 'Could not check that request.' });
+      return;
+    }
+
+    try {
+      const { buildFilm } = require('./film/build');
+      const notes = [];
+      const result = await buildFilm({
+        db,
+        bucket: admin.storage().bucket(),
+        classCode,
+        studentId,
+        // ⚠️ Clips filmed before 2026-11-17 are under the stripped alias — see
+        //    legacyStoragePath in the app. A film built for an older class needs both.
+        legacyId: studentId.trim().replace(/[^a-zA-Z0-9_-]/g, '_'),
+        log: m => { notes.push(m); console.log(`[film ${classCode}/${studentId}]`, m); },
+      });
+
+      // The record, in both the places the app writes one, so the staff portal and the NFC
+      // souvenir find this film rather than the phone's WebM.
+      await db.collection('classes').doc(classCode).collection('students').doc(studentId)
+        .set({ zzDocumentaryURL: result.path }, { merge: true });
+      await db.collection('zoosnooz_docs').doc(`${classCode}_${studentId}`).set({
+        studentName: studentId,
+        classCode,
+        documentaryURL: result.path,
+        documentaryBuiltBy: 'teacher',
+        documentaryBuiltAt: new Date().toISOString(),
+      }, { merge: true });
+
+      res.json({ ok: true, ...result, notes });
+    } catch (err) {
+      console.error('buildZooSnoozFilm failed:', err);
+      res.status(500).json({ error: err.message || 'The film could not be built.' });
+    }
+  }
+);
