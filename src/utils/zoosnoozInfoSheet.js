@@ -184,14 +184,14 @@ const SCORING_DOMAINS = [
 
 const VIDEO_GUIDE = [
   { num: '01', heading: 'Camera Access',       body: 'Students tap "Start Recording" at the video phase of each animal mission. The app requests rear-camera access. Ensure students understand they need to grant camera and microphone permissions when prompted — this only happens once per session.' },
-  { num: '02', heading: '10-Second Clips',     body: 'Each clip is exactly 10 seconds. A progress arc shows the recording countdown. Students cannot restart a clip once recording begins, so encourage them to think briefly about their framing before tapping the record button.' },
+  { num: '02', heading: '20-Second Clips',     body: 'Each clip runs up to 20 seconds (it was 10 before 2026-11-17). A countdown shows the time left, and students can tap the shutter again to stop early. They cannot restart a clip once recording begins, so encourage them to think briefly about their framing before tapping the record button.' },
   { num: '03', heading: 'Filming Guidance',    body: 'Each animal has specific filming guidance built into the app, shown before the student records. These cues help students capture the most visually compelling moment — for example, the stillness of the tiger or the scale of the rhino. Share these cues with students before they reach each enclosure.' },
   { num: '04', heading: 'Upload and Storage',  body: 'Clips upload automatically to Firebase Storage at path zoosnooz/{classCode}/{studentId}/{animalId}. Upload progress is shown as a percentage. If a student\'s upload fails (check for network issues or Storage rules), their clip is still saved locally for the remainder of the session.' },
 ];
 
 const STITCH_GUIDE = [
   { num: '01', heading: 'When It Runs',         body: 'After completing all five animals, students reach the Collection screen showing their full badge set. Tapping "Create Documentary" triggers the stitching pipeline. This runs entirely in the browser — no server processing is required.' },
-  { num: '02', heading: 'What Gets Created',    body: 'The pipeline assembles: (1) an animated title card with the student\'s name, (2) each 10-second clip in sequence with an animal name overlay and clip counter, and (3) a Taronga-branded credits card. Output is a single 1280×720 video file.' },
+  { num: '02', heading: 'What Gets Created',    body: 'The pipeline assembles: (1) an animated title card with the student\'s name, (2) each clip in sequence with an animal name overlay and clip counter, and (3) a Taronga-branded credits card. Output is a single 1280×720 video file.' },
   { num: '03', heading: 'Device Compatibility', body: 'The stitching pipeline uses MediaRecorder and Canvas APIs, supported on all modern iOS, Android, and desktop browsers. If a student\'s device cannot run the pipeline, they receive a fallback message and their individual clips remain saved.' },
   { num: '04', heading: 'Processing Time',      body: 'Stitching typically takes 30–90 seconds depending on the device. Students see a live progress animation while it runs. Remind students not to lock their screen or leave the app during this phase, as doing so will interrupt the pipeline.' },
   { num: '05', heading: 'Final Submit',         body: 'After previewing their documentary, students tap Submit. This uploads the stitched video to Firebase Storage and writes a full session summary to the zoosnooz_docs Firestore collection.' },
@@ -778,7 +778,7 @@ body{
     <div class="phase-item">
       <div class="phase-pill">
         <div class="phase-icon-wrap">${svgVideo(BRAND.teal, 14)}</div>
-        <div class="phase-label">10-Second<br>Video</div>
+        <div class="phase-label">20-Second<br>Video</div>
       </div>
       <div class="phase-arrow">&#8250;</div>
     </div>
@@ -807,7 +807,7 @@ body{
       <div class="overview-grid">
         <div class="ov-card">
           <div class="ov-label">What Is ZooSnooz?</div>
-          <div class="ov-val">ZooSnooz is the night-mode variant of Taronga Tracka. Students visit five animal enclosures after dark, using device sensors to interact with each animal's environment, completing a written observation and recording a 10-second video documentary clip at each stop.</div>
+          <div class="ov-val">ZooSnooz is the night-mode variant of Taronga Tracka. Students visit five animal enclosures after dark, using device sensors to interact with each animal's environment, completing a written observation and recording a video documentary clip of up to 20 seconds at each stop.</div>
         </div>
         <div class="ov-card">
           <div class="ov-label">How It Differs From Daytime Tracka</div>

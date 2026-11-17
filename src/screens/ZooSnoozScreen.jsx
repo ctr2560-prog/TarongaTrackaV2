@@ -27,6 +27,17 @@ const INTER_DURATION = { tiger: 30, lion: 30, rhino: 0, binturong: 0, 'sun-bear'
 // sees (the viewfinder and the clip card) disagree with each other.
 const ZZ_FILM_W = 720, ZZ_FILM_H = 1280;
 const ZZ_FILM_TOP = 80, ZZ_FILM_BOT = 260;
+
+// How long one clip runs. Was 10s for the first trial (2026-11-17); Cameron asked for longer
+// after watching students run out of clip before the animal did anything.
+//
+// ⚠️⚠️ THIS NUMBER IS NOT FREE, AND THE COST LANDS ON THE STITCH, NOT THE RECORDING. The
+//    documentary is captured in REAL TIME — five clips at 20s is 100s of footage plus 17s of
+//    cards, and for all of it the phone must stay awake, in the app, with the screen on. A
+//    phone that dims mid-stitch is exactly what produced a cards-only film in the trial.
+// 🚫 Do not raise this to 30s or beyond without moving the film off the phone first (the
+//    teacher-side build). At 20s the stitch is ~2 minutes; at 30s it is ~3.
+const ZZ_CLIP_SECONDS = 20;
 // ⚠️ THE FOOTAGE IS THE WHOLE FRAME NOW, so this is the canvas aspect, not a band.
 // The branding used to sit in solid bands above and below, which left the footage a
 // 720x940 slot (0.766). A phone held upright gives a 0.5625 feed, so it landed 529x940
@@ -239,7 +250,7 @@ export default function ZooSnoozScreen() {
   // ── Video ─────────────────────────────────────────────────────────────────
   const [vidReady,      setVidReady]      = useState(false);
   const [zzRecording,   setZzRecording]   = useState(false);
-  const [zzCountdown,   setZzCountdown]   = useState(10);
+  const [zzCountdown,   setZzCountdown]   = useState(ZZ_CLIP_SECONDS);
   const [zzUploadProgress, setZzUploadProgress] = useState({});
   const [zzVideoURLs,   setZzVideoURLs]   = useState({});    // { [animalId]: blobURL }
   const [nightVision,   setNightVision]   = useState(false);
@@ -530,7 +541,7 @@ export default function ZooSnoozScreen() {
     setHintsOpen(false);
     setVidReady(false);
     setZzRecording(false);
-    setZzCountdown(10);
+    setZzCountdown(ZZ_CLIP_SECONDS);
     setNightVision(false);
     setIsDrawing(false);
     setLionMonitoring(false);
@@ -775,7 +786,7 @@ export default function ZooSnoozScreen() {
     mr.start(500);
     zzMediaRef.current = mr;
     setZzRecording(true);
-    setZzCountdown(10);
+    setZzCountdown(ZZ_CLIP_SECONDS);
     zzCountdownRef.current = setInterval(() => {
       setZzCountdown(c => {
         if (c <= 1) {
