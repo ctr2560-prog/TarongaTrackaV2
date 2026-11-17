@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import { useStudent } from '../context/StudentContext';
 import { ZOOSNOOZ_ANIMALS } from '../data/zoosnoozAnimals';
 import StudentFeedbackModal from '../components/StudentFeedbackModal';
-import { doc, setDoc, updateDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
 import { ref as storageRef, uploadBytesResumable } from 'firebase/storage';
 import { db, storage } from '../firebase';
 import { normaliseCode, safeStudentId, legacyStoragePath, getMinWords } from '../utils/helpers';
@@ -306,6 +306,51 @@ export default function ZooSnoozScreen() {
     return () => document.body.classList.remove('night-mode');
   }, []);
 
+  // ── Pick the night back up ────────────────────────────────────────────────
+  // ⚠️⚠️ THE WHOLE NIGHT USED TO LIVE IN PAGE MEMORY. `zzCompleted` started at {} on every
+  //    mount and was never read back, so a student who left the app came back to a map with
+  //    every animal undone — while all of it sat safely in Firestore. In the first trial
+  //    (2026-11-17) students filmed several animals, switched to the phone's own camera app,
+  //    and lost the lot. On a school-managed handset that is not an edge case: the OS kills a
+  //    backgrounded browser tab to reclaim memory, and the app reloads from nothing.
+  // 🚫 Never treat page memory as the record of what a student has done.
+  //
+  // ⚠️ The clips come from the DEVICE's own cache, not the network. A student standing in the
+  //    dark with no signal still gets their night back, and the stitcher's Storage fallback
+  //    covers the case where the cache was evicted too.
+  useEffect(() => {
+    if (!studentName || !classCode) return;
+    const code = normaliseCode(classCode);
+    const sid  = safeStudentId(studentName);
+    let cancelled = false;
+    (async () => {
+      try {
+        const snap = await getDoc(doc(db, 'classes', code, 'students', sid));
+        if (cancelled || !snap.exists()) return;
+        const zz = snap.data().zoosnooz || {};
+        const done = {};
+        for (const [id, v] of Object.entries(zz)) if (v?.completed) done[id] = v;
+        if (!Object.keys(done).length) return;
+        // ⚠️ `...prev` LAST, every time. The read is async, so an animal finished while it was
+        //    in flight must win over the older copy that came back from the server.
+        if (!cancelled) setZzCompleted(prev => ({ ...done, ...prev }));
+
+        const urls = {};
+        await Promise.all(Object.keys(done).map(async id => {
+          const blob = await loadClip(clipKey(code, sid, id))
+                    || await loadClip(clipKey(code, legacyStoragePath(sid), id));
+          if (blob) urls[id] = URL.createObjectURL(blob);
+        }));
+        if (!cancelled && Object.keys(urls).length) setZzVideoURLs(prev => ({ ...urls, ...prev }));
+      } catch (e) {
+        // 🚫 Never fatal. A student who cannot be resumed must still be able to carry on, so
+        //    this fails to "nothing restored" rather than to a broken screen.
+        console.warn('[zoosnooz] could not restore this student\'s progress:', e);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [studentName, classCode]);
+
   // ── Auto-enable GPS on map view (like daily MapScreen) ────────────────────
   useEffect(() => {
     if (zzScreen === 'map' && !locationEnabled) enableLocation();
@@ -517,6 +562,27 @@ export default function ZooSnoozScreen() {
   };
 
   // ── Start mission ─────────────────────────────────────────────────────────
+  // ── The writing survives too ──────────────────────────────────────────────
+  // ⚠️ The observation is the one part of a half-finished mission a student cannot redo
+  //    quickly: a ten-word minimum, typed on a phone, in the dark, in front of an animal.
+  //    Watching the keeper insight again costs thirty seconds; retyping two sentences in the
+  //    cold is the bit that makes a class give up. It drafts to the device as they type, so
+  //    leaving the app mid-sentence costs nothing.
+  // ⚠️ localStorage, not Firestore: a draft is not a result, it is per-device, and it must
+  //    work with no signal. zzCompleteMission is what makes it real.
+  const draftKey = useCallback(
+    (animalId) => `zzDraft_${normaliseCode(classCode || '')}_${safeStudentId(studentName || '')}_${animalId}`,
+    [classCode, studentName],
+  );
+  const readDraft = useCallback((animalId) => {
+    try { return localStorage.getItem(draftKey(animalId)) || ''; } catch { return ''; }
+  }, [draftKey]);
+
+  useEffect(() => {
+    if (!zzAnimal) return;
+    try { localStorage.setItem(draftKey(zzAnimal.id), obsText); } catch { /* full, or private mode */ }
+  }, [obsText, zzAnimal, draftKey]);
+
   const startMission = useCallback((animal) => {
     setZzAnimal(animal);
     setZzPhase('insight');
@@ -539,7 +605,8 @@ export default function ZooSnoozScreen() {
     setMcqShowResult(false);
     setZzZoom(1);
     setZzOnWide(false);
-    setObsText('');
+    // Their own words back, if they were part way through this animal when the app went.
+    setObsText(readDraft(animal.id));
     setObsLock(20);
     setObsOpen(false);
     setHintsOpen(false);
@@ -572,7 +639,7 @@ export default function ZooSnoozScreen() {
     sbColorRef.current = '#4A9E6B';
     sbSizeRef.current = 3;
     setZzScreen('mission');
-  }, [setZzScreen]);
+  }, [setZzScreen, readDraft]);
 
   // ── Complete mission (claim badge + save video metadata) ──────────────────
   const zzCompleteMission = useCallback(async () => {
@@ -646,10 +713,12 @@ export default function ZooSnoozScreen() {
         //    sitting in Storage.
         if (videoURL) flat[`zoosnooz.${zzAnimal.id}.videoCompleted`] = true;
         await updateDoc(doc(db, 'classes', code, 'students', sid), flat);
+        // The draft has become a result; it has no job left.
+        try { localStorage.removeItem(draftKey(zzAnimal.id)); } catch { /* nothing to clear */ }
       } catch (e) { console.warn('Badge write:', e); }
     }
     setZzScreen('map');
-  }, [zzAnimal, classStage, obsText, mcqFirstOk, zzVideoURLs, studentName, classCode, setZzScreen]);
+  }, [zzAnimal, classStage, obsText, mcqFirstOk, zzVideoURLs, studentName, classCode, setZzScreen, draftKey]);
 
   // ── Start recording ────────────────────────────────────────────────────────
   const zzStartRecording = useCallback(() => {
