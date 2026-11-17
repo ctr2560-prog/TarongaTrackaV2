@@ -280,6 +280,10 @@ export default function ZooSnoozScreen() {
   const zzChunksRef   = useRef([]);
   const zzCountdownRef = useRef(null);
   const zzFacingModeRef = useRef('environment');
+  // The in-flight upload, per animal, so re-filming can cancel the one it is replacing.
+  // ⚠️ Both uploads write the SAME path, so without the cancel a slow first upload can land
+  //    after the retake and the student keeps the take they rejected.
+  const zzUploadTaskRef = useRef({});
 
   // ── Documentary stitching ─────────────────────────────────────────────────
   const [zzStitchPhase,    setZzStitchPhase]    = useState(null); // 'stitching'|'preview'|'submitting'|'done'
@@ -734,6 +738,7 @@ export default function ZooSnoozScreen() {
         const path        = `zoosnooz/${safeCode}/${safeStudent}/${animalId}.${fileExt}`;
         const sRef        = storageRef(storage, path);
         const uploadTask  = uploadBytesResumable(sRef, blob, { contentType });
+        zzUploadTaskRef.current[animalId] = uploadTask;
         setZzUploadProgress(prev => ({ ...prev, [animalId]: 0 }));
 
         const stuckTimer = setTimeout(() => {
@@ -754,11 +759,17 @@ export default function ZooSnoozScreen() {
           },
           err => {
             clearTimeout(stuckTimer);
+            delete zzUploadTaskRef.current[animalId];
+            // ⚠️ A cancel is not a failure. Re-filming cancels the upload it is replacing, and
+            //    showing "upload failed" for a clip the student deliberately threw away would
+            //    be a lie — and an alarming one.
+            if (err.code === 'storage/canceled') return;
             console.warn('ZZ video upload error:', err.code, err.message);
             setZzUploadProgress(prev => ({ ...prev, [animalId]: 'error' }));
           },
           async () => {
             clearTimeout(stuckTimer);
+            delete zzUploadTaskRef.current[animalId];
             try {
               // ⚠️ THE STORAGE PATH IS STORED, NOT A DOWNLOAD URL (2026-10-04). `getDownloadURL()`
               //    mints a permanent, login-free link; a path is useless on its own and
@@ -805,6 +816,31 @@ export default function ZooSnoozScreen() {
     if (zzMediaRef.current && zzMediaRef.current.state !== 'inactive') zzMediaRef.current.stop();
     setZzRecording(false);
   }, []);
+
+  // ── Film it again ──────────────────────────────────────────────────────────
+  // Cameron's call after the first trial: "if we don't like it we can just redo". Before this
+  // the preview screen was a one-way door — a clip of the floor, or of nothing, was the clip
+  // that went in the film.
+  const zzRefilm = useCallback(() => {
+    const animalId = zzAnimal?.id;
+    if (!animalId) return;
+    // ⚠️ Cancel the upload this retake replaces. Both takes write the SAME Storage path, so a
+    //    slow first upload finishing later would quietly reinstate the take they rejected.
+    try { zzUploadTaskRef.current[animalId]?.cancel(); } catch { /* already finished — fine */ }
+    delete zzUploadTaskRef.current[animalId];
+    setZzVideoURLs(prev => {
+      const next = { ...prev };
+      // ⚠️ Revoke it. A rejected take left unrevoked holds its whole blob in memory for the
+      //    rest of the night, and memory is the scarce thing on a student phone — it is what
+      //    the OS reclaims first, which is how clips go missing mid-session.
+      if (next[animalId]) { try { URL.revokeObjectURL(next[animalId]); } catch { /* not a blob URL */ } }
+      delete next[animalId];
+      return next;
+    });
+    setZzUploadProgress(prev => { const next = { ...prev }; delete next[animalId]; return next; });
+    setZzCountdown(ZZ_CLIP_SECONDS);
+    setZzPhase('video');
+  }, [zzAnimal]);
 
   // ── Start lion mic recording ───────────────────────────────────────────────
   const zzStartMic = useCallback(() => {
@@ -3833,14 +3869,27 @@ export default function ZooSnoozScreen() {
                 </div>
               )}
 
-              <button
-                className="zz-btn"
-                onClick={zzCompleteMission}
-                disabled={uploading}
-                style={{ opacity: uploading ? 0.45 : 1, cursor: uploading ? 'not-allowed' : 'pointer', transition:'opacity 0.3s' }}
-              >
-                {uploading ? `Saving for teacher… ${up}%` : '✓ Complete Mission'}
-              </button>
+              {/* ⚠️ Film it again stays enabled WHILE the clip is uploading, unlike Complete
+                  Mission. A student who can see they filmed the wrong thing should not have to
+                  wait for a clip they are about to replace to finish saving — zzRefilm cancels
+                  that upload. */}
+              {/* ⚠️ STACKED, NOT SIDE BY SIDE. Measured at 390px: in a row the primary gets
+                  202px and "COMPLETE MISSION" — uppercase, letter-spaced, 2rem of padding each
+                  side — wraps onto two lines. Full width it stays on one. */}
+              <div style={{ display:'flex', flexDirection:'column', gap:'0.55rem' }}>
+                <button
+                  className="zz-btn"
+                  onClick={zzCompleteMission}
+                  disabled={uploading}
+                  style={{ opacity: uploading ? 0.45 : 1, cursor: uploading ? 'not-allowed' : 'pointer', transition:'opacity 0.3s' }}
+                >
+                  {uploading ? `Saving for teacher… ${up}%` : '✓ Complete Mission'}
+                </button>
+                <button className="zz-btn-ghost" onClick={zzRefilm}
+                  style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'center', gap:'0.45rem', fontFamily:'inherit' }}>
+                  <span style={{ fontSize:'1rem', lineHeight:1 }}>↺</span> Film again
+                </button>
+              </div>
             </div>
           );
         })()}
