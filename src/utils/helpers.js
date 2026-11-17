@@ -39,6 +39,21 @@ export const mapFocusAreaToCategory = (focusArea) => {
 export const safeStudentId = (name) =>
   name.trim().replace(/[\\/#.$[\]]/g, '_');
 
+// ⚠️⚠️ ONE NAME PER STUDENT. `safeStudentId` is the Firestore doc id AND the Storage folder —
+//    for Evolve, Wildest Dreams, ZooYard and the ZooSnooz documentary, and since 2026-11-17 for
+//    ZooSnooz's per-animal clips too.
+//
+// 🚫 Until then ZooSnooz's clip upload alone used the stricter form below, so a student called
+//    "Snow Leopard" filed clips under `Snow_Leopard/` while every reader looked in
+//    `Snow Leopard/` and found nothing. Half the first ZooSnooz trial (2026-11-17, class ZOR3FZ)
+//    was unplayable for the teacher because of it, and `getMediaUrl`'s student branch 403s for
+//    the same reason — 15 of the 30 aliases in constants/animals.js contain a space.
+//
+// ⚠️ Clips filmed BEFORE that date are still in the stripped folder, so anything that READS a
+//    ZooSnooz clip must try this second. Nothing should ever WRITE to it again.
+export const legacyStoragePath = (name) =>
+  String(name).trim().replace(/[^a-zA-Z0-9_-]/g, '_');
+
 export function getBearing(lat1, lon1, lat2, lon2) {
   const toRad = deg => deg * Math.PI / 180;
   const toDeg = rad => rad * 180 / Math.PI;

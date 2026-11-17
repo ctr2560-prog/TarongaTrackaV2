@@ -10,18 +10,20 @@
 // A reload does the same thing by a different route: `zzVideoURLs` is written only by the upload
 // handler, never rehydrated, so refreshing the page empties it.
 //
-// 🚫 THE OBVIOUS FIX — read the clips back from Firebase Storage — IS BLOCKED, and the reason is
-//    worth recording so nobody spends a day rediscovering it. `getMediaUrl`'s student branch uses
-//    ONE `studentId` for two incompatible things:
+// ✅ READING THE CLIPS BACK FROM STORAGE IS NOW THE THIRD RECOVERY STEP (2026-11-17), after this
+//    cache misses. It was blocked until then, and the reason is worth keeping because it is the
+//    same fault that made half of the first trial unplayable: `getMediaUrl`'s student branch uses
+//    ONE `studentId` for two things that were spelled differently —
 //        classes/{code}/students/{studentId}      ← the Firestore doc id, `safeStudentId(name)`,
 //                                                   which strips only \ / # . $ [ ]
-//        path must contain /{code}/{studentId}/   ← the Storage folder, which ZooSnooz writes as
+//        path must contain /{code}/{studentId}/   ← the Storage folder, which ZooSnooz wrote as
 //                                                   name.replace(/[^a-zA-Z0-9_-]/g, '_')
-//    For "Quoll" those agree. For "Sumatran Tiger" they do not, so the Firestore lookup 404s or
-//    the path check 403s whichever value you send. 15 of the 30 aliases in constants/animals.js
-//    contain a space, so student-side minting is unavailable to HALF of all students. Evolve is
-//    unaffected only because it stores the alias unsanitised. Fixing that means changing and
-//    redeploying a security-sensitive Cloud Function; this module needs none of it.
+//    For "Quoll" those agree. For "Sumatran Tiger" they did not, so the path check 403'd whichever
+//    value you sent, and 15 of the 30 aliases in constants/animals.js contain a space. ZooSnooz's
+//    upload now writes `safeStudentId` like every other mode, and the function accepts the old
+//    spelling too, so student-side minting finally works for a whole class.
+// ⚠️ This module is still the SECOND step and still earns its place: it needs no network, and a
+//    phone in a zoo at night frequently has none.
 //
 // ⚠️ This is a CACHE, never the system of record. The upload to Firebase Storage is unchanged and
 //    remains the real copy. If IndexedDB is unavailable, full, or wiped, every function here

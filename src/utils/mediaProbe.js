@@ -24,14 +24,22 @@ import { storage } from '../firebase';
 //    slash-bearing value with no scheme as a path). Pass the result to `mintMediaUrl`,
 //    `<SignedVideo>`, `<SignedImage>` or `<SignedLink>` — never to a bare `src` or the clipboard.
 //
+// ⚠️ `base` may be an ARRAY, and for ZooSnooz clips it has to be. Until 2026-11-17 a clip was
+//    filed under a stripped alias (`Snow_Leopard`) while the doc id kept its space, so a reader
+//    that probes one folder finds nothing for half the students in a class. Pass the current
+//    folder first and the legacy one second; the first hit wins and nothing else changes.
+//
 // Returns null when no extension matched, which callers must treat as "no file yet".
 export async function findMediaPath(base, name, exts = ['webm', 'mp4']) {
-  for (const ext of exts) {
-    const path = `${base}/${name}.${ext}`;
-    try {
-      await getMetadata(storageRef(storage, path));
-      return path;
-    } catch { /* not this extension — try the next */ }
+  for (const b of Array.isArray(base) ? base : [base]) {
+    if (!b) continue;
+    for (const ext of exts) {
+      const path = `${b}/${name}.${ext}`;
+      try {
+        await getMetadata(storageRef(storage, path));
+        return path;
+      } catch { /* not this extension — try the next */ }
+    }
   }
   return null;
 }

@@ -16,7 +16,7 @@ import { EVOLVE_CHAPTERS, EVOLVE_STORY_ORDER } from '../data/evolveAnimals';
 import { openEvolveCertificates } from '../utils/evolveCertificates';
 import { evolveSouvenirLink } from '../utils/evolveSouvenir';
 import { SUBJ_META, STAGES, prePostDocId, IMAGE_LIBRARY } from '../data/subjectMeta';
-import { getCurrentQuestionTexts, studentQuizPercent } from '../utils/helpers';
+import { getCurrentQuestionTexts, studentQuizPercent, legacyStoragePath } from '../utils/helpers';
 import DeviceBookingCalendar, { DEVICE_CAPACITY } from '../components/DeviceBookingCalendar';
 
 function generateCode() {
@@ -1413,7 +1413,10 @@ function ZooSnoozAdminTab({ classes }) {
   const ensureUrls = async (entry) => {
     if (urlCache[entry.docId]) return urlCache[entry.docId];
     setBusy(prev => ({ ...prev, [entry.docId]: true }));
-    const base = `zoosnooz/${entry.classCode}/${entry.studentDocId}`;
+    // ⚠️ Two folders, newest first — clips filmed before 2026-11-17 sit under the stripped
+    //    alias. See legacyStoragePath in utils/helpers.
+    const base = [`zoosnooz/${entry.classCode}/${entry.studentDocId}`,
+                  `zoosnooz/${entry.classCode}/${legacyStoragePath(entry.studentDocId)}`];
     let docUrl = entry.zzDocumentaryURL || null;
     const clipUrls = {};
     // ⚠️ `findMediaPath` probes with getMetadata and returns a PATH. It used to be a

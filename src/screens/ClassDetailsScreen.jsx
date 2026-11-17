@@ -6,7 +6,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { findMediaPath } from '../utils/mediaProbe';
-import { normaliseCode, safeStudentId, averageQuizPercent } from '../utils/helpers';
+import { normaliseCode, safeStudentId, legacyStoragePath, averageQuizPercent } from '../utils/helpers';
 import { SignedVideo, SignedImage, SignedLink } from '../components/SignedMedia';
 import { useApp } from '../context/AppContext';
 import { ZOOSNOOZ_ANIMALS } from '../data/zoosnoozAnimals';
@@ -491,7 +491,9 @@ export default function ClassDetailsScreen() {
     if (!obsModal?.isZZ || !obsModal.classCode || !obsModal.name) { setZzModalClipUrls({}); return; }
     const code = normaliseCode(obsModal.classCode);
     const sid  = safeStudentId(obsModal.name);
-    const base = `zoosnooz/${code}/${sid}`;
+    // ⚠️ Two folders, newest first. Clips filmed before 2026-11-17 are under the stripped
+    //    alias — see legacyStoragePath. 🚫 Do not drop the second one until those are migrated.
+    const base = [`zoosnooz/${code}/${sid}`, `zoosnooz/${code}/${legacyStoragePath(obsModal.name)}`];
     let cancelled = false;
     (async () => {
       const urls = {};

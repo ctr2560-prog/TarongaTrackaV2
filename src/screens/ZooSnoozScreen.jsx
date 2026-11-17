@@ -6,7 +6,9 @@ import StudentFeedbackModal from '../components/StudentFeedbackModal';
 import { doc, setDoc, updateDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
 import { ref as storageRef, uploadBytesResumable } from 'firebase/storage';
 import { db, storage } from '../firebase';
-import { normaliseCode, safeStudentId, getMinWords } from '../utils/helpers';
+import { normaliseCode, safeStudentId, legacyStoragePath, getMinWords } from '../utils/helpers';
+import { findMediaPath } from '../utils/mediaProbe';
+import { mintStudentMedia } from '../utils/useSignedMedia';
 import { clipKey, saveClip, loadClip, clearClips } from '../utils/zzClipStore';
 import { labelRecording } from '../utils/containerSniff';
 import { buildObservationScore } from '../utils/scoring';
@@ -612,9 +614,23 @@ export default function ZooSnoozScreen() {
       try {
         // updateDoc (not setDoc+merge) so the dotted key nests under zoosnooz.{animalId}
         // rather than becoming a literal field name containing dots.
-        await updateDoc(doc(db, 'classes', code, 'students', sid),
-          { [`zoosnooz.${zzAnimal.id}`]: { completed: true, ...badgeData, videoCompleted: !!videoURL, updatedAt: serverTimestamp() } }
-        );
+        //
+        // ⚠️⚠️ ONE FIELD PER KEY, NEVER THE WHOLE MAP. Assigning an OBJECT to the dotted path
+        //    `zoosnooz.{animalId}` REPLACES everything under it — including the `videoURL` the
+        //    upload handler wrote seconds earlier, from a different code path. That is what it
+        //    used to do: in the first ZooSnooz trial (2026-11-17, class ZOR3FZ) 22 of 23
+        //    uploaded clips ended up with no `videoURL` on the record, because finishing the
+        //    animal always lands after the upload. The one survivor was a clip whose upload
+        //    happened to finish last. Writing leaf paths merges instead.
+        // 🚫 Do not "tidy" this back into a single object assignment.
+        const fields = { ...badgeData, completed: true, updatedAt: serverTimestamp() };
+        const flat = {};
+        for (const [k, v] of Object.entries(fields)) flat[`zoosnooz.${zzAnimal.id}.${k}`] = v;
+        // ⚠️ Only ever raised, never lowered. `videoURL` here is this session's in-memory URL,
+        //    so after a reload it is empty — and writing `false` then would deny a clip that is
+        //    sitting in Storage.
+        if (videoURL) flat[`zoosnooz.${zzAnimal.id}.videoCompleted`] = true;
+        await updateDoc(doc(db, 'classes', code, 'students', sid), flat);
       } catch (e) { console.warn('Badge write:', e); }
     }
     setZzScreen('map');
@@ -686,7 +702,7 @@ export default function ZooSnoozScreen() {
       //    locks — which is how a student reached the stitch with five clips counted and none
       //    playable. Fire and forget: this must never delay the student or block the upload.
       if (animalId && studentName && classCode) {
-        const key = clipKey(normaliseCode(classCode), studentName.trim().replace(/[^a-zA-Z0-9_-]/g, '_'), animalId);
+        const key = clipKey(normaliseCode(classCode), safeStudentId(studentName), animalId);
         saveClip(key, blob).then(ok => {
           if (!ok) console.warn('[zoosnooz] could not keep a local copy of', animalId, '- a screen lock may cost this clip');
         });
@@ -697,7 +713,12 @@ export default function ZooSnoozScreen() {
       // Upload to Firebase Storage in background
       if (!studentName || !classCode || !animalId) return;
       try {
-        const safeStudent = studentName.trim().replace(/[^a-zA-Z0-9_-]/g, '_');
+        // ⚠️⚠️ `safeStudentId`, THE SAME VALUE AS THE FIRESTORE DOC ID. This used to strip
+        //    everything outside [a-zA-Z0-9_-], so "Snow Leopard" filed under `Snow_Leopard/`
+        //    while every reader — the teacher's clip modal, the staff tab, `getMediaUrl` —
+        //    looked under `Snow Leopard/`. 🚫 Do not re-sanitise it here; the documentary
+        //    upload below and all three other modes have always used this value.
+        const safeStudent = safeStudentId(studentName);
         const safeCode    = normaliseCode(classCode);
         const path        = `zoosnooz/${safeCode}/${safeStudent}/${animalId}.${fileExt}`;
         const sRef        = storageRef(storage, path);
@@ -855,13 +876,15 @@ export default function ZooSnoozScreen() {
     //    effect. Reading them there makes them effect dependencies, and the only honest way to
     //    satisfy that is to add them to `[zzScreen, zzStitchPhase]` — which would let a stitch
     //    RESTART if either ever changed. This ref is already the pattern for exactly that.
-    // ⚠️ studentKey must use the UPLOAD's sanitiser, not safeStudentId. They differ: the Storage
-    //    folder strips anything outside [a-zA-Z0-9_-] while the Firestore doc id keeps spaces.
+    // ⚠️ studentKey is the local cache key, and it must match what `saveClip` wrote when
+    //    recording stopped. Both are `safeStudentId` now — the Storage folder, the Firestore
+    //    doc id and this key are one value (2026-11-17). The recovery below also tries the old
+    //    stripped key, for a clip filmed before that.
     zzStitchDataRef.current = {
       videoURLs: { ...zzVideoURLs },
       completed: { ...zzCompleted },
       classCode: normaliseCode(classCode || ''),
-      studentKey: (studentName || '').trim().replace(/[^a-zA-Z0-9_-]/g, '_'),
+      studentKey: safeStudentId(studentName || ''),
     };
     setZzStitchPhase('stitching');
     setZzStitchProgress(0);
@@ -1165,13 +1188,36 @@ export default function ZooSnoozScreen() {
         }
         if (alive) return;
         if (!studentKey || !stitchCode) { deadClips.push(a.id); return; }
-        const blob = await loadClip(clipKey(stitchCode, studentKey, a.id));
+        // ⚠️ The old stripped key is tried second, for a clip filmed before the two names were
+        //    unified (2026-11-17). Without it a student who records, updates and then stitches
+        //    loses the recovery copy of every clip whose alias has a space in it.
+        const blob = await loadClip(clipKey(stitchCode, studentKey, a.id))
+                  || await loadClip(clipKey(stitchCode, legacyStoragePath(studentKey), a.id));
         if (blob) {
           playURLs[a.id] = URL.createObjectURL(blob);
           recovered.push(a.id);
-        } else {
-          deadClips.push(a.id);
+          return;
         }
+        // ⚠️⚠️ THIRD AND LAST RESORT: THE COPY IN STORAGE, WHICH IS THE ONE THAT ALWAYS EXISTS.
+        //    A clip lives in three places — page memory (dies on a reload or a screen lock),
+        //    IndexedDB (a cache, and it can be unavailable) and Storage (the real copy). Until
+        //    2026-11-17 the stitcher could only reach the first two, so a student whose phone
+        //    locked got a documentary of CARDS ONLY while every clip sat safely uploaded. That
+        //    happened in the first trial (Giraffe, class ZOR3FZ).
+        // ⚠️ This was blocked before today, and zzClipStore says so: `getMediaUrl`'s student
+        //    branch 403'd any alias with a space, because the Storage folder and the Firestore
+        //    doc id were spelled differently. Unifying those two names is what unlocks it.
+        try {
+          const stored = completed[a.id]?.videoURL
+            || await findMediaPath([`zoosnooz/${stitchCode}/${studentKey}`,
+                                    `zoosnooz/${stitchCode}/${legacyStoragePath(studentKey)}`], a.id);
+          const signed = stored && await mintStudentMedia(stitchCode, studentKey, { [a.id]: stored });
+          if (signed?.[a.id]) { playURLs[a.id] = signed[a.id]; recovered.push(a.id); return; }
+        } catch (e) {
+          // 🚫 Never fatal. One clip that cannot be fetched must not cost the whole documentary.
+          console.warn(`[zoosnooz] "${a.id}" could not be recovered from Storage:`, e);
+        }
+        deadClips.push(a.id);
       }));
       if (recovered.length) console.warn('[zoosnooz] restored from the device:', recovered.join(', '));
       if (deadClips.length) {
@@ -1889,7 +1935,7 @@ export default function ZooSnoozScreen() {
       //    clear would delete the next child's clips mid-session.
       // 🚫 Never treat a failure here as a submit failure — it is housekeeping. The documentary
       //    is already saved by this point.
-      clearClips(`${code}/${(studentName || '').trim().replace(/[^a-zA-Z0-9_-]/g, '_')}/`)
+      clearClips(`${code}/${safeStudentId(studentName || '')}/`)
         .catch(() => { /* a full or unavailable store is not the student's problem */ });
 
       setZzSessionDone(true);

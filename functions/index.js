@@ -684,8 +684,19 @@ exports.getMediaUrl = onRequest(
         }
         // ⚠️ The requested object must sit under this student's own folder. Without this check a
         //    student could pass any URL and have it signed — including another student's film.
+        //
+        // ⚠️⚠️ TWO SPELLINGS OF THE SAME STUDENT, AND BOTH ARE THEIRS. Until 2026-11-17 ZooSnooz
+        //    filed clips under the alias with everything outside [a-zA-Z0-9_-] stripped, while
+        //    `studentId` is the Firestore doc id and keeps spaces. This check saw those as
+        //    different people and 403'd every student whose alias has a space — 15 of the 30
+        //    aliases in the app — which is why student-side minting never worked for half a
+        //    class. The legacy form is derived from THIS student's own id, so it can only ever
+        //    widen to their own older folder. 🚫 It is not a wildcard: do not relax it further.
         const wanted = storagePathFromUrl(req.body.url) || '';
-        if (!wanted.includes(`/${code}/${studentId}/`)) {
+        const legacyId = String(studentId).trim().replace(/[^a-zA-Z0-9_-]/g, '_');
+        const mine = wanted.includes(`/${code}/${studentId}/`)
+                  || wanted.includes(`/${code}/${legacyId}/`);
+        if (!mine) {
           res.status(403).json({ error: 'Not your media.' }); return;
         }
         storedUrl = req.body.url;
