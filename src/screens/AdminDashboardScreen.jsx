@@ -37,35 +37,39 @@ const AD_CSS = `
   --ad-accent: #1A5238;
   --ad-hover: #F1F5F1;
   --ad-danger: #B91C1C;
+  /* Cameron's call, 2026-11-19: the portal keeps its forest green header. Flat, not the old
+     three-stop gradient — same colour, one less effect. */
+  --ad-head: #0A2F1F;
+  --ad-head-line: rgba(255,255,255,0.08);
+  --ad-head-ink: #fff;
+  --ad-head-sub: rgba(255,255,255,0.58);
+  --ad-head-faint: rgba(255,255,255,0.4);
   position: fixed; inset: 0; display: flex; flex-direction: column;
   background: var(--ad-bg); color: var(--ad-ink);
 }
 .ad-top {
-  flex-shrink: 0; background: var(--ad-card); border-bottom: 1px solid var(--ad-line);
+  flex-shrink: 0; background: var(--ad-head); border-bottom: 1px solid var(--ad-head-line);
   padding: 0.8rem 1.5rem; display: flex; align-items: center; justify-content: space-between;
   gap: 0.9rem; flex-wrap: wrap;
 }
 .ad-brand { display: flex; align-items: center; gap: 0.8rem; min-width: 0; }
-/* ⚠️ images/logo.png IS WHITE ON TRANSPARENCY — it was drawn for the old dark green header and
-   disappears completely on a white one. It gets a dark tile rather than a swap to
-   tracka-logo-green.png, which is a tall lockup and illegible at header height. 🚫 Do not put
-   a bare <img src="logo.png"> on a light surface anywhere. */
-.ad-mark {
-  width: 34px; height: 34px; border-radius: 9px; background: var(--ad-accent);
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-}
-.ad-mark img { height: 23px; width: auto; display: block; }
+/* ⚠️⚠️ images/logo.png IS WHITE ON TRANSPARENCY. It reads on this green header and vanishes
+   completely on a light one — which it did, for the hour this header was white. 🚫 Never put a
+   bare <img src="logo.png"> on a light surface: use images/tracka-logo-green.png, or give it a
+   dark tile. */
+.ad-mark { display: flex; align-items: center; flex-shrink: 0; }
+.ad-mark img { height: 34px; width: auto; display: block; }
 /* ⚠️ Both lines carry an explicit colour. The title inherits a white one from the old dark
    header otherwise, and renders invisible on the new one. */
-.ad-brand h1 { font-size: 1.1rem; line-height: 1.15; letter-spacing: 0.03em; color: var(--ad-ink); margin: 0; }
-.ad-brand p  { font-size: 0.72rem; color: var(--ad-muted); margin: 0.1rem 0 0; }
-.ad-who { font-size: 0.74rem; color: var(--ad-faint); }
+.ad-brand h1 { font-size: 1.1rem; line-height: 1.15; letter-spacing: 0.03em; color: var(--ad-head-ink); margin: 0; }
+.ad-brand p  { font-size: 0.72rem; color: var(--ad-head-sub); margin: 0.1rem 0 0; }
+.ad-who { font-size: 0.74rem; color: var(--ad-head-faint); }
 .ad-out {
-  background: none; border: 1px solid var(--ad-line); color: var(--ad-muted);
-  padding: 0.4rem 0.85rem; border-radius: 8px; cursor: pointer;
+  background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.9); padding: 0.4rem 0.85rem; border-radius: 8px; cursor: pointer;
   font-size: 0.78rem; font-weight: 600; font-family: inherit;
 }
-.ad-out:hover { background: var(--ad-hover); color: var(--ad-ink); }
+.ad-out:hover { background: rgba(255,255,255,0.18); color: #fff; }
 .ad-tabs {
   flex-shrink: 0; background: var(--ad-card); border-bottom: 1px solid var(--ad-line);
   padding: 0 1.5rem;
