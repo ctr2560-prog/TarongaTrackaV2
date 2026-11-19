@@ -144,8 +144,8 @@ export const ZOOSNOOZ_ANIMALS =
             },
             5:{
               keeperInsight:'Up to 2,700 kg - its size is both armour and engine.\nSkin folds like plating; the horn is solid keratin.\nStructure shapes everything this animal does.',
-              question:'Your tracker showed slow, heavy movement. The keeper calls its mass armour and what?',
-              options:['Engine','Burden','Shelter','Disguise'], correct:0,
+              question:'Your tracker showed slow, heavy movement. A 2,700 kg rhino still charges at 50 km/h. Its mass turns that speed into what?',
+              options:['Momentum','Agility','Balance','Traction'], correct:0,
               observationPrompt:'Write what the rhino is doing right now. Describe how it carries its weight as it moves, and what you notice about its skin and its horn.',
               keeperQ:'How does the rhino\'s mass and skin thickness change the way it moves and defends itself?',
             },
