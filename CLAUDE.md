@@ -23,6 +23,178 @@ region: `australia-southeast1`. ⚠️ See **Build & Deploy** — these two drif
 
 ---
 
+## Where we left off (2026-11-17 → 11-19) — the first ZooSnooz trial, and what it broke
+
+**ZOO CREW SRHS, class `ZOR3FZ`, 17 November, 10:50am–12:30pm.** The first ZooSnooz run with a
+real group. Twelve students joined, nine filmed, 26 clips reached Storage. Cameron's verdict on
+the day was that the app had lost half the videos.
+
+⚠️⚠️ **IT HAD LOST NOTHING. 25 of the 26 files were perfect** — about 300 frames each, a clean
+ten seconds, audio intact. Every observation was saved. The single casualty was one sun-bear
+clip of 7 frames, where the recording stopped early.
+
+🚫 **EVERYTHING THAT FAILED, FAILED ON THE WAY BACK OUT, NOT ON THE WAY IN.** That is the lesson
+of the whole day and it is the fourth time this codebase has produced it: capture works,
+read-back is where the silent failures live. A first trial that looks like data loss and is not
+is still a first trial that loses the room.
+
+### ⚠️⚠️ ONE NAME PER STUDENT — THE BUG THAT MADE IT LOOK LIKE DATA LOSS (`427df78`)
+
+The clip upload filed under a **stripped** alias while every reader looked under the Firestore
+doc id, which keeps spaces:
+
+```
+zoosnooz/ZOR3FZ/Snow_Leopard/tiger.webm   ← what the upload wrote
+zoosnooz/ZOR3FZ/Snow Leopard/tiger.webm   ← what the teacher's clip modal probed
+```
+
+So **single-word aliases played and two-word aliases showed nothing** — Cheetah, Giraffe and
+Quokka fine; Snow Leopard, Red Panda, Red Kangaroo and Little Penguin empty. Three and three,
+which is exactly what "some play and some don't" looked like from the teacher's chair.
+
+The proof is in the data and it is worth knowing how it reads: **`Red Kangaroo`'s documentary
+sits in `Red Kangaroo/` while their clips sit in `Red_Kangaroo/`** — same student, two folders,
+because the documentary upload used `safeStudentId` and the clip upload did not.
+
+✅ ZooSnooz now uses `safeStudentId` like Evolve, Wildest Dreams, ZooYard and its own
+documentary. `legacyStoragePath()` in `utils/helpers.js` is the old form, and **readers must try
+it second** — `findMediaPath` takes an array of bases for exactly this. Measured against the live
+class: the teacher could reach **16 of 27 clips before, 27 of 27 after.**
+🚫 Do not drop the legacy base until every pre-11-17 clip is migrated.
+
+### The clip pointer was being erased, every time (same commit)
+
+`zoosnooz.{animalId}` was written as a whole OBJECT on a dotted path, and **a dotted path given
+an object replaces the entire map** — deleting the `videoURL` the upload handler had written
+seconds earlier from a different code path. **22 of 23 clips had no pointer.** The one survivor
+was a clip whose upload happened to finish last.
+
+✅ It writes leaf paths now, which merge. ⚠️ `videoCompleted` is only ever raised, never lowered:
+after a reload the in-memory URL is empty, and writing `false` there would deny a clip that is
+sitting in Storage.
+
+### ✅ `getMediaUrl` IS FIXED, AND THAT UNBLOCKED THE STITCHER
+
+The student branch compared the Storage path against the doc id and so 403'd every alias with a
+space — the 🔴 that sat open from 2026-11-02. It now accepts both spellings of **that student's
+own** folder. 🚫 Not a wildcard: it is derived from their own id and cannot widen to anyone else.
+
+That fix is what made the third recovery step possible. A clip lives in three places — page
+memory, the device's IndexedDB cache, and Storage — and the stitcher could only ever reach the
+first two, which is why Giraffe's documentary came out as **cards and no footage while all four
+clips sat safely uploaded**. ⚠️ The Storage attempt is on an 8-second deadline: both calls are
+network calls with no deadline of their own (the Storage SDK retries a failed `getMetadata` for
+about two minutes) and it runs BEFORE the first frame is recorded.
+
+### Clips run 20 seconds (`25de587`), and can be redone (`860b6cc`)
+
+`ZZ_CLIP_SECONDS` is one constant now. ⚠️⚠️ **It is not a free number.** The student's film is
+captured in REAL TIME, so this sets how long the phone must stay awake and in the app while the
+film builds — about two minutes at 20s, three at 30s. 🚫 Do not raise it again without moving
+the build off the phone.
+
+**Film again** on the preview screen, and the part that would have bitten: both takes write the
+SAME Storage path, so the retake **cancels the upload it replaces** or a slow first upload lands
+afterwards and quietly reinstates the rejected take. A cancel is not reported as a failure, and
+the rejected blob URL is revoked.
+
+### ⚠️⚠️ THE NIGHT IS PICKED BACK UP NOW, NOT HELD IN MEMORY (`d435edf`)
+
+`zzCompleted` started at `{}` on every mount and was **never read back**. Students filmed several
+animals, left the app to use the phone's own camera, and came back to a blank map — while all of
+it sat in Firestore. On a school handset this is routine, not an edge case: the OS kills a
+backgrounded tab and the app reloads from nothing.
+
+Three things return: the completed animals from Firestore, the clips from the **device's own
+cache** (no network, so a student in the dark with no signal still gets their night back), and
+the observation they were part way through typing, drafted to `localStorage` as they write.
+⚠️ The draft matters more than it looks: ten words minimum, typed on a phone, in the cold, in
+front of an animal that has moved on. 🚫 Never treat page memory as the record of what a student
+has done.
+
+### ⚠️⚠️ A TEACHER BUILDS THE FILM ON THE SERVER (`41c4598`)
+
+`buildZooSnoozFilm` — a Cloud Function that assembles a student's documentary from the clips
+already in Storage. The button is at the foot of the student modal in `ClassDetailsScreen`.
+
+🚫 **DO NOT "SIMPLIFY" THIS BY REUSING THE BROWSER STITCHER.** The student's own stitcher
+captures a canvas in real time; doing that in a teacher's tab inherits every failure mode it
+has, including the one that produced a cards-only film on the night. Here nothing is captured —
+ffmpeg composes the frames as fast as the machine allows.
+
+| piece | where |
+|---|---|
+| `functions/film/cards.js` | the intro, animal cards, header/footer overlay and outro, drawn with `@napi-rs/canvas` |
+| `functions/film/build.js` | find clips, download, render, ffmpeg, upload |
+| `functions/film/assets/` | DM Sans + Taronga Headline, the animal photos, badges and logo |
+
+⚠️ `cards.js` is a **PORT** of the canvas code in `ZooSnoozScreen.jsx`, not a new design — every
+number comes from there, and it was checked against a browser-rendered card of the same animal.
+🚫 Changing a colour, size or offset on one side alone makes a class with one of each.
+⚠️ Skia has no CSS filters and no `letterSpacing`: the photo's `brightness(0.46)` is a black veil
+at the matching opacity, the white logo is punched out of a white rectangle, and the spaced label
+is drawn a character at a time. ⚠️ Each weight of DM Sans is registered as **its own family**,
+because Skia will not synthesise 600 from 400 the way a browser does.
+⚠️ No `ffprobe` — `ffmpeg-static` ships ffmpeg alone, so the frame count is read off ffmpeg's own
+stats line. ⚠️ Memory is 2GiB because `/tmp` is a RAM disk.
+
+✅ **Output is MP4/H.264, not the WebM a phone records.** A WebM opens in neither QuickTime,
+Safari, PowerPoint nor iMovie — the trial films had to be converted by hand before anyone could
+watch them. Verified in production on `Red Panda`, whose clips are in the **legacy** folder: 43s,
+13.6MB, both records repointed at the MP4.
+
+### The writing, the questions and the clip brief (`8810425`, `dfb8208`, `b4c9d79`, `1d4b274`)
+
+All from the students after the trial.
+
+⚠️⚠️ **THE PROMPT, THE HINT PANEL AND THE SCORER ARE ONE INSTRUCTION IN THREE FILES.** The
+prompts in `data/zoosnoozAnimals.js` all said *Explain how…* at Stages 3-5; the hint panel in
+`ZooSnoozScreen.jsx` said "Why does this happen?"; and `calculateZzBehaviourScore` marks against
+**behaviour verbs** — walk, rest, sniff, stalk — with `calculateZzDetailScore` marking body
+parts, surroundings and senses. The students were being pulled away from exactly what earns
+marks, which is visible in the trial: **behaviour averaged 2.4–2.9 out of 5** while the writing
+itself was fine. 🚫 Change one of the three and you have given a class two different tasks.
+
+✅ All twenty prompts ask for an observation now; the depth scales with the stage, the task does
+not. The clip is a piece to camera with three choices — something they just watched, a fact from
+the keeper or the signage, or why the animal is worth saving.
+⚠️ **Only the FIRST LINE of `filmingGuidance` reaches the student**, so line one carries the
+whole brief. ⚠️ `fact` and `filmingGuidance` need per-stage overrides or a Stage 2 rewrite lands
+on Stage 5.
+
+**The questions were too hard and the data says so: 17 of 29 right first time, the rhino 4 of 9,
+against a 25% guess rate.** Every option was a full clause, so four of them made a reading
+comprehension task out of a question about an animal standing in front of the student. Longest
+option is now three words, average 1.6, and every stem names what the student just did with the
+device.
+
+⚠️ Two giveaways that short options make easy to introduce, and which are checked: the correct
+answer is never conspicuously the longest, and the correct index is spread **exactly five each**
+across the four positions. A class that learns to pick the long one has stopped looking at the
+animal.
+
+🚫 **NEVER WRITE AN OPTION THAT CAN ONLY BE REACHED BY QUOTING THE APP BACK AT ITSELF.** Stage 5
+rhino asked students to recall the keeper insight's own metaphor ("armour and engine") — that
+marks a turn of phrase, and it is unanswerable for a class whose keeper said it differently.
+
+### What the trial did NOT test, and what to watch next
+
+- It ran in daylight, one group, personal phones. Not dark, not tired, not thirty students, not
+  the Taronga Oppos. ⚠️ An iPhone records **H.264 MP4** and the Oppos record **VP9 WebM** — a
+  pass on one is not a pass on the other.
+- **Nobody reached the fifth animal.** Every student did four or fewer. Content length or
+  schedule — the fix differs and nobody knows which yet.
+- **Three students shared one handset** (Quokka, Koala, Zebra, same `deviceUid`). Progress,
+  "New device" and souvenir access are all per device.
+- The **ten-word minimum** was set for an explanation task. Students wrote a median of 14 words,
+  several landing on exactly 10. Worth revisiting after a run on the new prompts, not before.
+- 🔴 **Local development against Firestore is blocked.** App Check is enforced, so the app on
+  localhost has its reads refused and the `zz-*.mjs` scripts are dead. Admin work needs
+  `gcloud auth application-default login`; a browser needs a debug token registered in the
+  console. That is worth doing before the next student-facing build.
+
+---
+
 ## Where we left off (2026-11-13 → 11-17) — the teacher portal
 
 Three pieces, all on the teacher side, all shipped and live on tarongatracka.com.au.
@@ -441,8 +613,10 @@ calls were fixed at the same time. `mr.resume()` is synchronous and was already 
 - **`utils/zzClipStore.js`** — every clip is written to IndexedDB as it is recorded, and the
   stitch restores any whose page memory the OS has reclaimed. Covers a screen lock and a reload.
   ✅ Verified by Cameron with a lock after filming.
-  🚫 **The Storage copy is NOT the recovery route, and cannot be** — see the `getMediaUrl` bug
-  below. Read the header of that file before changing any of this.
+  ⚠️ **The Storage copy became the THIRD recovery step on 2026-11-17**, once `getMediaUrl` was
+  fixed — this file's header said it could not be, and that is no longer true. The cache still
+  earns its place as step two: it needs no network, and a phone in a zoo at night often has none.
+  Read the header of that file before changing any of this.
 - **A canvas-blind pre-flight.** Before the recorder starts, one frame of the first clip is drawn
   into a 32×32 canvas and the pixels read back. If nothing arrives the student is told their clips
   are safe and to open the app in Safari — two seconds and an instruction, instead of 45 seconds
@@ -466,9 +640,14 @@ calls were fixed at the same time. `mr.resume()` is synchronous and was already 
 - Photo-led title cards, and the clip card now wears the film's gradient scrims instead of solid
   bars.
 
-### 🔴 `getMediaUrl` IS BROKEN FOR HALF OF ALL STUDENTS — found 2026-11-02, NOT FIXED
+### ✅ `getMediaUrl` WAS BROKEN FOR HALF OF ALL STUDENTS — found 2026-11-02, FIXED 2026-11-17
 
-Its student branch uses **one `studentId` for two incompatible things**:
+**Kept because the fault outlived the fix by a fortnight and cost a whole trial.** See the top
+section: the same two spellings of a student's name made half of the first ZooSnooz class
+unplayable for their teacher. The function now accepts either form of **that student's own**
+folder, and ZooSnooz writes `safeStudentId` like every other mode.
+
+What it used to do — its student branch used **one `studentId` for two incompatible things**:
 
 ```
 classes/{code}/students/{studentId}      ← the Firestore doc id: safeStudentId(), keeps spaces
@@ -479,10 +658,12 @@ path must contain /{code}/{studentId}/   ← the Storage folder: ZooSnooz writes
 For `Quoll` they agree. For `Sumatran Tiger` they cannot both be satisfied, so it is a 404 or a
 403 whichever value is sent. **15 of the 30 aliases in `constants/animals.js` contain a space.**
 
-⚠️ Evolve escapes this only because it stores the alias unsanitised. ⚠️ This blocks any
-student-side read-back of their own media, which is why the clip cache above is a device store
-and not a Storage fetch. Fixing it means changing and redeploying a security-sensitive Cloud
-Function — do it as its own piece of work, and re-run the security sweep after.
+⚠️ Evolve escaped this only because it stores the alias unsanitised. ⚠️ While it stood it blocked
+every student-side read-back of their own media, which is why the clip cache is a device store
+and not a Storage fetch — and why a documentary could come out as cards while every clip sat
+uploaded. Fixing it meant redeploying a security-sensitive Cloud Function; the ordering that
+worked was **app first, function second**, so a client sending the new path met a function that
+already accepted both.
 
 ### 🔴 EVOLVE AND WILDEST DREAMS STILL CARRY THESE BUGS
 
@@ -2037,7 +2218,8 @@ taronga-tracka-vite/
 │       ├── helpers.js                  # normaliseCode, safeStudentId, getMinWords, isLowQualityResponse
 │       └── assessmentTaskNotification.js  # Generates unique printable AT Notification docs per task
 ├── functions/
-│   └── index.js              # Cloud Functions: sendMagicLink, onDeviceBookingCreated, sendMentorReport
+│   ├── index.js              # Cloud Functions: sendMagicLink, onDeviceBookingCreated, sendMentorReport, buildZooSnoozFilm
+│   └── film/                 # the server-side ZooSnooz film: cards.js, build.js, assets/ (fonts, photos, badges)
 ├── scripts/
 │   ├── generate-wd-voice.sh  # rebuilds public/voice/*.m4a — lists every key and its line
 │   └── generate-pptx.py      # Builds 32 downloadable PPTX lesson decks — legacy, not wired into the app anymore (see Pre/Post-Visit Lessons section)
@@ -2235,6 +2417,7 @@ A summary is also written to `zoosnooz_docs/{classCode}_{studentId}` for the NFC
 |---|---|---|
 | `onDeviceBookingCreated` | Firestore `onDocumentCreated` on `deviceBookings/{id}` | Emails `ctr2560@gmail.com` with booking details |
 | `sendMentorReport` | HTTPS (public, token-gated via `MENTOR_REPORT_TOKEN` env var) | Sends the weekly mentor report email to `ctr2560@gmail.com` — see Weekly Mentor Report Automation section |
+| `buildZooSnoozFilm` | HTTPS, teacher or staff ID token, 2GiB / 540s | Assembles a student's documentary from the clips in Storage with `@napi-rs/canvas` + ffmpeg, uploads it as **MP4**, repoints both records. Code in `functions/film/`. See the top section before changing the cards |
 
 **Note:** `sendMagicLink` is still deployed but is dead code — teacher auth moved to email+password (see Authentication Model section) and nothing in `src/` calls it anymore. Left in place rather than deleted; safe to remove in a future cleanup.
 
@@ -2242,7 +2425,11 @@ Deploy: `firebase deploy --only functions`
 
 Resend API key stored in Firebase Functions config/environment.
 
-**Note:** There are no Cloud Functions for ZooSnooz video/stitching — all processing is client-side in the browser.
+⚠️ **A STUDENT's film is still built client-side; a TEACHER's is not** (changed 2026-11-17). The
+student's stitcher captures a canvas in real time on the phone — which is why a screen that dims
+mid-stitch produces a film of title cards — while `buildZooSnoozFilm` composes the same film with
+ffmpeg and cannot fail that way. 🚫 Do not "unify" them by moving the teacher's build into the
+browser; that is the direction that reintroduces the bug.
 
 ---
 
@@ -4374,7 +4561,7 @@ ZooSnooz internal screens (`zzScreen` values): `map` → `animal` (phases: insig
 | `teacherLogin` | `TeacherLoginScreen.jsx` | Magic link email entry |
 | `teacherDashboard` | `TeacherDashboardScreen.jsx` | Hero, class cards, plan panel, Wildly panel, school points. ⚠️ Carries the `data-tour` anchors the tutorial spotlights |
 | `createClass` | `CreateClassScreen.jsx` | Create class form, three numbered steps; **photo-led programme cards, not a dropdown** (see the top section); sets stage, subject, session type, access code |
-| `classDetails` | `ClassDetailsScreen.jsx` | Per-class analytics, student list, RadarSVG, ZooSnooz data, ZooYard citizen science moderation, info sheet |
+| `classDetails` | `ClassDetailsScreen.jsx` | Per-class analytics, student list, RadarSVG, ZooSnooz data and the **Build the film** button, ZooYard citizen science moderation, info sheet |
 | `teacherGuide` | `TeacherGuideScreen.jsx` | Timeline checklist, 4 phases, tap-to-tick, localStorage progress |
 | `assessmentIdeas` | `AssessmentIdeasScreen.jsx` | In-app evidence + 20 post-visit tasks per subject; generates unique printable AT Notification docs |
 | `teacherMap` | `TeacherMapScreen.jsx` | Zoo map with student pins, zoom in/out, starts at 0.8 scale |
