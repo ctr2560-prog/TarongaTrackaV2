@@ -3601,13 +3601,21 @@ export default function ZooSnoozScreen() {
             ) : (() => {
                 const keeperQ  = stageData.keeperQ || zzAnimal.keeperPrompts?.[0] || 'What does this animal need to survive at night?';
                 const obsPrompt = stageData.observationPrompt || zzAnimal.observationPrompt;
+                // ⚠️⚠️ THIS SCAFFOLD AND THE PROMPT ARE ONE INSTRUCTION IN TWO FILES. The prompts
+                //    in data/zoosnoozAnimals.js ask for an OBSERVATION at every stage (2026-11-19,
+                //    students' own feedback). This used to ask for reasoning — "Why does this
+                //    happen?", "This is significant because…" — so a student reading both was
+                //    being told to do two different things at once.
+                // 🚫 Do not put explanation back here on its own. The reasoning is the MCQ's job;
+                //    the writing is what they can see. The scorer agrees: it rewards behaviour
+                //    verbs and concrete features, not causal language.
                 const tip = classStage <= 2
                   ? { header:'Start with:', points:[], starters:['I saw…','I can see…'] }
                   : classStage === 3
-                  ? { header:'A good response includes:', points:['What you can observe','One feature or behaviour','Why you think it does that'], starters:['I noticed…','I think this is because…'] }
+                  ? { header:'A good response includes:', points:['What the animal is doing','One part of its body you can see','Where it is'], starters:['I noticed…','It is…'] }
                   : classStage === 5
-                  ? { header:'✓ Stage 5 - Explain and reason:', points:['What did you observe?','Why does this happen?','How does this help the animal or environment?'], starters:['Based on my observation…','This is significant because…','This adaptation allows the animal to…'] }
-                  : { header:'✓ A strong response includes:', points:['A clear observation (what + where/what doing)','A relevant concept or feature','A simple explanation or link to survival'], starters:['I observed that…','This may help the animal because…'] };
+                  ? { header:'✓ Stage 5 - Observe closely:', points:['What the animal is doing right now','The features and movements you can see','The conditions around it - light, sound, surface'], starters:['I observed that…','At the moment I watched…','Around it I could see…'] }
+                  : { header:'✓ A strong response includes:', points:['What it is doing right now','A body part or feature you can see','Where it is, or what is around it'], starters:['I observed that…','I could see…'] };
                 // ⚠️ ONE SHORT PLACEHOLDER, every stage. There were three, and the Stage 3-4 one
                 //    ran to four lines inside the box — it restated the prompt that is already
                 //    on screen directly above, so the same instruction was being read twice and
