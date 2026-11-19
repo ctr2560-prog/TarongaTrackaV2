@@ -19,6 +19,77 @@ import { SUBJ_META, STAGES, prePostDocId, IMAGE_LIBRARY } from '../data/subjectM
 import { getCurrentQuestionTexts, studentQuizPercent, legacyStoragePath } from '../utils/helpers';
 import DeviceBookingCalendar, { DEVICE_CAPACITY } from '../components/DeviceBookingCalendar';
 
+// ⚠️⚠️ THE SHELL OF THE STAFF PORTAL, AS ONE STYLESHEET (2026-11-19). Everything else in this
+//    file is still inline styles — 660 of them, 53 colour literals — and the tab contents are a
+//    separate job. This covers the frame: the header, the tab bar and the page.
+// 🚫 Do not add a colour literal below. Add a token, or the drift starts again one rule at a
+//    time, which is exactly how this file reached 53 greens.
+// ⚠️ Flat and white, per Cameron's standing rule for the education apps: no gradient header, no
+//    glow, no lift on hover. The old header was a three-stop green gradient.
+const AD_CSS = `
+.ad-root {
+  --ad-bg: #F4F6F2;
+  --ad-card: #fff;
+  --ad-line: #E2E6DF;
+  --ad-ink: #0A2F1F;
+  --ad-muted: #6B736D;
+  --ad-faint: #9AA39C;
+  --ad-accent: #1A5238;
+  --ad-hover: #F1F5F1;
+  --ad-danger: #B91C1C;
+  position: fixed; inset: 0; display: flex; flex-direction: column;
+  background: var(--ad-bg); color: var(--ad-ink);
+}
+.ad-top {
+  flex-shrink: 0; background: var(--ad-card); border-bottom: 1px solid var(--ad-line);
+  padding: 0.8rem 1.5rem; display: flex; align-items: center; justify-content: space-between;
+  gap: 0.9rem; flex-wrap: wrap;
+}
+.ad-brand { display: flex; align-items: center; gap: 0.8rem; min-width: 0; }
+/* ⚠️ images/logo.png IS WHITE ON TRANSPARENCY — it was drawn for the old dark green header and
+   disappears completely on a white one. It gets a dark tile rather than a swap to
+   tracka-logo-green.png, which is a tall lockup and illegible at header height. 🚫 Do not put
+   a bare <img src="logo.png"> on a light surface anywhere. */
+.ad-mark {
+  width: 34px; height: 34px; border-radius: 9px; background: var(--ad-accent);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.ad-mark img { height: 23px; width: auto; display: block; }
+/* ⚠️ Both lines carry an explicit colour. The title inherits a white one from the old dark
+   header otherwise, and renders invisible on the new one. */
+.ad-brand h1 { font-size: 1.1rem; line-height: 1.15; letter-spacing: 0.03em; color: var(--ad-ink); margin: 0; }
+.ad-brand p  { font-size: 0.72rem; color: var(--ad-muted); margin: 0.1rem 0 0; }
+.ad-who { font-size: 0.74rem; color: var(--ad-faint); }
+.ad-out {
+  background: none; border: 1px solid var(--ad-line); color: var(--ad-muted);
+  padding: 0.4rem 0.85rem; border-radius: 8px; cursor: pointer;
+  font-size: 0.78rem; font-weight: 600; font-family: inherit;
+}
+.ad-out:hover { background: var(--ad-hover); color: var(--ad-ink); }
+.ad-tabs {
+  flex-shrink: 0; background: var(--ad-card); border-bottom: 1px solid var(--ad-line);
+  padding: 0 1.5rem;
+}
+.ad-tabs-in { max-width: 1080px; margin: 0 auto; display: flex; gap: 0.1rem; overflow-x: auto; }
+.ad-tab {
+  padding: 0.75rem 0.95rem; background: none; border: none; cursor: pointer;
+  border-bottom: 2px solid transparent; white-space: nowrap; font-family: inherit;
+  font-size: 0.85rem; font-weight: 500; color: var(--ad-muted);
+}
+.ad-tab:hover { color: var(--ad-ink); }
+.ad-tab.is-on { color: var(--ad-ink); font-weight: 700; border-bottom-color: var(--ad-accent); }
+/* The Control Room empties classes and revokes links. It reads as the same kind of thing as
+   Overview until the moment it is not, so it is marked in the one place a tab bar can. */
+.ad-tab.is-danger.is-on { color: var(--ad-danger); border-bottom-color: var(--ad-danger); }
+.ad-page { flex: 1; min-height: 0; overflow-y: auto; padding: 1.4rem 1.5rem 3rem; }
+.ad-page-in { max-width: 1080px; margin: 0 auto; }
+@media (max-width: 640px) {
+  .ad-top { padding: 0.7rem 1rem; }
+  .ad-tabs { padding: 0 1rem; }
+  .ad-page { padding: 1.1rem 1rem 2.5rem; }
+}
+`;
+
 function generateCode() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   let c = '';
@@ -3801,14 +3872,11 @@ export default function AdminDashboardScreen() {
   const [classes,  setClasses]  = useState([]);
   const [loading,  setLoading]  = useState(true);
 
-  // Daily code
-  const [dailyCode,        setDailyCode]        = useState(null);
-  const [generatingDaily,  setGeneratingDaily]  = useState(false);
-  const [codeDeactivated,  setCodeDeactivated]  = useState(false);
-
-  // Night code
-  const [nightCode,        setNightCode]        = useState('');
-  const [creatingNight,    setCreatingNight]    = useState(false);
+  // 🚫 The daily and night access-code state, its loader and both generators were removed on
+  //    2026-11-19 along with the header pills they fed. They had been dead for longer than
+  //    that — eslint reported all seven as unused BEFORE the pills went — and nothing in src/
+  //    outside this file reads `accessCodes`. ⚠️ The Generate Access Code panel in the Control
+  //    Room is the last piece of the same abandoned feature.
 
   // Load all classes with student counts
   useEffect(() => {
@@ -3877,106 +3945,52 @@ export default function AdminDashboardScreen() {
     return () => { cancelled = true; };
   }, []);
 
-  // Load current daily code - only pick it up if it hasn't expired yet
-  useEffect(() => {
-    const now = new Date();
-    getDocs(query(collection(db, 'accessCodes'), where('active', '==', true)))
-      .then(snap => {
-        const daily = snap.docs.find(d => {
-          if (!d.id.startsWith('ROAR-')) return false;
-          const exp = d.data().expiresAt?.toDate?.() ?? (d.data().expiresAt ? new Date(d.data().expiresAt) : null);
-          return exp && exp > now;
-        });
-        if (daily) setDailyCode({ id: daily.id, ...daily.data() });
-      }).catch(() => {});
-  }, []);
 
-  const generateDailyCode = async () => {
-    setGeneratingDaily(true);
-    try {
-      const newCode = 'ROAR-' + Math.floor(1000 + Math.random() * 9000);
-      const expires = new Date();
-      expires.setHours(23, 59, 59, 999);
-      const activeSnap = await getDocs(query(collection(db, 'accessCodes'), where('active', '==', true)));
-      const batch = writeBatch(db);
-      activeSnap.docs.forEach(d => batch.update(d.ref, { active: false }));
-      batch.set(doc(db, 'accessCodes', newCode), {
-        active: true, expiresAt: expires, createdAt: serverTimestamp(),
-        venue: 'Taronga Sydney', uses: 0, maxUses: 999,
-      });
-      await batch.commit();
-      setDailyCode({ id: newCode, active: true, expiresAt: expires });
-      setCodeDeactivated(true);
-      setTimeout(() => setCodeDeactivated(false), 2500);
-    } catch (e) { alert('Error generating daily code'); }
-    finally { setGeneratingDaily(false); }
-  };
 
-  const createNightCode = async () => {
-    setCreatingNight(true);
-    setNightCode('');
-    try {
-      const code = generateCode();
-      const expires = new Date();
-      expires.setDate(expires.getDate() + 1);
-      await setDoc(doc(db, 'accessCodes', code), {
-        active: true, sessionType: 'zoosnooz',
-        venue: 'Taronga Zoo', uses: 0, maxUses: 50,
-        createdBy: auth.currentUser?.email || 'unknown', createdAt: serverTimestamp(), expiresAt: expires,
-      });
-      setNightCode(code);
-    } catch (e) { alert('Failed to generate code: ' + e.message); }
-    finally { setCreatingNight(false); }
-  };
 
   const tabs = ['overview', 'analytics', 'programmes', 'review', 'manage', 'controlRoom'];
-  const tabLabels = { overview:'Overview', analytics:'Analytics', programmes:'Programmes', review:'Review', manage:'Manage', controlRoom:'🔒 Control Room' };
+  // 🚫 No emoji. A padlock on one tab and nothing on the other five reads as decoration, not as
+  //    a warning — the tab bar marks the Control Room in colour instead, which survives being
+  //    read quickly.
+  const tabLabels = { overview:'Overview', analytics:'Analytics', programmes:'Programmes', review:'Review', manage:'Manage', controlRoom:'Control Room' };
 
   return (
-    <div style={{ position:'fixed', inset:0, background:'var(--t-canvas)', display:'flex', flexDirection:'column' }}>
+    <div className="ad-root">
+      <style>{AD_CSS}</style>
 
       {/* Header */}
-      <div style={{ background:'linear-gradient(135deg,var(--t-forest) 0%,var(--t-deep) 60%,var(--t-mid) 100%)', padding:'0.85rem 1.5rem', boxShadow:'var(--t-shadow-md)', display:'flex', justifyContent:'space-between', alignItems:'center', flexShrink:0, borderBottom:'1px solid rgba(255,255,255,0.07)', flexWrap:'wrap', gap:'0.75rem' }}>
-        <div style={{ display:'flex', alignItems:'center', gap:'0.85rem' }}>
-          <img src="/images/logo.png" alt="" style={{ height:'40px', width:'auto', filter:'drop-shadow(0 2px 6px rgba(0,0,0,0.3))' }} onError={e=>e.target.style.display='none'} />
+      {/* 🚫 THE TWO ACCESS-CODE PILLS ARE GONE (2026-11-19). They sat in the most prominent
+          strip of the portal saying "Daily Code: Paused" and "Night Session: Paused", with
+          pointer events off — a label for a feature that no longer exists. Nothing in src/
+          outside this file reads `accessCodes`. The generator in the Control Room is the other
+          half of the same dead feature.
+          ⚠️ If codes ever come back, they come back as something a staff member can act on,
+          not as a greyed-out word. */}
+      <div className="ad-top">
+        <div className="ad-brand">
+          <span className="ad-mark"><img src="/images/logo.png" alt="" onError={e=>e.target.style.display='none'} /></span>
           <div>
-            <h1 className="taronga-title" style={{ fontSize:'clamp(1.1rem, 2.5vw, 1.35rem)', color:'white', lineHeight:1.15, letterSpacing:'0.04em' }}>Taronga Staff Portal</h1>
-            <p style={{ color:'rgba(255,255,255,0.55)', fontSize:'0.7rem', marginTop:'0.1rem' }}>Educational insights & program management</p>
+            <h1 className="taronga-title">Taronga Staff Portal</h1>
+            <p>Classes, programmes and student work</p>
           </div>
         </div>
-
-        <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', flexWrap:'wrap' }}>
-          {/* Daily code — temporarily deactivated */}
-          <div title="Access codes are temporarily deactivated" style={{ background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)', padding:'0.4rem 0.85rem', borderRadius:'var(--t-r-pill)', color:'rgba(255,255,255,0.35)', display:'flex', alignItems:'center', gap:'0.6rem', fontSize:'0.78rem', fontWeight:600, pointerEvents:'none', userSelect:'none' }}>
-            🔑 Daily Code: <span style={{ opacity:0.6 }}>Paused</span>
-          </div>
-
-          {/* Night code — temporarily deactivated */}
-          <div title="Access codes are temporarily deactivated" style={{ background:'rgba(0,0,0,0.4)', border:'1px solid rgba(46,125,85,0.15)', padding:'0.4rem 0.85rem', borderRadius:'var(--t-r-pill)', color:'rgba(255,255,255,0.35)', display:'flex', alignItems:'center', gap:'0.6rem', fontSize:'0.78rem', fontWeight:600, pointerEvents:'none', userSelect:'none' }}>
-            🌙 Night Session: <span style={{ opacity:0.6 }}>Paused</span>
-          </div>
-
-
-          {/* A real sign-out now: the session is a Firebase Auth session, so clearing local
-              state alone would leave the account signed in on a shared Taronga machine. */}
-          <button onClick={async ()=>{ try { await auth.signOut(); } catch (e) { console.warn('Sign out failed:', e); } setCurrentScreen('home'); }}
-            style={{ background:'rgba(255,255,255,0.10)', border:'1px solid rgba(255,255,255,0.2)', color:'rgba(255,255,255,0.88)', padding:'0.4rem 0.85rem', borderRadius:'var(--t-r-pill)', cursor:'pointer', fontSize:'0.78rem', fontWeight:600 }}>
-            Sign Out
+        <div style={{ display:'flex', alignItems:'center', gap:'0.8rem' }}>
+          {staffEmail && <span className="ad-who">{staffEmail}</span>}
+          {/* A real sign-out: the session is a Firebase Auth session, so clearing local state
+              alone would leave the account signed in on a shared Taronga machine. */}
+          <button className="ad-out"
+            onClick={async ()=>{ try { await auth.signOut(); } catch (e) { console.warn('Sign out failed:', e); } setCurrentScreen('home'); }}>
+            Sign out
           </button>
         </div>
       </div>
 
       {/* Tab bar */}
-      <div style={{ background:'var(--t-chalk)', borderBottom:'1px solid var(--t-stone)', padding:'0 1.5rem', flexShrink:0, boxShadow:'0 1px 4px rgba(7,30,20,0.05)' }}>
-        <div style={{ maxWidth:'960px', margin:'0 auto', display:'flex', gap:0, overflowX:'auto' }}>
+      <div className="ad-tabs">
+        <div className="ad-tabs-in">
           {tabs.map(t => (
             <button key={t} onClick={()=>setTab(t)}
-              style={{ padding:'0.85rem 1.1rem', background:'none', border:'none',
-                borderBottom: tab===t ? `2.5px solid ${t==='controlRoom'?'#2E7D55':'var(--t-mid)'}` : '2.5px solid transparent',
-                color: tab===t ? (t==='controlRoom'?'#2E7D55':'var(--t-deep)') : 'var(--t-slate)',
-                fontSize:'0.85rem', fontWeight: tab===t ? 700 : 500, cursor:'pointer',
-                transition:'color 0.18s, border-color 0.18s', fontFamily:'DM Sans, sans-serif',
-                whiteSpace:'nowrap', letterSpacing:'0.01em' }}>
+              className={`ad-tab${tab===t ? ' is-on' : ''}${t==='controlRoom' ? ' is-danger' : ''}`}>
               {tabLabels[t]}
             </button>
           ))}
@@ -3984,8 +3998,8 @@ export default function AdminDashboardScreen() {
       </div>
 
       {/* Content */}
-      <div style={{ flex:1, minHeight:0, overflowY:'auto', padding:'1.25rem 1.5rem' }}>
-        <div style={{ maxWidth:'960px', margin:'0 auto' }}>
+      <div className="ad-page">
+        <div className="ad-page-in">
           {tab === 'overview'    && <OverviewTab classes={classes} loading={loading} onClassClick={code=>{setSelectedAdminClass(code);setCurrentScreen('adminClassView');}} />}
           {tab === 'analytics'   && <AnalyticsTab classes={classes} />}
           {tab === 'programmes'  && <ProgrammesTab classes={classes} />}
