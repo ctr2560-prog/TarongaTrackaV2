@@ -86,6 +86,32 @@ const AD_CSS = `
    Overview until the moment it is not, so it is marked in the one place a tab bar can. */
 .ad-tab.is-danger.is-on { color: var(--ad-danger); border-bottom-color: var(--ad-danger); }
 .ad-page { flex: 1; min-height: 0; overflow-y: auto; padding: 1.4rem 1.5rem 3rem; }
+
+/* ── Panels ──────────────────────────────────────────────────────────────────────────────
+   ⚠️⚠️ ONE CARD AND ONE HEADING. Analytics had TWO of each — white cards with a 1rem heading
+   for the top six sections and grey cards with a small uppercase heading for the bottom three
+   — so the page read as two half-finished pages rather than one.
+   ⚠️ ad-sub is the line that says what a section tells you, and it goes UNDER THE HEADING.
+   Those lines existed already: italic, centred, in grey, at the FOOT of the panel, where they
+   read as a disclaimer rather than as the thing that makes the chart legible.
+   🚫 Do not re-state a panel's own title in its sub-line. */
+.ad-panel {
+  background: var(--ad-card); border: 1px solid var(--ad-line); border-radius: 12px;
+  padding: 1.25rem;
+}
+.ad-panel > h3 {
+  font-size: 1rem; font-weight: 700; color: var(--ad-ink); margin: 0;
+  letter-spacing: -0.005em;
+}
+.ad-sub { font-size: 0.78rem; color: var(--ad-muted); margin: 0.25rem 0 1rem; line-height: 1.5; }
+.ad-panel > h3:last-child { margin-bottom: 0; }
+.ad-note { font-size: 0.72rem; color: var(--ad-faint); margin: 0.85rem 0 0; line-height: 1.5; }
+.ad-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: start; }
+@media (max-width: 760px) { .ad-cols { grid-template-columns: 1fr; } }
+.ad-colhead {
+  font-size: 0.68rem; font-weight: 700; color: var(--ad-faint); text-transform: uppercase;
+  letter-spacing: 0.08em; margin: 0 0 0.7rem;
+}
 .ad-page-in { max-width: 1080px; margin: 0 auto; }
 @media (max-width: 640px) {
   .ad-top { padding: 0.7rem 1rem; }
@@ -601,8 +627,9 @@ function AnalyticsTab({ classes }) {
 
           {/* Most Visited Animals */}
           {animalVisits.length > 0 && (
-            <div style={{ background:'white', borderRadius:'var(--t-r-md)', border:'1px solid var(--t-mist)', padding:'1.25rem' }}>
-              <h3 style={{ fontSize:'1rem', fontWeight:700, color:'var(--t-deep)', margin:'0 0 1rem' }}>Most Visited Animals</h3>
+            <div className="ad-panel">
+              <h3>Most Visited Animals</h3>
+              <p className="ad-sub">Which enclosures classes actually reach, counted from submitted work.</p>
               <div style={{ display:'flex', flexDirection:'column', gap:'0.4rem' }}>
                 {animalVisits.map(([name, count]) => (
                   <div key={name} style={{ display:'flex', alignItems:'center', gap:'0.75rem' }}>
@@ -614,15 +641,13 @@ function AnalyticsTab({ classes }) {
                   </div>
                 ))}
               </div>
-              <p style={{ color:'var(--t-ash)', fontSize:'0.72rem', margin:'0.75rem 0 0', textAlign:'center', fontStyle:'italic' }}>
-                Animal visit data will be calculated from student badge submissions once data is available.
-              </p>
             </div>
           )}
 
           {/* Quiz Mastery Distribution */}
-          <div style={{ background:'white', borderRadius:'var(--t-r-md)', border:'1px solid var(--t-mist)', padding:'1.25rem' }}>
-            <h3 style={{ fontSize:'1rem', fontWeight:700, color:'var(--t-deep)', margin:'0 0 1rem' }}>Quiz Mastery Distribution</h3>
+          <div className="ad-panel">
+            <h3>Quiz Mastery Distribution</h3>
+            <p className="ad-sub">How many classes sit in each band of quiz accuracy. A pile on the left is a content problem, not a class problem.</p>
             <div style={{ display:'flex', alignItems:'flex-end', gap:'0.75rem', height:140, padding:'0 0.5rem' }}>
               {[['0–25%', quizBuckets[0]],['26–50%', quizBuckets[1]],['51–75%', quizBuckets[2]],['76–100%', quizBuckets[3]]].map(([label, count]) => (
                 <div key={label} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:'0.3rem', height:'100%', justifyContent:'flex-end' }}>
@@ -632,9 +657,6 @@ function AnalyticsTab({ classes }) {
                 </div>
               ))}
             </div>
-            <p style={{ color:'var(--t-ash)', fontSize:'0.72rem', margin:'0.75rem 0 0', textAlign:'center', fontStyle:'italic' }}>
-              Distribution of combined quiz accuracy (knowledge + discovery) across classes.
-            </p>
           </div>
 
           {/* Observation Skill Breakdown */}
@@ -663,7 +685,7 @@ function AnalyticsTab({ classes }) {
                 ['Mechanics (%)',    'How clearly did the student structure sentences, use capitals, and apply punctuation?'],
               ];
             return (
-              <div style={{ background:'white', borderRadius:'var(--t-r-md)', border:'1px solid var(--t-mist)', padding:'1.25rem' }}>
+              <div className="ad-panel">
                 <h3 style={{ fontSize:'1rem', fontWeight:700, color:'var(--t-deep)', margin:'0 0 0.75rem' }}>Writing Skill Breakdown</h3>
                 <svg viewBox="0 0 400 280" style={{ width:'100%', maxWidth:420, display:'block', margin:'0 auto' }}>
                   {[0.2,0.4,0.6,0.8,1].map(lv => (
@@ -704,8 +726,9 @@ function AnalyticsTab({ classes }) {
 
           {/* Hardest Questions */}
           {hardestQuestions.length > 0 && (
-            <div style={{ background:'white', borderRadius:'var(--t-r-md)', border:'1px solid var(--t-mist)', padding:'1.25rem' }}>
-              <h3 style={{ fontSize:'1rem', fontWeight:700, color:'var(--t-deep)', margin:'0 0 1rem' }}>Hardest Questions</h3>
+            <div className="ad-panel">
+              <h3>Hardest Questions</h3>
+              <p className="ad-sub">Lowest first-attempt success. These are the questions to rewrite, or the signage to check.</p>
               {hardestQuestions.map((q, i) => (
                 <div key={i} style={{ display:'flex', alignItems:'flex-start', gap:'1rem', padding:'0.85rem 0', borderBottom: i<hardestQuestions.length-1 ? '1px solid var(--t-mist)' : 'none' }}>
                   <div style={{ width:24, textAlign:'center', fontSize:'0.88rem', fontWeight:700, color:'var(--t-slate)', flexShrink:0 }}>{i+1}.</div>
@@ -717,16 +740,14 @@ function AnalyticsTab({ classes }) {
                   <div style={{ fontSize:'0.95rem', fontWeight:800, color: q.successRate<40?'#DC2626':q.successRate<70?'#D97706':GREEN, flexShrink:0 }}>{q.successRate}%</div>
                 </div>
               ))}
-              <p style={{ color:'var(--t-ash)', fontSize:'0.72rem', margin:'0.5rem 0 0', textAlign:'center', fontStyle:'italic' }}>
-                Questions with lowest first-attempt success rate. Helps identify confusing signage or difficult concepts.
-              </p>
             </div>
           )}
 
           {/* School Performance table */}
           {schoolPerf.length > 0 && (
-            <div style={{ background:'white', borderRadius:'var(--t-r-md)', border:'1px solid var(--t-mist)', padding:'1.25rem' }}>
-              <h3 style={{ fontSize:'1rem', fontWeight:700, color:'var(--t-deep)', margin:'0 0 1rem' }}>School Performance</h3>
+            <div className="ad-panel">
+              <h3>School Performance</h3>
+              <p className="ad-sub">Ranked by average quiz score. Observation scores come from completed written work.</p>
               <div style={{ overflowX:'auto' }}>
                 <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'0.83rem' }}>
                   <thead>
@@ -755,16 +776,13 @@ function AnalyticsTab({ classes }) {
                   {schoolExpanded ? '▲ Show less' : `▼ Show ${schoolPerf.length - 4} more school${schoolPerf.length - 4 !== 1 ? 's' : ''}`}
                 </button>
               )}
-              <p style={{ color:'var(--t-ash)', fontSize:'0.72rem', margin:'0.75rem 0 0', textAlign:'center', fontStyle:'italic' }}>
-                Schools ranked by average quiz performance. Observation scores calculated from completed student submissions.
-              </p>
             </div>
           )}
 
           {/* Conservation Statements - standard sessions only */}
           {view !== 'zoosnooz' && conStatements.length > 0 && (
-            <div style={{ background:'white', borderRadius:'var(--t-r-md)', border:'1px solid var(--t-mist)', padding:'1.25rem' }}>
-              <h3 style={{ fontSize:'1rem', fontWeight:700, color:'var(--t-deep)', margin:'0 0 0.35rem' }}>Conservation Statements</h3>
+            <div className="ad-panel">
+              <h3>Conservation Statements</h3>
               <p style={{ color:'var(--t-slate)', fontSize:'0.78rem', margin:'0 0 0.85rem' }}>{conStatements.length} statement{conStatements.length!==1?'s':''} across all classes.</p>
               <div style={{ display:'flex', flexDirection:'column', gap:'0.4rem', maxHeight:320, overflowY:'auto' }}>
                 {conStatements.map((s, i) => (
@@ -789,8 +807,8 @@ function AnalyticsTab({ classes }) {
             const hasData = subjectOrder.some(sub => data[sub] && Object.keys(data[sub]).length);
             const fmtAnimal = id => id.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
             return (
-              <div style={{ background:'white', borderRadius:'var(--t-r-md)', border:'1px solid var(--t-mist)', padding:'1.25rem' }}>
-                <h3 style={{ fontSize:'1rem', fontWeight:700, color:'var(--t-deep)', margin:'0 0 0.25rem' }}>MCQ Question Analysis</h3>
+              <div className="ad-panel">
+                <h3>MCQ Question Analysis</h3>
                 <p style={{ color:'var(--t-slate)', fontSize:'0.78rem', margin:'0 0 1rem' }}>Per subject — select an animal to see question results by stage.</p>
                 {!hasData && (
                   <p style={{ color:'var(--t-ash)', fontSize:'0.82rem', fontStyle:'italic' }}>No per-question quiz data found for this view. Data appears once students complete sessions with individual question tracking.</p>
@@ -909,58 +927,50 @@ function AnalyticsTab({ classes }) {
 
         </>)}
 
-        {/* By Stage + Top Schools */}
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'1rem' }}>
-          <div style={{ background:'var(--t-chalk)', borderRadius:'var(--t-r-md)', padding:'1.1rem', border:'1px solid var(--t-stone)' }}>
-            <h3 style={{ fontSize:'0.82rem', fontWeight:700, color:'var(--t-deep)', textTransform:'uppercase', letterSpacing:'0.07em', margin:'0 0 0.85rem' }}>By Stage</h3>
-            {Object.keys(byStage).length === 0 && <p style={{ color:'var(--t-ash)', fontSize:'0.8rem', margin:0 }}>No stage data.</p>}
-            {Object.entries(byStage).sort(([a],[b])=>String(a).localeCompare(String(b))).map(([stage, d]) => {
-              const quizAvg = d.quizCount > 0 ? Math.round(d.quizSum/d.quizCount) : null;
-              const barW    = totalStudentsAll ? Math.round((d.students/totalStudentsAll)*100) : 0;
-              return (
-                <div key={stage} style={{ marginBottom:'0.65rem' }}>
-                  <div style={{ display:'flex', justifyContent:'space-between', fontSize:'0.78rem', marginBottom:'0.2rem' }}>
-                    <span style={{ fontWeight:600, color:'var(--t-deep)' }}>Stage {stage}</span>
-                    <span style={{ color:'var(--t-slate)' }}>{d.students} groups/students · {quizAvg!=null?`${quizAvg}% quiz`:' - '}</span>
+        {/* Classes — how far they got, and who they are.
+            ⚠️ Top Schools used to sit here: the first five rows of the School Performance table
+            above, with fewer columns and a different card. 🚫 Two views of one table is not two
+            insights, and the one that showed less was the one with the nicer heading. */}
+        <div className="ad-panel">
+          <h3>Classes</h3>
+          <p className="ad-sub">Where the groups sit by stage, and how far each class got.</p>
+          <div className="ad-cols">
+            <div>
+              <div className="ad-colhead">By stage</div>
+{Object.keys(byStage).length === 0 && <p style={{ color:'var(--t-ash)', fontSize:'0.8rem', margin:0 }}>No stage data.</p>}
+              {Object.entries(byStage).sort(([a],[b])=>String(a).localeCompare(String(b))).map(([stage, d]) => {
+                const quizAvg = d.quizCount > 0 ? Math.round(d.quizSum/d.quizCount) : null;
+                const barW    = totalStudentsAll ? Math.round((d.students/totalStudentsAll)*100) : 0;
+                return (
+                  <div key={stage} style={{ marginBottom:'0.65rem' }}>
+                    <div style={{ display:'flex', justifyContent:'space-between', fontSize:'0.78rem', marginBottom:'0.2rem' }}>
+                      <span style={{ fontWeight:600, color:'var(--t-deep)' }}>Stage {stage}</span>
+                      <span style={{ color:'var(--t-slate)' }}>{d.students} groups/students · {quizAvg!=null?`${quizAvg}% quiz`:' - '}</span>
+                    </div>
+                    <div style={{ height:6, background:'var(--t-foam)', borderRadius:3, overflow:'hidden' }}>
+                      <div style={{ height:'100%', width:`${barW}%`, background:'var(--t-mid)', borderRadius:3 }} />
+                    </div>
                   </div>
-                  <div style={{ height:6, background:'var(--t-foam)', borderRadius:3, overflow:'hidden' }}>
-                    <div style={{ height:'100%', width:`${barW}%`, background:'var(--t-mid)', borderRadius:3 }} />
+                );
+              })}
+            </div>
+            <div>
+              <div className="ad-colhead">Completion by class</div>
+              <div style={{ display:'flex', flexDirection:'column', gap:'0.5rem', maxHeight:240, overflowY:'auto' }}>
+                {[...viewClasses].sort((a,b)=>b.completionPercent-a.completionPercent).map(c => (
+                  <div key={c.classCode} style={{ display:'flex', alignItems:'center', gap:'0.75rem' }}>
+                    <div style={{ width:90, fontSize:'0.7rem', color:'var(--ad-muted)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', flexShrink:0 }}>{c.className || c.classCode}</div>
+                    <div style={{ flex:1, height:8, background:'var(--ad-hover)', borderRadius:4, overflow:'hidden' }}>
+                      <div style={{ height:'100%', width:`${c.completionPercent}%`, background: c.completionPercent===100 ? 'var(--t-eucalyptus)' : 'var(--t-mid)', borderRadius:4, transition:'width 0.4s' }} />
+                    </div>
+                    <div style={{ width:36, fontSize:'0.72rem', fontWeight:700, color: c.completionPercent===100 ? 'var(--t-eucalyptus)' : 'var(--ad-ink)', textAlign:'right', flexShrink:0 }}>{c.completionPercent}%</div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-
-          <div style={{ background:'var(--t-chalk)', borderRadius:'var(--t-r-md)', padding:'1.1rem', border:'1px solid var(--t-stone)' }}>
-            <h3 style={{ fontSize:'0.82rem', fontWeight:700, color:'var(--t-deep)', textTransform:'uppercase', letterSpacing:'0.07em', margin:'0 0 0.85rem' }}>Top Schools</h3>
-            {schoolPerf.length === 0 && <p style={{ color:'var(--t-ash)', fontSize:'0.8rem', margin:0 }}>No school data yet.</p>}
-            {schoolPerf.slice(0,5).map((s, i) => (
-              <div key={s.name} style={{ display:'flex', alignItems:'center', gap:'0.6rem', marginBottom:'0.55rem' }}>
-                <span style={{ width:20, height:20, borderRadius:'50%', background:'var(--t-foam)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'0.65rem', fontWeight:700, color:'var(--t-mid)', flexShrink:0 }}>{i+1}</span>
-                <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ fontSize:'0.8rem', fontWeight:600, color:'var(--t-deep)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{s.name}</div>
-                </div>
-                <span style={{ fontSize:'0.75rem', fontWeight:700, color:'var(--t-slate)', flexShrink:0 }}>{s.students}</span>
+                ))}
               </div>
-            ))}
+            </div>
           </div>
         </div>
 
-        {/* Completion Rate by Class */}
-        <div style={{ background:'var(--t-chalk)', borderRadius:'var(--t-r-md)', padding:'1.1rem', border:'1px solid var(--t-stone)' }}>
-          <h3 style={{ fontSize:'0.82rem', fontWeight:700, color:'var(--t-deep)', textTransform:'uppercase', letterSpacing:'0.07em', margin:'0 0 0.85rem' }}>Completion Rate by Class</h3>
-          <div style={{ display:'flex', flexDirection:'column', gap:'0.5rem', maxHeight:240, overflowY:'auto' }}>
-            {[...viewClasses].sort((a,b)=>b.completionPercent-a.completionPercent).map(c => (
-              <div key={c.classCode} style={{ display:'flex', alignItems:'center', gap:'0.75rem' }}>
-                <div style={{ width:90, fontSize:'0.7rem', color:'var(--t-slate)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', flexShrink:0 }}>{c.className || c.classCode}</div>
-                <div style={{ flex:1, height:8, background:'var(--t-foam)', borderRadius:4, overflow:'hidden' }}>
-                  <div style={{ height:'100%', width:`${c.completionPercent}%`, background: c.completionPercent===100 ? 'var(--t-eucalyptus)' : 'var(--t-mid)', borderRadius:4, transition:'width 0.4s' }} />
-                </div>
-                <div style={{ width:36, fontSize:'0.72rem', fontWeight:700, color: c.completionPercent===100 ? 'var(--t-eucalyptus)' : 'var(--t-deep)', textAlign:'right', flexShrink:0 }}>{c.completionPercent}%</div>
-              </div>
-            ))}
-          </div>
-        </div>
 
       </div>
     </div>
@@ -2966,7 +2976,7 @@ function ControlRoomTab() {
       {/* GPS Proximity Override */}
       <div style={{ background:'var(--t-chalk)', borderRadius:'var(--t-r-lg)', padding:'1.25rem 1.5rem', boxShadow:'var(--t-shadow-sm)', marginBottom:'1rem', border:'1px solid var(--t-stone)', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'1rem' }}>
         <div>
-          <h3 style={{ fontSize:'1rem', fontWeight:700, color:'var(--t-deep)', margin:'0 0 0.25rem' }}>GPS Proximity Override</h3>
+          <h3>GPS Proximity Override</h3>
           <p style={{ fontSize:'0.82rem', color:'var(--t-slate)', margin:0, lineHeight:1.5 }}>
             {gpsOn
               ? 'GPS is ON - students must be near each animal to unlock it.'
@@ -2981,7 +2991,7 @@ function ControlRoomTab() {
 
       {/* ── Staff administrators ────────────────────────────────────────────────────── */}
       <div style={{ background:'white', borderRadius:'var(--t-r-lg)', padding:'1.5rem', boxShadow:'var(--t-shadow-sm)', marginBottom:'1rem', border:'1px solid var(--t-stone)' }}>
-        <h3 style={{ fontSize:'1rem', fontWeight:700, color:'var(--t-deep)', margin:'0 0 0.35rem' }}>Staff administrators</h3>
+        <h3>Staff administrators</h3>
         <p style={{ fontSize:'0.82rem', color:'var(--t-slate)', margin:'0 0 1rem', lineHeight:1.5 }}>
           Administrators can read every class and school, approve submissions and wipe all data.
           Add people sparingly.
@@ -3066,7 +3076,7 @@ function ControlRoomTab() {
           allowlist — without the second check this would be an account-takeover tool for any
           teacher account in the project. */}
       <div style={{ background:'white', borderRadius:'var(--t-r-lg)', padding:'1.5rem', boxShadow:'var(--t-shadow-sm)', marginBottom:'1rem', border:'1px solid var(--t-stone)' }}>
-        <h3 style={{ fontSize:'1rem', fontWeight:700, color:'var(--t-deep)', margin:'0 0 0.35rem' }}>Staff accounts</h3>
+        <h3>Staff accounts</h3>
         <p style={{ fontSize:'0.82rem', color:'var(--t-slate)', margin:'0 0 1rem', lineHeight:1.5 }}>
           Issue a password reset link for a Taronga staff account. Only addresses on the staff
           allowlist can be reset here.
@@ -3151,7 +3161,7 @@ function ControlRoomTab() {
           Keeps the keepsake, removes the working files. See cleanupRawClips in
           functions/index.js for the four safety rules this depends on. */}
       <div style={{ background:'white', borderRadius:'var(--t-r-lg)', padding:'1.5rem', boxShadow:'var(--t-shadow-sm)', marginBottom:'1rem', border:'1px solid var(--t-stone)' }}>
-        <h3 style={{ fontSize:'1rem', fontWeight:700, color:'var(--t-deep)', margin:'0 0 0.35rem' }}>Old footage cleanup</h3>
+        <h3>Old footage cleanup</h3>
         <p style={{ fontSize:'0.82rem', color:'var(--t-slate)', margin:'0 0 1rem', lineHeight:1.5 }}>
           Removes the raw clips that were stitched into a film. <strong>Films are never deleted</strong>,
           and nothing is removed from a student who has no finished film.
