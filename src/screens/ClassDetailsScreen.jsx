@@ -2397,6 +2397,8 @@ export default function ClassDetailsScreen() {
       )}
       {classCodeFS && (
         <div style={{ position:'fixed', inset:0, background:'#0A2F1F', zIndex:300, display:'flex', flexDirection:'column', alignItems:'center' }}>
+          {/* ⚠️⚠️ THIS SCREEN EXISTS TWICE — the other copy is in TeacherDashboardScreen.jsx,
+              reached by tapping a code on a class card. A change here does NOT reach it. */}
           {/* ⚠️ The address comes FIRST because it is what a student does first. This screen is
               projected and read from the back of a room: a code with no address tells thirty
               students a word and nowhere to type it. Padded clear of the Exit button on both
