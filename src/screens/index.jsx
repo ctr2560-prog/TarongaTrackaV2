@@ -11,6 +11,7 @@ export { default as SubmissionCompleteScreen } from './SubmissionCompleteScreen'
 export { default as SchoolEntryScreen }       from './SchoolEntryScreen';
 export { default as StudentJoinScreen }       from './StudentJoinScreen';
 export { default as StudentLoadingScreen }    from './StudentLoadingScreen';
+export { default as PreTestScreen }           from './PreTestScreen';
 export { default as TeacherLoginScreen }      from './TeacherLoginScreen';
 export { default as TeacherDashboardScreen }  from './TeacherDashboardScreen';
 export { default as CreateClassScreen }       from './CreateClassScreen';

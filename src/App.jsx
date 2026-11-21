@@ -5,6 +5,7 @@ import WildestDreamsScreen from './modes/wildest-dreams';
 import {
   HomeScreen, MapScreen, AnimalScreen, ObservationScreen,
   BadgeScreen, CollectionScreen, SchoolEntryScreen, StudentJoinScreen, StudentLoadingScreen,
+  PreTestScreen,
   SubmissionCompleteScreen, ResourceHubScreen, CurriculumAlignmentScreen, TeacherGuideScreen, TeacherMapScreen,
   ExcursionPlanScreen, AccessibilityScreen, AssessmentIdeasScreen, ConservationGalleryScreen, DeviceBookingScreen,
   TeacherLoginScreen, TeacherDashboardScreen, CreateClassScreen, ClassDetailsScreen,
@@ -89,6 +90,9 @@ function Router() {
     case 'schoolEntry':          return <SchoolEntryScreen />;
     case 'studentJoin':          return <StudentJoinScreen />;
     case 'studentLoading':       return <StudentLoadingScreen />;
+    // ⚠️ Tracka Trek only, for free: every other programme is short-circuited by
+    //    sessionType above, so nothing else can reach this switch.
+    case 'preTest':              return <PreTestScreen />;
     case 'submissionComplete':   return <SubmissionCompleteScreen />;
     case 'resourceHub':          return <ResourceHubScreen />;
     case 'curriculumAlignment':  return <CurriculumAlignmentScreen />;

@@ -32,7 +32,7 @@ const PRELOAD_IMAGES = [
 ];
 
 export default function StudentLoadingScreen() {
-  const { setCurrentScreen, studentName, studentPreloadError } = useApp();
+  const { setCurrentScreen, studentName, studentPreloadError, sessionType } = useApp();
   const [phase, setPhase] = useState(0);
 
   useEffect(() => {
@@ -47,10 +47,15 @@ export default function StudentLoadingScreen() {
       setTimeout(() => setPhase(2), 1200),
       setTimeout(() => setPhase(3), 1800),
       setTimeout(() => setPhase(4), 2400),
-      setTimeout(() => setCurrentScreen('map'), 3200),
+      // ⚠️ Tracka Trek starts with the five-question pre-test, everything else goes
+      //    straight to the map. 'standard' AND an absent sessionType both mean Tracka Trek —
+      //    see CreateClassScreen. The pre-test sends them on to the map itself, and bounces
+      //    anyone who has already sat it.
+      setTimeout(() => setCurrentScreen(
+        (!sessionType || sessionType === 'standard') ? 'preTest' : 'map'), 3200),
     ];
     return () => timers.forEach(clearTimeout);
-  }, [setCurrentScreen]);
+  }, [setCurrentScreen, sessionType]);
 
   return (
     <div style={{ position:'fixed', inset:0, background:'linear-gradient(160deg,#071A0C 0%,#0D3320 50%,#0A2010 100%)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'1.75rem', padding:'2rem' }}>
