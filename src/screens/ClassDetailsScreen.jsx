@@ -2396,8 +2396,19 @@ export default function ClassDetailsScreen() {
         </div>
       )}
       {classCodeFS && (
-        <div style={{ position:'fixed', inset:0, background:'#0A2F1F', zIndex:300, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}>
-          <div style={{ fontFamily:'monospace', fontSize:'clamp(5rem,20vw,12rem)', fontWeight:700, color:'white', letterSpacing:'0.3em', textAlign:'center' }}>{classCodeModal}</div>
+        <div style={{ position:'fixed', inset:0, background:'#0A2F1F', zIndex:300, display:'flex', flexDirection:'column', alignItems:'center' }}>
+          {/* ⚠️ The address comes FIRST because it is what a student does first. This screen is
+              projected and read from the back of a room: a code with no address tells thirty
+              students a word and nowhere to type it. Padded clear of the Exit button on both
+              sides so neither can ever overlap the other. */}
+          <div style={{ width:'100%', padding:'2.2rem clamp(1rem, 12vw, 11rem) 0', textAlign:'center', flexShrink:0 }}>
+            <div style={{ fontSize:'clamp(0.68rem,1.6vw,0.9rem)', fontWeight:800, letterSpacing:'0.18em', textTransform:'uppercase', color:'rgba(255,255,255,0.45)', marginBottom:'0.5rem' }}>Go to</div>
+            <div style={{ fontFamily:'Taronga Headline, Bebas Neue, sans-serif', fontSize:'clamp(1.8rem,6vw,4rem)', letterSpacing:'0.04em', color:'rgba(255,255,255,0.92)', lineHeight:1.05 }}>tarongatracka.com.au</div>
+          </div>
+          <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', width:'100%', padding:'1rem' }}>
+            <div style={{ fontSize:'clamp(0.68rem,1.6vw,0.9rem)', fontWeight:800, letterSpacing:'0.18em', textTransform:'uppercase', color:'rgba(255,255,255,0.45)', marginBottom:'0.9rem' }}>Join code</div>
+            <div style={{ fontFamily:'monospace', fontSize:'clamp(4rem,17vw,11rem)', fontWeight:700, color:'white', letterSpacing:'0.3em', textAlign:'center', lineHeight:1 }}>{classCodeModal}</div>
+          </div>
           <button onClick={()=>{setClassCodeFS(false);setClassCodeModal(null);}} style={{ position:'absolute', top:'2rem', right:'2rem', background:'rgba(255,255,255,0.15)', color:'white', border:'2px solid rgba(255,255,255,0.3)', padding:'0.75rem 1.5rem', borderRadius:'var(--t-r-md)', fontSize:'0.9rem', fontWeight:700, cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.05em' }}>Exit</button>
         </div>
       )}
