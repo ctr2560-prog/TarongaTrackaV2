@@ -17,9 +17,9 @@ export const MATHS_ANIMALS = {
     },
     expectedAnswers: {
       1: [],
-      2: ['100'],
+      2: [],
       3: [],
-      4: ['24'],
+      4: [],
       5: [],
     },
     questions: [
@@ -62,15 +62,15 @@ export const MATHS_ANIMALS = {
       1: 'The gorilla\'s stack has 3 servings of leaves, 2 of bamboo and 1 of fruit. How many servings altogether? Write your number sentence.',
       2: 'A gorilla eats 6 kg of leaves, 4 kg of bamboo and 2 kg of fruit each day. How much food altogether? Write your number sentence.',
       3: 'A gorilla eats 12 kg of food every day. How much does it eat in one week? Write your multiplication and answer.',
-      4: 'A gorilla eats 6 kg of leaves each day. Leaves cost $2 per kg. Step 1: How many kg does it eat in a week? Step 2: What is the weekly cost? Show your working.',
+      4: 'A gorilla eats 6 kg of leaves each day. Step 1: How many kg does it eat in a week? Show your working.',
       5: 'A gorilla eats 6 kg of leaves at $2 per kg and 4 kg of bamboo at $3 per kg each day. Step 1: Find the weekly cost of leaves. Step 2: Find the weekly cost of bamboo. Step 3: What is the total weekly food cost? Show all working.',
     },
     expectedAnswers: {
-      1: ['3:1'],
-      2: ['5', '1:5'],
-      3: ['2:1'],
-      4: ['1:4'],
-      5: ['7.5', '7.5 kg'],
+      1: ['6'],
+      2: ['12'],
+      3: ['84'],
+      4: ['42'],
+      5: ['168'],
     },
     questions: [
       {
@@ -112,14 +112,14 @@ export const MATHS_ANIMALS = {
       1: 'Count the lions in the enclosure. Write the number you counted.',
       2: 'Count the lions. Each lion eats 8 kg of meat per day. How much meat do all the lions eat in one day? Write your number sentence.',
       3: 'Count the lions. Each lion eats 8 kg of meat per day. How much does the whole pride eat in one week (7 days)? Show your working.',
-      4: 'Count the lions. Each lion eats 8 kg of meat per day. Step 1: How much does the whole pride eat in one day? Step 2: How much in one month (30 days)? Show your working.',
+      4: 'Count the lions. Each lion eats 8 kg of meat per day. Step 1: How much does the whole pride eat in one day? Show your working.',
       5: 'Count the lions. Each lion eats 8 kg of meat per day. A successful hunt provides 40 kg of meat. Step 1: How much meat does the whole pride need in one week? Step 2: How many successful hunts does the pride need each week to feed everyone? Show all working.',
     },
     expectedAnswers: {
       1: [],
       2: [],
-      3: ['16.1', '16'],
-      4: ['1/25', '0.04'],
+      3: [],
+      4: [],
       5: [],
     },
     questions: [
@@ -209,18 +209,18 @@ export const MATHS_ANIMALS = {
   koala: {
     observationPrompt: 'Watch the koala. Is it moving or still? Taronga spends $15,000 per year caring for each koala - explore the financial maths of koala conservation.',
     writingPromptByStage: {
-      1: 'Taronga spends $15,000 a year caring for each koala. Write that number. How many thousands is that?',
+      1: 'Taronga spends $15,000 a year caring for each koala. How many thousands of dollars is that?',
       2: 'Taronga spends $15,000 a year on each koala. How much does it cost to care for 2 koalas for one year? Write your number sentence.',
       3: 'Taronga spends $15,000 a year on each koala. How much does it cost to care for one koala over 3 years? Show your working.',
-      4: 'Taronga has 5 koalas. Each costs $15,000 per year. Step 1: What is the total annual cost? Step 2: What is the total cost over 3 years? Show your working.',
+      4: 'Taronga has 5 koalas. Each costs $15,000 per year. Step 1: What is the total annual cost? Show your working.',
       5: 'In 2020 it cost $12,000 per koala per year. By 2024 this had risen to $15,000. Step 1: How much more does it cost now? Step 2: Calculate the percentage increase. Show all working.',
     },
     expectedAnswers: {
-      1: [],
-      2: ['7'],
-      3: ['3/10'],
-      4: ['1020000', '1,020,000'],
-      5: ['25', '16500', '16,500'],
+      1: ['15'],
+      2: ['30000', '30,000'],
+      3: ['45000', '45,000'],
+      4: ['75000', '75,000'],
+      5: ['25', '3000', '3,000'],
     },
     questions: [
       {
@@ -260,7 +260,7 @@ export const MATHS_ANIMALS = {
     observationPrompt: 'Stop. Look closely. What patterns, shapes, numbers, distances, movements or comparisons can you notice?',
     writingPromptByStage: {
       1: 'Look around the tiger habitat. What numbers, patterns or shapes can you spot? Write or draw at least 2 things you notice.',
-      2: 'Look around carefully. Can you spot any patterns, shapes or numbers? What comparisons can you make? Write what you notice.',
+      2: 'Look around carefully. What patterns, shapes or numbers can you spot? Write what you notice.',
       3: 'Stop. Look closely. What patterns, shapes, numbers, distances, movements or comparisons can you notice? Write at least 3 mathematical observations.',
       4: 'Stop. Look closely at everything around the tiger habitat. What patterns, shapes, numbers, distances, movements or comparisons can you notice? Describe each observation using mathematical vocabulary.',
       5: 'Stop. Look closely. What patterns, shapes, numbers, distances, movements or comparisons can you notice? List at least 5 distinct mathematical observations. Use precise mathematical vocabulary and include estimates or calculations where possible.',
@@ -361,14 +361,14 @@ export const MATHS_ANIMALS = {
     writingPromptByStage: {
       1: 'Count the dingoes in the enclosure. Are there more or fewer than 5? Write a number sentence about what you see.',
       2: 'If each dingo needs 10 km² of territory, how many dingoes could fit in a 70 km² territory? Draw an array to show your thinking.',
-      3: 'Dingo territory ranges from 10–70 km². Calculate the range and mean territory size. Show your working.',
-      4: 'A pack of 6 dingoes collectively covers 420 km in a week. Calculate the mean distance per dingo per day. What assumptions does this calculation require?',
+      3: 'Dingo territory ranges from 10–70 km². Calculate the mean territory size. Show your working.',
+      4: 'A pack of 6 dingoes collectively covers 420 km in a week. Calculate the mean distance per dingo per day. Show your working.',
       5: 'Compare the speed-to-body-mass ratio of a dingo (60 km/h, 15 kg) to a cheetah (110 km/h, 60 kg). Calculate a ratio of km/h per kg for each. Which animal is more efficient relative to its size? Justify using your calculations.',
     },
     expectedAnswers: {
       1: [],
       2: ['7'],
-      3: ['60', '40'],
+      3: ['40'],
       4: ['10'],
       5: ['4', '1.83'],
     },
@@ -418,7 +418,7 @@ export const MATHS_ANIMALS = {
     expectedAnswers: {
       1: ['25', '24', '26'],
       2: ['100', '25'],
-      3: ['150', '25'],
+      3: ['250', '25'],
       4: ['500', '25'],
       5: ['500', '25'],
     },
