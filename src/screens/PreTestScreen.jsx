@@ -69,6 +69,14 @@ const PT_CSS = `
 .pt-foot { flex-shrink: 0; min-height: 2.2rem; display: flex; align-items: center; justify-content: center;
   font-size: 0.9rem; font-weight: 700; margin-top: 0.9rem; }
 
+/* The way in. Green, Taronga face, one sentence. No question on screen yet: a student who
+   lands straight on question 1 of 5 reads it as a test they were not told about. */
+.pt-enter { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.9rem; text-align: center; }
+.pt-enter img { width: clamp(96px, 34vw, 136px); height: auto; margin-bottom: 0.3rem; }
+.pt-enter h1 { margin: 0; font-size: clamp(2.2rem, 11vw, 3.6rem); color: #fff; text-wrap: balance; }
+.pt-enter .pt-lede { color: rgba(255,255,255,0.78); font-size: 1rem; line-height: 1.6; margin: 0 0 0.4rem; max-width: 19rem; }
+.pt-enter .pt-rule { width: 54px; height: 3px; border-radius: 2px; background: #4ADE80; }
+
 .pt-done { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; text-align: center; }
 .pt-score { font-size: clamp(3rem, 16vw, 5rem); font-weight: 800; line-height: 1; }
 .pt-done p { color: rgba(255,255,255,0.72); font-size: 0.95rem; line-height: 1.6; margin: 0; max-width: 20rem; }
@@ -95,6 +103,7 @@ export default function PreTestScreen() {
   const [answers, setAnswers] = useState([]);
   const [done, setDone]     = useState(false);
   const [checked, setChecked] = useState(false); // has the "already sat it" lookup finished
+  const [started, setStarted] = useState(false); // false while the entry screen is showing
 
   // ⚠️ Sat once. A student who reloads, or whose phone drops the tab, must not be handed the
   //    same five questions again — the second attempt is not a baseline.
@@ -154,6 +163,22 @@ export default function PreTestScreen() {
   };
 
   if (!checked) return <div className="pt-root"><style>{PT_CSS}</style></div>;
+
+  if (!started) return (
+    <div className="pt-root">
+      <style>{PT_CSS}</style>
+      <div className="pt-enter">
+        <img src="/images/taronga-zoo-white.png" alt="Taronga Zoo" />
+        <h1 className="taronga-title">We want to see what you know!</h1>
+        <span className="pt-rule" />
+        <p className="pt-lede">
+          Five questions before you meet the animals. Nobody is marked on this, and you are not
+          meant to know all of it yet.
+        </p>
+        <button className="pt-go" onClick={() => setStarted(true)}>I'm ready</button>
+      </div>
+    </div>
+  );
 
   if (done) return (
     <div className="pt-root">
