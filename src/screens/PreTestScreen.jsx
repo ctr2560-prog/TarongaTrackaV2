@@ -41,12 +41,17 @@ const PT_CSS = `
 
 /* ⚠️ Four tiles, two columns, ALWAYS — including on the narrowest phone. A single column
    turns a glanceable grid into a scrolling list and loses the whole point of the shape. */
-.pt-grid { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; min-height: 0; }
+/* ⚠️ flex: 1 0 auto, not flex: 1. At the question's own type size a set of four sentence
+   answers is taller than the screen, and a plain flex:1 clipped the bottom row off. The root
+   already scrolls; the grid has to be allowed to ask for the height. */
+.pt-grid { flex: 1 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; }
 .pt-tile {
   display: flex; align-items: center; gap: 0.6rem; text-align: left;
-  padding: 1rem; border: none; border-radius: 14px; cursor: pointer;
-  font-family: inherit; font-size: clamp(0.85rem, 3.4vw, 1.05rem); font-weight: 700; color: #fff;
-  min-height: 92px; transition: opacity 0.18s, transform 0.12s;
+  padding: 0.9rem; border: none; border-radius: 14px; cursor: pointer;
+  /* ⚠️ THE SAME CLAMP AS .pt-q, deliberately — Cameron asked for the answers to match the
+     question. An answer a student has to squint at is the one they do not pick. */
+  font-family: inherit; font-size: clamp(1.05rem, 4.6vw, 1.5rem); font-weight: 700; color: #fff;
+  line-height: 1.2; min-height: 92px; transition: opacity 0.18s, transform 0.12s;
 }
 .pt-tile:active { transform: scale(0.985); }
 .pt-tile span.sh { font-size: 1.15rem; flex-shrink: 0; opacity: 0.9; }
