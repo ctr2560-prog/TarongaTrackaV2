@@ -157,7 +157,7 @@ export default function PreTestScreen() {
         <div className="pt-score">{score}<span style={{ fontSize: '0.3em', opacity: 0.6 }}> / {questions.length}</span></div>
         <p>
           {score <= 2
-            ? 'These are the hard versions. You will meet the same ideas at the animals today — see how many you can work out there.'
+            ? 'You will meet the same ideas at the animals today — see how many you can work out there.'
             : score === questions.length
               ? 'Every one. See whether the animals can catch you out today.'
               : 'Good start. You will meet these same ideas at the animals today.'}
