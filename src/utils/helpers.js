@@ -168,6 +168,43 @@ export function averageQuizPercent(studentDocs = []) {
   return pcts.length ? Math.round(pcts.reduce((a, b) => a + b, 0) / pcts.length) : null;
 }
 
+// ── The pre-test, and what it is and is not ───────────────────────────────────────────────
+//
+// ⚠️⚠️ THE TWO NUMBERS ARE NOT THE SAME TEST AND MUST NEVER BE LABELLED AS ONE. The pre-test
+//    is five deliberately hard, abstract concept questions sat before the excursion; the zoo
+//    figure is every knowledge MCQ answered at an enclosure, pitched to be answerable there.
+//    The movement between them is a DIRECTION, not a mark, and every surface that shows both
+//    has to say so. 🚫 Do not average them together, rank classes on the gap, or put the
+//    difference in a column headed anything like "improvement %".
+//
+// ⚠️ Tracka Trek only. No other programme sits a pre-test, so a null here means "not part of
+//    this programme" far more often than it means "did not sit it".
+export function preTestPercent(studentDoc) {
+  const pt = studentDoc?.preTest;
+  if (!pt || !pt.total) return null;
+  return Math.round((pt.score / pt.total) * 100);
+}
+
+export function averagePreTestPercent(studentDocs = []) {
+  const pcts = studentDocs.map(preTestPercent).filter(p => p !== null);
+  return pcts.length ? Math.round(pcts.reduce((a, b) => a + b, 0) / pcts.length) : null;
+}
+
+// Which concepts the class was weakest on BEFORE they went. Returns weakest first, which is
+// the order a teacher wants: these are the ideas to push on at the enclosures.
+export function preTestConcepts(studentDocs = []) {
+  const tally = new Map();
+  studentDocs.forEach(d => (d?.preTest?.concepts || []).forEach(({ concept, correct }) => {
+    if (!concept) return;
+    const t = tally.get(concept) || { concept, right: 0, total: 0 };
+    t.total += 1; if (correct) t.right += 1;
+    tally.set(concept, t);
+  }));
+  return [...tally.values()]
+    .map(t => ({ ...t, pct: Math.round((t.right / t.total) * 100) }))
+    .sort((a, b) => a.pct - b.pct);
+}
+
 export function getCurrentQuestionTexts(animalId, subject) {
   const texts = new Set();
   const addFromQuestions = (questions) => {

@@ -6,7 +6,8 @@ import {
 } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { findMediaPath } from '../utils/mediaProbe';
-import { normaliseCode, safeStudentId, legacyStoragePath, averageQuizPercent } from '../utils/helpers';
+import { normaliseCode, safeStudentId, legacyStoragePath, averageQuizPercent,
+         studentQuizPercent, preTestPercent, averagePreTestPercent, preTestConcepts } from '../utils/helpers';
 import { SignedVideo, SignedImage, SignedLink } from '../components/SignedMedia';
 import { useApp } from '../context/AppContext';
 import { ZOOSNOOZ_ANIMALS } from '../data/zoosnoozAnimals';
@@ -194,7 +195,7 @@ const CD_CSS = `
 .cd-h3 { margin: 0 0 0.9rem; font-size: 1.15rem; font-weight: 700; color: var(--cd-ink); letter-spacing: -0.015em; }
 .cd-panel { background: var(--cd-card); border: 1px solid var(--cd-line); border-radius: 14px; padding: 1.15rem 1.25rem; margin-bottom: 0.75rem; }
 .cd-panel-title { margin: 0 0 0.8rem; font-size: 0.9rem; font-weight: 700; color: var(--cd-ink-2); }
-.cd-lede { margin: 0; font-size: 0.86rem; color: var(--cd-muted); }
+.cd-lede { margin: 0; font-size: 0.86rem; color: var(--cd-muted); line-height: 1.55; }
 .cd-eyebrow { margin: 0 0 0.7rem; font-size: 0.68rem; font-weight: 700; color: var(--cd-muted); text-transform: uppercase; letter-spacing: 0.07em; }
 
 /* Student table. One grid definition for the head and every row, so a row with an extra
@@ -1060,6 +1061,86 @@ export default function ClassDetailsScreen() {
                   </button>
                 </div>
               )}
+
+              {/* ── Before and after ──────────────────────────────────────────────────────
+                  ⚠️ TRACKA TREK ONLY. No other programme sits a pre-test, so this panel is
+                  absent rather than empty for the other four — the exclusion trap again.
+                  ⚠️ The two numbers are DIFFERENT TESTS and the sub-line says so. The pre-test
+                  is five deliberately hard abstract questions; the zoo figure is the MCQs at
+                  the enclosures, pitched to be answerable there. 🚫 Never label the gap as an
+                  improvement score. */}
+              {onTab('overview') && !isZZ && !isZY && !isEV && !isWD && (() => {
+                const sat = students.filter(s => preTestPercent(s) !== null);
+                if (!sat.length) return null;
+                const before = averagePreTestPercent(students);
+                const atZoo  = averageQuizPercent(students);
+                const delta  = before !== null && atZoo !== null ? atZoo - before : null;
+                const weak   = preTestConcepts(students).slice(0, 3);
+                const rows   = students
+                  .map(s => ({ name: s.name || s.id, before: preTestPercent(s), zoo: studentQuizPercent(s) }))
+                  .filter(r => r.before !== null)
+                  .sort((a, b) => (a.before ?? 0) - (b.before ?? 0));
+                return (
+                  <div className="cd-panel" style={{ marginBottom:'1.25rem' }}>
+                    <h3 className="cd-h3">Before and after</h3>
+                    <p className="cd-lede" style={{ marginTop:'0.2rem' }}>
+                      Five concept questions sat before they started, against the questions answered at the
+                      animals. They are different tests — the pre-test is deliberately harder — so read the
+                      movement as a direction, not a mark. {sat.length} of {students.length} students sat it.
+                    </p>
+
+                    <div style={{ display:'flex', alignItems:'center', gap:'1.1rem', flexWrap:'wrap', margin:'1rem 0 0.25rem' }}>
+                      <div>
+                        <div style={{ fontSize:'2rem', fontWeight:800, lineHeight:1, color:'var(--cd-ink)' }}>{before ?? '–'}%</div>
+                        <div style={{ fontSize:'0.66rem', fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--cd-muted)', marginTop:'0.25rem' }}>Before, on the concepts</div>
+                      </div>
+                      <div style={{ fontSize:'1.4rem', color:'var(--cd-faint)' }}>&rarr;</div>
+                      <div>
+                        <div style={{ fontSize:'2rem', fontWeight:800, lineHeight:1, color:'var(--cd-ink)' }}>{atZoo ?? '–'}%</div>
+                        <div style={{ fontSize:'0.66rem', fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--cd-muted)', marginTop:'0.25rem' }}>At the animals</div>
+                      </div>
+                      {delta !== null && (
+                        <div style={{ marginLeft:'auto', fontSize:'1.1rem', fontWeight:800, color: delta >= 0 ? 'var(--cd-good-ink)' : 'var(--cd-bad-ink)' }}>
+                          {delta >= 0 ? '+' : ''}{delta} points
+                        </div>
+                      )}
+                    </div>
+
+                    {weak.length > 0 && (
+                      <p className="cd-lede" style={{ marginTop:'0.9rem' }}>
+                        Weakest before they went:{' '}
+                        {weak.map((w, n) => (
+                          <span key={w.concept}>
+                            <strong style={{ color:'var(--cd-ink)' }}>{w.concept}</strong> {w.right}/{w.total}
+                            {n < weak.length - 1 ? ' · ' : ''}
+                          </span>
+                        ))}
+                      </p>
+                    )}
+
+                    <table style={{ width:'100%', borderCollapse:'collapse', marginTop:'1rem', fontSize:'0.84rem' }}>
+                      <thead>
+                        <tr>
+                          <th style={{ textAlign:'left',  padding:'0.4rem 0.5rem', fontSize:'0.62rem', fontWeight:700, letterSpacing:'0.07em', textTransform:'uppercase', color:'var(--cd-muted)', borderBottom:'1px solid var(--cd-line)' }}>Student</th>
+                          <th style={{ textAlign:'right', padding:'0.4rem 0.5rem', fontSize:'0.62rem', fontWeight:700, letterSpacing:'0.07em', textTransform:'uppercase', color:'var(--cd-muted)', borderBottom:'1px solid var(--cd-line)' }}>Before</th>
+                          <th style={{ textAlign:'right', padding:'0.4rem 0.5rem', fontSize:'0.62rem', fontWeight:700, letterSpacing:'0.07em', textTransform:'uppercase', color:'var(--cd-muted)', borderBottom:'1px solid var(--cd-line)' }}>At the animals</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {rows.map(r => (
+                          <tr key={r.name}>
+                            <td style={{ padding:'0.45rem 0.5rem', borderBottom:'1px solid var(--cd-line-soft)', color:'var(--cd-ink)', fontWeight:600 }}>{r.name}</td>
+                            <td style={{ padding:'0.45rem 0.5rem', borderBottom:'1px solid var(--cd-line-soft)', textAlign:'right', color:'var(--cd-muted)' }}>{r.before}%</td>
+                            {/* ⚠️ A dash, not 0%. A student who has not reached an enclosure yet has no
+                                score — printing zero would read as having got everything wrong. */}
+                            <td style={{ padding:'0.45rem 0.5rem', borderBottom:'1px solid var(--cd-line-soft)', textAlign:'right', color:'var(--cd-ink)', fontWeight:700 }}>{r.zoo === null ? '–' : r.zoo + '%'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
 
               {/* Stat cards — Evolve has no points, badges or scores, so it has none. */}
               {/* ⚠️ Evolve AND Wildest Dreams get no stat cards. Neither has points, badges,

@@ -16,7 +16,8 @@ import { EVOLVE_CHAPTERS, EVOLVE_STORY_ORDER } from '../data/evolveAnimals';
 import { openEvolveCertificates } from '../utils/evolveCertificates';
 import { evolveSouvenirLink } from '../utils/evolveSouvenir';
 import { SUBJ_META, STAGES, prePostDocId, IMAGE_LIBRARY } from '../data/subjectMeta';
-import { getCurrentQuestionTexts, studentQuizPercent, legacyStoragePath } from '../utils/helpers';
+import { getCurrentQuestionTexts, studentQuizPercent, legacyStoragePath,
+         preTestPercent, averagePreTestPercent, averageQuizPercent, preTestConcepts } from '../utils/helpers';
 import DeviceBookingCalendar, { DEVICE_CAPACITY } from '../components/DeviceBookingCalendar';
 
 // ⚠️⚠️ THE SHELL OF THE STAFF PORTAL, AS ONE STYLESHEET (2026-11-19). Everything else in this
@@ -624,6 +625,76 @@ function AnalyticsTab({ classes }) {
         )}
 
         {students && (<>
+
+          {/* ── Before and after ──────────────────────────────────────────────────────────
+              ⚠️ Only Tracka Trek sits a pre-test, so this panel is ABSENT rather than empty
+              for the other programmes — it keys off whether any filtered student has one,
+              which means a ZooSnooz or Evolve view simply never shows it.
+              ⚠️ The two figures are DIFFERENT TESTS. The pre-test is five deliberately hard
+              abstract questions; the zoo figure is the MCQs at the enclosures, written to be
+              answerable there. 🚫 Never rank schools or classes on the gap between them. */}
+          {(() => {
+            const sat = students.filter(st => preTestPercent(st) !== null);
+            if (!sat.length) return null;
+            const before = averagePreTestPercent(students);
+            const atZoo  = averageQuizPercent(students);
+            const delta  = before !== null && atZoo !== null ? atZoo - before : null;
+            const classes_ = new Set(sat.map(st => st._classCode)).size;
+            const weak = preTestConcepts(students).slice(0, 5);
+            const bySubject = {};
+            sat.forEach(st => {
+              const k = st._subject || 'none';
+              (bySubject[k] = bySubject[k] || []).push(st);
+            });
+            return (
+              <div className="ad-panel">
+                <h3>Before and after</h3>
+                <p className="ad-sub">
+                  The five concept questions sat before the visit, against the questions answered at the
+                  animals. Different tests — the pre-test is deliberately harder — so the movement is a
+                  direction, not a mark. {sat.length} students across {classes_} class{classes_ === 1 ? '' : 'es'}.
+                </p>
+                <div style={{ display:'flex', alignItems:'center', gap:'1.2rem', flexWrap:'wrap', marginBottom:'1rem' }}>
+                  <div><div style={{ fontSize:'2rem', fontWeight:800, lineHeight:1 }}>{before ?? '–'}%</div>
+                    <div className="ad-colhead" style={{ margin:'0.3rem 0 0' }}>Before, on the concepts</div></div>
+                  <div style={{ fontSize:'1.4rem', color:'var(--ad-faint)' }}>&rarr;</div>
+                  <div><div style={{ fontSize:'2rem', fontWeight:800, lineHeight:1 }}>{atZoo ?? '–'}%</div>
+                    <div className="ad-colhead" style={{ margin:'0.3rem 0 0' }}>At the animals</div></div>
+                  {delta !== null && (
+                    <div style={{ marginLeft:'auto', fontSize:'1.05rem', fontWeight:800, color: delta >= 0 ? '#166534' : '#B91C1C' }}>
+                      {delta >= 0 ? '+' : ''}{delta} points
+                    </div>
+                  )}
+                </div>
+                <div className="ad-cols">
+                  <div>
+                    <div className="ad-colhead">By subject</div>
+                    {Object.entries(bySubject).sort().map(([subj, list]) => {
+                      const b = averagePreTestPercent(list), z = averageQuizPercent(list);
+                      return (
+                        <div key={subj} style={{ display:'flex', justifyContent:'space-between', fontSize:'0.8rem', padding:'0.3rem 0', borderBottom:'1px solid var(--ad-line)' }}>
+                          <span style={{ fontWeight:600, textTransform:'capitalize' }}>{SUBJECT_LABELS[subj] || subj}</span>
+                          <span style={{ color:'var(--ad-muted)' }}>{b ?? '–'}% &rarr; {z ?? '–'}% <span style={{ color:'var(--ad-faint)' }}>({list.length})</span></span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div>
+                    <div className="ad-colhead">Weakest concepts before the visit</div>
+                    {weak.map(w => (
+                      <div key={w.concept} style={{ display:'flex', alignItems:'center', gap:'0.6rem', marginBottom:'0.45rem' }}>
+                        <span style={{ width:150, fontSize:'0.78rem', textTransform:'capitalize' }}>{w.concept}</span>
+                        <span style={{ flex:1, height:8, background:'var(--ad-hover)', borderRadius:4, overflow:'hidden' }}>
+                          <span style={{ display:'block', height:'100%', width:`${w.pct}%`, background:'#1A5238' }} />
+                        </span>
+                        <span style={{ width:38, textAlign:'right', fontSize:'0.75rem', fontWeight:700 }}>{w.pct}%</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Most Visited Animals */}
           {animalVisits.length > 0 && (
