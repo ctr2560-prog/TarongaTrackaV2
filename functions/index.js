@@ -1255,3 +1255,130 @@ exports.buildZooSnoozFilm = onRequest(
     }
   }
 );
+
+// ─────────────────────────────────────────────────────────────────────────────
+// getMp4 — hand a staff member a PLAYABLE copy of any student video.
+//
+// ⚠️ WHY THIS EXISTS. A phone records WebM, and a WebM opens in neither QuickTime, Safari,
+//    PowerPoint, iMovie nor Premiere. Every clip from the 17 November trial had to be converted
+//    by hand before anyone could watch one. Staff need the file itself — for a parent, a
+//    showreel, a conference talk — and "download" is worthless if what lands will not open.
+//
+// 🚫 STAFF ONLY, AND DELIBERATELY WITH NO TEACHER BRANCH. Every other media endpoint has one
+//    (getMediaUrl scopes a teacher to their own class; buildZooSnoozFilm does the same). This one
+//    does not, at Cameron's request. Transcoding is minutes of CPU per call and an open door to
+//    burning the project's budget, so the caller must be on the staff allowlist. If a teacher
+//    ever needs it, give them their own class-scoped branch rather than loosening this one.
+//
+// ⚠️ IT NEVER TOUCHES THE ORIGINAL. The MP4 is written under a separate `mp4/` prefix, so the
+//    student's own recording is untouched, `cleanupRawClips` (which only ever scans the student
+//    folders) cannot see the cache, and a stale cache can be emptied by deleting one prefix.
+//
+// ⚠️ The second call for the same file is free: an existing, NEWER-than-source MP4 is returned
+//    as-is. A re-film overwrites the source and so correctly invalidates it by timestamp.
+const MP4_PREFIXES = ['zoosnooz/', 'evolve/', 'wildestDreams/'];
+
+exports.getMp4 = onRequest(
+  { region: 'australia-southeast1', invoker: 'public', timeoutSeconds: 540, memory: '2GiB' },
+  async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+    const staff = await verifyStaff(req);
+    if (!staff.ok) { res.status(staff.status).json({ error: staff.error }); return; }
+
+    // Accepts a stored URL or a bare path, exactly as getMediaUrl does — the database holds both
+    // forms and a caller should not have to know which it is looking at.
+    const srcPath = storagePathFromUrl(req.body?.path);
+    if (!srcPath) { res.status(400).json({ error: 'No file given.' }); return; }
+
+    // 🚫 The prefix check is the guard that keeps this from being a read-anything endpoint.
+    //    Without it a staff account could transcode — and so read — any object in the bucket,
+    //    including Wildly's resource PDFs.
+    if (!MP4_PREFIXES.some(p => srcPath.startsWith(p))) {
+      res.status(400).json({ error: 'That file is not a student recording.' });
+      return;
+    }
+
+    const bucket = admin.storage().bucket();
+    const srcFile = bucket.file(srcPath);
+
+    try {
+      const [srcMeta] = await srcFile.getMetadata().catch(() => [null]);
+      if (!srcMeta) { res.status(404).json({ error: 'That file is not in Storage.' }); return; }
+
+      const sign = (f) => f.getSignedUrl({
+        version: 'v4', action: 'read', expires: Date.now() + SIGNED_URL_MINUTES * 60 * 1000,
+      }).then(([u]) => u);
+
+      // Already MP4 — the server-built ZooSnooz films are. Nothing to do but hand it over.
+      if (/\.mp4$/i.test(srcPath)) {
+        res.json({ ok: true, url: await sign(srcFile), converted: false, bytes: Number(srcMeta.size) || 0 });
+        return;
+      }
+
+      const outPath = 'mp4/' + srcPath.replace(/\.[^./]+$/, '') + '.mp4';
+      const outFile = bucket.file(outPath);
+      const [outMeta] = await outFile.getMetadata().catch(() => [null]);
+      if (outMeta && new Date(outMeta.updated) > new Date(srcMeta.updated)) {
+        res.json({ ok: true, url: await sign(outFile), converted: false, cached: true, bytes: Number(outMeta.size) || 0 });
+        return;
+      }
+
+      const fs   = require('fs');
+      const os   = require('os');
+      const nodePath = require('path');
+      const { execFile } = require('child_process');
+      const ffmpegPath = require('ffmpeg-static');
+
+      const dir = fs.mkdtempSync(nodePath.join(os.tmpdir(), 'mp4-'));
+      const local  = nodePath.join(dir, 'in');
+      const outLoc = nodePath.join(dir, 'out.mp4');
+      try {
+        await srcFile.download({ destination: local });
+
+        // ⚠️ `scale=trunc(iw/2)*2:trunc(ih/2)*2` is not cosmetic — H.264 cannot encode an odd
+        //    dimension, and a phone crop can easily produce one. Without it ffmpeg fails with
+        //    "width not divisible by 2" on exactly the files this exists to rescue.
+        // ⚠️ `+faststart` moves the index to the front so the file plays while downloading and,
+        //    more to the point here, opens instantly in QuickTime.
+        const args = [
+          '-y', '-i', local,
+          '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2',
+          '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20', '-pix_fmt', 'yuv420p',
+          '-c:a', 'aac', '-b:a', '160k',
+          '-movflags', '+faststart',
+          outLoc,
+        ];
+        const result = await new Promise((resolve) => {
+          execFile(ffmpegPath, args, { timeout: 480000, maxBuffer: 1 << 26 },
+            (err, stdout, stderr) => resolve({ ok: !err, stderr: stderr || '' }));
+        });
+        if (!result.ok || !fs.existsSync(outLoc) || fs.statSync(outLoc).size === 0) {
+          console.error('getMp4 ffmpeg failed for', srcPath, result.stderr.slice(-1200));
+          res.status(500).json({ error: 'That video could not be converted. The original is safe.' });
+          return;
+        }
+
+        const bytes = fs.statSync(outLoc).size;
+        await bucket.upload(outLoc, {
+          destination: outPath,
+          metadata: {
+            contentType: 'video/mp4',
+            metadata: { source: srcPath, convertedBy: staff.email, convertedAt: new Date().toISOString() },
+          },
+        });
+        console.log(`getMp4 converted ${srcPath} -> ${outPath} (${bytes} bytes) for ${staff.email}`);
+        res.json({ ok: true, url: await sign(outFile), converted: true, bytes });
+      } finally {
+        fs.rmSync(dir, { recursive: true, force: true });
+      }
+    } catch (err) {
+      console.error('getMp4 failed:', err);
+      res.status(500).json({ error: err.message || 'That video could not be converted.' });
+    }
+  }
+);

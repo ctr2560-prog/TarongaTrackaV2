@@ -184,6 +184,60 @@ function sessionTypeLabel(sessionType) {
 const GREEN = '#2E7D55';
 const AXES_DEG = [270, 30, 150];
 
+// ── Download any student video as MP4 ────────────────────────────────────────────────────────
+// ⚠️⚠️ A PHONE RECORDS WebM AND NOTHING OUTSIDE A BROWSER WILL OPEN IT. Not QuickTime, not
+//    PowerPoint, not iMovie, not Premiere. Every clip from the 17 November trial had to be
+//    converted by hand before anyone could watch one, which is the whole reason this exists.
+//
+// 🚫 STAFF ONLY. `getMp4` has no teacher branch — transcoding is minutes of CPU per call and the
+//    endpoint checks the staff allowlist itself. Do not call this from a teacher screen; give
+//    teachers a class-scoped branch of their own if they ever need it.
+//
+// ⚠️ The function returns a SIGNED URL, not the bytes. It is fetched to a blob here for the same
+//    reason the Evolve download does: a cross-origin `<a download>` navigates to the file instead
+//    of saving it. The bucket's CORS policy (cors.json) is what makes that fetch legal.
+// ⚠️ The first call on a given file transcodes and can take a minute on a long film; every call
+//    after that is served from the cached copy. Callers must show that something is happening.
+const MP4_FN = 'https://australia-southeast1-tarongatracka.cloudfunctions.net/getMp4';
+
+async function downloadAsMp4(storagePath, filename) {
+  if (!storagePath) { window.alert('There is no file in Storage for that one yet.'); return; }
+  const idToken = await auth.currentUser?.getIdToken();
+  const res = await fetch(MP4_FN, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+    body: JSON.stringify({ path: storagePath }),
+  });
+  const d = await res.json().catch(() => ({}));
+  if (!res.ok || !d.ok || !d.url) throw new Error(d?.error || 'That video could not be converted.');
+
+  try {
+    const r = await fetch(d.url);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const obj = URL.createObjectURL(await r.blob());
+    const a = Object.assign(document.createElement('a'), { href: obj, download: filename });
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(obj), 10000);
+  } catch (e) {
+    // The MP4 exists either way — opening it is a worse experience than saving it, not a failure.
+    console.warn('[mp4] blob download blocked, opening instead:', e);
+    window.open(d.url, '_blank', 'noopener');
+  }
+}
+
+// One pill, so the control reads the same in both tabs. `busy` is the caller's state key.
+function Mp4Button({ busy, onRun, small }) {
+  return (
+    <button onClick={onRun} disabled={busy} title="Convert and download as MP4 (opens in QuickTime, PowerPoint, iMovie)"
+      style={{ flexShrink:0, padding: small ? '0.3rem 0.7rem' : '0.38rem 0.75rem', borderRadius:'var(--t-r-pill)',
+        border:'1px solid var(--t-stone)', background:'white', color:'var(--t-deep)',
+        fontSize: small ? '0.7rem' : '0.75rem', fontWeight:700, whiteSpace:'nowrap',
+        cursor: busy ? 'wait' : 'pointer', opacity: busy ? 0.6 : 1 }}>
+      {busy ? 'Converting…' : '⬇ MP4'}
+    </button>
+  );
+}
+
 const LOCATION_LABELS = { 'taronga-sydney':'Taronga Sydney', 'zoosnooz-sydney':'ZooSnooz · Sydney', 'dubbo':'Taronga Dubbo', 'school':'ZooYard · At School' };
 const SUBJECT_LABELS  = { science:'Science', maths:'Mathematics', english:'English', geography:'Geography', pdhpe:'PDHPE' };
 
@@ -1634,6 +1688,18 @@ function ZooSnoozAdminTab({ classes }) {
     }).catch(() => window.prompt('Copy this URL:', link));
   };
 
+  // ⚠️ Keyed per row, not a single boolean: a staff member will start one conversion and click
+  //    the next while it runs, and one flag would grey out the wrong button.
+  const [mp4Busy, setMp4Busy] = useState({});
+  const zzFile = (entry, suffix) =>
+    `zoosnooz-${String(entry.classCode).replace(/[^\w-]+/g, '-')}-${String(entry.name).replace(/[^\w-]+/g, '-')}${suffix}.mp4`;
+  const runMp4 = async (key, path, filename) => {
+    setMp4Busy(p => ({ ...p, [key]: true }));
+    try { await downloadAsMp4(path, filename); }
+    catch (e) { window.alert(e.message); }
+    finally { setMp4Busy(p => ({ ...p, [key]: false })); }
+  };
+
   const handleExpand = async (entry) => {
     const next = expandedId === entry.docId ? null : entry.docId;
     setExpandedId(next);
@@ -1696,6 +1762,12 @@ function ZooSnoozAdminTab({ classes }) {
                       style={{ padding:'0.38rem 0.75rem', borderRadius:'var(--t-r-pill)', border:'1px solid var(--t-stone)', background:'white', fontSize:'0.75rem', fontWeight:600, cursor: isBusy ? 'not-allowed' : 'pointer', color:'var(--t-deep)', opacity: isBusy ? 0.6 : 1 }}>
                       {isBusy ? '…' : 'Watch'}
                     </button>
+                    <Mp4Button busy={!!mp4Busy[`${entry.docId}_film`]}
+                      onRun={async () => {
+                        const { docUrl } = await ensureUrls(entry);
+                        if (!docUrl) { window.alert('No documentary file found in Storage for this student yet.'); return; }
+                        runMp4(`${entry.docId}_film`, docUrl, zzFile(entry, '-documentary'));
+                      }} />
                     <button onClick={() => handleCopy(entry)} disabled={isBusy}
                       style={{ padding:'0.38rem 0.85rem', borderRadius:'var(--t-r-pill)', border:'none', background: copied === entry.docId ? '#22C55E' : GREEN, color:'white', fontSize:'0.75rem', fontWeight:700, cursor: isBusy ? 'not-allowed' : 'pointer', whiteSpace:'nowrap', transition:'background 0.2s', opacity: isBusy ? 0.6 : 1 }}>
                       {isBusy ? '…' : copied === entry.docId ? '✓ Copied!' : 'Copy URL'}
@@ -1715,6 +1787,10 @@ function ZooSnoozAdminTab({ classes }) {
                         </div>
                       </div>
                       {cached?.docUrl && (
+                        <Mp4Button small busy={!!mp4Busy[`${entry.docId}_docmp4`]}
+                          onRun={() => runMp4(`${entry.docId}_docmp4`, cached.docUrl, zzFile(entry, '-documentary'))} />
+                      )}
+                      {cached?.docUrl && (
                         <button onClick={() => handleCopyClip(cached.docUrl, `${entry.docId}_doc`, entry.classCode)}
                           style={{ flexShrink:0, padding:'0.3rem 0.7rem', borderRadius:'var(--t-r-pill)', border:'none', background: copied === `${entry.docId}_doc` ? '#22C55E' : GREEN, color:'white', fontSize:'0.7rem', fontWeight:700, cursor:'pointer' }}>
                           {copied === `${entry.docId}_doc` ? '✓' : 'Copy'}
@@ -1733,6 +1809,10 @@ function ZooSnoozAdminTab({ classes }) {
                               {clipUrl || (isBusy ? '…' : 'No clip in Storage yet')}
                             </div>
                           </div>
+                          {clipUrl && (
+                            <Mp4Button small busy={!!mp4Busy[`${clipKey}_mp4`]}
+                              onRun={() => runMp4(`${clipKey}_mp4`, clipUrl, zzFile(entry, `-${clip.animalId}`))} />
+                          )}
                           {clipUrl && (
                             <button onClick={() => handleCopyClip(clipUrl, clipKey, entry.classCode)}
                               style={{ flexShrink:0, padding:'0.3rem 0.7rem', borderRadius:'var(--t-r-pill)', border:'none', background: copied === clipKey ? '#22C55E' : GREEN, color:'white', fontSize:'0.7rem', fontWeight:700, cursor:'pointer' }}>
@@ -1923,6 +2003,18 @@ function EvolveFilmsTab({ classes }) {
     return `evolve-${safeName(entry.classCode)}-${safeName(entry.name)}${suffix}.${ext}`;
   };
 
+  // ⚠️ The ↓ button beside this saves the ORIGINAL, which for every student recording is a WebM
+  //    that will not open outside a browser. This one converts first. Keyed per row so one
+  //    running conversion does not grey out the others.
+  const [mp4Busy, setMp4Busy] = useState({});
+  const mp4Name = (entry, suffix) => `evolve-${safeName(entry.classCode)}-${safeName(entry.name)}${suffix}.mp4`;
+  const runMp4 = async (key, path, filename) => {
+    setMp4Busy(p => ({ ...p, [key]: true }));
+    try { await downloadAsMp4(path, filename); }
+    catch (e) { window.alert(e.message); }
+    finally { setMp4Busy(p => ({ ...p, [key]: false })); }
+  };
+
   const handleExpand = (entry) => {
     const next = expandedId === entry.docId ? null : entry.docId;
     setExpandedId(next);
@@ -2049,6 +2141,8 @@ function EvolveFilmsTab({ classes }) {
                             style={{ ...btn, flexShrink:0, padding:'0.3rem 0.7rem', fontSize:'0.7rem' }}>
                             {saving === `${entry.docId}_film_dl` ? '…' : '↓'}
                           </button>
+                          <Mp4Button small busy={!!mp4Busy[`${entry.docId}_film_mp4`]}
+                            onRun={() => runMp4(`${entry.docId}_film_mp4`, cached.filmUrl, mp4Name(entry, '-film'))} />
                           <button onClick={() => copyText(cached.filmUrl, `${entry.docId}_film`)}
                             style={{ flexShrink:0, padding:'0.3rem 0.7rem', borderRadius:'var(--t-r-pill)', border:'none', background: copied === `${entry.docId}_film` ? '#22C55E' : EV_GOLD, color:'white', fontSize:'0.7rem', fontWeight:700, cursor:'pointer' }}>
                             {copied === `${entry.docId}_film` ? '✓' : 'Copy'}
@@ -2077,6 +2171,8 @@ function EvolveFilmsTab({ classes }) {
                                 style={{ ...btn, flexShrink:0, padding:'0.3rem 0.7rem', fontSize:'0.7rem' }}>
                                 {saving === `${key}_dl` ? '…' : '↓'}
                               </button>
+                              <Mp4Button small busy={!!mp4Busy[`${key}_mp4`]}
+                                onRun={() => runMp4(`${key}_mp4`, url, mp4Name(entry, `-${clip.chapterId}`))} />
                               <button onClick={() => copyText(url, key)}
                                 style={{ flexShrink:0, padding:'0.3rem 0.7rem', borderRadius:'var(--t-r-pill)', border:'none', background: copied === key ? '#22C55E' : EV_GOLD, color:'white', fontSize:'0.7rem', fontWeight:700, cursor:'pointer' }}>
                                 {copied === key ? '✓' : 'Copy'}

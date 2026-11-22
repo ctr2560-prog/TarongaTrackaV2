@@ -2429,12 +2429,40 @@ A summary is also written to `zoosnooz_docs/{classCode}_{studentId}` for the NFC
 | `onDeviceBookingCreated` | Firestore `onDocumentCreated` on `deviceBookings/{id}` | Emails `ctr2560@gmail.com` with booking details |
 | `sendMentorReport` | HTTPS (public, token-gated via `MENTOR_REPORT_TOKEN` env var) | Sends the weekly mentor report email to `ctr2560@gmail.com` — see Weekly Mentor Report Automation section |
 | `buildZooSnoozFilm` | HTTPS, teacher or staff ID token, 2GiB / 540s | Assembles a student's documentary from the clips in Storage with `@napi-rs/canvas` + ffmpeg, uploads it as **MP4**, repoints both records. Code in `functions/film/`. See the top section before changing the cards |
+| `getMp4` | HTTPS, **staff ID token only**, 2GiB / 540s | Transcodes any student recording to H.264/AAC MP4 and returns a signed URL. Caches under a separate `mp4/` prefix and never touches the original. 🚫 No teacher branch, deliberately — see below |
 
 **Note:** `sendMagicLink` is still deployed but is dead code — teacher auth moved to email+password (see Authentication Model section) and nothing in `src/` calls it anymore. Left in place rather than deleted; safe to remove in a future cleanup.
 
 Deploy: `firebase deploy --only functions`
 
 Resend API key stored in Firebase Functions config/environment.
+
+### ⚠️ `getMp4` — the staff MP4 download (2026-11-22)
+
+A phone records **WebM**, and a WebM opens in neither QuickTime, Safari, PowerPoint, iMovie nor
+Premiere. Every clip from the 17 November trial was converted by hand before anyone could watch
+one. The staff ZooSnooz and Evolve tabs now carry a **⬇ MP4** button on every video — the film
+and each individual clip — which transcodes server-side and saves the result.
+
+🚫 **STAFF ONLY, AND WITH NO TEACHER BRANCH ON PURPOSE** (Cameron's call). Every other media
+endpoint scopes a teacher to their own class; this one refuses them outright, because a
+transcode is minutes of CPU per call and an open door to the project's budget. If teachers ever
+need it, give them their own class-scoped branch rather than loosening this one.
+
+⚠️ **The original is never touched.** Output goes to a separate `mp4/<original path>.mp4`
+prefix, so `cleanupRawClips` (which only scans the student folders) cannot see the cache, and a
+stale cache is one prefix to delete. A second request for the same file is served from the cache
+unless the source has been re-filmed since, which invalidates it by timestamp.
+
+⚠️ `scale=trunc(iw/2)*2:trunc(ih/2)*2` is **load-bearing, not cosmetic** — H.264 cannot encode an
+odd dimension and a phone crop produces them, so without it ffmpeg fails on exactly the files
+this exists to rescue. `+faststart` is what makes it open instantly rather than after a scan.
+
+✅ Verified before shipping: the endpoint returns **403 unauthenticated, 403 with a junk token**
+and 405 on GET; and the exact arg list, run against the exact `ffmpeg-static` binary on a
+**VP9/Opus WebM at 721x1281**, produced H.264 `yuv420p` 720x1280 + AAC with the `moov` atom ahead
+of `mdat`. ⚠️ **The live conversion path has not been run by a signed-in staff member** — a
+Firebase ID token cannot be minted from a script, so the first real click is the first real test.
 
 ⚠️ **A STUDENT's film is still built client-side; a TEACHER's is not** (changed 2026-11-17). The
 student's stitcher captures a canvas in real time on the phone — which is why a screen that dims
