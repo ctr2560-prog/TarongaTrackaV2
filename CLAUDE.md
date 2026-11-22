@@ -112,6 +112,13 @@ the observation they were part way through typing, drafted to `localStorage` as 
 front of an animal that has moved on. 🚫 Never treat page memory as the record of what a student
 has done.
 
+✅ **PROVEN ON A REAL HANDSET, 2026-11-22.** Cameron ran a full ZooSnooz pass on an **iPhone**,
+deliberately dropping in and out of signal and leaving the app for long stretches, and nothing was
+lost: *"it worked so well ... it all worked well."* That is the first end-to-end confirmation of
+this mechanism outside a desk, and it is the exact failure that lost the room on 17 November.
+⚠️ It is **one person on one iPhone**. It says nothing about the **Oppos** (see the trial list
+below), nothing about five animals at class scale, and nothing about the dark.
+
 ### ⚠️⚠️ A TEACHER BUILDS THE FILM ON THE SERVER (`41c4598`)
 
 `buildZooSnoozFilm` — a Cloud Function that assembles a student's documentary from the clips
@@ -182,6 +189,10 @@ marks a turn of phrase, and it is unanswerable for a class whose keeper said it 
 - It ran in daylight, one group, personal phones. Not dark, not tired, not thirty students, not
   the Taronga Oppos. ⚠️ An iPhone records **H.264 MP4** and the Oppos record **VP9 WebM** — a
   pass on one is not a pass on the other.
+  🟡 **Partly closed 2026-11-22**: a clean solo run on an **iPhone**, across signal drops and long
+  absences from the app (see the resume section above). 🚫 Do not read that as the Oppos passing —
+  **no Android handset has ever been run**, and that is now the single biggest untested surface
+  before a real night.
 - **Nobody reached the fifth animal.** Every student did four or fewer. Content length or
   schedule — the fix differs and nobody knows which yet.
 - **Three students shared one handset** (Quokka, Koala, Zebra, same `deviceUid`). Progress,
